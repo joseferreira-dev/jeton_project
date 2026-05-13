@@ -8,13 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Serviço central de gestão de utilizadores e autenticação.
- * Substitui as antigas FachadaUsuario e FachadaAutenticar.
- */
 @Service
 public class UsuarioService {
 
@@ -25,20 +24,50 @@ public class UsuarioService {
     private ViewUserLoginRepository viewUserLoginRepository;
 
     /**
-     * Valida as credenciais de um utilizador.
-     * Esta lógica substitui a funcionalidade da antiga FachadaAutenticar.
+     * Valida as credenciais comparando o CPF limpo e a senha em SHA-256 Maiúsculo.
      */
     @Transactional(readOnly = true)
     public Optional<ViewUserLogin> autenticar(String cpf, String senha) {
-        Optional<ViewUserLogin> user = viewUserLoginRepository.findByCpf(cpf);
         
-        // No Passo 7, utilizaremos o Spring Security para uma comparação de Hash segura.
-        // Por agora, mantemos a lógica de validação simples baseada no legado.
-        if (user.isPresent() && user.get().getSenha().equals(senha)) {
-            return user;
+        // 1. Limpa o CPF (deixa só números) para garantir que bata com o banco
+        String cpfLimpo = cpf.replaceAll("[^0-9]", "");
+        
+        Optional<ViewUserLogin> user = viewUserLoginRepository.findByCpf(cpfLimpo);
+        
+        if (user.isPresent()) {
+            // 2. Transforma a senha digitada usando o algoritmo SHA-256 (igual ao legado)
+            String senhaCriptografada = gerarSHA256(senha);
+            
+            // 3. Compara (O legado usa maiúsculas, por isso o ignoreCase ou o método exato)
+            if (user.get().getSenha().equals(senhaCriptografada)) {
+                return user;
+            }
         }
         return Optional.empty();
     }
+
+    /**
+     * REPLICA EXATA do método presente no seu arquivo Criptografia.java
+     */
+    private String gerarSHA256(String senha) {
+        try {
+            MessageDigest algoritmo = MessageDigest.getInstance("SHA-256");
+            byte[] messageDigest = algoritmo.digest(senha.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder stringHexa = new StringBuilder();
+            for (byte b : messageDigest) {
+                // Formatação %02X garante letras MAIÚSCULAS como no sistema antigo
+                stringHexa.append(String.format("%02X", 0xFF & b));
+            }
+            return stringHexa.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Erro ao processar criptografia SHA-256", e);
+        }
+    }
+
+    // ==============================================================
+    // MÉTODOS DE CRUD
+    // ==============================================================
 
     @Transactional(readOnly = true)
     public List<Usuario> listarTodos() {
@@ -46,27 +75,17 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<Usuario> buscarPorCpf(String cpf) {
-        return usuarioRepository.findByPessoaCpf(cpf);
+    public Optional<Usuario> buscarPorId(Integer id) {
+        return usuarioRepository.findById(id);
     }
 
-    /**
-     * Salva ou atualiza um utilizador e a sua respetiva Pessoa.
-     * @Transactional garante que a Pessoa e o Utilizador sejam gravados juntos ou nenhum deles.
-     */
     @Transactional
     public Usuario salvar(Usuario usuario) {
-        // Exemplo de reaproveitamento de validação legada:
-        // if (!ValidarCPF.isCPF(usuario.getPessoa().getCpf())) { ... }
-        
         return usuarioRepository.save(usuario);
     }
 
     @Transactional
-    public void alterarSituacao(Integer id, String novaSituacao) {
-        usuarioRepository.findById(id).ifPresent(u -> {
-            u.setInSituacao(novaSituacao);
-            usuarioRepository.save(u);
-        });
+    public void excluir(Integer id) {
+        usuarioRepository.deleteById(id);
     }
 }

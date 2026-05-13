@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Serviço que substitui a FachadaAtividadeConselhal.
@@ -50,5 +51,15 @@ public class AtividadeConselhalService {
     @Transactional(readOnly = true)
     public List<Regras> listarRegrasAtivas() {
         return regrasRepository.findByInRevogado("N");
+    }
+
+    @Transactional(readOnly = true)
+    public List<AtividadeConselhal> listarTodos() {
+        return atividadeRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<AtividadeConselhal> buscarPorId(Integer id) {
+        return atividadeRepository.findById(id);
     }
 }

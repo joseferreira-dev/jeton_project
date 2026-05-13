@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}"> <head>
+    <title>Início - Jeton</title>
+</head>
+<body>
+
+<div layout:fragment="conteudo">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 text-gray-800"><i class="fa-solid fa-house me-2"></i> Dashboard Inicial</h2>
+    </div>
+
+    <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center py-5">
+                    <i class="fa-regular fa-face-smile fa-4x text-muted mb-3"></i>
+                    <h3 class="text-secondary">Bem-vindo ao Novo Sistema Jeton!</h3>
+                    <p class="text-muted mt-3">
+                        Utilize o menu lateral para navegar entre os cadastros de conselheiros, gestões, registrar novas atividades conselhais e emitir relatórios.
+                    </p>
+                    <hr class="w-25 mx-auto my-4 text-muted">
+                    <p class="mb-0">
+                        <strong>Usuário logado:</strong> 
+                        <span th:text="${session.usuarioLogado.nome}">Nome do Usuário</span> 
+                        (<span th:text="${session.usuarioLogado.email}">email@exemplo.com</span>)
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

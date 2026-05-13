@@ -68,4 +68,19 @@ public class JetonService {
         // Antes de excluir o jeton, a regra de negócio pode exigir libertar os pontos_saldo associados
         jetonRepository.deleteById(id);
     }
+
+    @Transactional(readOnly = true)
+    public List<Jeton> listarTodos() {
+        return jetonRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Jeton> buscarPorId(Integer id) {
+        return jetonRepository.findById(id);
+    }
+
+    @Transactional
+    public Jeton salvar(Jeton jeton) {
+        return jetonRepository.save(jeton);
+    }
 }

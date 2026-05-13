@@ -14,7 +14,7 @@ import java.util.Optional;
  * Consolida múltiplas fachadas do sistema legado.
  */
 @Service
-public class ConfiguracaoService {
+public class Configuracao {
 
     @Autowired
     private GestaoRepository gestaoRepository;

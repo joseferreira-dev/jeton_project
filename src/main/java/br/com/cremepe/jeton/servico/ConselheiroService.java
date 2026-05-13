@@ -82,4 +82,13 @@ public class ConselheiroService {
     public void removerVinculo(Integer idConselheiro, Integer idGestao) {
         gestaoConselheiroRepository.deleteById(new GestaoConselheiroId(idConselheiro, idGestao));
     }
+
+    public Optional<Conselheiro> buscarPorId(Integer id) {
+        return conselheiroRepository.findById(id);
+    }
+
+    @Transactional
+    public void excluir(Integer id) {
+        conselheiroRepository.deleteById(id);
+    }
 }

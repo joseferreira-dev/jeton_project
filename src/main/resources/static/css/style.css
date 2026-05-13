@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans:400,700,800');
+@import url('https://fonts.googleapis.com/css?family=Lobster');
+
+
+body {
+  padding: 5px 10px 10px 5px;
+  font-family: 'Open Sans', sans-serif;
+  font-size:14px;
+  background:#bdc3c7
+  /*font-weight: 400;*/
+}
+/*
+.container {
+    max-width: 100%;
+}
+*/
+.ui-scrollpanel {
+    max-height: 500px;
+    width: 380px;
+    border: none;
+}
+
+.pnAtributos {
+    float: left;
+    overflow-y: auto; 
+    max-height: 490px; 
+    border: 0px;
+}
+
+.ui-dialog-content {
+    min-width: 330px;
+}
+
+.upperCase {
+    text-transform: uppercase;
+}
+
+.break-word {
+    white-space: normal; /* Permite que o texto quebre em várias linhas */
+    word-wrap: break-word; /* Quebra palavras longas */
+    display: inline-block; /* Garante que o label se comporte corretamente */
+/*    max-width: 400px; /* Ajuste conforme necessário */
+    border: 1px solid black;
+
+}
+
+div.ui-growl {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 999999 !important;
+}
+
+@media only screen and (max-width: 640px) { 
+
+    .coluna .ui-column-title {
+        background-color: #e5e5e5;
+        font-weight: bold;
+        margin-bottom: 1px !important;
+    }
+
+    .ui-scrollpanel {
+        max-height: 500px;
+        width: 290px;
+        border: none;
+    }
+    
+}

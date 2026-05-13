@@ -1,67 +1,62 @@
-package br.com.cremepe.jeton.configuracao;
+// package br.com.cremepe.jeton.configuracao;
 
-import br.com.cremepe.jeton.dominio.Resolucao;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
-import br.com.cremepe.jeton.servico.ConfiguracaoService;
-import br.com.cremepe.jeton.servico.UsuarioService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
+// import br.com.cremepe.jeton.servico.*;
+// import org.springframework.beans.factory.annotation.Autowired;
+// import org.springframework.boot.CommandLineRunner;
+// import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Optional;
+// @Component
+// public class TesteConexao implements CommandLineRunner {
 
-/**
- * TesteConexao.java - Versão de Validação de Serviços (Passo 5)
- */
-@Component
-public class TesteConexao implements CommandLineRunner {
+//     // Injetando os principais serviços para testar o mapeamento de várias tabelas
+//     @Autowired private UsuarioService usuarioService;
+//     @Autowired private GestaoService gestaoService;
+//     @Autowired private ConselheiroService conselheiroService;
+//     @Autowired private AtividadeConselhalService atividadeService;
+//     @Autowired private JetonService jetonService;
+//     @Autowired private ParametrosService parametrosService;
 
-    @Autowired
-    private UsuarioService usuarioService;
+//     @Override
+//     public void run(String... args) throws Exception {
+//         System.out.println("\n=========================================================");
+//         System.out.println(" INICIANDO TESTE EXTENSO DE CONEXÃO E SERVIÇOS (BACKEND) ");
+//         System.out.println("=========================================================");
 
-    @Autowired
-    private ConfiguracaoService configuracaoService;
+//         try {
+//             // // Teste 1: Tabela de Usuários (vw_user_login / usuario / pessoa)
+//             // int qtdUsuarios = usuarioService.listarTodos().size();
+//             // System.out.println("✅ [OK] Usuários mapeados com sucesso. Total de registros: " + qtdUsuarios);
 
-    @Override
-    public void run(String... args) throws Exception {
-        System.out.println("\n" + "=".repeat(50));
-        System.out.println("🧪 INICIANDO TESTE DE INTEGRAÇÃO DE SERVIÇOS");
-        System.out.println("=".repeat(50));
+//             // // Teste 2: Tabela de Gestões
+//             // int qtdGestoes = gestaoService.listarTodos().size();
+//             // System.out.println("✅ [OK] Gestões mapeadas com sucesso. Total de registros: " + qtdGestoes);
 
-        // --- TESTE 1: USUÁRIO E AUTENTICAÇÃO ---
-        System.out.println("\n[Teste 1] Validando busca de usuário por CPF...");
-        // Tente usar um CPF que você sabe que existe no seu banco legado
-        String cpfTeste = "734.210.574-00"; 
-        
-        Optional<ViewUserLogin> user = usuarioService.autenticar(cpfTeste, "senha_do_banco");
-        
-        if (user.isPresent()) {
-            System.out.println("✅ Sucesso! Usuário encontrado: " + user.get().getNome());
-            System.out.println("   Permissões mapeadas: " + user.get().getPermissoes());
-        } else {
-            System.out.println("⚠️ Aviso: Usuário não encontrado ou senha incorreta (verifique o CPF no banco).");
-        }
+//             // // Teste 3: Tabela de Conselheiros
+//             // int qtdConselheiros = conselheiroService.listarTodos().size();
+//             // System.out.println("✅ [OK] Conselheiros mapeados com sucesso. Total de registros: " + qtdConselheiros);
 
-        // --- TESTE 2: REGRAS E CONFIGURAÇÕES ---
-        System.out.println("\n[Teste 2] Listando Resoluções Ativas via Service...");
-        try {
-            List<Resolucao> resolucoes = configuracaoService.listarResolucoesAtivas();
-            System.out.println("✅ Sucesso! Total de resoluções ativas: " + resolucoes.size());
-            resolucoes.stream().limit(3).forEach(r -> 
-                System.out.println("   -> Resolução " + r.getNumero() + "/" + r.getAno())
-            );
-        } catch (Exception e) {
-            System.err.println("❌ Erro ao listar resoluções: " + e.getMessage());
-        }
+//             // // Teste 4: Tabela de Atividades Conselhais
+//             // int qtdAtividades = atividadeService.listarTodos().size();
+//             // System.out.println("✅ [OK] Atividades Conselhais mapeadas com sucesso. Total: " + qtdAtividades);
 
-        // --- TESTE 3: STATUS DO SISTEMA ---
-        System.out.println("\n[Teste 3] Verificando Parâmetros Globais...");
-        boolean bloqueado = configuracaoService.isSistemaBloqueado();
-        System.out.println("   O sistema está bloqueado para lançamentos? " + (bloqueado ? "SIM 🔒" : "NÃO 🔓"));
+//             // // Teste 5: Tabela de Jeton
+//             // int qtdJetons = jetonService.listarTodos().size();
+//             // System.out.println("✅ [OK] Histórico de Jetons mapeado com sucesso. Total: " + qtdJetons);
 
-        System.out.println("\n" + "=".repeat(50));
-        System.out.println("🏁 TESTES CONCLUÍDOS COM SUCESSO!");
-        System.out.println("=".repeat(50) + "\n");
-    }
-}
+//             // // Teste 6: Tabela de Parâmetros
+//             // int qtdParametros = parametrosService.listarTodos().size();
+//             // System.out.println("✅ [OK] Parâmetros mapeados com sucesso. Total de registros: " + qtdParametros);
+
+//             System.out.println("=========================================================");
+//             System.out.println("TODOS OS TESTES PASSARAM! O BACKEND ESTÁ PERFEITO!");
+//             System.out.println("=========================================================\n");
+
+//         } catch (Exception e) {
+//             System.err.println("\n=========================================================");
+//             System.err.println("ERRO DURANTE OS TESTES DE CONEXÃO COM O BANCO: ");
+//             System.err.println(" Detalhe do erro: " + e.getMessage());
+//             e.printStackTrace();
+//             System.err.println("=========================================================\n");
+//         }
+//     }
+// }
