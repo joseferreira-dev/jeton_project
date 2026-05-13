@@ -15,9 +15,7 @@ public class Parametros implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Id
-    private Integer id = 1; // ID fixo para tabelas de configuração de linha única
-
+    @Id // Transformamos o próprio status no ID para satisfazer o JPA
     @Column(name = "bloqueaSistema", length = 1, nullable = false)
     private String bloqueaSistema;
 

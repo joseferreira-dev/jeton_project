@@ -14,4 +14,6 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
 
     // Procura regras pelo identificador se são atividades judicantes ou não
     List<Regras> findByInJudicante(String inJudicante);
+
+    List<Regras> findByInRevogado(String string);
 }

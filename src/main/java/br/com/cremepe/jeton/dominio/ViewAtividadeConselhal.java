@@ -22,21 +22,49 @@ public class ViewAtividadeConselhal implements Serializable {
     @Column(name = "idAtividade")
     private Integer idAtividade;
 
+    @Column(name = "idGestao")
     private Integer idGestao;
+
+    @Column(name = "idPessoa")
     private Integer idPessoa;
+
+    @Column(name = "idRegra")
     private Integer idRegra;
+
+    @Column(name = "qtdAtividade")
     private Integer qtdAtividade;
+
+    @Column(name = "dataHoraAtividade")
     private LocalDateTime dataHoraAtividade;
+
+    @Column(name = "dataHoraRegistro")
     private LocalDateTime dataHoraRegistro;
+
+    @Column(name = "inTurno")
     private String inTurno;
+
+    @Column(name = "situacaoAtividade")
     private String situacaoAtividade;
-    
+
+    @Column(name = "nomeGestao")
     private String nomeGestao;
-    private String nome; 
+
+    @Column(name = "nome")
+    private String nome;
+
+    @Column(name = "cpf")
     private String cpf;
+
+    @Column(name = "nomeRegra")
     private String nomeRegra;
+
+    @Column(name = "pontos")
     private Integer pontos;
+
+    @Column(name = "resolucao")
     private String resolucao;
+
+    @Column(name = "portaria")
     private String portaria;
 
     public ViewAtividadeConselhal() {}

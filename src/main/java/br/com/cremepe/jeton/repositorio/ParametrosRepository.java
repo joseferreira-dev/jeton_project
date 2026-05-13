@@ -8,10 +8,9 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface ParametrosRepository extends JpaRepository<Parametros, Integer> {
+public interface ParametrosRepository extends JpaRepository<Parametros, String> {
 
-    // Como é uma tabela de configuração de linha única (ID = 1), 
-    // podemos criar um método direto para ler o estado de bloqueio do sistema
-    @Query("SELECT p.bloqueaSistema FROM Parametros p WHERE p.id = 1")
+    // Usamos SQL nativo para ignorar as validações de mapeamento de ID do Hibernate
+    @Query(value = "SELECT bloqueaSistema FROM parametros LIMIT 1", nativeQuery = true)
     Optional<String> obterStatusBloqueioSistema();
 }

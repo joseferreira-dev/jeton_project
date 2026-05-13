@@ -18,13 +18,20 @@ public class ViewUserLogin implements Serializable {
     @Column(name = "idPessoa")
     private Integer idPessoa;
 
+    @Column(name = "nome")
     private String nome;
+
+    @Column(name = "cpf")
     private String cpf;
+
+    @Column(name = "email")
     private String email;
+
+    @Column(name = "senha")
     private String senha;
-    
-    @Column(columnDefinition = "text")
-    private String permissoes; 
+
+    @Column(name = "permissoes", columnDefinition = "text")
+    private String permissoes;
 
     public ViewUserLogin() {}
 

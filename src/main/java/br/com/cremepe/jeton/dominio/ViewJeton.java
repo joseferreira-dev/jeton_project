@@ -19,15 +19,34 @@ public class ViewJeton implements Serializable {
     @Column(name = "idJeton")
     private Integer idJeton;
 
+    @Column(name = "nome")
     private String nome;
+
+    @Column(name = "cpf")
     private String cpf;
+
+    @Column(name = "mes")
     private Integer mes;
+
+    @Column(name = "mesExtenso")
     private String mesExtenso;
+
+    @Column(name = "ano")
     private Integer ano;
+
+    @Column(name = "totalJeton")
     private Integer totalJeton;
+
+    @Column(name = "valor")
     private BigDecimal valor;
+
+    @Column(name = "valorFormatado")
     private String valorFormatado;
+
+    @Column(name = "inSituacaoDescricao")
     private String inSituacaoDescricao;
+
+    @Column(name = "nomeGestao")
     private String nomeGestao;
 
     public ViewJeton() {}

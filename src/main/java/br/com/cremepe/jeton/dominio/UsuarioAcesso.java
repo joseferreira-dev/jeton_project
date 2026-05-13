@@ -29,5 +29,11 @@ public class UsuarioAcesso implements Serializable {
 
     public UsuarioAcesso() {}
 
-    // Getters e Setters omitidos por brevidade, mas seguem o padrão das anteriores
+    public void setId(UsuarioAcessoId id) {
+        this.id = id;
+    }
+
+    public UsuarioAcessoId getId() {
+        return id;
+    }
 }
