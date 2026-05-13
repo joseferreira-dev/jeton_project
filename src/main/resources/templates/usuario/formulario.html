@@ -38,7 +38,8 @@
                     <div class="col-md-3">
                         <label class="form-label fw-bold">Senha</label>
                         <input type="password" class="form-control" th:field="*{senha}" 
-                               th:placeholder="${usuario.idUsuarioPessoa == null ? 'Defina uma senha' : 'Deixe em branco para manter'}">
+                            th:placeholder="${usuario.idUsuarioPessoa == null ? 'Defina uma senha' : 'Deixe em branco para manter'}"
+                            th:required="${usuario.idUsuarioPessoa == null}">
                     </div>
 
                     <div class="col-md-3">

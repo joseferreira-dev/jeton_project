@@ -19,41 +19,43 @@ public class UsuarioService {
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private ViewUserLoginRepository viewUserLoginRepository;
 
-    @Transactional(readOnly = true)
-    public Optional<ViewUserLogin> autenticar(String cpf, String senha) {
-        String cpfLimpo = cpf.replaceAll("[^0-9]", "");
-        Optional<ViewUserLogin> user = viewUserLoginRepository.findByCpf(cpfLimpo);
-        if (user.isPresent()) {
-            if (user.get().getSenha().equals(gerarSHA256(senha))) return user;
-        }
-        return Optional.empty();
-    }
-
-    @Transactional
+@Transactional
     public Usuario salvar(Usuario usuario) {
-        if (usuario.getIdUsuarioPessoa() != null) {
+        // 1. Limpa o CPF
+        if (usuario.getPessoa() != null && usuario.getPessoa().getCpf() != null) {
+            usuario.getPessoa().setCpf(usuario.getPessoa().getCpf().replaceAll("[^0-9]", ""));
+        }
+
+        if (usuario.getIdUsuarioPessoa() != null && usuario.getIdUsuarioPessoa() > 0) {
             // EDIÇÃO
             Usuario existente = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
                     .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-            // 1. Tratamento da Senha
             if (usuario.getSenha() == null || usuario.getSenha().trim().isEmpty()) {
-                usuario.setSenha(existente.getSenha()); // Mantém a senha atual
+                usuario.setSenha(existente.getSenha());
             } else {
-                usuario.setSenha(gerarSHA256(usuario.getSenha())); // Nova senha
+                usuario.setSenha(gerarSHA256(usuario.getSenha()));
             }
 
-            // 2. Sincronização obrigatória de IDs para @MapsId
-            if (usuario.getPessoa() != null) {
-                usuario.getPessoa().setIdPessoa(usuario.getIdUsuarioPessoa());
-                usuario.getPessoa().setInTipoPessoa(existente.getPessoa().getInTipoPessoa());
-            }
-        } else {
+            usuario.getPessoa().setIdPessoa(usuario.getIdUsuarioPessoa());
+            
+            // Mantém o tipo que já estava no banco para não quebrar a regra
+            usuario.getPessoa().setInTipoPessoa(existente.getPessoa().getInTipoPessoa());
+        } 
+        else {
             // NOVO CADASTRO
-            usuario.setSenha(gerarSHA256(usuario.getSenha()));
+            usuario.setIdUsuarioPessoa(null);
             if (usuario.getPessoa() != null) {
-                usuario.getPessoa().setInTipoPessoa("U");
+                usuario.getPessoa().setIdPessoa(null);
+                
+                // CORREÇÃO AQUI: Mudamos de 'U' para 'F' para aceitar a regra do banco [F/C]
+                usuario.getPessoa().setInTipoPessoa("F"); 
             }
+
+            if (usuario.getSenha() == null || usuario.getSenha().trim().isEmpty()) {
+                throw new RuntimeException("A senha é obrigatória para novos usuários.");
+            }
+            usuario.setSenha(gerarSHA256(usuario.getSenha()));
         }
 
         return usuarioRepository.save(usuario);
@@ -69,6 +71,13 @@ public class UsuarioService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Erro na criptografia", e);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ViewUserLogin> autenticar(String cpf, String senha) {
+        String cpfLimpo = cpf.replaceAll("[^0-9]", "");
+        return viewUserLoginRepository.findByCpf(cpfLimpo)
+                .filter(u -> u.getSenha().equals(gerarSHA256(senha)));
     }
 
     @Transactional(readOnly = true)
