@@ -1,4 +1,4 @@
-package br.com.cremepe.jeton.configuracao; // Lembre-se de manter o seu pacote correto!
+package br.com.cremepe.jeton.configuracao;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -6,42 +6,61 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * ==================================================================
  * ARQUIVO: TesteConexao.java
- * OBJETIVO: Testar a conexão e listar as tabelas do banco de dados.
+ * OBJETIVO: Mapear todas as tabelas e suas respectivas colunas para 
+ * auxiliar na criação das Entidades JPA.
  * ==================================================================
  */
 @Component
 public class TesteConexao implements CommandLineRunner {
 
-    // O JdbcTemplate é a ferramenta do Spring para rodar SQL puro de forma fácil
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) throws Exception {
-        System.out.println("A iniciar o teste de leitura do banco de dados...");
+        System.out.println("Iniciando o mapeamento estrutural do banco de dados legado...");
         
         try {
-            // Executamos um comando SQL direto para listar todas as tabelas do seu MySQL
+            // Obtém a lista de todas as tabelas do banco
             List<String> tabelas = jdbcTemplate.queryForList("SHOW TABLES", String.class);
             
             System.out.println("=================================================");
-            System.out.println("✅ SUCESSO! O Spring Boot conseguiu ler o banco!");
-            System.out.println("Foram encontradas " + tabelas.size() + " tabelas:");
+            System.out.println("✅ BANCO DE DADOS LIDO COM SUCESSO!");
+            System.out.println("Total de tabelas encontradas: " + tabelas.size());
+            System.out.println("=================================================");
             
-            // Imprime o nome de cada tabela encontrada no console
             for (String nomeDaTabela : tabelas) {
-                System.out.println(" -> " + nomeDaTabela);
+                System.out.println("\n-> TABELA: " + nomeDaTabela);
+                System.out.println("-------------------------------------------------------------------------");
+                System.out.printf("%-25s | %-15s | %-5s | %s%n", "CAMPO", "TIPO", "NULO", "CHAVE");
+                System.out.println("-------------------------------------------------------------------------");
+                
+                // Executa DESCRIBE para cada tabela para pegar a estrutura interna
+                List<Map<String, Object>> colunas = jdbcTemplate.queryForList("DESCRIBE " + nomeDaTabela);
+                
+                for (Map<String, Object> coluna : colunas) {
+                    String field = String.valueOf(coluna.get("Field"));
+                    String type = String.valueOf(coluna.get("Type"));
+                    String isNull = String.valueOf(coluna.get("Null"));
+                    String key = String.valueOf(coluna.get("Key"));
+                    
+                    System.out.printf("%-25s | %-15s | %-5s | %s%n", field, type, isNull, key);
+                }
             }
+            System.out.println("\n=================================================");
+            System.out.println("FIM DO MAPEAMENTO");
             System.out.println("=================================================");
             
         } catch (Exception e) {
             System.err.println("=================================================");
-            System.err.println("❌ ERRO ao tentar ler o banco de dados.");
+            System.err.println("❌ ERRO ao tentar ler a estrutura do banco de dados.");
             System.err.println("Motivo: " + e.getMessage());
+            e.printStackTrace();
             System.err.println("=================================================");
         }
     }

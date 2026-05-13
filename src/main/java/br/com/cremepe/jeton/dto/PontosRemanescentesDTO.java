@@ -1,0 +1,88 @@
+package br.com.cremepe.jeton.dto;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+
+/**
+ * DTO (Data Transfer Object) / Projection.
+ * Utilizado para encapsular o resultado de consultas agregadas (SOMAS e GROUP BY)
+ * referentes aos saldos dos conselheiros para exibição em tela ou relatórios.
+ * NOTA: Esta classe não possui mapeamento no banco de dados.
+ */
+public class PontosRemanescentesDTO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    private Integer idPessoa;
+    private String nome;
+    
+    // Atualizado de 'double' primitivo para 'BigDecimal' para garantir precisão absoluta
+    private BigDecimal somaPontos;
+    private String somaPontosFormatado;
+    
+    private BigDecimal somaJetons;
+    private String somaJetonsFormatado;
+    
+    public PontosRemanescentesDTO() {
+    }
+    
+    // Este construtor é vital para o Spring Data JPA (explicado abaixo)
+    public PontosRemanescentesDTO(Integer idPessoa, String nome, BigDecimal somaPontos, BigDecimal somaJetons) {
+        this.idPessoa = idPessoa;
+        this.nome = nome;
+        this.somaPontos = somaPontos;
+        this.somaJetons = somaJetons;
+    }
+
+    // ==========================================
+    // GETTERS E SETTERS
+    // ==========================================
+
+    public Integer getIdPessoa() {
+        return idPessoa;
+    }
+
+    public void setIdPessoa(Integer idPessoa) {
+        this.idPessoa = idPessoa;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public BigDecimal getSomaPontos() {
+        return somaPontos;
+    }
+
+    public void setSomaPontos(BigDecimal somaPontos) {
+        this.somaPontos = somaPontos;
+    }
+
+    public String getSomaPontosFormatado() {
+        return somaPontosFormatado;
+    }
+
+    public void setSomaPontosFormatado(String somaPontosFormatado) {
+        this.somaPontosFormatado = somaPontosFormatado;
+    }
+
+    public BigDecimal getSomaJetons() {
+        return somaJetons;
+    }
+
+    public void setSomaJetons(BigDecimal somaJetons) {
+        this.somaJetons = somaJetons;
+    }
+
+    public String getSomaJetonsFormatado() {
+        return somaJetonsFormatado;
+    }
+
+    public void setSomaJetonsFormatado(String somaJetonsFormatado) {
+        this.somaJetonsFormatado = somaJetonsFormatado;
+    }
+}

@@ -11,45 +11,45 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * Entidade JPA que representa a tabela 'usuario' no banco de dados.
- * Possui um relacionamento 1:1 com a entidade Pessoa, compartilhando a mesma PK.
+ * Entidade JPA que representa a tabela 'conselheiro' na base de dados.
+ * Possui um relacionamento 1:1 com a entidade Pessoa.
  */
 @Entity
-@Table(name = "usuario")
-public class Usuario implements Serializable {
+@Table(name = "conselheiro")
+public class Conselheiro implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // Não usamos @GeneratedValue aqui, pois o ID vem da Pessoa
     @Id
-    @Column(name = "idUsuarioPessoa")
-    private Integer idUsuarioPessoa;
+    @Column(name = "idPessoa")
+    private Integer idPessoa;
 
-    // O @MapsId avisa ao Hibernate: "Use o ID desta entidade Pessoa como o meu próprio ID"
+    // Relacionamento mapeado indicando que o ID deriva da entidade Pessoa
     @OneToOne
     @MapsId
-    @JoinColumn(name = "idUsuarioPessoa")
+    @JoinColumn(name = "idPessoa")
     private Pessoa pessoa;
 
-    @Column(name = "senha", length = 64)
-    private String senha;
+    // Utiliza-se Integer (objeto) em vez de int (primitivo) porque a base de dados permite NULL
+    @Column(name = "crm")
+    private Integer crm;
 
     @Column(name = "inSituacao", length = 1, nullable = false)
     private String inSituacao;
 
-    public Usuario() {
+    public Conselheiro() {
     }
 
     // ==========================================
     // GETTERS E SETTERS
     // ==========================================
 
-    public Integer getIdUsuarioPessoa() {
-        return idUsuarioPessoa;
+    public Integer getIdPessoa() {
+        return idPessoa;
     }
 
-    public void setIdUsuarioPessoa(Integer idUsuarioPessoa) {
-        this.idUsuarioPessoa = idUsuarioPessoa;
+    public void setIdPessoa(Integer idPessoa) {
+        this.idPessoa = idPessoa;
     }
 
     public Pessoa getPessoa() {
@@ -60,12 +60,12 @@ public class Usuario implements Serializable {
         this.pessoa = pessoa;
     }
 
-    public String getSenha() {
-        return senha;
+    public Integer getCrm() {
+        return crm;
     }
 
-    public void setSenha(String senha) {
-        this.senha = senha;
+    public void setCrm(Integer crm) {
+        this.crm = crm;
     }
 
     public String getInSituacao() {
@@ -80,12 +80,12 @@ public class Usuario implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Usuario usuario = (Usuario) o;
-        return Objects.equals(idUsuarioPessoa, usuario.idUsuarioPessoa);
+        Conselheiro conselheiro = (Conselheiro) o;
+        return Objects.equals(idPessoa, conselheiro.idPessoa);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(idUsuarioPessoa);
+        return Objects.hash(idPessoa);
     }
 }
