@@ -8,26 +8,18 @@
 <body>
 
 <div layout:fragment="conteudo">
-    
     <div class="mb-4">
         <h2 class="h4 text-cremepe fw-bold">
             <i class="fa-solid fa-user-pen me-2"></i>
             <span th:text="${usuario.idUsuarioPessoa == null ? 'Novo Usuário' : 'Editar Usuário'}">Título</span>
         </h2>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a th:href="@{/usuarios}">Usuários</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Formulário</li>
-            </ol>
-        </nav>
     </div>
 
     <div class="card shadow-sm">
         <div class="card-body p-4">
             <form th:action="@{/usuarios/salvar}" th:object="${usuario}" method="post">
                 <input type="hidden" th:field="*{idUsuarioPessoa}">
-
-                <div class="row g-3">
+                <input type="hidden" th:field="*{pessoa.idPessoa}"> <div class="row g-3">
                     <div class="col-md-8">
                         <label class="form-label fw-bold">Nome Completo</label>
                         <input type="text" class="form-control" th:field="*{pessoa.nome}" required>
@@ -46,8 +38,7 @@
                     <div class="col-md-3">
                         <label class="form-label fw-bold">Senha</label>
                         <input type="password" class="form-control" th:field="*{senha}" 
-                               th:placeholder="${usuario.idUsuarioPessoa == null ? 'Defina uma senha' : 'Deixe em branco para manter'}"
-                               th:required="${usuario.idUsuarioPessoa == null}">
+                               th:placeholder="${usuario.idUsuarioPessoa == null ? 'Defina uma senha' : 'Deixe em branco para manter'}">
                     </div>
 
                     <div class="col-md-3">
@@ -60,17 +51,12 @@
                 </div>
 
                 <div class="mt-5 border-top pt-4 d-flex justify-content-end">
-                    <a th:href="@{/usuarios}" class="btn btn-outline-secondary me-2">
-                        <i class="fa-solid fa-xmark me-1"></i> Cancelar
-                    </a>
-                    <button type="submit" class="btn btn-cremepe px-4">
-                        <i class="fa-solid fa-floppy-disk me-1"></i> Salvar Usuário
-                    </button>
+                    <a th:href="@{/usuarios}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                    <button type="submit" class="btn btn-cremepe px-4">Salvar Usuário</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
 </body>
 </html>

@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.dominio;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -26,7 +27,7 @@ public class Usuario implements Serializable {
     private Integer idUsuarioPessoa;
 
     // O @MapsId avisa ao Hibernate: "Use o ID desta entidade Pessoa como o meu próprio ID"
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @MapsId
     @JoinColumn(name = "idUsuarioPessoa")
     private Pessoa pessoa;

@@ -7,7 +7,6 @@ import br.com.cremepe.jeton.repositorio.ViewUserLoginRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -17,75 +16,67 @@ import java.util.Optional;
 @Service
 public class UsuarioService {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    @Autowired private UsuarioRepository usuarioRepository;
+    @Autowired private ViewUserLoginRepository viewUserLoginRepository;
 
-    @Autowired
-    private ViewUserLoginRepository viewUserLoginRepository;
-
-    /**
-     * Valida as credenciais comparando o CPF limpo e a senha em SHA-256 Maiúsculo.
-     */
     @Transactional(readOnly = true)
     public Optional<ViewUserLogin> autenticar(String cpf, String senha) {
-        
-        // 1. Limpa o CPF (deixa só números) para garantir que bata com o banco
         String cpfLimpo = cpf.replaceAll("[^0-9]", "");
-        
         Optional<ViewUserLogin> user = viewUserLoginRepository.findByCpf(cpfLimpo);
-        
         if (user.isPresent()) {
-            // 2. Transforma a senha digitada usando o algoritmo SHA-256 (igual ao legado)
-            String senhaCriptografada = gerarSHA256(senha);
-            
-            // 3. Compara (O legado usa maiúsculas, por isso o ignoreCase ou o método exato)
-            if (user.get().getSenha().equals(senhaCriptografada)) {
-                return user;
-            }
+            if (user.get().getSenha().equals(gerarSHA256(senha))) return user;
         }
         return Optional.empty();
     }
 
-    /**
-     * REPLICA EXATA do método presente no seu arquivo Criptografia.java
-     */
+    @Transactional
+    public Usuario salvar(Usuario usuario) {
+        if (usuario.getIdUsuarioPessoa() != null) {
+            // EDIÇÃO
+            Usuario existente = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
+                    .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+            // 1. Tratamento da Senha
+            if (usuario.getSenha() == null || usuario.getSenha().trim().isEmpty()) {
+                usuario.setSenha(existente.getSenha()); // Mantém a senha atual
+            } else {
+                usuario.setSenha(gerarSHA256(usuario.getSenha())); // Nova senha
+            }
+
+            // 2. Sincronização obrigatória de IDs para @MapsId
+            if (usuario.getPessoa() != null) {
+                usuario.getPessoa().setIdPessoa(usuario.getIdUsuarioPessoa());
+                usuario.getPessoa().setInTipoPessoa(existente.getPessoa().getInTipoPessoa());
+            }
+        } else {
+            // NOVO CADASTRO
+            usuario.setSenha(gerarSHA256(usuario.getSenha()));
+            if (usuario.getPessoa() != null) {
+                usuario.getPessoa().setInTipoPessoa("U");
+            }
+        }
+
+        return usuarioRepository.save(usuario);
+    }
+
     private String gerarSHA256(String senha) {
         try {
             MessageDigest algoritmo = MessageDigest.getInstance("SHA-256");
             byte[] messageDigest = algoritmo.digest(senha.getBytes(StandardCharsets.UTF_8));
-
             StringBuilder stringHexa = new StringBuilder();
-            for (byte b : messageDigest) {
-                // Formatação %02X garante letras MAIÚSCULAS como no sistema antigo
-                stringHexa.append(String.format("%02X", 0xFF & b));
-            }
+            for (byte b : messageDigest) stringHexa.append(String.format("%02X", 0xFF & b));
             return stringHexa.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Erro ao processar criptografia SHA-256", e);
+            throw new RuntimeException("Erro na criptografia", e);
         }
     }
 
-    // ==============================================================
-    // MÉTODOS DE CRUD
-    // ==============================================================
+    @Transactional(readOnly = true)
+    public List<Usuario> listarTodos() { return usuarioRepository.findAll(); }
 
     @Transactional(readOnly = true)
-    public List<Usuario> listarTodos() {
-        return usuarioRepository.findAll();
-    }
-
-    @Transactional(readOnly = true)
-    public Optional<Usuario> buscarPorId(Integer id) {
-        return usuarioRepository.findById(id);
-    }
+    public Optional<Usuario> buscarPorId(Integer id) { return usuarioRepository.findById(id); }
 
     @Transactional
-    public Usuario salvar(Usuario usuario) {
-        return usuarioRepository.save(usuario);
-    }
-
-    @Transactional
-    public void excluir(Integer id) {
-        usuarioRepository.deleteById(id);
-    }
+    public void excluir(Integer id) { usuarioRepository.deleteById(id); }
 }

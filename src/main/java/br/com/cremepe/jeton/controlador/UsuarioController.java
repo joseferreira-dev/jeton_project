@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Usuario;
+import br.com.cremepe.jeton.dominio.Pessoa;
 import br.com.cremepe.jeton.servico.UsuarioService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,13 +14,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/usuarios")
 public class UsuarioController {
 
-    @Autowired
-    private UsuarioService usuarioService;
+    @Autowired private UsuarioService usuarioService;
 
     @GetMapping
-    public String listarUsuarios(Model model, HttpSession session) {
+    public String listar(Model model, HttpSession session) {
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-
         model.addAttribute("listaUsuarios", usuarioService.listarTodos());
         return "usuario/lista";
     }
@@ -27,39 +26,27 @@ public class UsuarioController {
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-
-        model.addAttribute("usuario", new Usuario());
+        Usuario usuario = new Usuario();
+        usuario.setPessoa(new Pessoa()); // Importante para não dar erro no Thymeleaf
+        model.addAttribute("usuario", usuario);
         return "usuario/formulario";
     }
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-
-        Usuario usuario = usuarioService.buscarPorId(id)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário inválido: " + id));
+        Usuario usuario = usuarioService.buscarPorId(id).orElseThrow();
         model.addAttribute("usuario", usuario);
         return "usuario/formulario";
     }
 
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("usuario") Usuario usuario, RedirectAttributes redirectAttributes) {
+    public String salvar(@ModelAttribute("usuario") Usuario usuario, RedirectAttributes ra) {
         try {
             usuarioService.salvar(usuario);
-            redirectAttributes.addFlashAttribute("sucesso", "Usuário salvo com sucesso!");
+            ra.addFlashAttribute("sucesso", "Dados atualizados com sucesso!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao salvar usuário: " + e.getMessage());
-        }
-        return "redirect:/usuarios";
-    }
-
-    @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
-        try {
-            usuarioService.excluir(id);
-            redirectAttributes.addFlashAttribute("sucesso", "Usuário removido com sucesso!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao remover usuário.");
+            ra.addFlashAttribute("erro", "Erro ao salvar: " + e.getMessage());
         }
         return "redirect:/usuarios";
     }
