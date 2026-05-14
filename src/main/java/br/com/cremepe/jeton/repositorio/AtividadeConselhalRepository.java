@@ -15,4 +15,6 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
 
     // Permite filtrar atividades dentro de um mês ou turno específico utilizando os novos recursos de datas do Java 8+
     List<AtividadeConselhal> findByDataHoraAtividadeBetween(LocalDateTime inicio, LocalDateTime fim);
+
+    long countByGestaoIdGestaoAndConselheiroIdPessoa(Integer idGestao, Integer idPessoa);
 }

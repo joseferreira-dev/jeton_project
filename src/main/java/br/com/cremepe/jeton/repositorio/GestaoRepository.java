@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.repositorio;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -18,4 +19,11 @@ public interface GestaoRepository extends JpaRepository<Gestao, Integer> {
 
     @Query("SELECT g FROM Gestao g WHERE LOWER(g.nomeGestao) LIKE LOWER(CONCAT('%', :termo, '%'))")
     Page<Gestao> pesquisarPaginado(@Param("termo") String termo, Pageable pageable);
+
+    @Query("SELECT COUNT(g) > 0 FROM Gestao g WHERE " +
+            "(:id IS NULL OR g.idGestao != :id) AND " +
+            "(g.dtInicio <= :fim AND g.dtFim >= :inicio)")
+    boolean existeSobreposicao(@Param("id") Integer id, 
+                            @Param("inicio") LocalDate inicio, 
+                            @Param("fim") LocalDate fim);
 }

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head><title>Vincular Conselheiro - Jeton</title></head>
+<body>
+<div layout:fragment="conteudo">
+    <div class="mb-4">
+        <h2 class="h4 text-cremepe fw-bold">
+            <i class="fa-solid fa-link me-2"></i>
+            <span th:text="${gestaoConselheiro.id?.idGestao == null ? 'Vincular Médico a Gestão' : 'Editar Vínculo'}">Título</span>
+        </h2>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="@{/gestao-conselheiros/salvar}" th:object="${gestaoConselheiro}" method="post">
+                <input type="hidden" th:if="${gestaoConselheiro.id?.idGestao != null}" th:field="*{gestao.idGestao}">
+                <input type="hidden" th:if="${gestaoConselheiro.id?.idPessoa != null}" th:field="*{conselheiro.idPessoa}">
+                <input type="hidden" th:field="*{id.idGestao}">
+                <input type="hidden" th:field="*{id.idPessoa}">
+
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold">Selecione a Gestão</label>
+                        <select class="form-select" th:field="*{gestao.idGestao}" th:disabled="${gestaoConselheiro.id?.idGestao != null}" required>
+                            <option value="">-- Escolha --</option>
+                            <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}" th:text="${g.nomeGestao}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold">Selecione o Conselheiro</label>
+                        <select class="form-select" th:field="*{conselheiro.idPessoa}" th:disabled="${gestaoConselheiro.id?.idPessoa != null}" required>
+                            <option value="">-- Escolha --</option>
+                            <option th:each="c : ${listaConselheiros}" th:value="${c.idPessoa}" th:text="${c.pessoa.nome + ' (CRM: ' + c.crm + ')'}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">Situação</label>
+                        <select class="form-select" th:field="*{inSituacao}">
+                            <option value="A">Ativo na Gestão</option>
+                            <option value="I">Inativo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-5 border-top pt-4 d-flex justify-content-end">
+                    <a th:href="@{/gestao-conselheiros}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                    <button type="submit" class="btn btn-cremepe px-4">Salvar Vínculo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

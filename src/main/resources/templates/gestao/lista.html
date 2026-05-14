@@ -58,6 +58,9 @@
                             <td class="text-center pe-4">
                                 <a th:href="@{'/gestoes/editar/' + ${g.idGestao}}" class="btn btn-sm btn-outline-primary me-1"><i class="fa-solid fa-pen-to-square"></i></a>
                                 <button type="button" class="btn btn-sm btn-outline-danger" th:onclick="prepararExclusao([[${g.idGestao}]], [[${g.nomeGestao}]])"><i class="fa-solid fa-trash"></i></button>
+                                <a th:href="@{'/gestao-conselheiros/vincular/' + ${g.idGestao}}" class="btn btn-sm btn-outline-success me-1" title="Composição da Gestão">
+                                    <i class="fa-solid fa-user-plus"></i>
+                                </a>
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(paginaGestoes.content)}"><td colspan="4" class="text-center py-4 text-muted">Nenhuma gestão encontrada.</td></tr>

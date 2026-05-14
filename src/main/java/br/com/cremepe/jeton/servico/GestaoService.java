@@ -22,25 +22,19 @@ public class GestaoService {
 
     @Transactional
     public Gestao salvar(Gestao gestao) {
-        
-        // 1. Validação de Nome Duplicado
-        if (gestao.getNomeGestao() != null && !gestao.getNomeGestao().trim().isEmpty()) {
-            Optional<Gestao> existente = gestaoRepository.findByNomeGestao(gestao.getNomeGestao().trim());
-            
-            // Se encontrou uma gestão com esse nome, verifica se não é a própria gestão que estamos a editar
-            if (existente.isPresent() && 
-               (gestao.getIdGestao() == null || !gestao.getIdGestao().equals(existente.get().getIdGestao()))) {
-                throw new RuntimeException("Já existe uma gestão cadastrada com o nome '" + gestao.getNomeGestao() + "'.");
-            }
+        if (gestao.getDtInicio() == null || gestao.getDtFim() == null) {
+            throw new RuntimeException("As datas de início e fim são obrigatórias.");
         }
 
-        // 2. Validação de datas
-        if (gestao.getDtInicio() != null && gestao.getDtFim() != null) {
-            if (gestao.getDtFim().isBefore(gestao.getDtInicio())) {
-                throw new RuntimeException("A data de fim não pode ser anterior à data de início da gestão.");
-            }
+        if (gestao.getDtFim().isBefore(gestao.getDtInicio())) {
+            throw new RuntimeException("A data de fim não pode ser anterior ao início.");
         }
-        
+
+        // Regra 2: Impedir sobreposição de períodos
+        if (gestaoRepository.existeSobreposicao(gestao.getIdGestao(), gestao.getDtInicio(), gestao.getDtFim())) {
+            throw new RuntimeException("O período selecionado coincide com uma gestão já cadastrada.");
+        }
+
         return gestaoRepository.save(gestao);
     }
 

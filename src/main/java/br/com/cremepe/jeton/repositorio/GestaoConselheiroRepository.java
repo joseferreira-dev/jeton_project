@@ -2,7 +2,11 @@ package br.com.cremepe.jeton.repositorio;
 
 import br.com.cremepe.jeton.dominio.GestaoConselheiro;
 import br.com.cremepe.jeton.dominio.GestaoConselheiroId;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -10,13 +14,15 @@ import java.util.List;
 @Repository
 public interface GestaoConselheiroRepository extends JpaRepository<GestaoConselheiro, GestaoConselheiroId> {
 
-    // Lista todos os conselheiros vinculados a uma determinada gestão
-    // O spring entende que 'id' é a chave embutida (GestaoConselheiroId) e 'idGestao' é um atributo dela
     List<GestaoConselheiro> findByIdIdGestao(Integer idGestao);
-
-    // Opcionalmente, encontrar todas as gestões das quais um conselheiro fez parte
     List<GestaoConselheiro> findByIdIdPessoa(Integer idPessoa);
-    
-    // Lista vínculos filtrando por situação (ex: 'A' para Ativos na Gestão)
     List<GestaoConselheiro> findByIdIdGestaoAndInSituacao(Integer idGestao, String inSituacao);
+
+    @Query("SELECT gc FROM GestaoConselheiro gc WHERE " +
+           "(LOWER(gc.gestao.nomeGestao) LIKE LOWER(CONCAT('%', :termo, '%')) OR " +
+           "LOWER(gc.conselheiro.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
+           "(:situacao IS NULL OR :situacao = '' OR gc.inSituacao = :situacao)")
+    Page<GestaoConselheiro> pesquisarPaginado(@Param("termo") String termo, 
+                                              @Param("situacao") String situacao, 
+                                              Pageable pageable);
 }
