@@ -1,5 +1,9 @@
 package br.com.cremepe.jeton.dominio;
 
+import java.io.Serializable;
+import java.util.Objects;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -7,8 +11,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.io.Serializable;
-import java.util.Objects;
 
 /**
  * Entidade JPA que representa a tabela 'conselheiro' na base de dados.
@@ -25,7 +27,7 @@ public class Conselheiro implements Serializable {
     private Integer idPessoa;
 
     // Relacionamento mapeado indicando que o ID deriva da entidade Pessoa
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @MapsId
     @JoinColumn(name = "idPessoa")
     private Pessoa pessoa;

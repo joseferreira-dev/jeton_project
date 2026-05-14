@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head><title>Formulário de Conselheiro - Jeton</title></head>
+<body>
+<div layout:fragment="conteudo">
+    <div class="mb-4">
+        <h2 class="h4 text-cremepe fw-bold">
+            <i class="fa-solid fa-user-doctor me-2"></i>
+            <span th:text="${conselheiro.idConselheiroPessoa == null ? 'Novo Conselheiro' : 'Editar Conselheiro'}">Título</span>
+        </h2>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="@{/conselheiros/salvar}" th:object="${conselheiro}" method="post">
+                <input type="hidden" th:field="*{idPessoa}">
+                <input type="hidden" th:field="*{pessoa.idPessoa}">
+
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label fw-bold">Nome Completo do Médico</label>
+                        <input type="text" class="form-control" th:field="*{pessoa.nome}" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">CRM-PE</label>
+                        <div class="input-group">
+                            <span class="input-group-text">PE</span>
+                            <input type="text" class="form-control" th:field="*{crm}" placeholder="Apenas números" required>
+                        </div>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold">E-mail</label>
+                        <input type="email" class="form-control" th:field="*{pessoa.email}">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">CPF</label>
+                        <input type="text" class="form-control" th:field="*{pessoa.cpf}" placeholder="Opcional">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Situação</label>
+                        <select class="form-select" th:field="*{inSituacao}">
+                            <option value="A">Ativo</option>
+                            <option value="I">Inativo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-5 border-top pt-4 d-flex justify-content-end">
+                    <a th:href="@{/conselheiros}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                    <button type="submit" class="btn btn-cremepe px-4">Salvar Conselheiro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>
