@@ -7,6 +7,7 @@ import br.com.cremepe.jeton.repositorio.ViewUserLoginRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -19,15 +20,31 @@ public class UsuarioService {
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private ViewUserLoginRepository viewUserLoginRepository;
 
-@Transactional
+    @Transactional
     public Usuario salvar(Usuario usuario) {
-        // 1. Limpa o CPF
+        
+        // 1. Limpa o CPF garantindo que tenha apenas números
+        String cpfLimpo = "";
         if (usuario.getPessoa() != null && usuario.getPessoa().getCpf() != null) {
-            usuario.getPessoa().setCpf(usuario.getPessoa().getCpf().replaceAll("[^0-9]", ""));
+            cpfLimpo = usuario.getPessoa().getCpf().replaceAll("[^0-9]", "");
+            usuario.getPessoa().setCpf(cpfLimpo);
         }
 
+        // 2. VALIDAÇÃO DE CPF DUPLICADO
+        if (!cpfLimpo.isEmpty()) {
+            Optional<Usuario> usuarioExistente = usuarioRepository.findByPessoaCpf(cpfLimpo);
+            
+            if (usuarioExistente.isPresent()) {
+                // Se for um NOVO cadastro ou edição de um usuário diferente do existente -> É duplicidade!
+                if (usuario.getIdUsuarioPessoa() == null || 
+                    !usuario.getIdUsuarioPessoa().equals(usuarioExistente.get().getIdUsuarioPessoa())) {
+                    throw new RuntimeException("Já existe um usuário cadastrado com o CPF informado.");
+                }
+            }
+        }
+
+        // 3. Regras de Edição
         if (usuario.getIdUsuarioPessoa() != null && usuario.getIdUsuarioPessoa() > 0) {
-            // EDIÇÃO
             Usuario existente = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
                     .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
@@ -38,17 +55,13 @@ public class UsuarioService {
             }
 
             usuario.getPessoa().setIdPessoa(usuario.getIdUsuarioPessoa());
-            
-            // Mantém o tipo que já estava no banco para não quebrar a regra
             usuario.getPessoa().setInTipoPessoa(existente.getPessoa().getInTipoPessoa());
         } 
+        // 4. Regras de Novo Cadastro
         else {
-            // NOVO CADASTRO
             usuario.setIdUsuarioPessoa(null);
             if (usuario.getPessoa() != null) {
                 usuario.getPessoa().setIdPessoa(null);
-                
-                // CORREÇÃO AQUI: Mudamos de 'U' para 'F' para aceitar a regra do banco [F/C]
                 usuario.getPessoa().setInTipoPessoa("F"); 
             }
 
