@@ -7,6 +7,7 @@ import br.com.cremepe.jeton.servico.GestaoService;
 import br.com.cremepe.jeton.servico.RegrasService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -17,16 +18,33 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AtividadeConselhalController {
 
     @Autowired private AtividadeConselhalService atividadeService;
-    
-    // Injeções para popular os comboboxes (selects) da tela
     @Autowired private ConselheiroService conselheiroService;
     @Autowired private GestaoService gestaoService;
     @Autowired private RegrasService regrasService;
 
     @GetMapping
-    public String listar(Model model, HttpSession session) {
+    public String listar(
+            @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
+            @RequestParam(value = "situacao", required = false, defaultValue = "") String situacao,
+            @RequestParam(value = "turno", required = false, defaultValue = "") String turno,
+            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
+            @RequestParam(value = "size", required = false, defaultValue = "10") int size,
+            @RequestParam(value = "sort", required = false, defaultValue = "dataHoraAtividade") String sort,
+            @RequestParam(value = "dir", required = false, defaultValue = "desc") String dir,
+            Model model, HttpSession session) {
+
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        model.addAttribute("lista", atividadeService.listarTodos());
+
+        Page<AtividadeConselhal> pagina = atividadeService.listarComPaginacaoEPesquisa(termo, situacao, turno, page, size, sort, dir);
+
+        model.addAttribute("paginaAtividades", pagina);
+        model.addAttribute("termo", termo);
+        model.addAttribute("situacao", situacao);
+        model.addAttribute("turno", turno);
+        model.addAttribute("size", size);
+        model.addAttribute("sort", sort);
+        model.addAttribute("dir", dir);
+        
         return "atividadeconselhal/lista";
     }
 
@@ -41,39 +59,38 @@ public class AtividadeConselhalController {
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        model.addAttribute("atividade", atividadeService.buscarPorId(id).orElse(new AtividadeConselhal()));
+        AtividadeConselhal atividade = atividadeService.buscarPorId(id).orElseThrow();
+        model.addAttribute("atividade", atividade);
         carregarListasDeApoio(model);
         return "atividadeconselhal/formulario";
     }
 
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("atividade") AtividadeConselhal atividade, RedirectAttributes redirectAttributes) {
+    public String salvar(@ModelAttribute("atividade") AtividadeConselhal atividade, RedirectAttributes ra) {
         try {
-            // CORREÇÃO: Chamando o método com o nome exato que está no Service
             atividadeService.salvarAtividade(atividade);
-            redirectAttributes.addFlashAttribute("sucesso", "Atividade salva com sucesso!");
+            ra.addFlashAttribute("sucesso", "Atividade registada com sucesso!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao salvar: " + e.getMessage());
+            ra.addFlashAttribute("erro", "Erro ao guardar: " + e.getMessage());
         }
         return "redirect:/atividades";
     }
 
     @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
-            // CORREÇÃO: Chamando o método com o nome exato que está no Service
             atividadeService.excluirAtividade(id);
-            redirectAttributes.addFlashAttribute("sucesso", "Atividade removida com sucesso!");
+            ra.addFlashAttribute("sucesso", "Atividade removida com sucesso!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao remover atividade.");
+            ra.addFlashAttribute("erro", "Erro ao remover atividade. Pode estar vinculada a pagamentos de Jeton.");
         }
         return "redirect:/atividades";
     }
     
-    // Método auxiliar para popular os <select> do formulário HTML
     private void carregarListasDeApoio(Model model) {
         model.addAttribute("listaConselheiros", conselheiroService.listarTodos());
         model.addAttribute("listaGestoes", gestaoService.listarTodos());
-        model.addAttribute("listaRegras", regrasService.listarTodos()); // Utiliza o método padrão do RegrasService
+        // Traz apenas regras ativas para não poluir o select
+        model.addAttribute("listaRegras", regrasService.listarTodos().stream().filter(r -> "N".equals(r.getInRevogado())).toList());
     }
 }

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
+<head><title>Registar Atividade - Jeton</title></head>
+<body>
+<div layout:fragment="conteudo">
+    <div class="mb-4">
+        <h2 class="h4 text-cremepe fw-bold">
+            <i class="fa-solid fa-clipboard-check me-2"></i>
+            <span th:text="${atividade.idAtividade == null ? 'Registar Nova Atividade' : 'Validar / Editar Atividade'}"></span>
+        </h2>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="@{/atividades/salvar}" th:object="${atividade}" method="post">
+                <input type="hidden" th:field="*{idAtividade}">
+                <input type="hidden" th:field="*{dataHoraRegistro}">
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Conselheiro</label>
+                        <select class="form-select" th:field="*{conselheiro.idPessoa}" required>
+                            <option value="">-- Selecione o Médico --</option>
+                            <option th:each="c : ${listaConselheiros}" th:value="${c.idPessoa}" th:text="${c.pessoa.nome}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Gestão Referente</label>
+                        <select class="form-select" th:field="*{gestao.idGestao}" required>
+                            <option value="">-- Selecione a Gestão --</option>
+                            <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}" th:text="${g.nomeGestao}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Regra Enquadrada (Portaria / Resolução)</label>
+                        <select class="form-select" th:field="*{regra.idRegra}" required>
+                            <option value="">-- Selecione a Regra --</option>
+                            <option th:each="r : ${listaRegras}" th:value="${r.idRegra}" 
+                                    th:text="${'Portaria: ' + r.portaria.numero + ' | Resolução: ' + r.resolucao.numero}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Data e Hora da Atividade</label>
+                        <input type="datetime-local" class="form-control" th:field="*{dataHoraAtividade}" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Turno</label>
+                        <select class="form-select" th:field="*{inTurno}" required>
+                            <option value="M">Manhã</option>
+                            <option value="T">Tarde</option>
+                            <option value="N">Noite</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Estado (Validação)</label>
+                        <select class="form-select" th:field="*{inSituacao}">
+                            <option value="P">Pendente (Aguardando Validação)</option>
+                            <option value="V">Validada (Aprovada)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-5 border-top pt-4 d-flex justify-content-between align-items-center">
+                    <small class="text-muted"><i class="fa-solid fa-circle-info me-1"></i> O Upload do Comprovante será feito numa etapa posterior.</small>
+                    <div>
+                        <a th:href="@{/atividades}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                        <button type="submit" class="btn btn-cremepe px-4">Salvar Atividade</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>
