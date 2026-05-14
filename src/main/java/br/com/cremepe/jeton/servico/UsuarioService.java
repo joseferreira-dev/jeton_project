@@ -1,21 +1,22 @@
 package br.com.cremepe.jeton.servico;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import br.com.cremepe.jeton.dominio.Usuario;
 import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.repositorio.UsuarioRepository;
 import br.com.cremepe.jeton.repositorio.ViewUserLoginRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UsuarioService {
@@ -97,23 +98,21 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Usuario> listarComPaginacaoEPesquisa(String termo, int page, int size) {
+    public Page<Usuario> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size, String sortField, String sortDir) {
         
-        // Se size for 0, usamos a opção "unpaged" (Todos os registos)
-        Pageable pageable = (size == 0) ? Pageable.unpaged() : PageRequest.of(page, size);
+        // Cria a regra de ordenação (ex: pessoa.nome ASC)
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
+        
+        // Define a paginação com a ordenação
+        Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
 
-        // Se o utilizador digitou algo na barra de pesquisa
+        String cpfLimpo = "";
         if (termo != null && !termo.trim().isEmpty()) {
-            // Se ele digitou um CPF com pontos, nós limpamos para pesquisar no banco
-            String cpfLimpo = termo.replaceAll("[^0-9]", "");
-            // Se limpou e não sobrou nada, mandamos um valor impossível para o banco não bugar o LIKE de CPF
-            if (cpfLimpo.isEmpty()) cpfLimpo = "###"; 
-            
-            return usuarioRepository.pesquisarPorNomeOuCpf(termo.trim(), cpfLimpo, pageable);
-        } else {
-            // Se não tem pesquisa, retorna todos com base na paginação escolhida
-            return usuarioRepository.findAll(pageable);
+            cpfLimpo = termo.replaceAll("[^0-9]", "");
+            if (cpfLimpo.isEmpty()) cpfLimpo = "###";
         }
+
+        return usuarioRepository.pesquisarPaginado(termo, cpfLimpo, situacao, pageable);
     }
 
     @Transactional(readOnly = true)

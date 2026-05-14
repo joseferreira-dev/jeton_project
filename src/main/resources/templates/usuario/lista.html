@@ -26,20 +26,33 @@
     </div>
 
     <form th:action="@{/usuarios}" method="get" class="mb-4 bg-white p-3 rounded shadow-sm border border-light">
+        <input type="hidden" name="sort" th:value="${sort}">
+        <input type="hidden" name="dir" th:value="${dir}">
+        
         <div class="row g-2 align-items-center">
-            <div class="col-md-6">
-                <div class="input-group">
-                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" name="termo" th:value="${termo}" class="form-control" placeholder="Pesquisar por Nome ou CPF...">
-                </div>
-            </div>
             <div class="col-md-4">
                 <div class="input-group">
-                    <label class="input-group-text bg-light text-muted" for="size"><i class="fa-solid fa-list-ol"></i></label>
+                    <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" name="termo" th:value="${termo}" class="form-control" placeholder="Nome ou CPF...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <label class="input-group-text bg-light" for="situacao">Situação</label>
+                    <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
+                        <option value="" th:selected="${situacao == ''}">Todos</option>
+                        <option value="A" th:selected="${situacao == 'A'}">Ativos</option>
+                        <option value="I" th:selected="${situacao == 'I'}">Inativos</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <label class="input-group-text bg-light" for="size">Exibir</label>
                     <select name="size" id="size" class="form-select" onchange="this.form.submit()">
-                        <option value="10" th:selected="${size == 10}">10 registros por página</option>
-                        <option value="20" th:selected="${size == 20}">20 registros por página</option>
-                        <option value="0" th:selected="${size == 0}">Exibir todos os registros</option>
+                        <option value="10" th:selected="${size == 10}">10 registros</option>
+                        <option value="20" th:selected="${size == 20}">20 registros</option>
+                        <option value="0" th:selected="${size == 0}">Tudo</option>
                     </select>
                 </div>
             </div>
@@ -50,13 +63,24 @@
     </form>
 
     <div class="card shadow-sm mb-4">
+        <div class="card shadow-sm mb-4">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
                         <tr>
-                            <th class="ps-4">Nome</th>
-                            <th>CPF</th>
+                            <th class="ps-4">
+                                <a th:href="@{/usuarios(page=${paginaUsuarios.number}, size=${size}, termo=${termo}, situacao=${situacao}, sort='pessoa.nome', dir=${sort == 'pessoa.nome' and dir == 'asc' ? 'desc' : 'asc'})}" 
+                                class="text-decoration-none text-dark">
+                                    Nome <i th:class="${sort == 'pessoa.nome'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a th:href="@{/usuarios(page=${paginaUsuarios.number}, size=${size}, termo=${termo}, situacao=${situacao}, sort='pessoa.cpf', dir=${sort == 'pessoa.cpf' and dir == 'asc' ? 'desc' : 'asc'})}" 
+                                class="text-decoration-none text-dark">
+                                    CPF <i th:class="${sort == 'pessoa.cpf'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
+                                </a>
+                            </th>
                             <th class="text-center">Situação</th>
                             <th class="text-center pe-4">Ações</th>
                         </tr>
@@ -65,42 +89,44 @@
                         <tr th:each="u : ${paginaUsuarios.content}">
                             <td class="ps-4 fw-bold" th:text="${u.pessoa?.nome}">Nome</td>
                             <td th:text="${u.pessoa?.cpf}">000.000.000-00</td>
+                            
                             <td class="text-center">
                                 <span th:if="${u.inSituacao == 'A'}" class="badge bg-success">Ativo</span>
                                 <span th:if="${u.inSituacao == 'I'}" class="badge bg-danger">Inativo</span>
                             </td>
+                            
                             <td class="text-center pe-4">
                                 <a th:href="@{'/usuarios/editar/' + ${u.idUsuarioPessoa}}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </a>
+                                
                                 <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir"
                                         th:onclick="prepararExclusao([[${u.idUsuarioPessoa}]], [[${u.pessoa?.nome}]], [[${u.pessoa?.cpf}]])">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
                             </td>
                         </tr>
+                        
                         <tr th:if="${#lists.isEmpty(paginaUsuarios.content)}">
-                            <td colspan="5" class="text-center py-4 text-muted">Nenhum usuário encontrado para esta pesquisa.</td>
+                            <td colspan="4" class="text-center py-4 text-muted">Nenhum usuário encontrado para os filtros aplicados.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
-        
+
         <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaUsuarios.totalPages > 1}">
-            <nav aria-label="Navegação de usuários">
+            <nav>
                 <ul class="pagination justify-content-center mb-0">
                     <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'">
-                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, size=${size}, termo=${termo})}">Anterior</a>
+                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Anterior</a>
                     </li>
-                    
                     <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaUsuarios.totalPages - 1)}" 
                         th:classappend="${paginaUsuarios.number == i} ? 'active'">
-                        <a class="page-link" th:href="@{/usuarios(page=${i}, size=${size}, termo=${termo})}" th:text="${i + 1}">1</a>
+                        <a class="page-link" th:href="@{/usuarios(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}" th:text="${i + 1}">1</a>
                     </li>
-                    
                     <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
-                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, size=${size}, termo=${termo})}">Próxima</a>
+                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Próxima</a>
                     </li>
                 </ul>
             </nav>

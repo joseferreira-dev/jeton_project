@@ -26,19 +26,23 @@ public class UsuarioController {
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
+            @RequestParam(value = "situacao", required = false, defaultValue = "") String situacao,
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") int size,
+            @RequestParam(value = "sort", required = false, defaultValue = "pessoa.nome") String sort,
+            @RequestParam(value = "dir", required = false, defaultValue = "asc") String dir,
             Model model, HttpSession session) {
 
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
 
-        // Chama o serviço passando a pesquisa e a paginação
-        Page<Usuario> paginaUsuarios = usuarioService.listarComPaginacaoEPesquisa(termo, page, size);
+        Page<Usuario> paginaUsuarios = usuarioService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort, dir);
 
-        // Devolve os dados para a tela
         model.addAttribute("paginaUsuarios", paginaUsuarios);
         model.addAttribute("termo", termo);
+        model.addAttribute("situacao", situacao);
         model.addAttribute("size", size);
+        model.addAttribute("sort", sort);
+        model.addAttribute("dir", dir);
         
         return "usuario/lista";
     }
