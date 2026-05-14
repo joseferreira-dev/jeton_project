@@ -34,7 +34,6 @@
                         <tr>
                             <th class="ps-4">Nome</th>
                             <th>CPF</th>
-                            <th>E-mail</th>
                             <th class="text-center">Situação</th>
                             <th class="text-center pe-4">Ações</th>
                         </tr>
@@ -43,7 +42,6 @@
                         <tr th:each="u : ${listaUsuarios}">
                             <td class="ps-4 fw-bold" th:text="${u.pessoa?.nome}">Nome</td>
                             <td th:text="${u.pessoa?.cpf}">000.000.000-00</td>
-                            <td th:text="${u.pessoa?.email}">email@cremepe.org.br</td>
                             <td class="text-center">
                                 <span th:if="${u.inSituacao == 'A'}" class="badge bg-success">Ativo</span>
                                 <span th:if="${u.inSituacao == 'I'}" class="badge bg-danger">Inativo</span>
@@ -52,22 +50,66 @@
                                 <a th:href="@{'/usuarios/editar/' + ${u.idUsuarioPessoa}}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </a>
-                                <a th:href="@{'/usuarios/excluir/' + ${u.idUsuarioPessoa}}" 
-                                   class="btn btn-sm btn-outline-danger" 
-                                   title="Excluir"
-                                   onclick="return confirm('Deseja realmente excluir este usuário?')">
+                                
+                                <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir"
+                                        th:onclick="prepararExclusao([[${u.idUsuarioPessoa}]], [[${u.pessoa?.nome}]], [[${u.pessoa?.cpf}]])">
                                     <i class="fa-solid fa-trash"></i>
-                                </a>
+                                </button>
                             </td>
-                        </tr>
-                        <tr th:if="${#lists.isEmpty(listaUsuarios)}">
-                            <td colspan="5" class="text-center py-4 text-muted">Nenhum usuário encontrado.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="modalExclusao" tabindex="-1" aria-labelledby="modalExclusaoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="modalExclusaoLabel">
+                        <i class="fa-solid fa-circle-exclamation me-2"></i>Confirmar Exclusão
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="mb-3">Você tem certeza que deseja excluir permanentemente o usuário abaixo?</p>
+                    <div class="card bg-light border-start border-danger border-4">
+                        <div class="card-body py-2">
+                            <div class="mb-1"><strong>Nome:</strong> <span id="excluirNome" class="text-dark"></span></div>
+                            <div><strong>CPF:</strong> <span id="excluirCPF" class="text-dark"></span></div>
+                        </div>
+                    </div>
+                    <p class="text-danger small mt-3 mb-0">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Esta ação não poderá ser desfeita.
+                    </p>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a id="btnConfirmarExclusao" href="#" class="btn btn-danger px-4">
+                        <i class="fa-solid fa-trash-can me-1"></i> Excluir Usuário
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        function prepararExclusao(id, nome, cpf) {
+            // Preenche os dados no modal
+            document.getElementById('excluirNome').innerText = nome;
+            document.getElementById('excluirCPF').innerText = cpf;
+            
+            // Define a URL de exclusão com o ID correto
+            var urlExclusao = /*[[@{/usuarios/excluir/}]]*/ '/usuarios/excluir/';
+            document.getElementById('btnConfirmarExclusao').setAttribute('href', urlExclusao + id);
+            
+            // Abre o modal manualmente
+            var modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
+            modal.show();
+        }
+    </script>
+
 </div>
 
 </body>

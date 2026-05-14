@@ -50,4 +50,16 @@ public class UsuarioController {
         }
         return "redirect:/usuarios";
     }
+
+    @GetMapping("/excluir/{id}")
+    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
+        try {
+            usuarioService.excluir(id);
+            ra.addFlashAttribute("sucesso", "Usuário removido com sucesso!");
+        } catch (Exception e) {
+            // Caso ocorra erro de integridade (ex: usuário tem vínculos no banco)
+            ra.addFlashAttribute("erro", "Não foi possível excluir o usuário. Verifique se ele possui registros vinculados (atividades, jetons, etc).");
+        }
+        return "redirect:/usuarios";
+    }
 }
