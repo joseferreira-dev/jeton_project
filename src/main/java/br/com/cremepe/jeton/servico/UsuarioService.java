@@ -7,6 +7,9 @@ import br.com.cremepe.jeton.repositorio.ViewUserLoginRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -94,7 +97,24 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
-    public List<Usuario> listarTodos() { return usuarioRepository.findAll(); }
+    public Page<Usuario> listarComPaginacaoEPesquisa(String termo, int page, int size) {
+        
+        // Se size for 0, usamos a opção "unpaged" (Todos os registos)
+        Pageable pageable = (size == 0) ? Pageable.unpaged() : PageRequest.of(page, size);
+
+        // Se o utilizador digitou algo na barra de pesquisa
+        if (termo != null && !termo.trim().isEmpty()) {
+            // Se ele digitou um CPF com pontos, nós limpamos para pesquisar no banco
+            String cpfLimpo = termo.replaceAll("[^0-9]", "");
+            // Se limpou e não sobrou nada, mandamos um valor impossível para o banco não bugar o LIKE de CPF
+            if (cpfLimpo.isEmpty()) cpfLimpo = "###"; 
+            
+            return usuarioRepository.pesquisarPorNomeOuCpf(termo.trim(), cpfLimpo, pageable);
+        } else {
+            // Se não tem pesquisa, retorna todos com base na paginação escolhida
+            return usuarioRepository.findAll(pageable);
+        }
+    }
 
     @Transactional(readOnly = true)
     public Optional<Usuario> buscarPorId(Integer id) { return usuarioRepository.findById(id); }

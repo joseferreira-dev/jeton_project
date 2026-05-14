@@ -20,13 +20,36 @@
         <i class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-
     <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show" role="alert">
         <i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 
-    <div class="card shadow-sm">
+    <form th:action="@{/usuarios}" method="get" class="mb-4 bg-white p-3 rounded shadow-sm border border-light">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" name="termo" th:value="${termo}" class="form-control" placeholder="Pesquisar por Nome ou CPF...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <label class="input-group-text bg-light text-muted" for="size"><i class="fa-solid fa-list-ol"></i></label>
+                    <select name="size" id="size" class="form-select" onchange="this.form.submit()">
+                        <option value="10" th:selected="${size == 10}">10 registros por página</option>
+                        <option value="20" th:selected="${size == 20}">20 registros por página</option>
+                        <option value="0" th:selected="${size == 0}">Exibir todos os registros</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-cremepe w-100">Filtrar</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="card shadow-sm mb-4">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
@@ -39,7 +62,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="u : ${listaUsuarios}">
+                        <tr th:each="u : ${paginaUsuarios.content}">
                             <td class="ps-4 fw-bold" th:text="${u.pessoa?.nome}">Nome</td>
                             <td th:text="${u.pessoa?.cpf}">000.000.000-00</td>
                             <td class="text-center">
@@ -50,16 +73,37 @@
                                 <a th:href="@{'/usuarios/editar/' + ${u.idUsuarioPessoa}}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </a>
-                                
                                 <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir"
                                         th:onclick="prepararExclusao([[${u.idUsuarioPessoa}]], [[${u.pessoa?.nome}]], [[${u.pessoa?.cpf}]])">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
                             </td>
                         </tr>
+                        <tr th:if="${#lists.isEmpty(paginaUsuarios.content)}">
+                            <td colspan="5" class="text-center py-4 text-muted">Nenhum usuário encontrado para esta pesquisa.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
+        </div>
+        
+        <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaUsuarios.totalPages > 1}">
+            <nav aria-label="Navegação de usuários">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'">
+                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, size=${size}, termo=${termo})}">Anterior</a>
+                    </li>
+                    
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaUsuarios.totalPages - 1)}" 
+                        th:classappend="${paginaUsuarios.number == i} ? 'active'">
+                        <a class="page-link" th:href="@{/usuarios(page=${i}, size=${size}, termo=${termo})}" th:text="${i + 1}">1</a>
+                    </li>
+                    
+                    <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
+                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, size=${size}, termo=${termo})}">Próxima</a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 
@@ -96,20 +140,14 @@
 
     <script th:inline="javascript">
         function prepararExclusao(id, nome, cpf) {
-            // Preenche os dados no modal
             document.getElementById('excluirNome').innerText = nome;
             document.getElementById('excluirCPF').innerText = cpf;
-            
-            // Define a URL de exclusão com o ID correto
             var urlExclusao = /*[[@{/usuarios/excluir/}]]*/ '/usuarios/excluir/';
             document.getElementById('btnConfirmarExclusao').setAttribute('href', urlExclusao + id);
-            
-            // Abre o modal manualmente
             var modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
             modal.show();
         }
     </script>
-
 </div>
 
 </body>

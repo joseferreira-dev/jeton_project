@@ -1,6 +1,8 @@
 package br.com.cremepe.jeton.repositorio;
 
 import br.com.cremepe.jeton.dominio.Usuario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,12 +16,9 @@ import java.util.Optional;
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
-    // O Spring consegue navegar pelos relacionamentos da entidade!
-    // Esta assinatura faz um JOIN invisível entre Usuario e Pessoa para procurar pelo CPF
     Optional<Usuario> findByPessoaCpf(String cpf);
 
-    // Se preferir ter controlo total, pode escrever a sua própria query em JPQL (Java Persistence Query Language).
-    // Note que aqui utilizamos os nomes das CLASSES e não das tabelas da base de dados.
-    @Query("SELECT u FROM Usuario u JOIN FETCH u.pessoa p WHERE p.email = :email AND u.inSituacao = 'A'")
-    Optional<Usuario> buscarUsuarioAtivoPorEmail(@Param("email") String email);
+    // Nova Query: Busca por Nome (ignorando caixa) OU por CPF
+    @Query("SELECT u FROM Usuario u WHERE LOWER(u.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR u.pessoa.cpf LIKE CONCAT('%', :cpf, '%')")
+    Page<Usuario> pesquisarPorNomeOuCpf(@Param("termo") String termo, @Param("cpf") String cpf, Pageable pageable);
 }
