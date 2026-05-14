@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 /**
  * Entidade JPA que representa a tabela 'conselheiro' na base de dados.
@@ -35,6 +36,9 @@ public class Conselheiro implements Serializable {
     // Utiliza-se Integer (objeto) em vez de int (primitivo) porque a base de dados permite NULL
     @Column(name = "crm")
     private Integer crm;
+
+    @Transient
+    private String senhaAcesso;
 
     @Column(name = "inSituacao", length = 1, nullable = false)
     private String inSituacao;
@@ -68,6 +72,14 @@ public class Conselheiro implements Serializable {
 
     public void setCrm(Integer crm) {
         this.crm = crm;
+    }
+
+    public String getSenhaAcesso() {
+        return senhaAcesso;
+    }
+
+    public void setSenhaAcesso(String senhaAcesso) {
+        this.senhaAcesso = senhaAcesso;
     }
 
     public String getInSituacao() {

@@ -1,5 +1,8 @@
 package br.com.cremepe.jeton.servico;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,69 +16,84 @@ import org.springframework.transaction.annotation.Transactional;
 
 import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Pessoa;
+import br.com.cremepe.jeton.dominio.Usuario;
 import br.com.cremepe.jeton.repositorio.ConselheiroRepository;
 import br.com.cremepe.jeton.repositorio.PessoaRepository;
+import br.com.cremepe.jeton.repositorio.UsuarioRepository;
 
 @Service
 public class ConselheiroService {
 
-    @Autowired
-    private ConselheiroRepository conselheiroRepository;
-
-    // NOVO: Injetado para pesquisar se o CPF já pertence a qualquer pessoa (Usuário ou Conselheiro)
-    @Autowired
-    private PessoaRepository pessoaRepository;
+    @Autowired private ConselheiroRepository conselheiroRepository;
+    @Autowired private PessoaRepository pessoaRepository;
+    @Autowired private UsuarioRepository usuarioRepository;
 
     @Transactional
     public Conselheiro salvar(Conselheiro conselheiro) {
         
-        // 1. Limpeza de dados (Deixa apenas os números do CPF)
         String cpfLimpo = "";
         if (conselheiro.getPessoa() != null && conselheiro.getPessoa().getCpf() != null) {
             cpfLimpo = conselheiro.getPessoa().getCpf().replaceAll("[^0-9]", "");
             conselheiro.getPessoa().setCpf(cpfLimpo);
         }
 
-        // 2. VALIDAÇÃO DE CPF DUPLICADO (Verifica em toda a tabela Pessoa)
+        // 1. MESCLAGEM DE PESSOA (Aproveita o ID se já existir no sistema)
         if (!cpfLimpo.isEmpty()) {
             Optional<Pessoa> pessoaExistente = pessoaRepository.findByCpf(cpfLimpo);
             if (pessoaExistente.isPresent()) {
-                // Se o ID for novo (null) ou diferente do ID da pessoa encontrada, é duplicidade!
-                if (conselheiro.getIdPessoa() == null || 
-                   !conselheiro.getIdPessoa().equals(pessoaExistente.get().getIdPessoa())) {
-                    throw new RuntimeException("Já existe um cadastro no sistema (Conselheiro ou Usuário) utilizando o CPF informado.");
+                Pessoa p = pessoaExistente.get();
+                if (conselheiro.getIdPessoa() == null || !conselheiro.getIdPessoa().equals(p.getIdPessoa())) {
+                    // Impede duplicidade apenas se essa pessoa JÁ FOR conselheira
+                    if (conselheiroRepository.existsById(p.getIdPessoa())) {
+                        throw new RuntimeException("Já existe um conselheiro registrado com este CPF.");
+                    }
+                    // Se era apenas usuário, fazemos o "UPGRADE" aproveitando o ID
+                    conselheiro.setIdPessoa(p.getIdPessoa());
+                    conselheiro.getPessoa().setIdPessoa(p.getIdPessoa());
                 }
             }
         }
 
-        // 3. VALIDAÇÃO DE CRM DUPLICADO (O Spring Boot garante que já chega numérico)
+        // 2. VALIDAÇÃO DE CRM
         if (conselheiro.getCrm() != null) {
-            Optional<Conselheiro> conselheiroExistente = conselheiroRepository.findByCrm(conselheiro.getCrm());
-            if (conselheiroExistente.isPresent()) {
-                if (conselheiro.getIdPessoa() == null || 
-                   !conselheiro.getIdPessoa().equals(conselheiroExistente.get().getIdPessoa())) {
-                    throw new RuntimeException("Já existe um conselheiro registrado com o CRM-PE " + conselheiro.getCrm());
-                }
+            Optional<Conselheiro> conselExistente = conselheiroRepository.findByCrm(conselheiro.getCrm());
+            if (conselExistente.isPresent() && !conselExistente.get().getIdPessoa().equals(conselheiro.getIdPessoa())) {
+                throw new RuntimeException("Já existe um conselheiro registrado com o CRM-PE " + conselheiro.getCrm());
             }
         }
 
-        // 4. Regras de Edição vs Novo
-        if (conselheiro.getIdPessoa() != null && conselheiro.getIdPessoa() > 0) {
-            Conselheiro doBanco = conselheiroRepository.findById(conselheiro.getIdPessoa())
-                    .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado para edição."));
-            conselheiro.getPessoa().setIdPessoa(conselheiro.getIdPessoa());
-            conselheiro.getPessoa().setInTipoPessoa(doBanco.getPessoa().getInTipoPessoa());
-        } else {
-            conselheiro.setIdPessoa(null);
-            if (conselheiro.getPessoa() != null) {
-                conselheiro.getPessoa().setIdPessoa(null);
-                conselheiro.getPessoa().setInTipoPessoa("C"); 
-            }
-        }
+        // 3. DEFINE O TIPO E SALVA CONSELHEIRO (Cascade salva a Pessoa)
+        conselheiro.getPessoa().setInTipoPessoa("C");
+        Conselheiro conselheiroSalvo = conselheiroRepository.save(conselheiro);
 
-        return conselheiroRepository.save(conselheiro);
+        // 4. GARANTE A CRIAÇÃO/ATUALIZAÇÃO DO USUÁRIO VINCULADO
+        Usuario usuario = usuarioRepository.findById(conselheiroSalvo.getIdPessoa()).orElse(new Usuario());
+        usuario.setPessoa(conselheiroSalvo.getPessoa());
+        usuario.setInSituacao(conselheiroSalvo.getInSituacao());
+
+        if (conselheiro.getSenhaAcesso() != null && !conselheiro.getSenhaAcesso().trim().isEmpty()) {
+            usuario.setSenha(gerarSHA256(conselheiro.getSenhaAcesso()));
+        } else if (usuario.getSenha() == null) {
+            throw new RuntimeException("A senha é obrigatória para criar o acesso no sistema.");
+        }
+        usuarioRepository.save(usuario);
+
+        return conselheiroSalvo;
     }
 
+    private String gerarSHA256(String senha) {
+        try {
+            MessageDigest algoritmo = MessageDigest.getInstance("SHA-256");
+            byte[] messageDigest = algoritmo.digest(senha.getBytes(StandardCharsets.UTF_8));
+            StringBuilder stringHexa = new StringBuilder();
+            for (byte b : messageDigest) stringHexa.append(String.format("%02X", 0xFF & b));
+            return stringHexa.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Erro na criptografia", e);
+        }
+    }
+
+    // ========== MÉTODOS DE LEITURA (Mantidos iguais) ==========
     @Transactional(readOnly = true)
     public Page<Conselheiro> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size, String sortField, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
@@ -84,17 +102,11 @@ public class ConselheiroService {
     }
 
     @Transactional(readOnly = true)
-    public List<Conselheiro> listarTodos() {
-        return conselheiroRepository.findAll();
-    }
+    public List<Conselheiro> listarTodos() { return conselheiroRepository.findAll(); }
 
     @Transactional(readOnly = true)
-    public Optional<Conselheiro> buscarPorId(Integer id) {
-        return conselheiroRepository.findById(id);
-    }
+    public Optional<Conselheiro> buscarPorId(Integer id) { return conselheiroRepository.findById(id); }
 
     @Transactional
-    public void excluir(Integer id) {
-        conselheiroRepository.deleteById(id);
-    }
+    public void excluir(Integer id) { conselheiroRepository.deleteById(id); }
 }

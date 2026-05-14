@@ -30,17 +30,24 @@
                         </div>
                     </div>
 
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <label class="form-label fw-bold">E-mail</label>
                         <input type="email" class="form-control" th:field="*{pessoa.email}">
                     </div>
 
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label fw-bold">CPF</label>
-                        <input type="text" class="form-control" th:field="*{pessoa.cpf}" placeholder="Opcional">
+                        <input type="text" class="form-control" th:field="*{pessoa.cpf}" placeholder="Apenas números" required>
                     </div>
 
                     <div class="col-md-3">
+                        <label class="form-label fw-bold">Senha de Acesso</label>
+                        <input type="password" class="form-control" th:field="*{senhaAcesso}" 
+                            th:placeholder="${conselheiro.idPessoa == null ? 'Defina a senha' : 'Deixe em branco para manter'}"
+                            th:required="${conselheiro.idPessoa == null}">
+                    </div>
+
+                    <div class="col-md-2">
                         <label class="form-label fw-bold">Situação</label>
                         <select class="form-select" th:field="*{inSituacao}">
                             <option value="A">Ativo</option>
