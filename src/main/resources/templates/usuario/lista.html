@@ -81,6 +81,7 @@
                                     CPF <i th:class="${sort == 'pessoa.cpf'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
                                 </a>
                             </th>
+                            <th>Tipo</th>
                             <th class="text-center">Situação</th>
                             <th class="text-center pe-4">Ações</th>
                         </tr>
@@ -89,6 +90,15 @@
                         <tr th:each="u : ${paginaUsuarios.content}">
                             <td class="ps-4 fw-bold" th:text="${u.pessoa?.nome}">Nome</td>
                             <td th:text="${u.pessoa?.cpf}">000.000.000-00</td>
+
+                            <td>
+                                <span th:if="${u.pessoa.inTipoPessoa == 'C'}" class="badge bg-info text-dark">
+                                    <i class="fa-solid fa-user-doctor me-1"></i> Conselheiro
+                                </span>
+                                <span th:if="${u.pessoa.inTipoPessoa == 'F'}" class="badge bg-secondary">
+                                    <i class="fa-solid fa-user-tie me-1"></i> Funcionário
+                                </span>
+                            </td>
                             
                             <td class="text-center">
                                 <span th:if="${u.inSituacao == 'A'}" class="badge bg-success">Ativo</span>

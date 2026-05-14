@@ -49,6 +49,21 @@
                             <option value="I">Inativo</option>
                         </select>
                     </div>
+
+                    <div class="col-md-3">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" th:field="*{eConselheiro}" id="checkConselheiro" onchange="toggleCrm()">
+                            <label class="form-check-label fw-bold" for="checkConselheiro">É Conselheiro?</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3" id="divCrm" style="display: none;">
+                        <label class="form-label fw-bold">CRM-PE</label>
+                        <div class="input-group">
+                            <span class="input-group-text">PE</span>
+                            <input type="number" class="form-control" th:field="*{crm}" id="inputCrm" placeholder="Número">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mt-5 border-top pt-4 d-flex justify-content-end">
@@ -58,6 +73,25 @@
             </form>
         </div>
     </div>
+
+    <script>
+        function toggleCrm() {
+            const checkbox = document.getElementById('checkConselheiro');
+            const divCrm = document.getElementById('divCrm');
+            const inputCrm = document.getElementById('inputCrm');
+            
+            if (checkbox.checked) {
+                divCrm.style.display = 'block';
+                inputCrm.required = true;
+            } else {
+                divCrm.style.display = 'none';
+                inputCrm.required = false;
+                inputCrm.value = '';
+            }
+        }
+        // Executa ao carregar para caso seja edição
+        window.onload = toggleCrm;
+    </script>
 </div>
 </body>
 </html>

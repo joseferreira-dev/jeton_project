@@ -1,5 +1,8 @@
 package br.com.cremepe.jeton.dominio;
 
+import java.io.Serializable;
+import java.util.Objects;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,8 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.io.Serializable;
-import java.util.Objects;
+import jakarta.persistence.Transient;
 
 /**
  * Entidade JPA que representa a tabela 'usuario' no banco de dados.
@@ -37,6 +39,12 @@ public class Usuario implements Serializable {
 
     @Column(name = "inSituacao", length = 1, nullable = false)
     private String inSituacao;
+
+    @Transient
+    private boolean eConselheiro;
+
+    @Transient
+    private Integer crm;
 
     public Usuario() {
     }
@@ -76,6 +84,11 @@ public class Usuario implements Serializable {
     public void setInSituacao(String inSituacao) {
         this.inSituacao = inSituacao;
     }
+
+    public boolean iseConselheiro() { return eConselheiro; }
+    public void seteConselheiro(boolean eConselheiro) { this.eConselheiro = eConselheiro; }
+    public Integer getCrm() { return crm; }
+    public void setCrm(Integer crm) { this.crm = crm; }
 
     @Override
     public boolean equals(Object o) {

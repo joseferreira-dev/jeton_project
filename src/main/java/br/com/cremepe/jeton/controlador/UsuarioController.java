@@ -14,6 +14,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import br.com.cremepe.jeton.dominio.Pessoa;
 import br.com.cremepe.jeton.dominio.Usuario;
+import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.UsuarioService;
 import jakarta.servlet.http.HttpSession;
 
@@ -21,7 +22,11 @@ import jakarta.servlet.http.HttpSession;
 @RequestMapping("/usuarios")
 public class UsuarioController {
 
-    @Autowired private UsuarioService usuarioService;
+    @Autowired
+    private UsuarioService usuarioService;
+
+    @Autowired 
+    private ConselheiroService conselheiroService;
 
     @GetMapping
     public String listar(
@@ -56,10 +61,19 @@ public class UsuarioController {
         return "usuario/formulario";
     }
 
+    // No método prepararEditar do UsuarioController.java:
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
         Usuario usuario = usuarioService.buscarPorId(id).orElseThrow();
+        
+        // NOVO: Se o tipo for 'C', busca o CRM no banco para exibir na tela
+        if ("C".equals(usuario.getPessoa().getInTipoPessoa())) {
+            usuario.seteConselheiro(true);
+            // Usamos o ConselheiroService que já temos para buscar o CRM
+            conselheiroService.buscarPorId(id).ifPresent(c -> usuario.setCrm(c.getCrm()));
+        }
+        
         model.addAttribute("usuario", usuario);
         return "usuario/formulario";
     }
