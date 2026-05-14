@@ -59,7 +59,10 @@ public class ConselheiroController {
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        Conselheiro conselheiro = conselheiroService.buscarPorId(id).orElseThrow();
+        
+        Conselheiro conselheiro = conselheiroService.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Conselheiro inválido:" + id));
+        
         model.addAttribute("conselheiro", conselheiro);
         return "conselheiro/formulario";
     }
@@ -81,7 +84,7 @@ public class ConselheiroController {
             conselheiroService.excluir(id);
             ra.addFlashAttribute("sucesso", "Conselheiro removido com sucesso!");
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Não foi possível remover. Este conselheiro possui registos ou atividades vinculadas.");
+            ra.addFlashAttribute("erro", "Não foi possível remover. Este conselheiro possui registros ou atividades vinculadas.");
         }
         return "redirect:/conselheiros";
     }
