@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head><title>Gestões - Cremepe</title></head>
+<body>
+<div layout:fragment="conteudo">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-calendar-days me-2"></i> Gestões e Mandatos</h2>
+        <a th:href="@{/gestoes/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Nova Gestão</a>
+    </div>
+
+    <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show"><i class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show"><i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+
+    <form th:action="@{/gestoes}" method="get" class="mb-4 bg-white p-3 rounded shadow-sm border border-light">
+        <input type="hidden" name="sort" th:value="${sort}">
+        <input type="hidden" name="dir" th:value="${dir}">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" name="termo" th:value="${termo}" class="form-control" placeholder="Buscar pelo nome da gestão...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <label class="input-group-text bg-light" for="size">Exibir</label>
+                    <select name="size" id="size" class="form-select" onchange="this.form.submit()">
+                        <option value="10" th:selected="${size == 10}">10 registros</option>
+                        <option value="20" th:selected="${size == 20}">20 registros</option>
+                        <option value="0" th:selected="${size == 0}">Tudo</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2"><button type="submit" class="btn btn-cremepe w-100">Filtrar</button></div>
+        </div>
+    </form>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
+                        <tr>
+                            <th class="ps-4"><a th:href="@{/gestoes(page=${paginaGestoes.number}, size=${size}, termo=${termo}, sort='nomeGestao', dir=${sort == 'nomeGestao' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-decoration-none text-dark">Nome da Gestão <i th:class="${sort == 'nomeGestao'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i></a></th>
+                            <th><a th:href="@{/gestoes(page=${paginaGestoes.number}, size=${size}, termo=${termo}, sort='dtInicio', dir=${sort == 'dtInicio' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-decoration-none text-dark">Início <i th:class="${sort == 'dtInicio'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i></a></th>
+                            <th><a th:href="@{/gestoes(page=${paginaGestoes.number}, size=${size}, termo=${termo}, sort='dtFim', dir=${sort == 'dtFim' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-decoration-none text-dark">Fim <i th:class="${sort == 'dtFim'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i></a></th>
+                            <th class="text-center pe-4">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="g : ${paginaGestoes.content}">
+                            <td class="ps-4 fw-bold text-cremepe" th:text="${g.nomeGestao}">Nome</td>
+                            
+                            <td th:text="${#temporals.format(g.dtInicio, 'dd/MM/yyyy')}">01/01/2023</td>
+                            <td th:text="${#temporals.format(g.dtFim, 'dd/MM/yyyy')}">31/12/2025</td>
+                            
+                            <td class="text-center pe-4">
+                                <a th:href="@{'/gestoes/editar/' + ${g.idGestao}}" class="btn btn-sm btn-outline-primary me-1"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" th:onclick="prepararExclusao([[${g.idGestao}]], [[${g.nomeGestao}]])"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(paginaGestoes.content)}"><td colspan="4" class="text-center py-4 text-muted">Nenhuma gestão encontrada.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaGestoes.totalPages > 1}">
+            <nav><ul class="pagination justify-content-center mb-0">
+                <li class="page-item" th:classappend="${paginaGestoes.first} ? 'disabled'"><a class="page-link" th:href="@{/gestoes(page=${paginaGestoes.number - 1}, size=${size}, termo=${termo}, sort=${sort}, dir=${dir})}">Anterior</a></li>
+                <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaGestoes.totalPages - 1)}" th:classappend="${paginaGestoes.number == i} ? 'active'"><a class="page-link" th:href="@{/gestoes(page=${i}, size=${size}, termo=${termo}, sort=${sort}, dir=${dir})}" th:text="${i + 1}">1</a></li>
+                <li class="page-item" th:classappend="${paginaGestoes.last} ? 'disabled'"><a class="page-link" th:href="@{/gestoes(page=${paginaGestoes.number + 1}, size=${size}, termo=${termo}, sort=${sort}, dir=${dir})}">Próxima</a></li>
+            </ul></nav>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalExclusao" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fa-solid fa-circle-exclamation me-2"></i>Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p>Deseja excluir permanentemente a Gestão abaixo?</p>
+                    <div class="card bg-light border-start border-danger border-4">
+                        <div class="card-body py-2">
+                            <div><strong>Gestão:</strong> <span id="excluirNome"></span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a id="btnConfirmarExclusao" href="#" class="btn btn-danger px-4"><i class="fa-solid fa-trash-can me-1"></i> Excluir</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        function prepararExclusao(id, nome) {
+            document.getElementById('excluirNome').innerText = nome;
+            var url = /*[[@{/gestoes/excluir/}]]*/ '/gestoes/excluir/';
+            document.getElementById('btnConfirmarExclusao').setAttribute('href', url + id);
+            new bootstrap.Modal(document.getElementById('modalExclusao')).show();
+        }
+    </script>
+</div>
+</body>
+</html>

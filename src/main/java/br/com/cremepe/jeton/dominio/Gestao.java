@@ -1,18 +1,16 @@
 package br.com.cremepe.jeton.dominio;
 
+import java.io.Serializable;
+import java.time.LocalDate;
+import java.util.Objects;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.io.Serializable;
-import java.time.LocalDate;
-import java.util.Objects;
 
-/**
- * Entidade JPA que representa a tabela 'gestao' na base de dados.
- */
 @Entity
 @Table(name = "gestao")
 public class Gestao implements Serializable {
@@ -24,11 +22,9 @@ public class Gestao implements Serializable {
     @Column(name = "idGestao")
     private Integer idGestao;
 
-    // A restrição unique = true assegura a regra 'UNI' da base de dados
-    @Column(name = "nomeGestao", length = 70, nullable = false, unique = true)
+    @Column(name = "nomeGestao", length = 70, nullable = false)
     private String nomeGestao;
 
-    // Utilização da API de datas moderna do Java
     @Column(name = "dtInicio", nullable = false)
     private LocalDate dtInicio;
 
@@ -38,41 +34,17 @@ public class Gestao implements Serializable {
     public Gestao() {
     }
 
-    // ==========================================
-    // GETTERS E SETTERS
-    // ==========================================
+    public Integer getIdGestao() { return idGestao; }
+    public void setIdGestao(Integer idGestao) { this.idGestao = idGestao; }
 
-    public Integer getIdGestao() {
-        return idGestao;
-    }
+    public String getNomeGestao() { return nomeGestao; }
+    public void setNomeGestao(String nomeGestao) { this.nomeGestao = nomeGestao; }
 
-    public void setIdGestao(Integer idGestao) {
-        this.idGestao = idGestao;
-    }
+    public LocalDate getDtInicio() { return dtInicio; }
+    public void setDtInicio(LocalDate dtInicio) { this.dtInicio = dtInicio; }
 
-    public String getNomeGestao() {
-        return nomeGestao;
-    }
-
-    public void setNomeGestao(String nomeGestao) {
-        this.nomeGestao = nomeGestao;
-    }
-
-    public LocalDate getDtInicio() {
-        return dtInicio;
-    }
-
-    public void setDtInicio(LocalDate dtInicio) {
-        this.dtInicio = dtInicio;
-    }
-
-    public LocalDate getDtFim() {
-        return dtFim;
-    }
-
-    public void setDtFim(LocalDate dtFim) {
-        this.dtFim = dtFim;
-    }
+    public LocalDate getDtFim() { return dtFim; }
+    public void setDtFim(LocalDate dtFim) { this.dtFim = dtFim; }
 
     @Override
     public boolean equals(Object o) {

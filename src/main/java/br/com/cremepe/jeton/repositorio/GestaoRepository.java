@@ -1,19 +1,21 @@
 package br.com.cremepe.jeton.repositorio;
 
-import br.com.cremepe.jeton.dominio.Gestao;
+import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import br.com.cremepe.jeton.dominio.Gestao;
 
 @Repository
 public interface GestaoRepository extends JpaRepository<Gestao, Integer> {
 
-    // Método gerado automaticamente para procurar uma gestão pelo nome exato
     Optional<Gestao> findByNomeGestao(String nomeGestao);
 
-    // Query JPQL que verifica qual gestão está ativa no dia de hoje
-    @Query("SELECT g FROM Gestao g WHERE CURRENT_DATE BETWEEN g.dtInicio AND g.dtFim")
-    Optional<Gestao> buscarGestaoVigente();
+    @Query("SELECT g FROM Gestao g WHERE LOWER(g.nomeGestao) LIKE LOWER(CONCAT('%', :termo, '%'))")
+    Page<Gestao> pesquisarPaginado(@Param("termo") String termo, Pageable pageable);
 }

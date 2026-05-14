@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head><title>Formulário de Gestão - Jeton</title></head>
+<body>
+<div layout:fragment="conteudo">
+    <div class="mb-4">
+        <h2 class="h4 text-cremepe fw-bold">
+            <i class="fa-solid fa-calendar-days me-2"></i>
+            <span th:text="${gestao.idGestao == null ? 'Nova Gestão' : 'Editar Gestão'}">Título</span>
+        </h2>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="@{/gestoes/salvar}" th:object="${gestao}" method="post">
+                <input type="hidden" th:field="*{idGestao}">
+
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Nome da Gestão</label>
+                        <input type="text" class="form-control" th:field="*{nomeGestao}" placeholder="Ex: Gestão 2023-2028" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Data de Início</label>
+                        <input type="date" class="form-control" th:field="*{dtInicio}" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Data de Fim</label>
+                        <input type="date" class="form-control" th:field="*{dtFim}" required>
+                    </div>
+                </div>
+
+                <div class="mt-5 border-top pt-4 d-flex justify-content-end">
+                    <a th:href="@{/gestoes}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                    <button type="submit" class="btn btn-cremepe px-4">Salvar Gestão</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>
