@@ -119,5 +119,9 @@ public class UsuarioService {
     public Optional<Usuario> buscarPorId(Integer id) { return usuarioRepository.findById(id); }
 
     @Transactional
-    public void excluir(Integer id) { usuarioRepository.deleteById(id); }
+    public void excluir(Integer id) {
+        usuarioRepository.deletarConselheiroNativo(id);
+        usuarioRepository.deletarUsuarioNativo(id);
+        usuarioRepository.deletarPessoaNativa(id);
+    }
 }

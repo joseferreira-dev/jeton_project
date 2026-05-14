@@ -108,5 +108,9 @@ public class ConselheiroService {
     public Optional<Conselheiro> buscarPorId(Integer id) { return conselheiroRepository.findById(id); }
 
     @Transactional
-    public void excluir(Integer id) { conselheiroRepository.deleteById(id); }
+    public void excluir(Integer id) {
+        conselheiroRepository.deletarUsuarioNativo(id);
+        conselheiroRepository.deletarConselheiroNativo(id);
+        conselheiroRepository.deletarPessoaNativa(id);
+    }
 }
