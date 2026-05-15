@@ -125,21 +125,24 @@
             </div>
         </div>
 
-        <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaUsuarios.totalPages > 1}">
-            <nav>
-                <ul class="pagination justify-content-center mb-0">
-                    <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'">
-                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Anterior</a>
-                    </li>
-                    <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaUsuarios.totalPages - 1)}" 
-                        th:classappend="${paginaUsuarios.number == i} ? 'active'">
-                        <a class="page-link" th:href="@{/usuarios(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}" th:text="${i + 1}">1</a>
-                    </li>
-                    <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
-                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Próxima</a>
-                    </li>
-                </ul>
-            </nav>
+        <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaUsuarios.totalPages > 1}" 
+             th:with="start=${paginaUsuarios.number > 2 ? paginaUsuarios.number - 2 : 0}, 
+                      end=${paginaUsuarios.number + 2 < paginaUsuarios.totalPages - 1 ? paginaUsuarios.number + 2 : paginaUsuarios.totalPages - 1}">
+            <nav><ul class="pagination justify-content-center mb-0">
+                <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'"><a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Anterior</a></li>
+                
+                <li class="page-item" th:if="${start > 0}"><a class="page-link" th:href="@{/usuarios(page=0, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">1</a></li>
+                <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
+
+                <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}" th:classappend="${paginaUsuarios.number == i} ? 'active'">
+                    <a class="page-link" th:href="@{/usuarios(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}" th:text="${i + 1}">1</a>
+                </li>
+
+                <li class="page-item disabled" th:if="${end < paginaUsuarios.totalPages - 2}"><a class="page-link" href="#">...</a></li>
+                <li class="page-item" th:if="${end < paginaUsuarios.totalPages - 1}"><a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.totalPages - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}" th:text="${paginaUsuarios.totalPages}">10</a></li>
+                
+                <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'"><a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Próxima</a></li>
+            </ul></nav>
         </div>
     </div>
 

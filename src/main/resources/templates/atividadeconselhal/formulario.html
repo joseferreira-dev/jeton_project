@@ -34,11 +34,11 @@
                     </div>
 
                     <div class="col-md-12">
-                        <label class="form-label fw-bold">Regra Enquadrada (Portaria / Resolução)</label>
+                        <label class="form-label fw-bold">Regra Enquadrada (Atividade)</label>
                         <select class="form-select" th:field="*{regra.idRegra}" required>
                             <option value="">-- Selecione a Regra --</option>
                             <option th:each="r : ${listaRegras}" th:value="${r.idRegra}" 
-                                    th:text="${'Portaria: ' + r.portaria.numero + ' | Resolução: ' + r.resolucao.numero}"></option>
+                                    th:text="${r.nomeRegra + ' - ' + r.descricao + ' (P: ' + r.portaria.numero + '/' + r.portaria.ano + ' - R: ' + r.resolucao.numero + '/' + r.resolucao.ano + ')'}"></option>
                         </select>
                     </div>
 
