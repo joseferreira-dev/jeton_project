@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.AtividadeConselhal;
+import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.servico.AtividadeConselhalService;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
@@ -12,6 +13,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/atividades")
@@ -90,7 +95,37 @@ public class AtividadeConselhalController {
     private void carregarListasDeApoio(Model model) {
         model.addAttribute("listaConselheiros", conselheiroService.listarTodos());
         model.addAttribute("listaGestoes", gestaoService.listarTodos());
-        // Traz apenas regras ativas para não poluir o select
-        model.addAttribute("listaRegras", regrasService.listarTodos().stream().filter(r -> "N".equals(r.getInRevogado())).toList());
+        // Envia apenas os documentos que contêm regras ativas para os filtros iniciais
+        model.addAttribute("listaResolucoes", regrasService.listarResolucoesComRegras());
+        model.addAttribute("listaPortarias", regrasService.listarPortariasComRegras());
     }
+
+    // Este endpoint recebe os IDs pelo Javascript e devolve o que for compatível em JSON
+    @GetMapping("/api/filtros-regras")
+    @ResponseBody
+    public Map<String, Object> getFiltrosRegras(
+            @RequestParam(required = false) Integer resolucaoId,
+            @RequestParam(required = false) Integer portariaId) {
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        // Se escolheu Resolução, devolve Portarias que fazem par com ela
+        if (resolucaoId != null && portariaId == null) {
+            response.put("portariasCompativeis", regrasService.listarPortariasCompativeis(resolucaoId).stream()
+                .map(p -> Map.of("id", p.getIdPortaria(), "nome", "Portaria " + p.getNumero() + "/" + p.getAno())).toList());
+        }
+        // Se escolheu Portaria, devolve Resoluções que fazem par com ela
+        if (portariaId != null && resolucaoId == null) {
+            response.put("resolucoesCompativeis", regrasService.listarResolucoesCompativeis(portariaId).stream()
+                .map(r -> Map.of("id", r.getIdResolucao(), "nome", "Resolução " + r.getNumero() + "/" + r.getAno())).toList());
+        }
+        
+        // Devolve apenas as Regras da combinação EXATA
+        List<Regras> regras = regrasService.listarRegrasExatas(resolucaoId, portariaId);
+        response.put("regras", regras.stream()
+            .map(r -> Map.of("id", r.getIdRegra(), "nome", r.getNomeRegra() + " - " + r.getDescricao())).toList());
+            
+        return response;
+    }
+
 }

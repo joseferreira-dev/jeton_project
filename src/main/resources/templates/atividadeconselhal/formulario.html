@@ -33,12 +33,31 @@
                         </select>
                     </div>
 
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold">Resolução (Filtro)</label>
+                        <select class="form-select" id="selectResolucao" onchange="atualizarFiltros()">
+                            <option value="">-- Selecione (Opcional) --</option>
+                            <option th:each="r : ${listaResolucoes}" th:value="${r.idResolucao}" th:text="${'Resolução ' + r.numero + '/' + r.ano}" th:selected="${atividade.regra?.resolucao?.idResolucao == r.idResolucao}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold">Portaria (Filtro)</label>
+                        <select class="form-select" id="selectPortaria" onchange="atualizarFiltros()">
+                            <option value="">-- Selecione (Opcional) --</option>
+                            <option th:each="p : ${listaPortarias}" th:value="${p.idPortaria}" th:text="${'Portaria ' + p.numero + '/' + p.ano}" th:selected="${atividade.regra?.portaria?.idPortaria == p.idPortaria}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-outline-secondary w-100" onclick="resetarFiltros()"><i class="fa-solid fa-eraser me-1"></i> Limpar</button>
+                    </div>
+
                     <div class="col-md-12">
-                        <label class="form-label fw-bold">Regra Enquadrada (Atividade)</label>
-                        <select class="form-select" th:field="*{regra.idRegra}" required>
-                            <option value="">-- Selecione a Regra --</option>
-                            <option th:each="r : ${listaRegras}" th:value="${r.idRegra}" 
-                                    th:text="${r.nomeRegra + ' - ' + r.descricao + ' (P: ' + r.portaria.numero + '/' + r.portaria.ano + ' - R: ' + r.resolucao.numero + '/' + r.resolucao.ano + ')'}"></option>
+                        <label class="form-label fw-bold text-cremepe">Regra Enquadrada (Atividade Específica)</label>
+                        <select class="form-select border-primary" th:field="*{regra.idRegra}" id="selectRegra" required th:disabled="${atividade.idAtividade == null}">
+                            <option value="">-- Escolha a documentação acima para desbloquear as regras --</option>
+                            <option th:if="${atividade.regra != null}" th:value="${atividade.regra.idRegra}" th:text="${atividade.regra.nomeRegra + ' - ' + atividade.regra.descricao}" selected></option>
                         </select>
                     </div>
 
@@ -75,6 +94,74 @@
             </form>
         </div>
     </div>
+    <script>
+        let originalResolucoes = "";
+        let originalPortarias = "";
+
+        window.onload = function() {
+            // Guarda as listas iniciais completas para podermos resetar depois
+            originalResolucoes = document.getElementById('selectResolucao').innerHTML;
+            originalPortarias = document.getElementById('selectPortaria').innerHTML;
+        };
+
+        function resetarFiltros() {
+            document.getElementById('selectResolucao').innerHTML = originalResolucoes;
+            document.getElementById('selectPortaria').innerHTML = originalPortarias;
+            document.getElementById('selectResolucao').value = "";
+            document.getElementById('selectPortaria').value = "";
+            document.getElementById('selectRegra').innerHTML = '<option value="">-- Escolha a documentação acima para desbloquear as regras --</option>';
+            document.getElementById('selectRegra').disabled = true;
+        }
+
+        function atualizarFiltros() {
+            const resId = document.getElementById('selectResolucao').value;
+            const portId = document.getElementById('selectPortaria').value;
+            const selectRegra = document.getElementById('selectRegra');
+
+            if (!resId && !portId) {
+                resetarFiltros();
+                return;
+            }
+
+            let url = `/atividades/api/filtros-regras?`;
+            if (resId) url += `resolucaoId=${resId}&`;
+            if (portId) url += `portariaId=${portId}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    // Atualiza a lista de Regras
+                    selectRegra.innerHTML = '<option value="">-- Selecione a Regra Ativa --</option>';
+                    if(data.regras && data.regras.length > 0) {
+                        data.regras.forEach(r => {
+                            selectRegra.innerHTML += `<option value="${r.id}">${r.nome}</option>`;
+                        });
+                        selectRegra.disabled = false;
+                    } else {
+                        selectRegra.innerHTML = '<option value="">-- Nenhuma regra existente para esta combinação --</option>';
+                        selectRegra.disabled = true;
+                    }
+
+                    // Se selecionou só a Resolução, reduz as Portarias apenas para as que têm par com ela
+                    if (resId && !portId && data.portariasCompativeis) {
+                        const selPort = document.getElementById('selectPortaria');
+                        selPort.innerHTML = '<option value="">-- Selecione a Portaria (Opcional) --</option>';
+                        data.portariasCompativeis.forEach(p => {
+                            selPort.innerHTML += `<option value="${p.id}">${p.nome}</option>`;
+                        });
+                    }
+
+                    // Se selecionou só a Portaria, reduz as Resoluções apenas para as que têm par com ela
+                    if (portId && !resId && data.resolucoesCompativeis) {
+                        const selRes = document.getElementById('selectResolucao');
+                        selRes.innerHTML = '<option value="">-- Selecione a Resolução (Opcional) --</option>';
+                        data.resolucoesCompativeis.forEach(r => {
+                            selRes.innerHTML += `<option value="${r.id}">${r.nome}</option>`;
+                        });
+                    }
+                });
+        }
+    </script>
 </div>
 </body>
 </html>
