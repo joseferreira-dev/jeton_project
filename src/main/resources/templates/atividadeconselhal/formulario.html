@@ -55,10 +55,28 @@
 
                     <div class="col-md-12">
                         <label class="form-label fw-bold text-cremepe">Regra Enquadrada (Atividade Específica)</label>
-                        <select class="form-select border-primary" th:field="*{regra.idRegra}" id="selectRegra" required th:disabled="${atividade.idAtividade == null}">
+                        <select class="form-select border-primary" th:field="*{regra.idRegra}" id="selectRegra" 
+                                onchange="exibirGuiaRegra()" required th:disabled="${atividade.idAtividade == null}">
                             <option value="">-- Escolha a documentação acima para desbloquear as regras --</option>
-                            <option th:if="${atividade.regra != null}" th:value="${atividade.regra.idRegra}" th:text="${atividade.regra.nomeRegra + ' - ' + atividade.regra.descricao}" selected></option>
+                            <option th:if="${atividade.regra != null}" th:value="${atividade.regra.idRegra}" th:text="${atividade.regra.nomeRegra}" selected></option>
                         </select>
+                    </div>
+
+                    <div class="col-md-12" id="boxGuia" style="display: none;">
+                        <div class="alert alert-info border-0 shadow-sm mb-0">
+                            <h6 class="fw-bold text-primary"><i class="fa-solid fa-circle-info me-2"></i>Guia de Verificação da Atividade</h6>
+                            <hr class="my-2">
+                            <div class="row">
+                                <div class="col-md-9">
+                                    <small class="d-block text-muted fw-bold">Descrição da Atividade:</small>
+                                    <span id="guiaDescricao"></span>
+                                </div>
+                                <div class="col-md-3 text-end">
+                                    <small class="d-block text-muted fw-bold">Pontuação:</small>
+                                    <span class="badge bg-primary fs-6" id="guiaPontos">0</span> pontos
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="col-md-4">
@@ -130,15 +148,16 @@
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    // Atualiza a lista de Regras
-                    selectRegra.innerHTML = '<option value="">-- Selecione a Regra Ativa --</option>';
+                    regrasCache = data.regras;
+                    selectRegra.innerHTML = '<option value=\"\">-- Selecione a Regra Ativa --</option>';
+                    
                     if(data.regras && data.regras.length > 0) {
                         data.regras.forEach(r => {
                             selectRegra.innerHTML += `<option value="${r.id}">${r.nome}</option>`;
                         });
                         selectRegra.disabled = false;
                     } else {
-                        selectRegra.innerHTML = '<option value="">-- Nenhuma regra existente para esta combinação --</option>';
+                        selectRegra.innerHTML = '<option value=\"\">-- Nenhuma regra existente para esta combinação --</option>';
                         selectRegra.disabled = true;
                     }
 
@@ -160,6 +179,20 @@
                         });
                     }
                 });
+        }
+
+        function exibirGuiaRegra() {
+            const id = document.getElementById('selectRegra').value;
+            const box = document.getElementById('boxGuia');
+            const regra = regrasCache.find(r => r.id == id);
+
+            if (regra) {
+                document.getElementById('guiaDescricao').innerText = regra.descricao;
+                document.getElementById('guiaPontos').innerText = regra.pontos;
+                box.style.display = 'block';
+            } else {
+                box.style.display = 'none';
+            }
         }
 
         function atualizarConselheiros() {

@@ -117,21 +117,27 @@ public class AtividadeConselhalController {
         
         Map<String, Object> response = new HashMap<>();
         
-        // Se escolheu Resolução, devolve Portarias que fazem par com ela
+        // Mantém a lógica de filtros compatíveis entre documentos
         if (resolucaoId != null && portariaId == null) {
             response.put("portariasCompativeis", regrasService.listarPortariasCompativeis(resolucaoId).stream()
                 .map(p -> Map.of("id", p.getIdPortaria(), "nome", "Portaria " + p.getNumero() + "/" + p.getAno())).toList());
         }
-        // Se escolheu Portaria, devolve Resoluções que fazem par com ela
         if (portariaId != null && resolucaoId == null) {
             response.put("resolucoesCompativeis", regrasService.listarResolucoesCompativeis(portariaId).stream()
                 .map(r -> Map.of("id", r.getIdResolucao(), "nome", "Resolução " + r.getNumero() + "/" + r.getAno())).toList());
         }
         
-        // Devolve apenas as Regras da combinação EXATA
+        // NOVO: Retorna dados detalhados para o Guia de Verificação
         List<Regras> regras = regrasService.listarRegrasExatas(resolucaoId, portariaId);
         response.put("regras", regras.stream()
-            .map(r -> Map.of("id", r.getIdRegra(), "nome", r.getNomeRegra() + " - " + r.getDescricao())).toList());
+            .map(r -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", r.getIdRegra());
+                map.put("nome", r.getNomeRegra());
+                map.put("descricao", r.getDescricao());
+                map.put("pontos", r.getPontos());
+                return map;
+            }).toList());
             
         return response;
     }

@@ -46,30 +46,47 @@
                 <table class="table table-hover mb-0 align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4">Conselheiro</th>
-                            <th>Data Atividade</th>
-                            <th>Turno</th>
+                            <th class="ps-4">Conselheiro / Atividade</th>
+                            <th>Normativa (P / R)</th>
+                            <th>Data e Turno</th>
                             <th>Status</th>
                             <th class="text-center pe-4">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr th:each="a : ${paginaAtividades.content}">
-                            <td class="ps-4 fw-bold text-cremepe">
-                                <span th:text="${a.conselheiro.pessoa.nome}">Nome</span><br>
-                                <small class="text-muted" th:text="${a.regra?.resolucao?.numero + ' - ' + a.regra?.portaria?.numero}">Regra</small>
+                            <td class="ps-4">
+                                <div class="fw-bold text-cremepe" th:text="${a.conselheiro.pessoa.nome}"></div>
+                                <div class="small text-dark fw-bold" th:text="${a.regra?.nomeRegra}">Regra</div>
                             </td>
-                            <td th:text="${#temporals.format(a.dataHoraAtividade, 'dd/MM/yyyy HH:mm')}">Data</td>
+                            
                             <td>
-                                <span th:if="${a.inTurno == 'M'}"><i class="fa-solid fa-sun text-warning me-1"></i>Manhã</span>
-                                <span th:if="${a.inTurno == 'T'}"><i class="fa-solid fa-cloud-sun text-info me-1"></i>Tarde</span>
-                                <span th:if="${a.inTurno == 'N'}"><i class="fa-solid fa-moon text-secondary me-1"></i>Noite</span>
+                                <div class="small">
+                                    <span th:if="${a.regra?.portaria != null}" th:text="'Portaria ' + ${a.regra.portaria.numero} + '/' + ${a.regra.portaria.ano}"></span>
+                                    <br th:if="${a.regra?.portaria != null and a.regra?.resolucao != null}">
+                                    <span th:if="${a.regra?.resolucao != null}" th:text="'Resolução ' + ${a.regra.resolucao.numero} + '/' + ${a.regra.resolucao.ano}"></span>
+                                </div>
                             </td>
+
                             <td>
-                                <span th:if="${a.inSituacao == 'P'}" class="badge bg-warning text-dark"><i class="fa-regular fa-clock me-1"></i>Pendente</span>
-                                <span th:if="${a.inSituacao == 'V'}" class="badge bg-success"><i class="fa-solid fa-check me-1"></i>Validada</span>
+                                <div th:text="${#temporals.format(a.dataHoraAtividade, 'dd/MM/yyyy HH:mm')}">Data</div>
+                                <div class="small mt-1">
+                                    <span th:if="${a.inTurno == 'M'}"><i class="fa-solid fa-sun text-warning me-1"></i> Manhã</span>
+                                    <span th:if="${a.inTurno == 'T'}"><i class="fa-solid fa-cloud-sun text-info me-1"></i> Tarde</span>
+                                    <span th:if="${a.inTurno == 'N'}"><i class="fa-solid fa-moon text-secondary me-1"></i> Noite</span>
+                                </div>
                             </td>
+
+                            <td>
+                                <span th:if="${a.inSituacao == 'P'}" class="badge bg-warning text-dark"><i class="fa-regular fa-clock me-1"></i> Pendente</span>
+                                <span th:if="${a.inSituacao == 'V'}" class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Validada</span>
+                            </td>
+
                             <td class="text-center pe-4">
+                                <button type="button" class="btn btn-sm btn-outline-info me-1" 
+                                        th:onclick="verDetalhes([[${a}]])" title="Ver Detalhes Completos">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
                                 <a th:href="@{'/atividades/editar/' + ${a.idAtividade}}" class="btn btn-sm btn-outline-primary me-1"><i class="fa-solid fa-pen-to-square"></i></a>
                                 <button type="button" class="btn btn-sm btn-outline-danger" th:onclick="prepararExclusao([[${a.idAtividade}]])"><i class="fa-solid fa-trash"></i></button>
                             </td>
@@ -100,6 +117,22 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalDetalhes" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-cremepe text-white">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-magnifying-glass-chart me-2"></i>Detalhes da Atividade</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" id="detalhesConteudo">
+                    </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modalExclusao" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -123,6 +156,28 @@
             var url = /*[[@{/atividades/excluir/}]]*/ '/atividades/excluir/';
             document.getElementById('btnConfirmarExclusao').setAttribute('href', url + id);
             new bootstrap.Modal(document.getElementById('modalExclusao')).show();
+        }
+
+        function verDetalhes(a) {
+            const dataAtv = new Date(a.dataHoraAtividade).toLocaleString('pt-BR');
+            const dataReg = new Date(a.dataHoraRegistro).toLocaleString('pt-BR');
+            
+            let html = `
+                <div class="row g-3">
+                    <div class="col-md-6"><strong>Conselheiro:</strong><br>${a.conselheiro.pessoa.nome}</div>
+                    <div class="col-md-6"><strong>Gestão:</strong><br>${a.gestao.nomeGestao}</div>
+                    <hr>
+                    <div class="col-md-12"><strong>Atividade Enquadrada:</strong><br>${a.regra.nomeRegra} - ${a.regra.descricao}</div>
+                    <div class="col-md-4"><strong>Data da Atividade:</strong><br>${dataAtv}</div>
+                    <div class="col-md-4"><strong>Turno:</strong><br>${a.inTurno == 'M' ? 'Manhã' : a.inTurno == 'T' ? 'Tarde' : 'Noite'}</div>
+                    <div class="col-md-4"><strong>Pontuação da Regra:</strong><br><span class="badge bg-primary">${a.regra.pontos} pontos</span></div>
+                    <hr>
+                    <div class="col-md-6"><small class="text-muted"><strong>Registrado em:</strong> ${dataReg}</small></div>
+                    <div class="col-md-6 text-end"><small class="text-muted"><strong>ID Atividade:</strong> #${a.idAtividade}</small></div>
+                </div>
+            `;
+            document.getElementById('detalhesConteudo').innerHTML = html;
+            new bootstrap.Modal(document.getElementById('modalDetalhes')).show();
         }
     </script>
 </div>
