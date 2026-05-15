@@ -20,6 +20,9 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
     
     long countByGestaoIdGestaoAndConselheiroIdPessoa(Integer idGestao, Integer idPessoa);
 
+    // Conta quantas atividades usam uma determinada regra (Trava de segurança)
+    long countByRegraIdRegra(Integer idRegra);
+
     // NOVO: Pesquisa inteligente com paginação
     @Query("SELECT a FROM AtividadeConselhal a WHERE " +
            "(LOWER(a.conselheiro.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +

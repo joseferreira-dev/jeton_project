@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
+<head><title>Formulário de Regra - Jeton</title></head>
+<body>
+<div layout:fragment="conteudo">
+    <div class="mb-4">
+        <h2 class="h4 text-cremepe fw-bold">
+            <i class="fa-solid fa-list-check me-2"></i>
+            <span th:text="${regra.idRegra == null ? 'Nova Regra de Pontuação' : 'Editar Regra'}"></span>
+        </h2>
+    </div>
+
+    <form th:action="@{/regras/salvar}" th:object="${regra}" method="post">
+        <input type="hidden" th:field="*{idRegra}">
+        <input type="hidden" th:field="*{inRevogado}">
+        
+        <div class="row g-4">
+            <div class="col-md-7">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-light fw-bold">Dados da Atividade</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nome da Regra / Atividade</label>
+                            <input type="text" class="form-control" th:field="*{nomeRegra}" placeholder="Ex: Reunião de Câmara Técnica" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Descrição Detalhada</label>
+                            <textarea class="form-control" th:field="*{descricao}" rows="4"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Esta é uma Atividade Judicante?</label>
+                            <select class="form-select" th:field="*{inJudicante}" required>
+                                <option value="N">Não</option>
+                                <option value="S">Sim</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                <div class="card shadow-sm h-100 border-primary">
+                    <div class="card-header bg-cremepe text-white fw-bold"><i class="fa-solid fa-calculator me-2"></i>Matemática e Base Legal</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-success">Pontos Base</label>
+                                <input type="number" step="0.5" class="form-control" th:field="*{pontos}" required min="0" placeholder="Ex: 1.0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-danger">Teto por Turno</label>
+                                <input type="number" step="0.5" class="form-control" th:field="*{pontosLimitesTurno}" required min="0" placeholder="Ex: 3.0">
+                            </div>
+                            <div class="col-md-12 mt-4">
+                                <label class="form-label fw-bold"><i class="fa-solid fa-scale-balanced text-muted me-1"></i> Resolução Vinculada</label>
+                                <select class="form-select" th:field="*{resolucao.idResolucao}">
+                                    <option value="">-- Nenhuma Resolução --</option>
+                                    <option th:each="r : ${listaResolucoes}" th:value="${r.idResolucao}" th:text="${'Resolução ' + r.numero + '/' + r.ano}"></option>
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold"><i class="fa-solid fa-file-signature text-muted me-1"></i> Portaria Vinculada</label>
+                                <select class="form-select" th:field="*{portaria.idPortaria}">
+                                    <option value="">-- Nenhuma Portaria --</option>
+                                    <option th:each="p : ${listaPortarias}" th:value="${p.idPortaria}" th:text="${'Portaria ' + p.numero + '/' + p.ano}"></option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+            <a th:href="@{/regras}" class="btn btn-outline-secondary me-2"><i class="fa-solid fa-xmark me-1"></i> Cancelar</a>
+            <button type="submit" class="btn btn-cremepe"><i class="fa-solid fa-floppy-disk me-1"></i> Guardar Regra</button>
+        </div>
+    </form>
+</div>
+</body>
+</html>
