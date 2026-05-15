@@ -41,6 +41,8 @@ public class ComprovanteController {
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
+                    // Adiciona o tamanho do ficheiro ao cabeçalho (necessário para ByteArrayResource)
+                    .contentLength(resource.contentLength()) 
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + comprovante.getNomeComprovante() + "\"")
                     .body(resource);
                     
