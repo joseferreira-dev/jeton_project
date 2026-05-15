@@ -77,8 +77,14 @@ public class AtividadeConselhalController {
         try {
             atividadeService.salvarAtividade(atividade);
             ra.addFlashAttribute("sucesso", "Atividade registada com sucesso!");
+            
+        } catch (RuntimeException e) {
+            // Captura as nossas mensagens de validação (Data, Regra revogada, Vínculos, etc) e exibe de forma limpa
+            ra.addFlashAttribute("erro", e.getMessage());
+            
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao guardar: " + e.getMessage());
+            // Se for um erro técnico ou de falha do banco de dados, devolve uma mensagem mascarada
+            ra.addFlashAttribute("erro", "Ocorreu um erro inesperado no banco de dados ao salvar a atividade. Verifique os dados e tente novamente.");
         }
         return "redirect:/atividades";
     }
