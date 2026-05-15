@@ -86,4 +86,17 @@ public class ResolucaoController {
         }
         return "redirect:/resolucoes";
     }
+
+    @GetMapping("/deletar/{id}")
+    public String deletar(@PathVariable("id") Integer id, RedirectAttributes ra) {
+        try {
+            resolucaoService.excluirFisicamente(id);
+            ra.addFlashAttribute("sucesso", "Resolução excluída definitivamente.");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro inesperado ao excluir resolução.");
+        }
+        return "redirect:/resolucoes";
+    }
 }

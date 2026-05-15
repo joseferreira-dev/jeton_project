@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.dominio.Resolucao;
+import br.com.cremepe.jeton.repositorio.RegrasRepository;
 import br.com.cremepe.jeton.repositorio.ResolucaoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,8 +17,8 @@ import java.util.Optional;
 @Service
 public class ResolucaoService {
 
-    @Autowired
-    private ResolucaoRepository repository;
+    @Autowired private ResolucaoRepository repository;
+    @Autowired private RegrasRepository regrasRepository;
 
     @Transactional(readOnly = true)
     public List<Resolucao> listarTodos() {
@@ -51,6 +52,14 @@ public class ResolucaoService {
             r.setInRevogado("N");
             repository.save(r);
         });
+    }
+
+    @Transactional
+    public void excluirFisicamente(Integer id) {
+        if (regrasRepository.countByResolucaoIdResolucao(id) > 0) {
+            throw new RuntimeException("Não é possível excluir: existem regras vinculadas a esta Resolução. Use a opção 'Revogar' em vez disso.");
+        }
+        repository.deleteById(id);
     }
 
     @Transactional(readOnly = true)

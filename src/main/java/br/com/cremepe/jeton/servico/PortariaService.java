@@ -2,6 +2,8 @@ package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.dominio.Portaria;
 import br.com.cremepe.jeton.repositorio.PortariaRepository;
+import br.com.cremepe.jeton.repositorio.RegrasRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,8 +18,8 @@ import java.util.Optional;
 @Service
 public class PortariaService {
 
-    @Autowired
-    private PortariaRepository repository;
+    @Autowired private PortariaRepository repository;
+    @Autowired private RegrasRepository regrasRepository;
 
     @Transactional(readOnly = true)
     public List<Portaria> listarTodos() {
@@ -51,6 +53,14 @@ public class PortariaService {
             p.setInRevogado("N");
             repository.save(p);
         });
+    }
+
+    @Transactional
+    public void excluirFisicamente(Integer id) {
+        if (regrasRepository.countByPortariaIdPortaria(id) > 0) {
+            throw new RuntimeException("Não é possível excluir: existem regras vinculadas a esta Portaria. Use a opção 'Revogar' em vez disso.");
+        }
+        repository.deleteById(id);
     }
 
     @Transactional(readOnly = true)

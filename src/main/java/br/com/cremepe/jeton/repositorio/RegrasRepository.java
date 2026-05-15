@@ -41,4 +41,10 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
            "((:idResolucao IS NULL AND r.resolucao IS NULL) OR (r.resolucao.idResolucao = :idResolucao)) AND " +
            "((:idPortaria IS NULL AND r.portaria IS NULL) OR (r.portaria.idPortaria = :idPortaria))")
     List<Regras> findRegrasExatas(@Param("idResolucao") Integer idResolucao, @Param("idPortaria") Integer idPortaria);
+
+    // Conta regras vinculadas a uma Portaria
+    long countByPortariaIdPortaria(Integer idPortaria);
+    
+    // Conta regras vinculadas a uma Resolução
+    long countByResolucaoIdResolucao(Integer idResolucao);
 }

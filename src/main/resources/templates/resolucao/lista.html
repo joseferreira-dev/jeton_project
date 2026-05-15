@@ -62,6 +62,10 @@
                             </td>
                             <td class="text-center pe-4">
                                 <a th:if="${r.inRevogado == 'N'}" th:href="@{'/resolucoes/editar/' + ${r.idResolucao}}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <a th:href="@{'/resolucoes/deletar/' + ${r.idResolucao}}" class="btn btn-sm btn-outline-danger btn-confirm me-1" 
+                                title="Excluir Definitivamente" 
+                                data-mensagem="Deseja <b>EXCLUIR</b> permanentemente este registro?<br><small class='text-danger'>Apenas possível se não houver regras vinculadas.</small>"
+                                data-cor="btn-danger" data-icone="fa-solid fa-trash-can"><i class="fa-solid fa-trash-can"></i></a>
                                 <a th:if="${r.inRevogado == 'N'}" th:href="@{'/resolucoes/excluir/' + ${r.idResolucao}}" class="btn btn-sm btn-outline-danger btn-confirm" 
                                 title="Revogar" 
                                 data-mensagem="Tem certeza que deseja <b>REVOGAR</b> esta Resolução?<br><small class='text-muted'>Isso impedirá que ela seja usada em novos registos.</small>"

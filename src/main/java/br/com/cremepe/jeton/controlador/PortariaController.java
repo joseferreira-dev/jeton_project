@@ -86,4 +86,17 @@ public class PortariaController {
         }
         return "redirect:/portarias";
     }
+
+    @GetMapping("/deletar/{id}")
+    public String deletar(@PathVariable("id") Integer id, RedirectAttributes ra) {
+        try {
+            portariaService.excluirFisicamente(id);
+            ra.addFlashAttribute("sucesso", "Portaria excluída definitivamente.");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro inesperado ao excluir portaria.");
+        }
+        return "redirect:/portarias";
+    }
 }
