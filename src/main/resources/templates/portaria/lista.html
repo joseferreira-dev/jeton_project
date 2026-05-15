@@ -60,8 +60,16 @@
                             </td>
                             <td class="text-center pe-4">
                                 <a th:if="${p.inRevogado == 'N'}" th:href="@{'/portarias/editar/' + ${p.idPortaria}}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="fa-solid fa-pen-to-square"></i></a>
-                                <a th:if="${p.inRevogado == 'N'}" th:href="@{'/portarias/excluir/' + ${p.idPortaria}}" class="btn btn-sm btn-outline-danger" title="Revogar" onclick="if(!confirm('Tem certeza que deseja REVOGAR esta Portaria? Ela deixará de ser listada para novos cadastros.')) return false;"><i class="fa-solid fa-ban"></i></a>
-                                <a th:if="${p.inRevogado == 'S'}" th:href="@{'/portarias/restaurar/' + ${p.idPortaria}}" class="btn btn-sm btn-outline-success" title="Restaurar" onclick="if(!confirm('Tem certeza que deseja RESTAURAR esta Portaria para o estado Em Vigor?')) return false;"><i class="fa-solid fa-rotate-left"></i></a>
+                                
+                                <a th:if="${p.inRevogado == 'N'}" th:href="@{'/portarias/excluir/' + ${p.idPortaria}}" class="btn btn-sm btn-outline-danger btn-confirm" 
+                                title="Revogar" 
+                                data-mensagem="Tem certeza que deseja <b>REVOGAR</b> esta Portaria?<br><small class='text-muted'>Ela deixará de ser listada para novos cadastros.</small>"
+                                data-cor="btn-danger" data-icone="fa-solid fa-ban"><i class="fa-solid fa-ban"></i></a>
+                                
+                                <a th:if="${p.inRevogado == 'S'}" th:href="@{'/portarias/restaurar/' + ${p.idPortaria}}" class="btn btn-sm btn-outline-success btn-confirm" 
+                                title="Restaurar" 
+                                data-mensagem="Tem certeza que deseja <b>RESTAURAR</b> esta Portaria para o estado Em Vigor?"
+                                data-cor="btn-success" data-icone="fa-solid fa-rotate-left"><i class="fa-solid fa-rotate-left"></i></a>
                             </td>
                         </tr>
                         <tr th:if="${paginaPortarias.empty}"><td colspan="4" class="text-center py-4 text-muted">Nenhuma portaria encontrada para os filtros aplicados.</td></tr>

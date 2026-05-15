@@ -69,6 +69,60 @@
         </footer>
     </div>
 
+    <div class="modal fade" id="modalConfirmacaoGen" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light border-bottom-0">
+                    <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-circle-question text-warning me-2"></i>Confirmação Necessária</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body py-4 text-center">
+                    <p id="textoConfirmacaoGen" class="mb-0 fs-5 text-secondary">Tem certeza que deseja realizar esta ação?</p>
+                </div>
+                <div class="modal-footer bg-light border-top-0 d-flex justify-content-center">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <a href="#" id="btnConfirmarAcaoGen" class="btn btn-danger px-4">Sim, Confirmar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const botoesConfirm = document.querySelectorAll('.btn-confirm');
+            if(botoesConfirm.length > 0) {
+                const modalConfirmacao = new bootstrap.Modal(document.getElementById('modalConfirmacaoGen'));
+                const btnAcao = document.getElementById('btnConfirmarAcaoGen');
+                const textoAcao = document.getElementById('textoConfirmacaoGen');
+
+                botoesConfirm.forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault(); // Impede o link de abrir imediatamente
+                        
+                        // Pega os dados do botão clicado
+                        const url = this.getAttribute('href');
+                        const mensagem = this.getAttribute('data-mensagem');
+                        const cor = this.getAttribute('data-cor') || 'btn-danger';
+                        const icone = this.getAttribute('data-icone') || '';
+
+                        // Alimenta o Modal com os dados
+                        textoAcao.innerHTML = mensagem;
+                        btnAcao.setAttribute('href', url);
+                        btnAcao.className = 'btn px-4 ' + cor;
+                        
+                        if(icone) {
+                            btnAcao.innerHTML = `<i class="${icone} me-1"></i> Confirmar`;
+                        } else {
+                            btnAcao.innerHTML = `Confirmar`;
+                        }
+
+                        // Abre o Modal
+                        modalConfirmacao.show();
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>
