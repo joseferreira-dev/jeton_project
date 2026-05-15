@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
+<head><title>Regras Conjuntas - Jeton</title></head>
+<body>
+<div layout:fragment="conteudo">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-link me-2"></i> Gestão de Regras Conjuntas</h2>
+        <a th:href="@{/regras-conjuntas/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Novo Agrupamento</a>
+    </div>
+
+    <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show"><i class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show"><i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+
+    <form th:action="@{/regras-conjuntas}" method="get" class="mb-4 bg-white p-3 rounded shadow-sm border border-light">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small text-muted fw-bold">Buscar Agrupamento</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" name="termo" th:value="${termo}" class="form-control border-start-0" placeholder="Ex: Limite de Vistorias...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted fw-bold">Tipo de Limite</label>
+                <select name="tipoLimite" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="D" th:selected="${tipoLimite == 'D'}">Diário</option>
+                    <option value="T" th:selected="${tipoLimite == 'T'}">Por Turno</option>
+                    <option value="M" th:selected="${tipoLimite == 'M'}">Mensal</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                <a th:href="@{/regras-conjuntas}" class="btn btn-outline-secondary w-100"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">
+                                <a th:href="@{/regras-conjuntas(page=0, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort='nomeRegra', dir=${sort == 'nomeRegra' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-dark text-decoration-none">
+                                    Nome do Agrupamento <i class="fa-solid fa-sort ms-1 small text-muted"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a th:href="@{/regras-conjuntas(page=0, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort='inTipoLimite', dir=${sort == 'inTipoLimite' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-dark text-decoration-none">
+                                    Tipo de Limite <i class="fa-solid fa-sort ms-1 small text-muted"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a th:href="@{/regras-conjuntas(page=0, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort='pontosLimite', dir=${sort == 'pontosLimite' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-dark text-decoration-none">
+                                    Pontos Limite (Teto) <i class="fa-solid fa-sort ms-1 small text-muted"></i>
+                                </a>
+                            </th>
+                            <th class="text-center pe-4">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="rc : ${paginaRegrasConjuntas.content}">
+                            <td class="ps-4 fw-bold text-cremepe" th:text="${rc.nomeRegra}"></td>
+                            <td>
+                                <span th:if="${rc.inTipoLimite == 'D'}" class="badge bg-info text-dark">Diário</span>
+                                <span th:if="${rc.inTipoLimite == 'T'}" class="badge bg-warning text-dark">Por Turno</span>
+                                <span th:if="${rc.inTipoLimite == 'M'}" class="badge bg-primary">Mensal</span>
+                            </td>
+                            <td class="fw-bold text-danger" th:text="${rc.pontosLimite + ' Pontos'}"></td>
+                            <td class="text-center pe-4">
+                                <a th:href="@{'/regras-conjuntas/editar/' + ${rc.idRegraConjunta}}" class="btn btn-sm btn-outline-primary me-1"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <a th:href="@{'/regras-conjuntas/excluir/' + ${rc.idRegraConjunta}}" class="btn btn-sm btn-outline-danger btn-confirm" data-mensagem="Deseja excluir este Agrupamento de Regras?" data-cor="btn-danger"><i class="fa-solid fa-trash-can"></i></a>
+                            </td>
+                        </tr>
+                        <tr th:if="${paginaRegrasConjuntas.empty}"><td colspan="4" class="text-center py-4 text-muted">Nenhum agrupamento encontrado.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div th:if="${paginaRegrasConjuntas.totalPages > 1}" class="card-footer bg-white">
+                <nav class="d-flex justify-content-center">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" th:classappend="${paginaRegrasConjuntas.first ? 'disabled' : ''}">
+                            <a class="page-link" th:href="@{/regras-conjuntas(page=${paginaRegrasConjuntas.number - 1}, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}"><i class="fa-solid fa-chevron-left"></i></a>
+                        </li>
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaRegrasConjuntas.totalPages - 1)}" th:classappend="${paginaRegrasConjuntas.number == i ? 'active' : ''}">
+                            <a class="page-link" th:href="@{/regras-conjuntas(page=${i}, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}" th:text="${i + 1}"></a>
+                        </li>
+                        <li class="page-item" th:classappend="${paginaRegrasConjuntas.last ? 'disabled' : ''}">
+                            <a class="page-link" th:href="@{/regras-conjuntas(page=${paginaRegrasConjuntas.number + 1}, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}"><i class="fa-solid fa-chevron-right"></i></a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

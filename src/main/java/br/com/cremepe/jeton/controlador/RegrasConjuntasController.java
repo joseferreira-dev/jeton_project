@@ -5,6 +5,7 @@ import br.com.cremepe.jeton.servico.RegrasConjuntasService; // Certifique-se de 
 import br.com.cremepe.jeton.servico.RegrasService; // Para popular as caixas de seleção
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -18,9 +19,26 @@ public class RegrasConjuntasController {
     @Autowired private RegrasService regrasService;
 
     @GetMapping
-    public String listar(Model model, HttpSession session) {
+    public String listar(
+            @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
+            @RequestParam(value = "tipoLimite", required = false, defaultValue = "") String tipoLimite,
+            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
+            @RequestParam(value = "size", required = false, defaultValue = "10") int size,
+            @RequestParam(value = "sort", required = false, defaultValue = "nomeRegra") String sort,
+            @RequestParam(value = "dir", required = false, defaultValue = "asc") String dir,
+            Model model, HttpSession session) {
+            
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        model.addAttribute("lista", regrasConjuntasService.listarTodos());
+
+        Page<RegrasConjuntas> paginaRegrasConjuntas = regrasConjuntasService.listarComPaginacaoEPesquisa(termo, tipoLimite, page, size, sort, dir);
+
+        model.addAttribute("paginaRegrasConjuntas", paginaRegrasConjuntas);
+        model.addAttribute("termo", termo);
+        model.addAttribute("tipoLimite", tipoLimite);
+        model.addAttribute("size", size);
+        model.addAttribute("sort", sort);
+        model.addAttribute("dir", dir);
+
         return "regrasconjuntas/lista";
     }
 
