@@ -7,63 +7,48 @@ import br.com.cremepe.jeton.repositorio.TipoAnexoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+import java.time.LocalDate;
 import java.util.Optional;
 
-/**
- * Serviço responsável pela gestão de metadados de comprovativos e anexos.
- * Garante a integridade entre o registro da atividade e o arquivo físico.
- */
 @Service
 public class ComprovanteService {
 
-    @Autowired
-    private ComprovanteRepository comprovanteRepository;
+    @Autowired private ComprovanteRepository comprovanteRepository;
+    @Autowired private TipoAnexoRepository tipoAnexoRepository;
+    @Autowired private FileStorageService fileStorageService;
 
-    @Autowired
-    private TipoAnexoRepository tipoAnexoRepository;
+    @Transactional
+    public Comprovante guardarComprovante(MultipartFile file, Integer idTipoAnexo, String descricaoUsuario) {
+        
+        // Pega o mês e ano atuais para organizar as pastas
+        LocalDate hoje = LocalDate.now();
+        int ano = hoje.getYear();
+        int mes = hoje.getMonthValue();
 
-    @Transactional(readOnly = true)
-    public List<Comprovante> listarTodos() {
-        return comprovanteRepository.findAll();
+        // 1. Envia o ficheiro DIRETAMENTE para a Locaweb e recupera o nome único gerado
+        String nomeArquivoGerado = fileStorageService.storeFileToFtp(file, ano, mes);
+
+        // 2. Procura o Tipo de Anexo
+        TipoAnexo tipo = tipoAnexoRepository.findById(idTipoAnexo)
+                .orElseThrow(() -> new RuntimeException("Tipo de anexo inválido."));
+
+        // 3. Monta a entidade Comprovante
+        Comprovante comprovante = new Comprovante();
+        comprovante.setTipoAnexo(tipo);
+        comprovante.setNomeComprovante(descricaoUsuario);
+        comprovante.setNomeArquivo(nomeArquivoGerado);
+        comprovante.setContentType(file.getContentType());
+        comprovante.setMes(mes);
+        comprovante.setAno(ano);
+
+        // 4. Salva os metadados na base de dados
+        return comprovanteRepository.save(comprovante);
     }
 
     @Transactional(readOnly = true)
     public Optional<Comprovante> buscarPorId(Integer id) {
         return comprovanteRepository.findById(id);
-    }
-
-    /**
-     * Lista comprovantes de um período específico para auditoria mensal.
-     */
-    @Transactional(readOnly = true)
-    public List<Comprovante> listarPorPeriodo(Integer mes, Integer ano) {
-        return comprovanteRepository.findByMesAndAno(mes, ano);
-    }
-
-    /**
-     * Salva o registro do comprovante no banco de dados.
-     * NOTA: A lógica de upload físico do arquivo (MultipartFile) 
-     * será tratada no Controller (Passo 6).
-     */
-    @Transactional
-    public Comprovante salvar(Comprovante comprovante) {
-        return comprovanteRepository.save(comprovante);
-    }
-
-    /**
-     * Remove o registro do comprovante. 
-     * Em uma implementação completa, este método também dispararia 
-     * a exclusão do arquivo físico no servidor.
-     */
-    @Transactional
-    public void excluir(Integer id) {
-        comprovanteRepository.deleteById(id);
-    }
-
-    @Transactional(readOnly = true)
-    public List<TipoAnexo> listarTiposDisponiveis() {
-        return tipoAnexoRepository.findAll();
     }
 }

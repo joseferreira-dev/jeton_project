@@ -2,64 +2,59 @@ package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Comprovante;
 import br.com.cremepe.jeton.servico.ComprovanteService;
-import br.com.cremepe.jeton.servico.TipoAnexoService;
-import jakarta.servlet.http.HttpSession;
+import br.com.cremepe.jeton.servico.FileStorageService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 @RequestMapping("/comprovantes")
 public class ComprovanteController {
 
     @Autowired private ComprovanteService comprovanteService;
-    @Autowired private TipoAnexoService tipoAnexoService; // Para popular o <select>
+    @Autowired private FileStorageService fileStorageService;
 
-    @GetMapping
-    public String listar(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        model.addAttribute("lista", comprovanteService.listarTodos());
-        return "comprovante/lista";
-    }
-
-    @GetMapping("/novo")
-    public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        model.addAttribute("comprovante", new Comprovante());
-        model.addAttribute("listaTiposAnexo", tipoAnexoService.listarTodos());
-        return "comprovante/formulario";
-    }
-
-    @GetMapping("/editar/{id}")
-    public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        model.addAttribute("comprovante", comprovanteService.buscarPorId(id).orElse(new Comprovante()));
-        model.addAttribute("listaTiposAnexo", tipoAnexoService.listarTodos());
-        return "comprovante/formulario";
-    }
-
-    @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("comprovante") Comprovante comprovante, RedirectAttributes redirectAttributes) {
+    @GetMapping("/download/{id}")
+    public ResponseEntity<?> downloadFicheiro(@PathVariable Integer id, HttpServletRequest request) {
+        
         try {
-            // Futuramente aqui você acopla a chamada para salvar o arquivo físico/FTP
-            comprovanteService.salvar(comprovante);
-            redirectAttributes.addFlashAttribute("sucesso", "Comprovante salvo com sucesso!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao salvar Comprovante: " + e.getMessage());
-        }
-        return "redirect:/comprovantes";
-    }
+            // 1. Busca os metadados na base de dados
+            Comprovante comprovante = comprovanteService.buscarPorId(id)
+                    .orElseThrow(() -> new RuntimeException("Comprovante não encontrado na base de dados."));
 
-    @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
-        try {
-            comprovanteService.excluir(id);
-            redirectAttributes.addFlashAttribute("sucesso", "Comprovante removido!");
+            // 2. Busca o ficheiro localmente ou através de Fallback no FTP
+            Resource resource = fileStorageService.loadFileAsResource(comprovante.getNomeArquivo(), comprovante.getAno(), comprovante.getMes());
+
+            // 3. Define o Content-Type
+            String contentType = comprovante.getContentType();
+            if(contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + comprovante.getNomeComprovante() + "\"")
+                    .body(resource);
+                    
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao remover Comprovante.");
+            // Se o ficheiro físico não existir localmente (apagado ou no FTP antigo), 
+            // devolvemos um HTML elegante para ser exibido dentro do iframe do Modal.
+            String htmlErro = "<html><body style='font-family: Arial, sans-serif; text-align: center; padding-top: 20%; color: #fff; background-color: #333;'>" +
+                              "<h2><span style='font-size: 50px;'>📄❌</span><br><br>Documento Indisponível</h2>" +
+                              "<p style='color: #ccc;'>O ficheiro físico não foi encontrado.</p>" +
+                              "</body></html>";
+                              
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(htmlErro);
         }
-        return "redirect:/comprovantes";
     }
 }

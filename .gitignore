@@ -4,6 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 src/main/resources/application.properties
+src/main/java/br/com/cremepe/jeton/configuracao/TesteConexao.java
 
 ### STS ###
 .apt_generated

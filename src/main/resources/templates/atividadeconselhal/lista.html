@@ -83,6 +83,11 @@
                             </td>
 
                             <td class="text-center pe-4">
+                                <button th:if="${a.comprovante != null}" type="button" class="btn btn-sm btn-outline-secondary me-1" 
+                                        th:onclick="verComprovante([[${a.comprovante.idComprovante}]], [[${a.comprovante.nomeComprovante}]])" 
+                                        title="Ver Comprovante">
+                                    <i class="fa-solid fa-file-pdf"></i>
+                                </button>
                                 <button type="button" class="btn btn-sm btn-outline-info me-1" 
                                         th:onclick="verDetalhes([[${a}]])" title="Ver Detalhes Completos">
                                     <i class="fa-solid fa-eye"></i>
@@ -133,6 +138,20 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalComprovante" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered" style="height: 90vh;">
+            <div class="modal-content h-100 border-0 shadow">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title"><i class="fa-solid fa-file-lines me-2"></i><span id="nomeComprovanteTitulo"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0 bg-secondary">
+                    <iframe id="frameComprovante" src="" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modalExclusao" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -178,6 +197,14 @@
             `;
             document.getElementById('detalhesConteudo').innerHTML = html;
             new bootstrap.Modal(document.getElementById('modalDetalhes')).show();
+        }
+
+        function verComprovante(id, nome) {
+            document.getElementById('nomeComprovanteTitulo').innerText = nome;
+            // O link aponta para o ComprovanteController que criamos antes
+            const url = `/comprovantes/download/${id}`;
+            document.getElementById('frameComprovante').src = url;
+            new bootstrap.Modal(document.getElementById('modalComprovante')).show();
         }
     </script>
 </div>

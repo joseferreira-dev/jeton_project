@@ -6,6 +6,8 @@ import br.com.cremepe.jeton.servico.AtividadeConselhalService;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
 import br.com.cremepe.jeton.servico.RegrasService;
+import br.com.cremepe.jeton.servico.ComprovanteService;
+import br.com.cremepe.jeton.servico.TipoAnexoService;
 import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,8 @@ public class AtividadeConselhalController {
     @Autowired private GestaoService gestaoService;
     @Autowired private RegrasService regrasService;
     @Autowired private GestaoConselheiroRepository gestaoConselheiroRepository;
+    @Autowired private ComprovanteService comprovanteService;
+    @Autowired private TipoAnexoService tipoAnexoService;
 
     @GetMapping
     public String listar(
@@ -73,18 +77,32 @@ public class AtividadeConselhalController {
     }
 
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("atividade") AtividadeConselhal atividade, RedirectAttributes ra) {
+    public String salvar(@ModelAttribute("atividade") AtividadeConselhal atividade, 
+                          @RequestParam(value = "file", required = false) org.springframework.web.multipart.MultipartFile file,
+                          @RequestParam(value = "idTipoAnexo", required = false) Integer idTipoAnexo,
+                          @RequestParam(value = "nomeComprovanteUsuario", required = false) String nomeComprovanteUsuario, // NOVO
+                          RedirectAttributes ra) {
         try {
+            // 1. Se foi enviado um ficheiro, processamos o comprovante primeiro
+            if (file != null && !file.isEmpty()) {
+                if (idTipoAnexo == null || nomeComprovanteUsuario == null || nomeComprovanteUsuario.isEmpty()) {
+                    throw new RuntimeException("O tipo e o nome do comprovante são obrigatórios.");
+                }
+                
+                // Passa o nome digitado pelo usuário para o serviço
+                br.com.cremepe.jeton.dominio.Comprovante comprovante = 
+                    comprovanteService.guardarComprovante(file, idTipoAnexo, nomeComprovanteUsuario);
+                
+                atividade.setComprovante(comprovante);
+            }
+
             atividadeService.salvarAtividade(atividade);
-            ra.addFlashAttribute("sucesso", "Atividade registada com sucesso!");
+            ra.addFlashAttribute("sucesso", "Atividade guardada com sucesso!");
             
         } catch (RuntimeException e) {
-            // Captura as nossas mensagens de validação (Data, Regra revogada, Vínculos, etc) e exibe de forma limpa
             ra.addFlashAttribute("erro", e.getMessage());
-            
         } catch (Exception e) {
-            // Se for um erro técnico ou de falha do banco de dados, devolve uma mensagem mascarada
-            ra.addFlashAttribute("erro", "Ocorreu um erro inesperado no banco de dados ao salvar a atividade. Verifique os dados e tente novamente.");
+            ra.addFlashAttribute("erro", "Erro inesperado ao salvar: " + e.getMessage());
         }
         return "redirect:/atividades";
     }
@@ -103,9 +121,9 @@ public class AtividadeConselhalController {
     private void carregarListasDeApoio(Model model) {
         model.addAttribute("listaConselheiros", conselheiroService.listarTodos());
         model.addAttribute("listaGestoes", gestaoService.listarTodos());
-        // Envia apenas os documentos que contêm regras ativas para os filtros iniciais
         model.addAttribute("listaResolucoes", regrasService.listarResolucoesComRegras());
         model.addAttribute("listaPortarias", regrasService.listarPortariasComRegras());
+        model.addAttribute("listaTiposAnexo", tipoAnexoService.listarTodos());
     }
 
     // Este endpoint recebe os IDs pelo Javascript e devolve o que for compatível em JSON

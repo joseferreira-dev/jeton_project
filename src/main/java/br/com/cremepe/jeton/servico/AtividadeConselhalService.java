@@ -5,6 +5,8 @@ import br.com.cremepe.jeton.dominio.Gestao;
 import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
 import br.com.cremepe.jeton.repositorio.GestaoRepository;
+import br.com.cremepe.jeton.repositorio.ComprovanteRepository;
+import br.com.cremepe.jeton.servico.FileStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +26,8 @@ public class AtividadeConselhalService {
     @Autowired private AtividadeConselhalRepository atividadeRepository;
     @Autowired private GestaoRepository gestaoRepository;
     @Autowired private GestaoConselheiroRepository gestaoConselheiroRepository;
+    @Autowired private ComprovanteRepository comprovanteRepository;
+    @Autowired private FileStorageService fileStorageService;
 
     @Transactional
     public AtividadeConselhal salvarAtividade(AtividadeConselhal atividade) {
@@ -79,7 +83,24 @@ public class AtividadeConselhalService {
 
     @Transactional
     public void excluirAtividade(Integer id) {
-        atividadeRepository.deleteById(id);
+        Optional<AtividadeConselhal> optAtividade = atividadeRepository.findById(id);
+        
+        if (optAtividade.isPresent()) {
+            AtividadeConselhal atividade = optAtividade.get();
+            // Guarda a referência do comprovante (se existir) antes de apagar a atividade
+            br.com.cremepe.jeton.dominio.Comprovante comprovante = atividade.getComprovante();
+            
+            // 1. Remove a atividade primeiro (para libertar a chave estrangeira)
+            atividadeRepository.deleteById(id);
+            
+            // 2. Se a atividade tinha um anexo, destrói as provas (BD e FTP)
+            if (comprovante != null) {
+                // Remove da base de dados
+                comprovanteRepository.delete(comprovante);
+                // Remove o ficheiro físico do disco e da Locaweb
+                fileStorageService.deleteFile(comprovante.getNomeArquivo(), comprovante.getAno(), comprovante.getMes());
+            }
+        }
     }
 
     @Transactional(readOnly = true)
