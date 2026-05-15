@@ -6,6 +6,7 @@ import br.com.cremepe.jeton.servico.AtividadeConselhalService;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
 import br.com.cremepe.jeton.servico.RegrasService;
+import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,7 @@ public class AtividadeConselhalController {
     @Autowired private ConselheiroService conselheiroService;
     @Autowired private GestaoService gestaoService;
     @Autowired private RegrasService regrasService;
+    @Autowired private GestaoConselheiroRepository gestaoConselheiroRepository;
 
     @GetMapping
     public String listar(
@@ -126,6 +128,19 @@ public class AtividadeConselhalController {
             .map(r -> Map.of("id", r.getIdRegra(), "nome", r.getNomeRegra() + " - " + r.getDescricao())).toList());
             
         return response;
+    }
+
+    @GetMapping("/api/conselheiros-por-gestao")
+    @ResponseBody
+    public List<Map<String, Object>> getConselheirosPorGestao(@RequestParam Integer gestaoId) {
+        // Busca os vínculos da gestão e mapeia para uma lista simples de ID e Nome
+        return gestaoConselheiroRepository.findByIdIdGestao(gestaoId).stream()
+                .map(gc -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", gc.getConselheiro().getIdPessoa());
+                    map.put("nome", gc.getConselheiro().getPessoa().getNome());
+                    return map;
+                }).toList();
     }
 
 }
