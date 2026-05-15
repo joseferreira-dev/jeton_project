@@ -8,29 +8,31 @@
         <a th:href="@{/regras/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Nova Regra</a>
     </div>
 
-    <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show"><i class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-    <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show"><i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-
     <form th:action="@{/regras}" method="get" class="mb-4 bg-white p-3 rounded shadow-sm border border-light">
         <div class="row g-3 align-items-end">
-            <div class="col-md-5">
-                <label class="form-label small text-muted fw-bold">Buscar Atividade</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" name="termo" th:value="${termo}" class="form-control border-start-0" placeholder="Ex: Sindicância, Vistoria...">
-                </div>
-            </div>
             <div class="col-md-3">
+                <label class="form-label small text-muted fw-bold">Buscar Atividade</label>
+                <input type="text" name="termo" th:value="${termo}" class="form-control form-control-sm" placeholder="Ex: Sindicância...">
+            </div>
+            <div class="col-md-2">
                 <label class="form-label small text-muted fw-bold">Estado</label>
-                <select name="situacao" class="form-select">
+                <select name="situacao" class="form-select form-select-sm">
                     <option value="">Todos</option>
                     <option value="N" th:selected="${situacao == 'N'}">Em Vigor</option>
                     <option value="S" th:selected="${situacao == 'S'}">Revogada</option>
                 </select>
             </div>
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
-                <a th:href="@{/regras}" class="btn btn-outline-secondary w-100"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
+            <div class="col-md-2">
+                <label class="form-label small text-muted fw-bold">Judicante</label>
+                <select name="judicante" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    <option value="S" th:selected="${judicante == 'S'}">Sim</option>
+                    <option value="N" th:selected="${judicante == 'N'}">Não</option>
+                </select>
+            </div>
+            <div class="col-md-5 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                <a th:href="@{/regras}" class="btn btn-sm btn-outline-secondary w-100"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
             </div>
         </div>
     </form>
@@ -41,10 +43,30 @@
                 <table class="table table-hover mb-0 align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4">Atividade (Regra)</th>
-                            <th>Normativa Base</th>
-                            <th>Pontos Base</th>
-                            <th>Lim. por Turno</th>
+                            <th class="ps-4">
+                                <a th:href="@{/regras(page=0, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort='nomeRegra', dir=${sort == 'nomeRegra' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-dark text-decoration-none">
+                                    Atividade (Regra)
+                                    <i class="fa-solid fa-sort ms-1 small text-muted"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a th:href="@{/regras(page=0, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort='resolucao.numero', dir=${sort == 'resolucao.numero' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-dark text-decoration-none">
+                                    Normativa Base
+                                    <i class="fa-solid fa-sort ms-1 small text-muted"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a th:href="@{/regras(page=0, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort='pontos', dir=${sort == 'pontos' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-dark text-decoration-none">
+                                    Pontos Base
+                                    <i class="fa-solid fa-sort ms-1 small text-muted"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a th:href="@{/regras(page=0, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort='pontosLimitesTurno', dir=${sort == 'pontosLimitesTurno' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-dark text-decoration-none">
+                                    Lim. por Turno
+                                    <i class="fa-solid fa-sort ms-1 small text-muted"></i>
+                                </a>
+                            </th>
                             <th>Judicante</th>
                             <th class="text-center pe-4">Ações</th>
                         </tr>
@@ -56,32 +78,34 @@
                                 <span th:if="${r.resolucao != null}" class="badge bg-secondary me-1" th:text="${'Res. ' + r.resolucao.numero + '/' + r.resolucao.ano}"></span>
                                 <span th:if="${r.portaria != null}" class="badge bg-info text-dark" th:text="${'Port. ' + r.portaria.numero + '/' + r.portaria.ano}"></span>
                             </td>
-                            <td class="fw-bold text-success" th:text="${r.pontos}">1.0</td>
-                            <td th:text="${r.pontosLimitesTurno}">3.0</td>
+                            <td class="fw-bold text-success" th:text="${r.pontos}"></td>
+                            <td th:text="${r.pontosLimitesTurno}"></td>
                             <td><span th:text="${r.inJudicante == 'S' ? 'Sim' : 'Não'}" th:classappend="${r.inJudicante == 'S'} ? 'badge bg-dark' : 'text-muted'"></span></td>
                             <td class="text-center pe-4">
-                                <a th:if="${r.inRevogado == 'N'}" th:href="@{'/regras/editar/' + ${r.idRegra}}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="fa-solid fa-pen-to-square"></i></a>
-                                <a th:if="${r.inRevogado == 'N'}" th:href="@{'/regras/excluir/' + ${r.idRegra}}" class="btn btn-sm btn-outline-warning btn-confirm me-1" data-mensagem="Deseja <b>REVOGAR</b> esta Regra? Ela deixará de aparecer para o Conselheiro." data-cor="btn-warning" data-icone="fa-solid fa-ban"><i class="fa-solid fa-ban"></i></a>
-                                <a th:href="@{'/regras/deletar/' + ${r.idRegra}}" class="btn btn-sm btn-outline-danger btn-confirm me-1" data-mensagem="Deseja <b>EXCLUIR</b> permanentemente esta Regra?" data-cor="btn-danger" data-icone="fa-solid fa-trash-can"><i class="fa-solid fa-trash-can"></i></a>
-                                <a th:if="${r.inRevogado == 'S'}" th:href="@{'/regras/restaurar/' + ${r.idRegra}}" class="btn btn-sm btn-outline-success btn-confirm" data-mensagem="Deseja restaurar esta Regra?" data-cor="btn-success" data-icone="fa-solid fa-rotate-left"><i class="fa-solid fa-rotate-left"></i></a>
+                                <a th:if="${r.inRevogado == 'N'}" th:href="@{'/regras/editar/' + ${r.idRegra}}" class="btn btn-sm btn-outline-primary me-1"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <a th:if="${r.inRevogado == 'N'}" th:href="@{'/regras/excluir/' + ${r.idRegra}}" class="btn btn-sm btn-outline-warning btn-confirm me-1" data-mensagem="Deseja revogar esta Regra?" data-cor="btn-warning"><i class="fa-solid fa-ban"></i></a>
+                                <a th:href="@{'/regras/deletar/' + ${r.idRegra}}" class="btn btn-sm btn-outline-danger btn-confirm me-1" data-mensagem="Deseja excluir permanentemente esta Regra?" data-cor="btn-danger"><i class="fa-solid fa-trash-can"></i></a>
+                                <a th:if="${r.inRevogado == 'S'}" th:href="@{'/regras/restaurar/' + ${r.idRegra}}" class="btn btn-sm btn-outline-success btn-confirm" data-mensagem="Restaurar esta Regra?" data-cor="btn-success"><i class="fa-solid fa-rotate-left"></i></a>
                             </td>
                         </tr>
-                        <tr th:if="${paginaRegras.empty}"><td colspan="6" class="text-center py-4 text-muted">Nenhuma regra encontrada.</td></tr>
                     </tbody>
                 </table>
             </div>
             
-            <div th:if="${paginaRegras.totalPages > 1}" class="card-footer bg-white d-flex justify-content-between align-items-center">
-                <span class="text-muted small">
-                    Mostrando <span th:text="${paginaRegras.number * paginaRegras.size + 1}"></span> a 
-                    <span th:text="${(paginaRegras.number + 1) * paginaRegras.size < paginaRegras.totalElements ? (paginaRegras.number + 1) * paginaRegras.size : paginaRegras.totalElements}"></span> de 
-                    <span th:text="${paginaRegras.totalElements}"></span> registos
-                </span>
-                <ul class="pagination pagination-sm mb-0">
-                    <li class="page-item" th:classappend="${paginaRegras.first ? 'disabled' : ''}"><a class="page-link" th:href="@{/regras(page=${paginaRegras.number - 1}, size=${size}, termo=${termo}, situacao=${situacao})}"><i class="fa-solid fa-chevron-left"></i></a></li>
-                    <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaRegras.totalPages - 1)}" th:classappend="${paginaRegras.number == i ? 'active' : ''}"><a class="page-link" th:href="@{/regras(page=${i}, size=${size}, termo=${termo}, situacao=${situacao})}" th:text="${i + 1}"></a></li>
-                    <li class="page-item" th:classappend="${paginaRegras.last ? 'disabled' : ''}"><a class="page-link" th:href="@{/regras(page=${paginaRegras.number + 1}, size=${size}, termo=${termo}, situacao=${situacao})}"><i class="fa-solid fa-chevron-right"></i></a></li>
-                </ul>
+            <div th:if="${paginaRegras.totalPages > 1}" class="card-footer bg-white">
+                <nav class="d-flex justify-content-center">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" th:classappend="${paginaRegras.first ? 'disabled' : ''}">
+                            <a class="page-link" th:href="@{/regras(page=${paginaRegras.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}"><i class="fa-solid fa-chevron-left"></i></a>
+                        </li>
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaRegras.totalPages - 1)}" th:classappend="${paginaRegras.number == i ? 'active' : ''}">
+                            <a class="page-link" th:href="@{/regras(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}" th:text="${i + 1}"></a>
+                        </li>
+                        <li class="page-item" th:classappend="${paginaRegras.last ? 'disabled' : ''}">
+                            <a class="page-link" th:href="@{/regras(page=${paginaRegras.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}"><i class="fa-solid fa-chevron-right"></i></a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
     </div>

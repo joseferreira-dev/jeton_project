@@ -9,8 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 @Repository
@@ -56,4 +54,14 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
            "(:termo IS NULL OR :termo = '' OR LOWER(r.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
            "(:situacao IS NULL OR :situacao = '' OR r.inRevogado = :situacao)")
     Page<Regras> pesquisarPaginado(@Param("termo") String termo, @Param("situacao") String situacao, Pageable pageable);
+
+    @Query("SELECT r FROM Regras r WHERE " +
+       "(:termo IS NULL OR :termo = '' OR LOWER(r.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
+       "(:situacao IS NULL OR :situacao = '' OR r.inRevogado = :situacao) AND " +
+       "(:judicante IS NULL OR :judicante = '' OR r.inJudicante = :judicante)")
+    Page<Regras> pesquisarPaginado(@Param("termo") String termo, 
+                                @Param("situacao") String situacao, 
+                                @Param("judicante") String judicante, 
+                                Pageable pageable);
+
 }

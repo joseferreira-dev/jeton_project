@@ -87,10 +87,11 @@ public class RegrasService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Regras> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size, String sortField, String sortDir) {
+    public Page<Regras> listarComPaginacaoEPesquisa(String termo, String situacao, String judicante, int page, int size, String sortField, String sortDir) {
         org.springframework.data.domain.Sort sort = sortDir.equalsIgnoreCase("desc") ? 
             org.springframework.data.domain.Sort.by(sortField).descending() : org.springframework.data.domain.Sort.by(sortField).ascending();
+        
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sort);
-        return repository.pesquisarPaginado(termo, situacao, pageable);
+        return repository.pesquisarPaginado(termo, situacao, judicante, pageable);
     }
 }

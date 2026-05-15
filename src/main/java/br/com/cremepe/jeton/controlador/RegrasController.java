@@ -26,6 +26,7 @@ public class RegrasController {
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
             @RequestParam(value = "situacao", required = false, defaultValue = "") String situacao,
+            @RequestParam(value = "judicante", required = false, defaultValue = "") String judicante, // NOVO
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") int size,
             @RequestParam(value = "sort", required = false, defaultValue = "nomeRegra") String sort,
@@ -34,11 +35,12 @@ public class RegrasController {
             
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
 
-        Page<Regras> paginaRegras = regrasService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort, dir);
+        Page<Regras> paginaRegras = regrasService.listarComPaginacaoEPesquisa(termo, situacao, judicante, page, size, sort, dir);
 
         model.addAttribute("paginaRegras", paginaRegras);
         model.addAttribute("termo", termo);
         model.addAttribute("situacao", situacao);
+        model.addAttribute("judicante", judicante); // NOVO
         model.addAttribute("size", size);
         model.addAttribute("sort", sort);
         model.addAttribute("dir", dir);
