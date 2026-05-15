@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
+<head><title>Formulário de Portaria - Jeton</title></head>
+<body>
+<div layout:fragment="conteudo">
+    <div class="mb-4">
+        <h2 class="h4 text-cremepe fw-bold">
+            <i class="fa-solid fa-file-signature me-2"></i>
+            <span th:text="${portaria.idPortaria == null ? 'Registar Nova Portaria' : 'Editar Portaria'}"></span>
+        </h2>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="@{/portarias/salvar}" th:object="${portaria}" method="post">
+                <input type="hidden" th:field="*{idPortaria}">
+                <input type="hidden" th:field="*{inRevogado}">
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Número da Portaria</label>
+                        <input type="number" class="form-control" th:field="*{numero}" required min="1">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Ano</label>
+                        <input type="number" class="form-control" th:field="*{ano}" required min="2000" max="2100">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Link de Publicação (Opcional)</label>
+                        <input type="url" class="form-control" th:field="*{linkPublicado}" placeholder="Ex: https://diariooficial.org/...">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <a th:href="@{/portarias}" class="btn btn-outline-secondary me-2"><i class="fa-solid fa-xmark me-1"></i> Cancelar</a>
+                    <button type="submit" class="btn btn-cremepe"><i class="fa-solid fa-floppy-disk me-1"></i> Guardar Portaria</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

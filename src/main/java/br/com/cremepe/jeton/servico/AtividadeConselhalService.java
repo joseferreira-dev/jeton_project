@@ -6,7 +6,6 @@ import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
 import br.com.cremepe.jeton.repositorio.GestaoRepository;
 import br.com.cremepe.jeton.repositorio.ComprovanteRepository;
-import br.com.cremepe.jeton.servico.FileStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

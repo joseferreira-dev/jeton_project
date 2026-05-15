@@ -20,16 +20,22 @@
         
         <nav class="nav flex-column mt-2">
             <a th:href="@{/index}" class="nav-link"><i class="fa-solid fa-chart-line me-2"></i> Dashboard</a>
-            
-            <div class="section-title">Institucional</div>
-            <a th:href="@{/conselheiros}" class="nav-link"><i class="fa-solid fa-user-tie me-2"></i> Conselheiros</a>
             <a th:href="@{/gestoes}" class="nav-link"><i class="fa-solid fa-calendar-days me-2"></i> Gestões</a>
-            <a th:href="@{/gestao-conselheiros}" class="nav-link"><i class="fa-solid fa-link me-2"></i> Vínculos</a>
+            <a th:href="@{/conselheiros}" class="nav-link"><i class="fa-solid fa-user-doctor me-2"></i> Conselheiros</a>
             
-            <div class="section-title">Operacional</div>
-            <a th:href="@{/atividades}" class="nav-link"><i class="fa-solid fa-list-check me-2"></i> Atividades</a>
-            <a th:href="@{/jeton}" class="nav-link"><i class="fa-solid fa-file-invoice-dollar me-2"></i> Pagamentos</a>
-            <a th:href="@{/pontos-remanescentes}" class="nav-link"><i class="fa-solid fa-coins me-2"></i> Saldos</a>
+            <div class="section-title">Atividades</div>
+            <a th:href="@{/atividades}" class="nav-link"><i class="fa-solid fa-clipboard-check me-2"></i> Atividades Conselhais</a>
+            <a th:href="@{/relatorios/atividades}" class="nav-link"><i class="fa-solid fa-file-invoice me-2"></i> Relatório Atividades</a>
+            <a th:href="@{/gestao-conselheiros}" class="nav-link"><i class="fa-solid fa-users-viewfinder me-2"></i> Vínculos Rápidos</a>
+
+            <div class="section-title">Normativas</div>
+            <a th:href="@{/resolucoes}" class="nav-link"><i class="fa-solid fa-scale-balanced me-2"></i> Resoluções</a>
+            <a th:href="@{/portarias}" class="nav-link"><i class="fa-solid fa-file-signature me-2"></i> Portarias</a>
+            <a th:href="@{/regras}" class="nav-link"><i class="fa-solid fa-list-check me-2"></i> Regras</a>
+            <a th:href="@{/regras-conjuntas}" class="nav-link"><i class="fa-solid fa-link me-2"></i> Regras Conjuntas</a>
+            
+            <div class="section-title">Financeiro</div>
+            <a th:href="@{/saldos}" class="nav-link"><i class="fa-solid fa-coins me-2"></i> Saldos</a>
             
             <div class="section-title">Configurações</div>
             <a th:href="@{/usuarios}" class="nav-link"><i class="fa-solid fa-users-gear me-2"></i> Usuários</a>

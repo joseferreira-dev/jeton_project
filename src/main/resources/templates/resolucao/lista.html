@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
+<head><title>Resoluções - Jeton</title></head>
+<body>
+<div layout:fragment="conteudo">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-scale-balanced me-2"></i> Gestão de Resoluções (Tetos Financeiros)</h2>
+        <a th:href="@{/resolucoes/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Nova Resolução</a>
+    </div>
+
+    <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show"><i class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show"><i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+
+    <form th:action="@{/resolucoes}" method="get" class="mb-4 bg-white p-3 rounded shadow-sm border border-light">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small text-muted fw-bold">Buscar (Número, Ano ou Ementa)</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" name="termo" th:value="${termo}" class="form-control border-start-0" placeholder="Ex: 2368, Sindicância...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted fw-bold">Estado</label>
+                <select name="situacao" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="N" th:selected="${situacao == 'N'}">Em Vigor</option>
+                    <option value="S" th:selected="${situacao == 'S'}">Revogada</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                <a th:href="@{/resolucoes}" class="btn btn-outline-secondary w-100"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Resolução</th>
+                            <th>Valor Jeton</th>
+                            <th>Teto (Mês)</th>
+                            <th>Estado</th>
+                            <th class="text-center pe-4">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${paginaResolucoes.content}" th:classappend="${r.inRevogado == 'S'} ? 'table-light text-muted'">
+                            <td class="ps-4">
+                                <div class="fw-bold text-cremepe" th:text="${'Resolução ' + r.numero + '/' + r.ano}"></div>
+                                <div class="small" style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" th:text="${r.ementa}"></div>
+                            </td>
+                            <td class="fw-bold text-success" th:text="${'R$ ' + #numbers.formatDecimal(r.valorJeton, 1, 'POINT', 2, 'COMMA')}"></td>
+                            <td th:text="${r.maxJetonsMes + ' Jetons'}"></td>
+                            <td>
+                                <span th:if="${r.inRevogado == 'N'}" class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Em Vigor</span>
+                                <span th:if="${r.inRevogado == 'S'}" class="badge bg-danger"><i class="fa-solid fa-ban me-1"></i> Revogada</span>
+                            </td>
+                            <td class="text-center pe-4">
+                                <a th:if="${r.inRevogado == 'N'}" th:href="@{'/resolucoes/editar/' + ${r.idResolucao}}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <a th:if="${r.inRevogado == 'N'}" th:href="@{'/resolucoes/excluir/' + ${r.idResolucao}}" class="btn btn-sm btn-outline-danger" title="Revogar" onclick="if(!confirm('Tem certeza que deseja REVOGAR esta Resolução?')) return false;"><i class="fa-solid fa-ban"></i></a>
+                                <a th:if="${r.inRevogado == 'S'}" th:href="@{'/resolucoes/restaurar/' + ${r.idResolucao}}" class="btn btn-sm btn-outline-success" title="Restaurar" onclick="if(!confirm('Tem certeza que deseja RESTAURAR esta Resolução para o estado Em Vigor?')) return false;"><i class="fa-solid fa-rotate-left"></i></a>
+                            </td>
+                        </tr>
+                        <tr th:if="${paginaResolucoes.empty}"><td colspan="5" class="text-center py-4 text-muted">Nenhuma resolução encontrada para os filtros aplicados.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div th:if="${paginaResolucoes.totalPages > 1}" class="card-footer bg-white d-flex justify-content-between align-items-center">
+                <span class="text-muted small">
+                    Mostrando <span th:text="${paginaResolucoes.number * paginaResolucoes.size + 1}"></span> a 
+                    <span th:text="${(paginaResolucoes.number + 1) * paginaResolucoes.size < paginaResolucoes.totalElements ? (paginaResolucoes.number + 1) * paginaResolucoes.size : paginaResolucoes.totalElements}"></span> de 
+                    <span th:text="${paginaResolucoes.totalElements}"></span> registos
+                </span>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" th:classappend="${paginaResolucoes.first ? 'disabled' : ''}">
+                        <a class="page-link" th:href="@{/resolucoes(page=${paginaResolucoes.number - 1}, size=${size}, termo=${termo}, situacao=${situacao})}"><i class="fa-solid fa-chevron-left"></i></a>
+                    </li>
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaResolucoes.totalPages - 1)}" th:classappend="${paginaResolucoes.number == i ? 'active' : ''}">
+                        <a class="page-link" th:href="@{/resolucoes(page=${i}, size=${size}, termo=${termo}, situacao=${situacao})}" th:text="${i + 1}"></a>
+                    </li>
+                    <li class="page-item" th:classappend="${paginaResolucoes.last ? 'disabled' : ''}">
+                        <a class="page-link" th:href="@{/resolucoes(page=${paginaResolucoes.number + 1}, size=${size}, termo=${termo}, situacao=${situacao})}"><i class="fa-solid fa-chevron-right"></i></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

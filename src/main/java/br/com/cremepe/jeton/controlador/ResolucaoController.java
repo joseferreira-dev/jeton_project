@@ -4,6 +4,7 @@ import br.com.cremepe.jeton.dominio.Resolucao;
 import br.com.cremepe.jeton.servico.ResolucaoService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -16,9 +17,26 @@ public class ResolucaoController {
     @Autowired private ResolucaoService resolucaoService;
 
     @GetMapping
-    public String listar(Model model, HttpSession session) {
+    public String listar(
+            @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
+            @RequestParam(value = "situacao", required = false, defaultValue = "") String situacao,
+            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
+            @RequestParam(value = "size", required = false, defaultValue = "10") int size,
+            @RequestParam(value = "sort", required = false, defaultValue = "ano") String sort,
+            @RequestParam(value = "dir", required = false, defaultValue = "desc") String dir,
+            Model model, HttpSession session) {
+            
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        model.addAttribute("lista", resolucaoService.listarTodos());
+
+        Page<Resolucao> paginaResolucoes = resolucaoService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort, dir);
+
+        model.addAttribute("paginaResolucoes", paginaResolucoes);
+        model.addAttribute("termo", termo);
+        model.addAttribute("situacao", situacao);
+        model.addAttribute("size", size);
+        model.addAttribute("sort", sort);
+        model.addAttribute("dir", dir);
+
         return "resolucao/lista";
     }
 
@@ -50,10 +68,21 @@ public class ResolucaoController {
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
         try {
-            resolucaoService.excluir(id);
-            redirectAttributes.addFlashAttribute("sucesso", "Resolução removida!");
+            resolucaoService.revogar(id); // Usa o novo método
+            redirectAttributes.addFlashAttribute("sucesso", "Resolução revogada com sucesso!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao remover Resolução.");
+            redirectAttributes.addFlashAttribute("erro", "Erro ao revogar Resolução.");
+        }
+        return "redirect:/resolucoes";
+    }
+
+    @GetMapping("/restaurar/{id}")
+    public String restaurar(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            resolucaoService.restaurar(id);
+            redirectAttributes.addFlashAttribute("sucesso", "Resolução restaurada (Em Vigor) com sucesso!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("erro", "Erro ao restaurar Resolução.");
         }
         return "redirect:/resolucoes";
     }
