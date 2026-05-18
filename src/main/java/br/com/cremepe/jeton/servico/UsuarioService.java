@@ -22,6 +22,7 @@ import br.com.cremepe.jeton.repositorio.ConselheiroRepository;
 import br.com.cremepe.jeton.repositorio.PessoaRepository;
 import br.com.cremepe.jeton.repositorio.UsuarioRepository;
 import br.com.cremepe.jeton.repositorio.ViewUserLoginRepository;
+import br.com.cremepe.jeton.util.CpfValidador;
 
 @Service
 public class UsuarioService {
@@ -41,6 +42,11 @@ public class UsuarioService {
             usuario.getPessoa().setCpf(cpfLimpo);
         }
 
+        // 1.1 Validação matemática do CPF (Bloqueia CPFs falsos/inválidos)
+        if (cpfLimpo.isEmpty() || !CpfValidador.isCpfValido(cpfLimpo)) {
+            throw new RuntimeException("O número de CPF informado é inválido. Por favor, verifique os dígitos.");
+        }
+
         // 2. Validação de CPF Duplicado (em toda a tabela Pessoa)
         if (!cpfLimpo.isEmpty()) {
             Optional<Pessoa> pessoaExistente = pessoaRepository.findByCpf(cpfLimpo);
@@ -52,7 +58,7 @@ public class UsuarioService {
             }
         }
 
-        // NOVO 2.1: Validação de CRM Duplicado (Se for marcado como Conselheiro)
+        // 2.1: Validação de CRM Duplicado (Se for marcado como Conselheiro)
         if (usuario.iseConselheiro() && usuario.getCrm() != null) {
             Optional<Conselheiro> conselheiroExistente = conselheiroRepository.findByCrm(usuario.getCrm());
             if (conselheiroExistente.isPresent()) {

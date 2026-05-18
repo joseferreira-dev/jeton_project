@@ -20,6 +20,7 @@ import br.com.cremepe.jeton.dominio.Usuario;
 import br.com.cremepe.jeton.repositorio.ConselheiroRepository;
 import br.com.cremepe.jeton.repositorio.PessoaRepository;
 import br.com.cremepe.jeton.repositorio.UsuarioRepository;
+import br.com.cremepe.jeton.util.CpfValidador;
 
 @Service
 public class ConselheiroService {
@@ -37,17 +38,18 @@ public class ConselheiroService {
             conselheiro.getPessoa().setCpf(cpfLimpo);
         }
 
-        // 1. MESCLAGEM DE PESSOA (Aproveita o ID se já existir no sistema)
+        if (cpfLimpo.isEmpty() || !CpfValidador.isCpfValido(cpfLimpo)) {
+            throw new RuntimeException("O número de CPF informado é inválido. Por favor, verifique os dígitos.");
+        }
+
         if (!cpfLimpo.isEmpty()) {
             Optional<Pessoa> pessoaExistente = pessoaRepository.findByCpf(cpfLimpo);
             if (pessoaExistente.isPresent()) {
                 Pessoa p = pessoaExistente.get();
                 if (conselheiro.getIdPessoa() == null || !conselheiro.getIdPessoa().equals(p.getIdPessoa())) {
-                    // Impede duplicidade apenas se essa pessoa JÁ FOR conselheira
                     if (conselheiroRepository.existsById(p.getIdPessoa())) {
                         throw new RuntimeException("Já existe um conselheiro registrado com este CPF.");
                     }
-                    // Se era apenas usuário, fazemos o "UPGRADE" aproveitando o ID
                     conselheiro.setIdPessoa(p.getIdPessoa());
                     conselheiro.getPessoa().setIdPessoa(p.getIdPessoa());
                 }
