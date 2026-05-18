@@ -59,17 +59,35 @@ public class GestaoConselheiroController {
         return "gestaoconselheiro/formulario";
     }
 
-    @GetMapping("/editar/{idGestao}/{idPessoa}")
-    public String prepararEditar(@PathVariable("idGestao") Integer idGestao, 
+    @GetMapping("/alternar-status/{idGestao}/{idPessoa}")
+    public String alternarStatus(@PathVariable("idGestao") Integer idGestao, 
                                  @PathVariable("idPessoa") Integer idPessoa, 
-                                 Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        GestaoConselheiro vinculo = gestaoConselheiroService.buscarPorId(idGestao, idPessoa)
-                .orElseThrow(() -> new IllegalArgumentException("Vínculo inválido"));
+                                 RedirectAttributes ra, HttpSession session) {
         
-        model.addAttribute("gestaoConselheiro", vinculo);
-        carregarListasDeApoio(model);
-        return "gestaoconselheiro/formulario";
+        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+
+        try {
+            // 1. Busca o vínculo atual no banco
+            GestaoConselheiro vinculo = gestaoConselheiroService.buscarPorId(idGestao, idPessoa)
+                    .orElseThrow(() -> new IllegalArgumentException("Vínculo não encontrado."));
+            
+            // 2. Inverte o status: Se for Ativo vira Inativo, e vice-versa
+            if ("A".equals(vinculo.getInSituacao())) {
+                vinculo.setInSituacao("I");
+                ra.addFlashAttribute("sucesso", "O vínculo foi INATIVADO com sucesso.");
+            } else {
+                vinculo.setInSituacao("A");
+                ra.addFlashAttribute("sucesso", "O vínculo foi ATIVADO com sucesso. (Outras gestões foram inativadas automaticamente)");
+            }
+            
+            // 3. Salva a alteração (Isto aciona a regra inteligente do GestaoConselheiroService)
+            gestaoConselheiroService.salvar(vinculo);
+            
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro ao tentar alternar o status do vínculo.");
+        }
+        
+        return "redirect:/gestao-conselheiros";
     }
 
     @PostMapping("/salvar")

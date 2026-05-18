@@ -77,8 +77,16 @@
                                 <span th:if="${gc.inSituacao == 'I'}" class="badge bg-secondary">Inativo</span>
                             </td>
                             <td class="text-center pe-4">
+                                <a th:href="@{'/gestao-conselheiros/alternar-status/' + ${gc.gestao.idGestao} + '/' + ${gc.conselheiro.idPessoa}}" 
+                                   class="btn btn-sm me-1 btn-confirm"
+                                   th:classappend="${gc.inSituacao == 'A'} ? 'btn-outline-warning' : 'btn-outline-success'"
+                                   th:attr="data-mensagem=${gc.inSituacao == 'A' ? 'Deseja <b>INATIVAR</b> o conselheiro nesta gestão?' : 'Deseja <b>ATIVAR</b> o conselheiro nesta gestão?<br><small class=''text-muted''>Ele será inativado em quaisquer outras gestões ativas.</small>'}, data-cor=${gc.inSituacao == 'A' ? 'btn-warning' : 'btn-success'}, data-icone='fa-solid fa-power-off'"
+                                   th:title="${gc.inSituacao == 'A' ? 'Inativar Vínculo' : 'Ativar Vínculo'}">
+                                    <i class="fa-solid fa-power-off"></i>
+                                </a>
+                                
                                 <button type="button" class="btn btn-sm btn-outline-danger" 
-                                        th:onclick="prepararExclusao([[${gc.gestao.idGestao}]], [[${gc.conselheiro.idPessoa}]], [[${gc.conselheiro.pessoa.nome}]], [[${gc.gestao.nomeGestao}]])">
+                                        th:onclick="prepararExclusao([[${gc.gestao.idGestao}]], [[${gc.conselheiro.idPessoa}]], [[${gc.conselheiro.pessoa.nome}]], [[${gc.gestao.nomeGestao}]])" title="Excluir Permanentemente">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </td>

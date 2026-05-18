@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,46 +37,93 @@ public class GestaoConselheiroService {
         vinculo.getId().setIdGestao(vinculo.getGestao().getIdGestao());
         vinculo.getId().setIdPessoa(vinculo.getConselheiro().getIdPessoa());
 
+        // =========================================================================
+        // REGRA DE NEGÓCIO: Um conselheiro só pode estar ATIVO em uma Gestão
+        // =========================================================================
+        if ("A".equals(vinculo.getInSituacao())) {
+            inativarOutrosVinculosAtivos(vinculo.getId().getIdGestao(), vinculo.getId().getIdPessoa());
+        }
+
         return repository.save(vinculo);
+    }
+
+    /**
+     * Método auxiliar que busca e inativa silenciosamente quaisquer outros 
+     * vínculos ativos do conselheiro em gestões anteriores.
+     */
+    private void inativarOutrosVinculosAtivos(Integer idGestaoAtual, Integer idPessoa) {
+        List<GestaoConselheiro> todosVinculos = repository.findByIdIdPessoa(idPessoa);
+        
+        for (GestaoConselheiro vinculoExistente : todosVinculos) {
+            // Se o vínculo não for da gestão que estamos a salvar e estiver Ativo ('A')
+            if (!vinculoExistente.getId().getIdGestao().equals(idGestaoAtual) && "A".equals(vinculoExistente.getInSituacao())) {
+                vinculoExistente.setInSituacao("I");
+                repository.save(vinculoExistente);
+            }
+        }
     }
 
     @Transactional
     public void atualizarVinculosEmMassa(Integer idGestao, List<Integer> idsPessoasSelecionadas) {
-        if (idsPessoasSelecionadas == null) idsPessoasSelecionadas = new java.util.ArrayList<>();
+        if (idsPessoasSelecionadas == null) idsPessoasSelecionadas = new ArrayList<>();
 
-        // 1. Pegar quem está vinculado atualmente
+        // 1. Pegar quem está vinculado atualmente na gestão (independentemente do status)
         List<GestaoConselheiro> atuais = repository.findByIdIdGestao(idGestao);
         List<Integer> idsAtuais = atuais.stream().map(v -> v.getId().getIdPessoa()).collect(Collectors.toList());
 
-        // 2. PROCESSAR REMOÇÕES (Quem estava vinculado mas foi DESMARCADO)
+        // 2. PROCESSAR REMOÇÕES (Quem estava vinculado mas a caixa foi desmarcada)
         for (GestaoConselheiro vinculo : atuais) {
             Integer idPessoaLink = vinculo.getId().getIdPessoa();
             
             if (!idsPessoasSelecionadas.contains(idPessoaLink)) {
-                // Antes de apagar, verificamos se ele tem atividades nesta gestão
+                // Verifica se tem atividades vinculadas
                 long qtdAtividades = atividadeRepository.countByGestaoIdGestaoAndConselheiroIdPessoa(idGestao, idPessoaLink);
                 
                 if (qtdAtividades == 0) {
                     repository.delete(vinculo);
+                } else {
+                    // Se a caixa foi desmarcada, mas ele tem atividades, não podemos apagar. 
+                    // No entanto, alteramos o status para INATIVO automaticamente!
+                    if ("A".equals(vinculo.getInSituacao())) {
+                        vinculo.setInSituacao("I");
+                        repository.save(vinculo);
+                    }
                 }
-                // Se tiver atividades, o sistema simplesmente não apaga (ignora o desmarcar)
-                // Isso evita o erro de Constraint no banco de dados.
             }
         }
 
-        // 3. PROCESSAR ADIÇÕES (Quem foi MARCADO mas ainda não está vinculado)
+        // 3. PROCESSAR ADIÇÕES (Quem teve a caixa marcada)
         if (!idsPessoasSelecionadas.isEmpty()) {
             Gestao gestao = gestaoRepository.findById(idGestao).orElseThrow();
             
             for (Integer idNovo : idsPessoasSelecionadas) {
                 if (!idsAtuais.contains(idNovo)) {
+                    // É um vínculo totalmente novo (nunca esteve nesta gestão)
                     Conselheiro c = conselheiroRepository.findById(idNovo).orElseThrow();
                     GestaoConselheiro novoVinculo = new GestaoConselheiro();
                     novoVinculo.setId(new GestaoConselheiroId(idGestao, idNovo));
                     novoVinculo.setGestao(gestao);
                     novoVinculo.setConselheiro(c);
                     novoVinculo.setInSituacao("A");
+                    
+                    // Como entrará como ATIVO, aplica-se a regra de inativar as outras gestões
+                    inativarOutrosVinculosAtivos(idGestao, idNovo);
+                    
                     repository.save(novoVinculo);
+                } else {
+                    // Já existia na gestão (talvez como inativo), e a caixa foi remarcada
+                    GestaoConselheiro vinculoExistente = atuais.stream()
+                        .filter(v -> v.getId().getIdPessoa().equals(idNovo))
+                        .findFirst().orElse(null);
+
+                    if (vinculoExistente != null && "I".equals(vinculoExistente.getInSituacao())) {
+                        vinculoExistente.setInSituacao("A");
+                        inativarOutrosVinculosAtivos(idGestao, idNovo);
+                        repository.save(vinculoExistente);
+                    } else if (vinculoExistente != null && "A".equals(vinculoExistente.getInSituacao())) {
+                        // Apenas por precaução, se já estava ativo, varre as outras gestões
+                        inativarOutrosVinculosAtivos(idGestao, idNovo);
+                    }
                 }
             }
         }
