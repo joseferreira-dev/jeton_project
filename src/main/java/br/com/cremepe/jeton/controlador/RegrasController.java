@@ -83,22 +83,36 @@ public class RegrasController {
 
     @GetMapping("/excluir/{id}")
     public String revogar(@PathVariable("id") Integer id, RedirectAttributes ra) {
-        try { regrasService.revogar(id); ra.addFlashAttribute("sucesso", "Regra revogada!"); } 
-        catch (Exception e) { ra.addFlashAttribute("erro", "Erro ao revogar."); }
+        try { 
+            regrasService.revogar(id); 
+            ra.addFlashAttribute("sucesso", "Regra revogada com sucesso!"); 
+        } catch (Exception e) { 
+            ra.addFlashAttribute("erro", "Erro ao revogar regra."); 
+        }
         return "redirect:/regras";
     }
 
     @GetMapping("/restaurar/{id}")
     public String restaurar(@PathVariable("id") Integer id, RedirectAttributes ra) {
-        try { regrasService.restaurar(id); ra.addFlashAttribute("sucesso", "Regra restaurada!"); } 
-        catch (Exception e) { ra.addFlashAttribute("erro", "Erro ao restaurar."); }
+        try { 
+            regrasService.restaurar(id); 
+            ra.addFlashAttribute("sucesso", "Regra restaurada (Em Vigor)!"); 
+        } catch (Exception e) { 
+            ra.addFlashAttribute("erro", "Erro ao restaurar regra."); 
+        }
         return "redirect:/regras";
     }
 
     @GetMapping("/deletar/{id}")
     public String deletarFisicamente(@PathVariable("id") Integer id, RedirectAttributes ra) {
-        try { regrasService.excluirFisicamente(id); ra.addFlashAttribute("sucesso", "Regra excluída definitivamente."); } 
-        catch (RuntimeException e) { ra.addFlashAttribute("erro", e.getMessage()); }
+        try { 
+            regrasService.excluirFisicamente(id); 
+            ra.addFlashAttribute("sucesso", "Regra excluída definitivamente!"); 
+        } catch (RuntimeException e) { 
+            ra.addFlashAttribute("erro", e.getMessage()); 
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro inesperado ao tentar excluir."); 
+        }
         return "redirect:/regras";
     }
 }

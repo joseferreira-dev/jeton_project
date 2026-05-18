@@ -70,12 +70,12 @@ public class RegrasConjuntasController {
     }
 
     @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
             regrasConjuntasService.excluir(id);
-            redirectAttributes.addFlashAttribute("sucesso", "Removido com sucesso!");
+            ra.addFlashAttribute("sucesso", "Agrupamento de regras removido com sucesso!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao remover.");
+            ra.addFlashAttribute("erro", "Erro ao remover o agrupamento.");
         }
         return "redirect:/regras-conjuntas";
     }
