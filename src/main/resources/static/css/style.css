@@ -1,68 +1,209 @@
-@import url('https://fonts.googleapis.com/css?family=Open+Sans:400,700,800');
-@import url('https://fonts.googleapis.com/css?family=Lobster');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+:root {
+    /* Identidade Visual Cremepe */
+    --cremepe-green-dark: #007a51;
+    --cremepe-green: #009965;      /* Cor Principal solicitada */
+    --cremepe-green-light: #e6f5f0;
+    --cremepe-gold: #d4af37;       /* Dourado institucional */
+    --cremepe-gray-bg: #f3f4f6;
+    --cremepe-bg: #f4f6f9;
+    --sidebar-width: 260px;
+    --border-radius: 8px;
+}
 
+/* Configurações Globais Antigas e Novas Unificadas */
 body {
-  padding: 5px 10px 10px 5px;
-  font-family: 'Open Sans', sans-serif;
-  font-size:14px;
-  background:#bdc3c7
-  /*font-weight: 400;*/
-}
-/*
-.container {
-    max-width: 100%;
-}
-*/
-.ui-scrollpanel {
-    max-height: 500px;
-    width: 380px;
-    border: none;
-}
-
-.pnAtributos {
-    float: left;
-    overflow-y: auto; 
-    max-height: 490px; 
-    border: 0px;
-}
-
-.ui-dialog-content {
-    min-width: 330px;
+    background-color: var(--cremepe-gray-bg);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    color: #374151;
+    margin: 0;
+    padding: 0;
 }
 
 .upperCase {
     text-transform: uppercase;
 }
 
-.break-word {
-    white-space: normal; /* Permite que o texto quebre em várias linhas */
-    word-wrap: break-word; /* Quebra palavras longas */
-    display: inline-block; /* Garante que o label se comporte corretamente */
-/*    max-width: 400px; /* Ajuste conforme necessário */
-    border: 1px solid black;
-
+/* =========================================================================
+   ESTILOS EXCLUSIVOS: TELA DE LOGIN
+   ========================================================================= */
+body.login-body {
+    background-color: var(--cremepe-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-div.ui-growl {
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 999999 !important;
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    background-color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
 }
 
-@media only screen and (max-width: 640px) { 
+.login-header {
+    background-color: var(--cremepe-green);
+    color: #ffffff;
+    text-align: center;
+    padding: 35px 20px 25px 20px;
+}
 
-    .coluna .ui-column-title {
-        background-color: #e5e5e5;
-        font-weight: bold;
-        margin-bottom: 1px !important;
-    }
+.login-header img.logo-img {
+    max-width: 160px;
+    margin-bottom: 15px;
+    /* MÁGICA: Transforma a logo escura em branca para contrastar com o fundo verde */
+    filter: brightness(0) invert(1); 
+}
 
-    .ui-scrollpanel {
-        max-height: 500px;
-        width: 290px;
-        border: none;
-    }
-    
+.login-header h4 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.login-header small {
+    opacity: 0.85;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+.login-form-container {
+    padding: 30px;
+}
+
+.login-form-container .form-label {
+    font-size: 0.9rem;
+}
+
+.login-form-container .input-group-text {
+    background-color: #f8f9fa;
+    color: var(--cremepe-green); /* Ícones com a cor institucional */
+    border-right: none;
+}
+
+.login-form-container .form-control {
+    border-left: none;
+}
+
+.login-form-container .form-control:focus {
+    border-color: #ced4da;
+    box-shadow: none;
+}
+
+.login-form-container .input-group:focus-within {
+    box-shadow: 0 0 0 3px rgba(0, 153, 101, 0.2);
+    border-radius: 6px;
+}
+
+.btn-login-submit {
+    background-color: var(--cremepe-green);
+    border-color: var(--cremepe-green);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-login-submit:hover {
+    background-color: var(--cremepe-green-dark);
+    border-color: var(--cremepe-green-dark);
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+/* =========================================================================
+   ESTILOS DO SISTEMA INTERNO (Migrados do cremepe-style.css)
+   ========================================================================= */
+.sidebar {
+    width: var(--sidebar-width);
+    min-height: 100vh;
+    background-color: var(--cremepe-green-dark);
+    color: white;
+    position: fixed;
+    transition: all 0.3s;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.sidebar-header {
+    padding: 20px;
+    background-color: rgba(0,0,0,0.1);
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar .nav-link {
+    color: #cbd5e0;
+    padding: 12px 20px;
+    border-left: 4px solid transparent;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(255,255,255,0.05);
+    color: white;
+    border-left: 4px solid var(--cremepe-gold);
+}
+
+.sidebar .nav-link.active {
+    background-color: var(--cremepe-green);
+    color: white;
+    border-left: 4px solid var(--cremepe-gold);
+}
+
+.sidebar .section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 20px 20px 10px;
+    color: var(--cremepe-gold);
+    font-weight: bold;
+}
+
+.main-wrapper {
+    margin-left: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.navbar-top {
+    background-color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.content-body {
+    padding: 30px;
+    flex-grow: 1;
+}
+
+.text-cremepe {
+    color: var(--cremepe-green-dark);
+}
+
+.btn-cremepe {
+    background-color: var(--cremepe-green);
+    color: white;
+    font-weight: 500;
+}
+
+.btn-cremepe:hover {
+    background-color: var(--cremepe-green-dark);
+    color: white;
 }
