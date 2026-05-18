@@ -52,6 +52,18 @@ public class UsuarioService {
             }
         }
 
+        // NOVO 2.1: Validação de CRM Duplicado (Se for marcado como Conselheiro)
+        if (usuario.iseConselheiro() && usuario.getCrm() != null) {
+            Optional<Conselheiro> conselheiroExistente = conselheiroRepository.findByCrm(usuario.getCrm());
+            if (conselheiroExistente.isPresent()) {
+                // Se for um novo cadastro OU se o CRM achado pertencer a OUTRA pessoa, bloqueia!
+                if (usuario.getIdUsuarioPessoa() == null || 
+                    !usuario.getIdUsuarioPessoa().equals(conselheiroExistente.get().getIdPessoa())) {
+                    throw new RuntimeException("Já existe um médico conselheiro cadastrado com o CRM " + usuario.getCrm() + ".");
+                }
+            }
+        }
+
         // 3. Regras de Senha e Sincronização de IDs
         if (usuario.getIdUsuarioPessoa() != null && usuario.getIdUsuarioPessoa() > 0) {
             // EDIÇÃO
