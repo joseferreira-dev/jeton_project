@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -17,13 +18,33 @@ public class RelatorioService {
     private ViewAtividadeConselhalRepository viewRepository;
 
     @Transactional(readOnly = true)
-    public List<RelatorioAtividadeConselhalAgrupadoDTO> gerarRelatorioAgrupado(Integer idGestao, String nomeConselheiro) {
+    public List<RelatorioAtividadeConselhalAgrupadoDTO> gerarRelatorioAgrupado(
+            Integer idGestao, Integer idConselheiro, Integer idRegra, LocalDate dataInicio, LocalDate dataFim) {
+            
         List<ViewAtividadeConselhal> dadosRaw = viewRepository.findByIdGestao(idGestao);
 
-        // 1. Filtrar pelo conselheiro selecionado, se houver
-        if (nomeConselheiro != null && !nomeConselheiro.isEmpty()) {
+        // 1. Aplicação Dinâmica dos Novos Filtros
+        if (idConselheiro != null) {
             dadosRaw = dadosRaw.stream()
-                    .filter(at -> nomeConselheiro.equals(at.getNome()))
+                    .filter(at -> idConselheiro.equals(at.getIdPessoa()))
+                    .collect(Collectors.toList());
+        }
+        
+        if (idRegra != null) {
+            dadosRaw = dadosRaw.stream()
+                    .filter(at -> idRegra.equals(at.getIdRegra()))
+                    .collect(Collectors.toList());
+        }
+        
+        if (dataInicio != null) {
+            dadosRaw = dadosRaw.stream()
+                    .filter(at -> at.getDataHoraAtividade() != null && !at.getDataHoraAtividade().toLocalDate().isBefore(dataInicio))
+                    .collect(Collectors.toList());
+        }
+        
+        if (dataFim != null) {
+            dadosRaw = dadosRaw.stream()
+                    .filter(at -> at.getDataHoraAtividade() != null && !at.getDataHoraAtividade().toLocalDate().isAfter(dataFim))
                     .collect(Collectors.toList());
         }
 
@@ -31,8 +52,7 @@ public class RelatorioService {
             return new ArrayList<>();
         }
 
-        // 2. Extrair todas as regras ÚNICAS da base de dados selecionada.
-        // Isto é VITAL para garantir que as colunas da tabela fiquem perfeitamente alinhadas para todos os médicos.
+        // 2. Extrair regras ÚNICAS da base filtrada para manter as colunas alinhadas
         Set<String> todasRegras = dadosRaw.stream()
                 .map(ViewAtividadeConselhal::getNomeRegra)
                 .collect(Collectors.toCollection(LinkedHashSet::new)); 
@@ -48,10 +68,10 @@ public class RelatorioService {
             dto.setConselheiro(nome);
             dto.setGestao(atividades.get(0).getNomeGestao());
             
-            // Inicializa TODAS as regras mapeadas com ZERO (Garante a integridade do layout da tabela)
+            // Inicializa TODAS as regras mapeadas com ZERO
             todasRegras.forEach(regra -> dto.getRegras().put(regra, 0));
 
-            // Soma (Merge) os valores reais caso o médico tenha feito a mesma atividade várias vezes
+            // Soma (Merge) os valores reais
             atividades.forEach(at -> {
                 Integer qtd = (at.getQtdAtividade() != null) ? at.getQtdAtividade() : 0;
                 dto.getRegras().merge(at.getNomeRegra(), qtd, Integer::sum);
@@ -60,7 +80,7 @@ public class RelatorioService {
             relatorio.add(dto);
         });
 
-        // Ordena o relatório por ordem alfabética do conselheiro
+        // Ordenar alfabeticamente
         relatorio.sort(Comparator.comparing(RelatorioAtividadeConselhalAgrupadoDTO::getConselheiro));
 
         return relatorio;
