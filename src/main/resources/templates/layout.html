@@ -12,66 +12,101 @@
 </head>
 <body>
 
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <img th:src="@{/images/logo.png}" alt="Logo Cremepe" style="max-width: 150px; filter: brightness(0) invert(1);">
-            <div class="mt-2 fw-bold text-white" style="font-size: 0.8rem;">SISTEMA JETON</div>
-        </div>
-        
-        <nav class="nav flex-column mt-2">
-            <a th:href="@{/index}" class="nav-link"><i class="fa-solid fa-chart-line me-2"></i> Dashboard</a>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-cremepe">
+        <div class="container-fluid">
+            <a th:href="@{/index}" class="navbar-brand d-flex align-items-center">
+                <img th:src="@{/images/logo.png}" alt="Logo" style="max-height: 30px; margin-right: 10px; filter: brightness(0) invert(1);">
+                <span>SISTEMA JETON</span>
+            </a>
             
-            <a th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('G')}" th:href="@{/gestoes}" class="nav-link"><i class="fa-solid fa-calendar-days me-2"></i> Gestões</a>
-            <a th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('G')}" th:href="@{/conselheiros}" class="nav-link"><i class="fa-solid fa-user-doctor me-2"></i> Conselheiros</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarJetonContent" aria-controls="navbarJetonContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
             
-            <th:block th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('A') or session.usuarioLogado?.permissoes?.contains('G')}">
-                <div class="section-title">Atividades</div>
-                <a th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('A')}" th:href="@{/atividades}" class="nav-link"><i class="fa-solid fa-clipboard-check me-2"></i> Atividades Conselhais</a>
-                <a th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('A')}" th:href="@{/relatorios/atividades}" class="nav-link"><i class="fa-solid fa-file-invoice me-2"></i> Relatório Atividades</a>
-                <a th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('G')}" th:href="@{/gestao-conselheiros}" class="nav-link"><i class="fa-solid fa-users-viewfinder me-2"></i> Vínculos Rápidos</a>
-            </th:block>
+            <div class="collapse navbar-collapse" id="navbarJetonContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    
+                    <li class="nav-item">
+                        <a th:href="@{/index}" class="nav-link"><i class="fa-solid fa-chart-line me-1"></i> Dashboard</a>
+                    </li>
+                    
+                    <li class="nav-item dropdown" th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('G')}">
+                        <a class="nav-link dropdown-toggle" href="#" id="dropGestao" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-users-gear me-1"></i> Gestão
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="dropGestao">
+                            <li><a class="dropdown-item" th:href="@{/gestoes}"><i class="fa-solid fa-calendar-days me-2"></i> Gestões e Mandatos</a></li>
+                            <li><a class="dropdown-item" th:href="@{/conselheiros}"><i class="fa-solid fa-user-doctor me-2"></i> Médicos Conselheiros</a></li>
+                            <li><a class="dropdown-item" th:href="@{/gestao-conselheiros}"><i class="fa-solid fa-users-viewfinder me-2"></i> Vínculos Rápidos</a></li>
+                        </ul>
+                    </li>
+                    
+                    <li class="nav-item dropdown" th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('A')}">
+                        <a class="nav-link dropdown-toggle" href="#" id="dropAtividades" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-clipboard-list me-1"></i> Atividades
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="dropAtividades">
+                            <li><a class="dropdown-item" th:href="@{/atividades}"><i class="fa-solid fa-clipboard-check me-2"></i> Atividades Conselhais</a></li>
+                            <li><a class="dropdown-item" th:href="@{/relatorios/atividades}"><i class="fa-solid fa-file-invoice me-2"></i> Relatório de Atividades</a></li>
+                        </ul>
+                    </li>
 
-            <th:block th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('R')}">
-                <div class="section-title">Normativas</div>
-                <a th:href="@{/resolucoes}" class="nav-link"><i class="fa-solid fa-scale-balanced me-2"></i> Resoluções</a>
-                <a th:href="@{/portarias}" class="nav-link"><i class="fa-solid fa-file-signature me-2"></i> Portarias</a>
-                <a th:href="@{/regras}" class="nav-link"><i class="fa-solid fa-list-check me-2"></i> Regras</a>
-                <a th:href="@{/regras-conjuntas}" class="nav-link"><i class="fa-solid fa-link me-2"></i> Regras Conjuntas</a>
-            </th:block>
-            
-            <th:block th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('J')}">
-                <div class="section-title">Financeiro</div>
-                <a th:href="@{/jeton}" class="nav-link"><i class="fa-solid fa-coins me-2"></i> Saldos / Processamento</a>
-            </th:block>
-            
-            <th:block th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('U') or session.usuarioLogado?.permissoes?.contains('N')}">
-                <div class="section-title">Configurações</div>
-                <a th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('U')}" th:href="@{/usuarios}" class="nav-link"><i class="fa-solid fa-users-gear me-2"></i> Usuários</a>
-                <a th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('N')}" th:href="@{/parametros}" class="nav-link"><i class="fa-solid fa-gears me-2"></i> Parâmetros</a>
-            </th:block>
-        </nav>
+                    <li class="nav-item dropdown" th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('R')}">
+                        <a class="nav-link dropdown-toggle" href="#" id="dropNormativas" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-scale-balanced me-1"></i> Normativas
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="dropNormativas">
+                            <li><a class="dropdown-item" th:href="@{/resolucoes}"><i class="fa-solid fa-gavel me-2"></i> Resoluções</a></li>
+                            <li><a class="dropdown-item" th:href="@{/portarias}"><i class="fa-solid fa-file-signature me-2"></i> Portarias</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" th:href="@{/regras}"><i class="fa-solid fa-list-check me-2"></i> Regras de Pontuação</a></li>
+                            <li><a class="dropdown-item" th:href="@{/regras-conjuntas}"><i class="fa-solid fa-link me-2"></i> Regras Conjuntas</a></li>
+                        </ul>
+                    </li>
+                    
+                    <li class="nav-item dropdown" th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('J')}">
+                        <a class="nav-link dropdown-toggle" href="#" id="dropFinanceiro" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-coins me-1"></i> Financeiro
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="dropFinanceiro">
+                            <li><a class="dropdown-item" th:href="@{/jeton}"><i class="fa-solid fa-calculator me-2"></i> Saldos / Processamento</a></li>
+                        </ul>
+                    </li>
+                    
+                    <li class="nav-item dropdown" th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('U') or session.usuarioLogado?.permissoes?.contains('N')}">
+                        <a class="nav-link dropdown-toggle" href="#" id="dropConfig" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-gears me-1"></i> Configurações
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="dropConfig">
+                            <li th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('U')}">
+                                <a class="dropdown-item" th:href="@{/usuarios}"><i class="fa-solid fa-users-gear me-2"></i> Usuários</a>
+                            </li>
+                            <li th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('N')}">
+                                <a class="dropdown-item" th:href="@{/parametros}"><i class="fa-solid fa-sliders me-2"></i> Parâmetros</a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <div class="d-flex align-items-center text-white gap-3 ms-lg-3 mt-3 mt-lg-0 pt-3 pt-lg-0">
+                    <span class="small">Olá, <strong th:text="${session.usuarioLogado?.nome ?: 'Visitante'}">Usuário</strong></span>
+                    <a th:href="@{/sair}" class="btn btn-sm btn-outline-light text-nowrap"><i class="fa-solid fa-right-from-bracket me-1"></i> Sair</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="sub-header d-none d-md-block">
+        <div class="max-width-container">
+            <span class="text-uppercase small fw-bold text-muted">Conselho Regional de Medicina de Pernambuco (CREMEPE)</span>
+        </div>
     </div>
 
     <div class="main-wrapper">
-        
-        <header class="navbar-top">
-            <div>
-                <h5 class="m-0 text-cremepe fw-bold">Conselho Regional de Medicina de Pernambuco</h5>
-            </div>
-            <div class="d-flex align-items-center">
-                <span class="me-3 text-muted">
-                    Olá, <strong th:text="${session.usuarioLogado?.nome ?: 'Visitante'}">Usuário</strong>
-                </span>
-                <a th:href="@{/sair}" class="btn btn-sm btn-outline-danger">
-                    <i class="fa-solid fa-right-from-bracket"></i> Sair
-                </a>
-            </div>
-        </header>
-
         <main class="content-body" layout:fragment="conteudo">
             </main>
 
-        <footer class="bg-white py-3 text-center border-top mt-auto">
+        <footer class="bg-white py-3 text-center border-top mt-auto w-100">
             <p class="text-muted mb-0 small">
                 &copy; 2026 Cremepe - Todos os direitos reservados. Setor de Tecnologia da Informação.
             </p>
@@ -82,7 +117,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-light border-bottom-0">
-                    <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-circle-question text-warning me-2"></i>Confirmação Necessária</h5>
+                    <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-circle-question text-warning me-2"></i>Confirmação Necessary</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body py-4 text-center">
@@ -112,11 +147,11 @@
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
                         
-                        const mensagem = this.getAttribute('data-mensagem');
+                        const message = this.getAttribute('data-mensagem');
                         const cor = this.getAttribute('data-cor') || 'btn-danger';
                         const icone = this.getAttribute('data-icone') || '';
 
-                        textoAcao.innerHTML = mensagem;
+                        textoAcao.innerHTML = message;
                         btnAcao.className = 'btn px-4 ' + cor;
                         btnAcao.innerHTML = icone ? `<i class="${icone} me-1"></i> Confirmar` : 'Confirmar';
 
