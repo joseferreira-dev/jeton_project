@@ -1,72 +1,29 @@
 package br.com.cremepe.jeton.servico;
 
-import br.com.cremepe.jeton.dominio.Jeton;
+import br.com.cremepe.jeton.dominio.*;
 import br.com.cremepe.jeton.dto.PontosRemanescentesDTO;
-import br.com.cremepe.jeton.repositorio.JetonRepository;
-import br.com.cremepe.jeton.repositorio.PontosSaldoRepository;
+import br.com.cremepe.jeton.repositorio.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Serviço responsável pela lógica de liquidação financeira (Jetons) e gestão de saldos.
- * Substitui as antigas FachadaJeton e FachadaPontosRemanescentes.
- */
 @Service
 public class JetonService {
 
-    @Autowired
-    private JetonRepository jetonRepository;
+    @Autowired private JetonRepository jetonRepository;
+    @Autowired private PontosSaldoRepository pontosSaldoRepository;
+    @Autowired private AtividadeConselhalRepository atividadeRepository;
+    @Autowired private ResolucaoRepository resolucaoRepository;
+    @Autowired private GestaoConselheiroRepository gestaoConselheiroRepository;
 
-    @Autowired
-    private PontosSaldoRepository pontosSaldoRepository;
-
-    /**
-     * Lista todos os saldos de pontos agrupados por conselheiro para exibição em ecrã.
-     * Utiliza a query otimizada que criámos no Passo 4.
-     */
     @Transactional(readOnly = true)
     public List<PontosRemanescentesDTO> listarSaldosAgrupados() {
         return pontosSaldoRepository.buscarSaldosAgrupadosPorConselheiro();
-    }
-
-    /**
-     * Recupera o histórico de pagamentos de um conselheiro num ano específico.
-     */
-    @Transactional(readOnly = true)
-    public List<Jeton> listarHistoricoPorConselheiro(Integer idPessoa, Integer ano) {
-        return jetonRepository.findByConselheiroIdPessoaAndAnoOrderByMesDesc(idPessoa, ano);
-    }
-
-    /**
-     * Realiza o fecho mensal (Processamento do Jeton).
-     * @Transactional garante que, se houver erro ao salvar, nada será gravado no banco (Rollback).
-     */
-    @Transactional
-    public Jeton processarPagamentoMensal(Jeton jeton) {
-        // REGRA DE NEGÓCIO: Impedir duplicação de pagamento para o mesmo mês/ano
-        Optional<Jeton> existente = jetonRepository.findByConselheiroIdPessoaAndMesAndAno(
-                jeton.getConselheiro().getIdPessoa(), 
-                jeton.getMes(), 
-                jeton.getAno());
-
-        if (existente.isPresent()) {
-            throw new RuntimeException("Já existe um Jeton processado para este conselheiro neste período.");
-        }
-
-        // Aqui você pode inserir a lógica de cálculo baseada na Resolução vigente
-        // Exemplo: jeton.setValor(jeton.getTotalJeton().multiply(valorBaseDaResolucao));
-
-        return jetonRepository.save(jeton);
-    }
-
-    @Transactional
-    public void excluirJeton(Integer id) {
-        // Antes de excluir o jeton, a regra de negócio pode exigir libertar os pontos_saldo associados
-        jetonRepository.deleteById(id);
     }
 
     @Transactional(readOnly = true)
@@ -80,7 +37,107 @@ public class JetonService {
     }
 
     @Transactional
-    public Jeton salvar(Jeton jeton) {
-        return jetonRepository.save(jeton);
+    public void excluirJeton(Integer id) {
+        jetonRepository.deleteById(id);
+    }
+
+    /**
+     * O MOTOR DE CÁLCULO FINANCEIRO (FECHAMENTO DE FOLHA)
+     * Este método processa todos os conselheiros ativos numa gestão para um determinado mês/ano.
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void processarFechamentoMensal(Gestao gestao, Integer mes, Integer ano) {
+        
+        // 1. Obtém a Resolução Ativa (Regra Financeira Magna)
+        List<Resolucao> resolucoesAtivas = resolucaoRepository.findByInRevogado("N");
+        if (resolucoesAtivas.isEmpty()) {
+            throw new RuntimeException("Não existe nenhuma Resolução financeira em vigor para basear os cálculos.");
+        }
+        Resolucao resolucao = resolucoesAtivas.get(0); // Assume a principal
+        Integer pontosPorJeton = resolucao.getPontosPorJeton();
+        Integer tetoMensalJetons = resolucao.getMaxJetonsMes();
+        BigDecimal valorJeton = resolucao.getValorJeton();
+
+        // 2. Obtém todos os conselheiros daquela Gestão
+        List<GestaoConselheiro> vinculos = gestaoConselheiroRepository.findByGestaoIdGestao(gestao.getIdGestao());
+
+        for (GestaoConselheiro vinculo : vinculos) {
+            Conselheiro conselheiro = vinculo.getConselheiro();
+
+            // Proteção contra processamento duplicado no mesmo mês
+            if (jetonRepository.findByConselheiroIdPessoaAndMesAndAno(conselheiro.getIdPessoa(), mes, ano).isPresent()) {
+                continue; // Já foi processado este mês, salta para o próximo conselheiro
+            }
+
+            // 3. Recolher a matéria-prima (Saldos antigos + Atividades novas com comprovativo)
+            List<PontosSaldo> saldosAntigos = pontosSaldoRepository.findSaldosAtivosPorConselheiro(conselheiro.getIdPessoa());
+            List<AtividadeConselhal> atividadesNovas = atividadeRepository.findPendentesParaProcessamento(conselheiro.getIdPessoa(), mes, ano);
+
+            if (saldosAntigos.isEmpty() && atividadesNovas.isEmpty()) {
+                continue; // Conselheiro não tem nada a receber, salta.
+            }
+
+            // 4. Somar todos os pontos disponíveis
+            double totalPontosAcumulados = 0;
+            
+            for (PontosSaldo saldo : saldosAntigos) {
+                totalPontosAcumulados += saldo.getPontosSobrando();
+                // O saldo antigo é "consumido" na totalidade para este processamento
+                saldo.setPontosUtilizados(saldo.getPontosSobrando());
+                saldo.setPontosSobrando(0);
+                saldo.setInSituacao("I"); // Inativo (Consumido)
+                pontosSaldoRepository.save(saldo);
+            }
+
+            for (AtividadeConselhal atividade : atividadesNovas) {
+                // Multiplica a quantidade de atividade pelo valor de pontos da regra
+                totalPontosAcumulados += (atividade.getQtdAtividade() * atividade.getRegra().getPontos());
+                // Marca a atividade como Processada/Concluída
+                atividade.setInSituacao("C"); 
+                atividadeRepository.save(atividade);
+            }
+
+            // 5. A Matemática dos Jetons
+            int jetonsConvertidos = (int) (totalPontosAcumulados / pontosPorJeton);
+            double pontosRestantes = totalPontosAcumulados % pontosPorJeton;
+
+            // 6. Aplicação do Teto (Tesoura Financeira)
+            int jetonsAPagar = Math.min(jetonsConvertidos, tetoMensalJetons);
+            
+            // Se o limite foi atingido, os Jetons que ultrapassaram o teto voltam a ser convertidos em pontos de sobra
+            if (jetonsConvertidos > tetoMensalJetons) {
+                int jetonsCortados = jetonsConvertidos - tetoMensalJetons;
+                pontosRestantes += (jetonsCortados * pontosPorJeton);
+            }
+
+            // 7. Gerar o Pagamento (se houver Jetons inteiros para pagar)
+            Jeton jetonCriado = null;
+            if (jetonsAPagar > 0) {
+                Jeton j = new Jeton();
+                j.setGestao(gestao);
+                j.setConselheiro(conselheiro);
+                j.setMes(mes);
+                j.setAno(ano);
+                j.setTotalJeton(jetonsAPagar);
+                j.setValor(valorJeton.multiply(new BigDecimal(jetonsAPagar)));
+                j.setInSituacao("A"); // Ativo / Processado
+                jetonCriado = jetonRepository.save(j);
+            }
+
+            // 8. Guardar os Pontos Remanescentes (Sobras para o mês seguinte)
+            if (pontosRestantes > 0) {
+                PontosSaldo novoSaldo = new PontosSaldo();
+                // Usa a última atividade apenas como referência de ligação, tal como no legado
+                if (!atividadesNovas.isEmpty()) {
+                    novoSaldo.setAtividade(atividadesNovas.get(atividadesNovas.size() - 1));
+                }
+                novoSaldo.setJeton(jetonCriado); // Pode ser nulo se só gerou sobra
+                novoSaldo.setDataHora(LocalDateTime.now());
+                novoSaldo.setPontosSobrando((int) pontosRestantes);
+                novoSaldo.setPontosUtilizados(0);
+                novoSaldo.setInSituacao("A"); // Ativo para o próximo mês
+                pontosSaldoRepository.save(novoSaldo);
+            }
+        }
     }
 }

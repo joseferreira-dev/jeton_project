@@ -11,11 +11,6 @@ import java.util.List;
 @Repository
 public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Integer> {
 
-    /**
-     * Esta query realiza uma agregação analítica massiva diretamente na base de dados e 
-     * instancia os nossos DTOs de leitura sem sobrecarregar a memória do servidor Java.
-     * Isto substitui completamente a necessidade de Stored Procedures complexas ou Views físicas.
-     */
     @Query("""
            SELECT new br.com.cremepe.jeton.dto.PontosRemanescentesDTO(
                c.idPessoa, 
@@ -32,4 +27,8 @@ public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Intege
            GROUP BY c.idPessoa, p.nome
            """)
     List<PontosRemanescentesDTO> buscarSaldosAgrupadosPorConselheiro();
+
+    // Busca saldos positivos e ativos de um conselheiro
+    @Query("SELECT p FROM PontosSaldo p WHERE p.atividade.conselheiro.idPessoa = :idPessoa AND p.inSituacao = 'A' AND p.pontosSobrando > 0 ORDER BY p.dataHora ASC")
+    List<PontosSaldo> findSaldosAtivosPorConselheiro(@org.springframework.data.repository.query.Param("idPessoa") Integer idPessoa);
 }

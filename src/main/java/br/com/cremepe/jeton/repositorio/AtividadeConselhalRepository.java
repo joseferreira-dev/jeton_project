@@ -32,4 +32,14 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
                                                @Param("situacao") String situacao, 
                                                @Param("turno") String turno,
                                                Pageable pageable);
+    
+    // Procura atividades pendentes ('P') num determinado mês e ano que já tenham comprovativo
+    @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa " +
+           "AND a.inSituacao = 'P' AND a.comprovante IS NOT NULL " +
+           "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
+    List<AtividadeConselhal> findPendentesParaProcessamento(
+            @org.springframework.data.repository.query.Param("idPessoa") Integer idPessoa, 
+            @org.springframework.data.repository.query.Param("mes") Integer mes, 
+            @org.springframework.data.repository.query.Param("ano") Integer ano);
+
 }
