@@ -17,39 +17,49 @@ import jakarta.servlet.http.HttpSession;
 public class RelatorioController {
 
     @Autowired private RelatorioService relatorioService;
-    
-    // Injeções para popular os combos (selects) de filtro na tela de relatório
     @Autowired private ConselheiroService conselheiroService;
     @Autowired private GestaoService gestaoService;
 
-    // Método para acessar a tela inicial do relatório (apenas os filtros vazios)
-    @GetMapping("/atividade-agrupada")
+    // Rota alterada para coincidir com o menu
+    @GetMapping("/atividades")
     public String acessarTelaRelatorio(Model model, HttpSession session) {
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
         
         carregarFiltros(model);
-        return "relatorio/atividade_agrupada"; // HTML do relatório
+        return "relatorio/atividade_agrupada"; 
     }
 
-    // Método que recebe os dados do formulário de filtro e devolve a lista gerada
-    @GetMapping("/atividade-agrupada/gerar")
+    // Rota do processamento ajustada
+    @GetMapping("/atividades/gerar")
     public String gerarRelatorio(
             @RequestParam(value = "idGestao", required = false) Integer idGestao,
+            @RequestParam(value = "idConselheiro", required = false) Integer idConselheiro,
             Model model, HttpSession session) {
             
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
 
-        // Chama o método exato que existe no seu RelatorioService
-        var dadosRelatorio = relatorioService.gerarRelatorioAgrupado(idGestao);
-        
+        // Traduz o ID do Conselheiro para o Nome (para facilitar o filtro de String na View)
+        String nomeFiltro = null;
+        if (idConselheiro != null) {
+            nomeFiltro = conselheiroService.buscarPorId(idConselheiro)
+                                           .map(c -> c.getPessoa().getNome())
+                                           .orElse(null);
+        }
+
+        var dadosRelatorio = relatorioService.gerarRelatorioAgrupado(idGestao, nomeFiltro);
         model.addAttribute("listaRelatorio", dadosRelatorio);
-        carregarFiltros(model);
         
+        // Passar os cabeçalhos de forma SEGURA para evitar o erro SpEL na View HTML
+        if (!dadosRelatorio.isEmpty()) {
+            model.addAttribute("colunasRegras", dadosRelatorio.get(0).getRegras().keySet());
+        }
+        
+        carregarFiltros(model);
         return "relatorio/atividade_agrupada"; 
     }
 
     private void carregarFiltros(Model model) {
         model.addAttribute("listaConselheiros", conselheiroService.listarTodos());
-        model.addAttribute("listaGestoes", gestaoService.listarTodos());
+        model.addAttribute("listaGestao", gestaoService.listarTodos()); 
     }
 }
