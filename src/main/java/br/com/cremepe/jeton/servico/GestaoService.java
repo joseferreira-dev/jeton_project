@@ -30,7 +30,15 @@ public class GestaoService {
             throw new RuntimeException("A data de fim não pode ser anterior ao início.");
         }
 
-        // Regra 2: Impedir sobreposição de períodos
+        if (gestao.getNomeGestao() != null && !gestao.getNomeGestao().trim().isEmpty()) {
+            Optional<Gestao> gestaoExistente = gestaoRepository.findByNomeGestao(gestao.getNomeGestao().trim());
+            if (gestaoExistente.isPresent()) {
+                if (gestao.getIdGestao() == null || !gestao.getIdGestao().equals(gestaoExistente.get().getIdGestao())) {
+                    throw new RuntimeException("Já existe uma gestão cadastrada com o nome '" + gestao.getNomeGestao() + "'.");
+                }
+            }
+        }
+
         if (gestaoRepository.existeSobreposicao(gestao.getIdGestao(), gestao.getDtInicio(), gestao.getDtFim())) {
             throw new RuntimeException("O período selecionado coincide com uma gestão já cadastrada.");
         }
