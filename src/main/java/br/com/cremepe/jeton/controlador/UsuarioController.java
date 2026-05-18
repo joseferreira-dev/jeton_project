@@ -45,6 +45,8 @@ public class UsuarioController {
         model.addAttribute("paginaUsuarios", paginaUsuarios);
         model.addAttribute("termo", termo);
         model.addAttribute("situacao", situacao);
+        model.addAttribute("sort", sort);
+        model.addAttribute("dir", dir);
 
         return "usuario/lista";
     }

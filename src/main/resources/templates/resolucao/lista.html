@@ -4,7 +4,7 @@
 <body>
 <div layout:fragment="conteudo">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-scale-balanced me-2"></i> Gestão de Resoluções (Tetos Financeiros)</h2>
+        <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-gavel me-2"></i> Gestão de Resoluções (Tetos Financeiros)</h2>
         <a th:href="@{/resolucoes/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Nova Resolução</a>
     </div>
 
@@ -12,39 +12,51 @@
     <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show"><i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
 
     <form th:action="@{/resolucoes}" method="get" class="mb-4 bg-white p-3 rounded shadow-sm border border-light">
-        <div class="row g-3 align-items-end">
+        <input type="hidden" name="sort" th:value="${sort}">
+        <input type="hidden" name="dir" th:value="${dir}">
+        <div class="row g-2 align-items-center">
             <div class="col-md-5">
-                <label class="form-label small text-muted fw-bold">Buscar (Número, Ano ou Ementa)</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" name="termo" th:value="${termo}" class="form-control border-start-0" placeholder="Ex: 2368, Sindicância...">
+                    <input type="text" name="termo" th:value="${termo}" class="form-control" placeholder="Número, Ano ou Ementa...">
                 </div>
             </div>
             <div class="col-md-3">
-                <label class="form-label small text-muted fw-bold">Estado</label>
-                <select name="situacao" class="form-select">
-                    <option value="">Todos</option>
-                    <option value="N" th:selected="${situacao == 'N'}">Em Vigor</option>
-                    <option value="S" th:selected="${situacao == 'S'}">Revogada</option>
-                </select>
+                <div class="input-group">
+                    <label class="input-group-text bg-light" for="situacao">Estado</label>
+                    <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
+                        <option value="">Todos</option>
+                        <option value="N" th:selected="${situacao == 'N'}">Em Vigor</option>
+                        <option value="S" th:selected="${situacao == 'S'}">Revogada</option>
+                    </select>
+                </div>
             </div>
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
-                <a th:href="@{/resolucoes}" class="btn btn-outline-secondary w-100"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
+            <div class="col-md-2">
+                <div class="input-group">
+                    <label class="input-group-text bg-light" for="size">Exibir</label>
+                    <select name="size" id="size" class="form-select" onchange="this.form.submit()">
+                        <option value="10" th:selected="${size == 10}">10</option>
+                        <option value="20" th:selected="${size == 20}">20</option>
+                        <option value="50" th:selected="${size == 50}">50</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-cremepe w-100">Filtrar</button>
             </div>
         </div>
     </form>
 
-    <div class="card shadow-sm border-0">
+    <div class="card shadow-sm mb-4">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light">
+                    <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
                         <tr>
                             <th class="ps-4">Resolução</th>
                             <th>Valor Jeton</th>
                             <th>Teto (Mês)</th>
-                            <th>Estado</th>
+                            <th class="text-center">Estado</th>
                             <th class="text-center pe-4">Ações</th>
                         </tr>
                     </thead>
@@ -56,7 +68,7 @@
                             </td>
                             <td class="fw-bold text-success" th:text="${'R$ ' + #numbers.formatDecimal(r.valorJeton, 1, 'POINT', 2, 'COMMA')}"></td>
                             <td th:text="${r.maxJetonsMes + ' Jetons'}"></td>
-                            <td>
+                            <td class="text-center">
                                 <span th:if="${r.inRevogado == 'N'}" class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Em Vigor</span>
                                 <span th:if="${r.inRevogado == 'S'}" class="badge bg-danger"><i class="fa-solid fa-ban me-1"></i> Revogada</span>
                             </td>
@@ -80,25 +92,28 @@
                     </tbody>
                 </table>
             </div>
+        </div>
 
-            <div th:if="${paginaResolucoes.totalPages > 1}" class="card-footer bg-white d-flex justify-content-between align-items-center">
-                <span class="text-muted small">
-                    Mostrando <span th:text="${paginaResolucoes.number * paginaResolucoes.size + 1}"></span> a 
-                    <span th:text="${(paginaResolucoes.number + 1) * paginaResolucoes.size < paginaResolucoes.totalElements ? (paginaResolucoes.number + 1) * paginaResolucoes.size : paginaResolucoes.totalElements}"></span> de 
-                    <span th:text="${paginaResolucoes.totalElements}"></span> registos
-                </span>
-                <ul class="pagination pagination-sm mb-0">
-                    <li class="page-item" th:classappend="${paginaResolucoes.first ? 'disabled' : ''}">
-                        <a class="page-link" th:href="@{/resolucoes(page=${paginaResolucoes.number - 1}, size=${size}, termo=${termo}, situacao=${situacao})}"><i class="fa-solid fa-chevron-left"></i></a>
+        <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaResolucoes.totalPages > 1}" 
+             th:with="start=${paginaResolucoes.number > 2 ? paginaResolucoes.number - 2 : 0}, 
+                      end=${paginaResolucoes.number + 2 < paginaResolucoes.totalPages - 1 ? paginaResolucoes.number + 2 : paginaResolucoes.totalPages - 1}">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item" th:classappend="${paginaResolucoes.first} ? 'disabled'"><a class="page-link" th:href="@{/resolucoes(page=${paginaResolucoes.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Anterior</a></li>
+                    
+                    <li class="page-item" th:if="${start > 0}"><a class="page-link" th:href="@{/resolucoes(page=0, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">1</a></li>
+                    <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
+
+                    <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}" th:classappend="${paginaResolucoes.number == i} ? 'active'">
+                        <a class="page-link" th:href="@{/resolucoes(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}" th:text="${i + 1}">1</a>
                     </li>
-                    <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaResolucoes.totalPages - 1)}" th:classappend="${paginaResolucoes.number == i ? 'active' : ''}">
-                        <a class="page-link" th:href="@{/resolucoes(page=${i}, size=${size}, termo=${termo}, situacao=${situacao})}" th:text="${i + 1}"></a>
-                    </li>
-                    <li class="page-item" th:classappend="${paginaResolucoes.last ? 'disabled' : ''}">
-                        <a class="page-link" th:href="@{/resolucoes(page=${paginaResolucoes.number + 1}, size=${size}, termo=${termo}, situacao=${situacao})}"><i class="fa-solid fa-chevron-right"></i></a>
-                    </li>
+
+                    <li class="page-item disabled" th:if="${end < paginaResolucoes.totalPages - 2}"><a class="page-link" href="#">...</a></li>
+                    <li class="page-item" th:if="${end < paginaResolucoes.totalPages - 1}"><a class="page-link" th:href="@{/resolucoes(page=${paginaResolucoes.totalPages - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}" th:text="${paginaResolucoes.totalPages}">10</a></li>
+                    
+                    <li class="page-item" th:classappend="${paginaResolucoes.last} ? 'disabled'"><a class="page-link" th:href="@{/resolucoes(page=${paginaResolucoes.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Próxima</a></li>
                 </ul>
-            </div>
+            </nav>
         </div>
     </div>
 </div>

@@ -12,49 +12,61 @@
     <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show"><i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
 
     <form th:action="@{/portarias}" method="get" class="mb-4 bg-white p-3 rounded shadow-sm border border-light">
-        <div class="row g-3 align-items-end">
+        <input type="hidden" name="sort" th:value="${sort}">
+        <input type="hidden" name="dir" th:value="${dir}">
+        <div class="row g-2 align-items-center">
             <div class="col-md-5">
-                <label class="form-label small text-muted fw-bold">Buscar (Número ou Ano)</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" name="termo" th:value="${termo}" class="form-control border-start-0" placeholder="Ex: 124, 2023...">
+                    <input type="text" name="termo" th:value="${termo}" class="form-control" placeholder="Buscar Número ou Ano...">
                 </div>
             </div>
             <div class="col-md-3">
-                <label class="form-label small text-muted fw-bold">Estado</label>
-                <select name="situacao" class="form-select">
-                    <option value="">Todos</option>
-                    <option value="N" th:selected="${situacao == 'N'}">Em Vigor</option>
-                    <option value="S" th:selected="${situacao == 'S'}">Revogada</option>
-                </select>
+                <div class="input-group">
+                    <label class="input-group-text bg-light" for="situacao">Estado</label>
+                    <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
+                        <option value="">Todos</option>
+                        <option value="N" th:selected="${situacao == 'N'}">Em Vigor</option>
+                        <option value="S" th:selected="${situacao == 'S'}">Revogada</option>
+                    </select>
+                </div>
             </div>
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
-                <a th:href="@{/portarias}" class="btn btn-outline-secondary w-100"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
+            <div class="col-md-2">
+                <div class="input-group">
+                    <label class="input-group-text bg-light" for="size">Exibir</label>
+                    <select name="size" id="size" class="form-select" onchange="this.form.submit()">
+                        <option value="10" th:selected="${size == 10}">10</option>
+                        <option value="20" th:selected="${size == 20}">20</option>
+                        <option value="50" th:selected="${size == 50}">50</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-cremepe w-100">Filtrar</button>
             </div>
         </div>
     </form>
 
-    <div class="card shadow-sm border-0">
+    <div class="card shadow-sm mb-4">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light">
+                    <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
                         <tr>
                             <th class="ps-4">Portaria</th>
                             <th>Link de Publicação</th>
-                            <th>Estado</th>
+                            <th class="text-center">Estado</th>
                             <th class="text-center pe-4">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr th:each="p : ${paginaPortarias.content}" th:classappend="${p.inRevogado == 'S'} ? 'table-light text-muted'">
-                            <td class="ps-4 fw-bold" th:text="${'Portaria ' + p.numero + '/' + p.ano}">Portaria</td>
+                            <td class="ps-4 fw-bold text-cremepe" th:text="${'Portaria ' + p.numero + '/' + p.ano}">Portaria</td>
                             <td>
                                 <a th:if="${p.linkPublicado != null and !p.linkPublicado.isEmpty()}" th:href="${p.linkPublicado}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-link"></i> Aceder Link</a>
                                 <span th:unless="${p.linkPublicado != null and !p.linkPublicado.isEmpty()}" class="text-muted small">Sem link</span>
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <span th:if="${p.inRevogado == 'N'}" class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Em Vigor</span>
                                 <span th:if="${p.inRevogado == 'S'}" class="badge bg-danger"><i class="fa-solid fa-ban me-1"></i> Revogada</span>
                             </td>
@@ -78,25 +90,28 @@
                     </tbody>
                 </table>
             </div>
-            
-            <div th:if="${paginaPortarias.totalPages > 1}" class="card-footer bg-white d-flex justify-content-between align-items-center">
-                <span class="text-muted small">
-                    Mostrando <span th:text="${paginaPortarias.number * paginaPortarias.size + 1}"></span> a 
-                    <span th:text="${(paginaPortarias.number + 1) * paginaPortarias.size < paginaPortarias.totalElements ? (paginaPortarias.number + 1) * paginaPortarias.size : paginaPortarias.totalElements}"></span> de 
-                    <span th:text="${paginaPortarias.totalElements}"></span> registos
-                </span>
-                <ul class="pagination pagination-sm mb-0">
-                    <li class="page-item" th:classappend="${paginaPortarias.first ? 'disabled' : ''}">
-                        <a class="page-link" th:href="@{/portarias(page=${paginaPortarias.number - 1}, size=${size}, termo=${termo}, situacao=${situacao})}"><i class="fa-solid fa-chevron-left"></i></a>
+        </div>
+        
+        <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaPortarias.totalPages > 1}" 
+             th:with="start=${paginaPortarias.number > 2 ? paginaPortarias.number - 2 : 0}, 
+                      end=${paginaPortarias.number + 2 < paginaPortarias.totalPages - 1 ? paginaPortarias.number + 2 : paginaPortarias.totalPages - 1}">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item" th:classappend="${paginaPortarias.first} ? 'disabled'"><a class="page-link" th:href="@{/portarias(page=${paginaPortarias.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Anterior</a></li>
+                    
+                    <li class="page-item" th:if="${start > 0}"><a class="page-link" th:href="@{/portarias(page=0, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">1</a></li>
+                    <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
+
+                    <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}" th:classappend="${paginaPortarias.number == i} ? 'active'">
+                        <a class="page-link" th:href="@{/portarias(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}" th:text="${i + 1}">1</a>
                     </li>
-                    <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaPortarias.totalPages - 1)}" th:classappend="${paginaPortarias.number == i ? 'active' : ''}">
-                        <a class="page-link" th:href="@{/portarias(page=${i}, size=${size}, termo=${termo}, situacao=${situacao})}" th:text="${i + 1}"></a>
-                    </li>
-                    <li class="page-item" th:classappend="${paginaPortarias.last ? 'disabled' : ''}">
-                        <a class="page-link" th:href="@{/portarias(page=${paginaPortarias.number + 1}, size=${size}, termo=${termo}, situacao=${situacao})}"><i class="fa-solid fa-chevron-right"></i></a>
-                    </li>
+
+                    <li class="page-item disabled" th:if="${end < paginaPortarias.totalPages - 2}"><a class="page-link" href="#">...</a></li>
+                    <li class="page-item" th:if="${end < paginaPortarias.totalPages - 1}"><a class="page-link" th:href="@{/portarias(page=${paginaPortarias.totalPages - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}" th:text="${paginaPortarias.totalPages}">10</a></li>
+                    
+                    <li class="page-item" th:classappend="${paginaPortarias.last} ? 'disabled'"><a class="page-link" th:href="@{/portarias(page=${paginaPortarias.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Próxima</a></li>
                 </ul>
-            </div>
+            </nav>
         </div>
     </div>
 </div>
