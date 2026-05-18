@@ -10,9 +10,7 @@ import java.util.List;
 @Repository
 public interface UsuarioAcessoRepository extends JpaRepository<UsuarioAcesso, UsuarioAcessoId> {
 
-    // Lista todas as permissões concedidas a um utilizador específico
+    // Método bónus para o Spring Data trazer as permissões de um utilizador específico automaticamente
     List<UsuarioAcesso> findByIdIdUsuarioPessoa(Integer idUsuarioPessoa);
 
-    // Lista todos os utilizadores que possuem um determinado nível de acesso (ex: quem tem nível 'A')
-    List<UsuarioAcesso> findByIdIdNivel(String idNivel);
 }

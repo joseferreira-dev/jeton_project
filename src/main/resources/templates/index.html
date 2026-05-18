@@ -17,6 +17,12 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 
+    <div th:if="${param.erro != null and param.erro[0] == 'acesso_negado'}" class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert">
+        <i class="fa-solid fa-shield-halved me-2 fs-5 align-middle"></i> 
+        <strong>Acesso Negado!</strong> Você não possui as permissões necessárias para visualizar este módulo.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
     <div class="row mt-4">
         <div class="col-md-12">
             <div class="card shadow-sm border-0">

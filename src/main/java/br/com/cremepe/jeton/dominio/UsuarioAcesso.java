@@ -29,11 +29,27 @@ public class UsuarioAcesso implements Serializable {
 
     public UsuarioAcesso() {}
 
+    public UsuarioAcessoId getId() {
+        return id;
+    }
+
     public void setId(UsuarioAcessoId id) {
         this.id = id;
     }
 
-    public UsuarioAcessoId getId() {
-        return id;
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
+    }
+
+    public NivelAcesso getNivelAcesso() {
+        return nivelAcesso;
+    }
+
+    public void setNivelAcesso(NivelAcesso nivelAcesso) {
+        this.nivelAcesso = nivelAcesso;
     }
 }

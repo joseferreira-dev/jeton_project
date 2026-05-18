@@ -1,32 +1,33 @@
 package br.com.cremepe.jeton.controlador;
 
+import br.com.cremepe.jeton.dominio.NivelAcesso;
+import br.com.cremepe.jeton.dominio.Usuario;
+import br.com.cremepe.jeton.dominio.UsuarioAcesso;
+import br.com.cremepe.jeton.repositorio.UsuarioAcessoRepository;
+import br.com.cremepe.jeton.servico.AcessoService;
+import br.com.cremepe.jeton.servico.ConselheiroService;
+import br.com.cremepe.jeton.servico.NivelAcessoService;
+import br.com.cremepe.jeton.servico.UsuarioService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import br.com.cremepe.jeton.dominio.Pessoa;
-import br.com.cremepe.jeton.dominio.Usuario;
-import br.com.cremepe.jeton.servico.ConselheiroService;
-import br.com.cremepe.jeton.servico.UsuarioService;
-import jakarta.servlet.http.HttpSession;
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 @RequestMapping("/usuarios")
 public class UsuarioController {
 
-    @Autowired
-    private UsuarioService usuarioService;
-
-    @Autowired 
-    private ConselheiroService conselheiroService;
+    @Autowired private UsuarioService usuarioService;
+    @Autowired private ConselheiroService conselheiroService;
+    @Autowired private NivelAcessoService nivelAcessoService;
+    @Autowired private AcessoService acessoService;
+    @Autowired private UsuarioAcessoRepository usuarioAcessoRepository;
 
     @GetMapping
     public String listar(
@@ -41,48 +42,81 @@ public class UsuarioController {
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
 
         Page<Usuario> paginaUsuarios = usuarioService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort, dir);
-
         model.addAttribute("paginaUsuarios", paginaUsuarios);
         model.addAttribute("termo", termo);
         model.addAttribute("situacao", situacao);
-        model.addAttribute("size", size);
-        model.addAttribute("sort", sort);
-        model.addAttribute("dir", dir);
-        
+
         return "usuario/lista";
+    }
+
+    private void carregarListasApoio(Model model, Integer idUsuario) {
+        model.addAttribute("listaNiveisAcesso", nivelAcessoService.listarTodos());
+        
+        List<String> niveisAtuais = new ArrayList<>();
+        if (idUsuario != null) {
+            // Traz as letras (A, C, J...) que este utilizador já possui
+            niveisAtuais = usuarioAcessoRepository.findAll().stream()
+                    .filter(ua -> ua.getId().getIdUsuarioPessoa().equals(idUsuario))
+                    .map(ua -> ua.getId().getIdNivel())
+                    .toList();
+        }
+        model.addAttribute("niveisAtuais", niveisAtuais);
     }
 
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        Usuario usuario = new Usuario();
-        usuario.setPessoa(new Pessoa()); // Importante para não dar erro no Thymeleaf
-        model.addAttribute("usuario", usuario);
+        model.addAttribute("usuario", new Usuario());
+        carregarListasApoio(model, null);
         return "usuario/formulario";
     }
 
-    // No método prepararEditar do UsuarioController.java:
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
         if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        Usuario usuario = usuarioService.buscarPorId(id).orElseThrow();
         
-        // NOVO: Se o tipo for 'C', busca o CRM no banco para exibir na tela
+        Usuario usuario = usuarioService.buscarPorId(id).orElse(new Usuario());
+        
         if ("C".equals(usuario.getPessoa().getInTipoPessoa())) {
             usuario.seteConselheiro(true);
-            // Usamos o ConselheiroService que já temos para buscar o CRM
             conselheiroService.buscarPorId(id).ifPresent(c -> usuario.setCrm(c.getCrm()));
         }
         
         model.addAttribute("usuario", usuario);
+        carregarListasApoio(model, id);
         return "usuario/formulario";
     }
 
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("usuario") Usuario usuario, RedirectAttributes ra) {
+    public String salvar(@ModelAttribute("usuario") Usuario usuario, 
+                         @RequestParam(value = "niveisAcesso", required = false) List<String> niveisAcessoSelecionados,
+                         RedirectAttributes ra) {
         try {
-            usuarioService.salvar(usuario);
-            ra.addFlashAttribute("sucesso", "Dados atualizados com sucesso!");
+            // Grava os dados base do utilizador (Nome, CPF, Senha...)
+            Usuario userSalvo = usuarioService.salvar(usuario);
+            
+            // Lógica de Sincronização de Permissões
+            Integer id = userSalvo.getIdUsuarioPessoa();
+            List<String> niveisAtuais = usuarioAcessoRepository.findAll().stream()
+                    .filter(ua -> ua.getId().getIdUsuarioPessoa().equals(id))
+                    .map(ua -> ua.getId().getIdNivel()).toList();
+
+            List<String> selecionados = niveisAcessoSelecionados != null ? niveisAcessoSelecionados : new ArrayList<>();
+
+            // 1. Concede os novos
+            for (String nivel : selecionados) {
+                if (!niveisAtuais.contains(nivel)) {
+                    acessoService.concederPermissao(id, nivel);
+                }
+            }
+            // 2. Revoga os que foram desmarcados
+            for (String nivelAtual : niveisAtuais) {
+                if (!selecionados.contains(nivelAtual)) {
+                    acessoService.revogarPermissao(id, nivelAtual);
+                }
+            }
+
+            ra.addFlashAttribute("sucesso", "Utilizador e permissões atualizados com sucesso!");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro ao salvar: " + e.getMessage());
         }
@@ -93,10 +127,9 @@ public class UsuarioController {
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
             usuarioService.excluir(id);
-            ra.addFlashAttribute("sucesso", "Usuário removido com sucesso!");
+            ra.addFlashAttribute("sucesso", "Utilizador removido com sucesso!");
         } catch (Exception e) {
-            // Caso ocorra erro de integridade (ex: usuário tem vínculos no banco)
-            ra.addFlashAttribute("erro", "Não foi possível excluir o usuário. Verifique se ele possui registros vinculados (atividades, jetons, etc).");
+            ra.addFlashAttribute("erro", "Erro: O utilizador possui registos financeiros ou atividades vinculadas.");
         }
         return "redirect:/usuarios";
     }

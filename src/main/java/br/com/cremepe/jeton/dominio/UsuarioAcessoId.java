@@ -23,6 +23,22 @@ public class UsuarioAcessoId implements Serializable {
         this.idNivel = idNivel;
     }
 
+    public Integer getIdUsuarioPessoa() {
+        return idUsuarioPessoa;
+    }
+
+    public void setIdUsuarioPessoa(Integer idUsuarioPessoa) {
+        this.idUsuarioPessoa = idUsuarioPessoa;
+    }
+
+    public String getIdNivel() {
+        return idNivel;
+    }
+
+    public void setIdNivel(String idNivel) {
+        this.idNivel = idNivel;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
