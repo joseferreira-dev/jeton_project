@@ -19,13 +19,26 @@
                 <div class="card shadow-sm h-100">
                     <div class="card-header bg-light fw-bold">Dados Normativos</div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Número da Resolução</label>
-                            <input type="number" class="form-control" th:field="*{numero}" required min="1">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">N.º da Resolução</label>
+                                <input type="number" class="form-control" th:field="*{numero}" required min="1">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Ano</label>
+                                <input type="number" class="form-control" th:field="*{ano}" required min="2000" max="2100">
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Ano</label>
-                            <input type="number" class="form-control" th:field="*{ano}" required min="2000" max="2100">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Início da Vigência</label>
+                                <input type="date" class="form-control" th:field="*{dtInicioVigencia}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Fim da Vigência</label>
+                                <input type="date" class="form-control" th:field="*{dtFimVigencia}">
+                                <div class="form-text" style="font-size: 0.75rem;">Deixe vazio se for indeterminado.</div>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold">Ementa (Descrição curta)</label>

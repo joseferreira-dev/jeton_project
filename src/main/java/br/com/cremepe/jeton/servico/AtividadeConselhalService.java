@@ -2,10 +2,12 @@ package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.dominio.AtividadeConselhal;
 import br.com.cremepe.jeton.dominio.Gestao;
+import br.com.cremepe.jeton.dominio.Resolucao;
 import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
 import br.com.cremepe.jeton.repositorio.GestaoRepository;
 import br.com.cremepe.jeton.repositorio.ComprovanteRepository;
+import br.com.cremepe.jeton.repositorio.ResolucaoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -27,6 +30,7 @@ public class AtividadeConselhalService {
     @Autowired private GestaoConselheiroRepository gestaoConselheiroRepository;
     @Autowired private ComprovanteRepository comprovanteRepository;
     @Autowired private FileStorageService fileStorageService;
+    @Autowired private ResolucaoRepository resolucaoRepository; // Novo repositório injetado
 
     @Transactional
     public AtividadeConselhal salvarAtividade(AtividadeConselhal atividade) {
@@ -51,6 +55,22 @@ public class AtividadeConselhalService {
             throw new RuntimeException("O médico selecionado não possui vínculo ativo com a Gestão informada.");
         }
 
+        // ==============================================================================
+        // NOVA LÓGICA: Descoberta Dinâmica da Resolução e Validação de Teto Financeiro
+        // ==============================================================================
+        List<Resolucao> resolucoesVigentes = resolucaoRepository.findResoluesVigentesNaData(dataAtividade);
+        if (resolucoesVigentes.isEmpty()) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            throw new IllegalStateException("Não foi encontrada nenhuma Resolução ativa cadastrada para a data desta atividade: " + dataAtividade.format(formatter));
+        }
+        
+        // A query (order by dtInicioVigencia desc) garante que o índice 0 é a norma mais recente válida para aquele dia
+        Resolucao resolucaoFinanceiraVigente = resolucoesVigentes.get(0);
+        
+        // Realiza o bloqueio caso estoure o limite de jetons do turno estabelecido pela resolução encontrada
+        validarLimitesTurno(atividade, resolucaoFinanceiraVigente);
+        // ==============================================================================
+
         // 3. Regras para Novas Atividades
         if (atividade.getIdAtividade() == null) {
             atividade.setDataHoraRegistro(LocalDateTime.now());
@@ -71,6 +91,38 @@ public class AtividadeConselhalService {
         }
 
         return atividadeRepository.save(atividade);
+    }
+
+    /**
+     * Valida se a inclusão da nova atividade vai extrapolar o teto de pontos por turno
+     * definido pela Resolução que estava vigente no dia da ocorrência.
+     */
+    private void validarLimitesTurno(AtividadeConselhal atividade, Resolucao resolucaoVigente) {
+        LocalDate dataAtividade = atividade.getDataHoraAtividade().toLocalDate();
+        
+        // Busca a soma de pontos já lançados no banco para o mesmo conselheiro, no mesmo dia e turno
+        // Certifique-se de que o método 'sumPontosPorConselheiroDiaETurno' esteja declarado no seu AtividadeConselhalRepository
+        Integer pontosRegistrados = atividadeRepository.sumPontosPorConselheiroDiaETurno(
+                atividade.getConselheiro().getIdPessoa(), 
+                dataAtividade, 
+                atividade.getInTurno()
+        );
+        
+        if (pontosRegistrados == null) {
+            pontosRegistrados = 0;
+        }
+
+        // Calcula a nova carga (Pontos da regra vs Quantidade executada)
+        int pontosDaNovaAtividade = atividade.getRegra().getPontos() * (atividade.getQtdAtividade() != null ? atividade.getQtdAtividade() : 1);
+        int somaTotalPontosTurno = pontosRegistrados + pontosDaNovaAtividade;
+
+        // Limite da resolução. Se a soma completar/exceder o teto para o mesmo período, bloqueia.
+        if (somaTotalPontosTurno > resolucaoVigente.getPontosPorJeton()) {
+            throw new RuntimeException("Inclusão bloqueada: A soma dos pontos neste turno (" 
+                    + somaTotalPontosTurno + " pontos) excede o limite estabelecido pela Resolução n. " 
+                    + resolucaoVigente.getNumero() + "/" + resolucaoVigente.getAno() 
+                    + " (" + resolucaoVigente.getPontosPorJeton() + " pontos por Jeton).");
+        }
     }
 
     @Transactional(readOnly = true)

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -38,8 +39,24 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
            "AND a.inSituacao = 'P' AND a.comprovante IS NOT NULL " +
            "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
     List<AtividadeConselhal> findPendentesParaProcessamento(
-            @org.springframework.data.repository.query.Param("idPessoa") Integer idPessoa, 
-            @org.springframework.data.repository.query.Param("mes") Integer mes, 
-            @org.springframework.data.repository.query.Param("ano") Integer ano);
+            @Param("idPessoa") Integer idPessoa, 
+            @Param("mes") Integer mes, 
+            @Param("ano") Integer ano);
+
+    // =========================================================================================
+    // NOVO: Validador de Teto por Turno
+    // Calcula a soma de pontos (pontos da regra * quantidade) para um conselheiro, num dia e turno específicos
+    // Utiliza funções nativas de YEAR, MONTH e DAY do JPQL para comparar com a data recebida (LocalDate)
+    // =========================================================================================
+    @Query("SELECT SUM(a.regra.pontos * a.qtdAtividade) FROM AtividadeConselhal a " +
+           "WHERE a.conselheiro.idPessoa = :idPessoa " +
+           "AND YEAR(a.dataHoraAtividade) = YEAR(:data) " +
+           "AND MONTH(a.dataHoraAtividade) = MONTH(:data) " +
+           "AND DAY(a.dataHoraAtividade) = DAY(:data) " +
+           "AND a.inTurno = :turno")
+    Integer sumPontosPorConselheiroDiaETurno(
+            @Param("idPessoa") Integer idPessoa, 
+            @Param("data") LocalDate data, 
+            @Param("turno") String turno);
 
 }

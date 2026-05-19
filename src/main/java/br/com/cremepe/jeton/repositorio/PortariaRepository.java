@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,4 +25,10 @@ public interface PortariaRepository extends JpaRepository<Portaria, Integer> {
            "(:termo IS NULL OR :termo = '' OR CAST(p.numero AS string) LIKE CONCAT('%', :termo, '%') OR CAST(p.ano AS string) LIKE CONCAT('%', :termo, '%')) AND " +
            "(:situacao IS NULL OR :situacao = '' OR p.inRevogado = :situacao)")
     Page<Portaria> pesquisarPaginado(@Param("termo") String termo, @Param("situacao") String situacao, Pageable pageable);
+
+    @Query("SELECT p FROM Portaria p WHERE p.dtInicioVigencia <= :dataBase " +
+           "AND (p.dtFimVigencia IS NULL OR p.dtFimVigencia >= :dataBase) " +
+           "AND p.inRevogado <> 'S' " +
+           "ORDER BY p.dtInicioVigencia DESC, p.idPortaria DESC")
+    List<Portaria> findPortariasVigentesNaData(@Param("dataBase") LocalDate dataBase);
 }

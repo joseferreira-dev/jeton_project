@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Objects;
 
 /**
@@ -31,14 +32,19 @@ public class Resolucao implements Serializable {
     @Column(name = "ano", nullable = false)
     private Integer ano;
 
+    @Column(name = "dtInicioVigencia")
+    private LocalDate dtInicioVigencia;
+
+    @Column(name = "dtFimVigencia")
+    private LocalDate dtFimVigencia;
+
     @Column(name = "linkPublicado", length = 100)
     private String linkPublicado;
 
-    @Column(name = "inRevogado", length = 1, nullable = false)
+    @Column(name = "inRevogado", nullable = false, length = 1)
     private String inRevogado;
 
-    // Mapeamento específico para suportar textos longos do MySQL
-    @Column(name = "ementa", columnDefinition = "text")
+    @Column(name = "ementa", columnDefinition = "TEXT")
     private String ementa;
 
     @Column(name = "pontosPorJeton", nullable = false)
@@ -53,17 +59,14 @@ public class Resolucao implements Serializable {
     @Column(name = "maxJetonsMes", nullable = false)
     private Integer maxJetonsMes;
 
-    // Uso rigoroso de BigDecimal para dados monetários (decimal(10,2))
-    @Column(name = "valorJeton", precision = 10, scale = 2, nullable = false)
+    @Column(name = "valorJeton", nullable = false, precision = 10, scale = 2)
     private BigDecimal valorJeton;
 
+    // Construtores
     public Resolucao() {
     }
 
-    // ==========================================
-    // GETTERS E SETTERS
-    // ==========================================
-
+    // Getters e Setters
     public Integer getIdResolucao() {
         return idResolucao;
     }
@@ -86,6 +89,22 @@ public class Resolucao implements Serializable {
 
     public void setAno(Integer ano) {
         this.ano = ano;
+    }
+
+    public LocalDate getDtInicioVigencia() {
+        return dtInicioVigencia;
+    }
+
+    public void setDtInicioVigencia(LocalDate dtInicioVigencia) {
+        this.dtInicioVigencia = dtInicioVigencia;
+    }
+
+    public LocalDate getDtFimVigencia() {
+        return dtFimVigencia;
+    }
+
+    public void setDtFimVigencia(LocalDate dtFimVigencia) {
+        this.dtFimVigencia = dtFimVigencia;
     }
 
     public String getLinkPublicado() {

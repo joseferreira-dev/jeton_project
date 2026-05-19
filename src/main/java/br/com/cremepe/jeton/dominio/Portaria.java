@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.Objects;
 
 /**
@@ -30,20 +31,23 @@ public class Portaria implements Serializable {
     @Column(name = "ano", nullable = false)
     private Integer ano;
 
-    // Campo opcional (permite NULL na base de dados)
+    @Column(name = "dtInicioVigencia")
+    private LocalDate dtInicioVigencia;
+
+    @Column(name = "dtFimVigencia")
+    private LocalDate dtFimVigencia;
+
     @Column(name = "linkPublicado", length = 100)
     private String linkPublicado;
 
-    @Column(name = "inRevogado", length = 1, nullable = false)
+    @Column(name = "inRevogado", nullable = false, length = 1)
     private String inRevogado;
 
+    // Construtores
     public Portaria() {
     }
 
-    // ==========================================
-    // GETTERS E SETTERS
-    // ==========================================
-
+    // Getters e Setters
     public Integer getIdPortaria() {
         return idPortaria;
     }
@@ -66,6 +70,22 @@ public class Portaria implements Serializable {
 
     public void setAno(Integer ano) {
         this.ano = ano;
+    }
+
+    public LocalDate getDtInicioVigencia() {
+        return dtInicioVigencia;
+    }
+
+    public void setDtInicioVigencia(LocalDate dtInicioVigencia) {
+        this.dtInicioVigencia = dtInicioVigencia;
+    }
+
+    public LocalDate getDtFimVigencia() {
+        return dtFimVigencia;
+    }
+
+    public void setDtFimVigencia(LocalDate dtFimVigencia) {
+        this.dtFimVigencia = dtFimVigencia;
     }
 
     public String getLinkPublicado() {

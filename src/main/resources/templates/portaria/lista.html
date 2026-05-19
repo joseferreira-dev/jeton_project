@@ -54,6 +54,7 @@
                     <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
                         <tr>
                             <th class="ps-4">Portaria</th>
+                            <th>Período de Vigência</th>
                             <th>Link de Publicação</th>
                             <th class="text-center">Estado</th>
                             <th class="text-center pe-4">Ações</th>
@@ -63,6 +64,18 @@
                         <tr th:each="p : ${paginaPortarias.content}" th:classappend="${p.inRevogado == 'S'} ? 'table-light text-muted'">
                             <td class="ps-4 fw-bold text-cremepe" th:text="${'Portaria ' + p.numero + '/' + p.ano}">Portaria</td>
                             <td>
+                                <div>
+                                    <i class="fa-regular fa-calendar-check me-1 text-success"></i>
+                                    <span th:if="${p.dtInicioVigencia != null}" th:text="${#temporals.format(p.dtInicioVigencia, 'dd/MM/yyyy')}"></span>
+                                    <span th:unless="${p.dtInicioVigencia != null}" class="text-muted">Não definido</span>
+                                </div>
+                                <div>
+                                    <i class="fa-regular fa-calendar-xmark me-1 text-danger"></i>
+                                    <span th:if="${p.dtFimVigencia != null}" th:text="${#temporals.format(p.dtFimVigencia, 'dd/MM/yyyy')}"></span>
+                                    <span th:unless="${p.dtFimVigencia != null}" class="badge bg-secondary">Indeterminado</span>
+                                </div>
+                            </td>
+                            <td>
                                 <a th:if="${p.linkPublicado != null and !p.linkPublicado.isEmpty()}" th:href="${p.linkPublicado}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-link"></i> Aceder Link</a>
                                 <span th:unless="${p.linkPublicado != null and !p.linkPublicado.isEmpty()}" class="text-muted small">Sem link</span>
                             </td>
@@ -71,22 +84,25 @@
                                 <span th:if="${p.inRevogado == 'S'}" class="badge bg-danger"><i class="fa-solid fa-ban me-1"></i> Revogada</span>
                             </td>
                             <td class="text-center pe-4">
-                                <a th:if="${p.inRevogado == 'N'}" th:href="@{'/portarias/editar/' + ${p.idPortaria}}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <a th:href="@{'/portarias/editar/' + ${p.idPortaria}}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="fa-solid fa-pen-to-square"></i></a>
+                                
                                 <a th:href="@{'/portarias/deletar/' + ${p.idPortaria}}" class="btn btn-sm btn-outline-danger btn-confirm me-1" 
                                 title="Excluir Definitivamente" 
                                 data-mensagem="Deseja <b>EXCLUIR</b> permanentemente este registro?<br><small class='text-danger'>Apenas possível se não houver regras vinculadas.</small>"
                                 data-cor="btn-danger" data-icone="fa-solid fa-trash-can"><i class="fa-solid fa-trash-can"></i></a>
+                                
                                 <a th:if="${p.inRevogado == 'N'}" th:href="@{'/portarias/excluir/' + ${p.idPortaria}}" class="btn btn-sm btn-outline-danger btn-confirm" 
                                 title="Revogar" 
                                 data-mensagem="Tem certeza que deseja <b>REVOGAR</b> esta Portaria?<br><small class='text-muted'>Ela deixará de ser listada para novos cadastros.</small>"
                                 data-cor="btn-danger" data-icone="fa-solid fa-ban"><i class="fa-solid fa-ban"></i></a>
+                                
                                 <a th:if="${p.inRevogado == 'S'}" th:href="@{'/portarias/restaurar/' + ${p.idPortaria}}" class="btn btn-sm btn-outline-success btn-confirm" 
                                 title="Restaurar" 
                                 data-mensagem="Tem certeza que deseja <b>RESTAURAR</b> esta Portaria para o estado Em Vigor?"
                                 data-cor="btn-success" data-icone="fa-solid fa-rotate-left"><i class="fa-solid fa-rotate-left"></i></a>
                             </td>
                         </tr>
-                        <tr th:if="${paginaPortarias.empty}"><td colspan="4" class="text-center py-4 text-muted">Nenhuma portaria encontrada para os filtros aplicados.</td></tr>
+                        <tr th:if="${paginaPortarias.empty}"><td colspan="5" class="text-center py-4 text-muted">Nenhuma portaria encontrada para os filtros aplicados.</td></tr>
                     </tbody>
                 </table>
             </div>

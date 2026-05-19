@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Portaria;
-import br.com.cremepe.jeton.servico.PortariaService; // Seu serviço existente no novo projeto
+import br.com.cremepe.jeton.servico.PortariaService; 
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;

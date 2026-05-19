@@ -54,6 +54,7 @@
                     <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
                         <tr>
                             <th class="ps-4">Resolução</th>
+                            <th>Período de Vigência</th>
                             <th>Valor Jeton</th>
                             <th>Teto (Mês)</th>
                             <th class="text-center">Estado</th>
@@ -64,7 +65,19 @@
                         <tr th:each="r : ${paginaResolucoes.content}" th:classappend="${r.inRevogado == 'S'} ? 'table-light text-muted'">
                             <td class="ps-4">
                                 <div class="fw-bold text-cremepe" th:text="${'Resolução ' + r.numero + '/' + r.ano}"></div>
-                                <div class="small" style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" th:text="${r.ementa}"></div>
+                                <div class="small" style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" th:text="${r.ementa}"></div>
+                            </td>
+                            <td>
+                                <div>
+                                    <i class="fa-regular fa-calendar-check me-1 text-success"></i>
+                                    <span th:if="${r.dtInicioVigencia != null}" th:text="${#temporals.format(r.dtInicioVigencia, 'dd/MM/yyyy')}"></span>
+                                    <span th:unless="${r.dtInicioVigencia != null}" class="text-muted">Não definido</span>
+                                </div>
+                                <div>
+                                    <i class="fa-regular fa-calendar-xmark me-1 text-danger"></i>
+                                    <span th:if="${r.dtFimVigencia != null}" th:text="${#temporals.format(r.dtFimVigencia, 'dd/MM/yyyy')}"></span>
+                                    <span th:unless="${r.dtFimVigencia != null}" class="badge bg-secondary">Indeterminado</span>
+                                </div>
                             </td>
                             <td class="fw-bold text-success" th:text="${'R$ ' + #numbers.formatDecimal(r.valorJeton, 1, 'POINT', 2, 'COMMA')}"></td>
                             <td th:text="${r.maxJetonsMes + ' Jetons'}"></td>
@@ -73,22 +86,25 @@
                                 <span th:if="${r.inRevogado == 'S'}" class="badge bg-danger"><i class="fa-solid fa-ban me-1"></i> Revogada</span>
                             </td>
                             <td class="text-center pe-4">
-                                <a th:if="${r.inRevogado == 'N'}" th:href="@{'/resolucoes/editar/' + ${r.idResolucao}}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <a th:href="@{'/resolucoes/editar/' + ${r.idResolucao}}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="fa-solid fa-pen-to-square"></i></a>
+                                
                                 <a th:href="@{'/resolucoes/deletar/' + ${r.idResolucao}}" class="btn btn-sm btn-outline-danger btn-confirm me-1" 
                                 title="Excluir Definitivamente" 
                                 data-mensagem="Deseja <b>EXCLUIR</b> permanentemente este registro?<br><small class='text-danger'>Apenas possível se não houver regras vinculadas.</small>"
                                 data-cor="btn-danger" data-icone="fa-solid fa-trash-can"><i class="fa-solid fa-trash-can"></i></a>
+                                
                                 <a th:if="${r.inRevogado == 'N'}" th:href="@{'/resolucoes/excluir/' + ${r.idResolucao}}" class="btn btn-sm btn-outline-danger btn-confirm" 
                                 title="Revogar" 
                                 data-mensagem="Tem certeza que deseja <b>REVOGAR</b> esta Resolução?<br><small class='text-muted'>Isso impedirá que ela seja usada em novos registos.</small>"
                                 data-cor="btn-danger" data-icone="fa-solid fa-ban"><i class="fa-solid fa-ban"></i></a>
+                                
                                 <a th:if="${r.inRevogado == 'S'}" th:href="@{'/resolucoes/restaurar/' + ${r.idResolucao}}" class="btn btn-sm btn-outline-success btn-confirm" 
                                 title="Restaurar" 
                                 data-mensagem="Tem certeza que deseja <b>RESTAURAR</b> esta Resolução para o estado Em Vigor?"
                                 data-cor="btn-success" data-icone="fa-solid fa-rotate-left"><i class="fa-solid fa-rotate-left"></i></a>
                             </td>
                         </tr>
-                        <tr th:if="${paginaResolucoes.empty}"><td colspan="5" class="text-center py-4 text-muted">Nenhuma resolução encontrada para os filtros aplicados.</td></tr>
+                        <tr th:if="${paginaResolucoes.empty}"><td colspan="6" class="text-center py-4 text-muted">Nenhuma resolução encontrada para os filtros aplicados.</td></tr>
                     </tbody>
                 </table>
             </div>

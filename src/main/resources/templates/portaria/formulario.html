@@ -25,6 +25,17 @@
                         <label class="form-label fw-bold">Ano</label>
                         <input type="number" class="form-control" th:field="*{ano}" required min="2000" max="2100">
                     </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Data de Início da Vigência</label>
+                        <input type="date" class="form-control" th:field="*{dtInicioVigencia}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Data de Fim da Vigência</label>
+                        <input type="date" class="form-control" th:field="*{dtFimVigencia}">
+                        <div class="form-text">Deixe em branco se a portaria for por tempo indeterminado.</div>
+                    </div>
+
                     <div class="col-md-12">
                         <label class="form-label fw-bold">Link de Publicação (Opcional)</label>
                         <input type="url" class="form-control" th:field="*{linkPublicado}" placeholder="Ex: https://diariooficial.org/...">
