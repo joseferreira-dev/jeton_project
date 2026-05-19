@@ -4,6 +4,7 @@ import br.com.cremepe.jeton.dominio.Portaria;
 import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.dominio.Resolucao;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -64,4 +65,11 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
                                 @Param("judicante") String judicante, 
                                 Pageable pageable);
 
+    @Modifying
+    @Query("UPDATE Regras r SET r.inRevogado = 'S' WHERE r.resolucao.idResolucao = :idResolucao")
+    void revogarRegrasPorResolucao(@Param("idResolucao") Integer idResolucao);
+
+    @Modifying
+    @Query("UPDATE Regras r SET r.inRevogado = 'S' WHERE r.portaria.idPortaria = :idPortaria")
+    void revogarRegrasPorPortaria(@Param("idPortaria") Integer idPortaria);
 }

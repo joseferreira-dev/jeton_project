@@ -43,6 +43,8 @@ public class ResolucaoService {
         repository.findById(id).ifPresent(r -> {
             r.setInRevogado("S");
             repository.save(r);
+            // Revoga as regras associadas
+            regrasRepository.revogarRegrasPorResolucao(id);
         });
     }
 

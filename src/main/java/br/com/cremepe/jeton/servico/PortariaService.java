@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.dominio.Portaria;
+import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repositorio.PortariaRepository;
 import br.com.cremepe.jeton.repositorio.RegrasRepository;
 
@@ -44,6 +45,7 @@ public class PortariaService {
         repository.findById(id).ifPresent(p -> {
             p.setInRevogado("S");
             repository.save(p);
+            regrasRepository.revogarRegrasPorPortaria(id);
         });
     }
 

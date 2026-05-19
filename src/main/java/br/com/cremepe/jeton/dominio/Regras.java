@@ -31,12 +31,12 @@ public class Regras implements Serializable {
 
     // Relacionamento com a Resolução
     @ManyToOne
-    @JoinColumn(name = "idResolucao", nullable = true) // <-- ALTERADO PARA TRUE
+    @JoinColumn(name = "idResolucao", nullable = true)
     private Resolucao resolucao;
 
     // Relacionamento com a Portaria
     @ManyToOne
-    @JoinColumn(name = "idPortaria", nullable = true) // <-- ALTERADO PARA TRUE
+    @JoinColumn(name = "idPortaria", nullable = true)
     private Portaria portaria;
 
     // Mapeamento inverso do Muitos-para-Muitos
