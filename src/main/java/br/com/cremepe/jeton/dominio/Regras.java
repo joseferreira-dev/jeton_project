@@ -49,7 +49,7 @@ public class Regras implements Serializable {
     private String descricao;
 
     @Column(name = "pontos", nullable = false)
-    private Integer pontos;
+    private Integer pontos = 0;
 
     @Column(name = "inRevogado", length = 1, nullable = false)
     private String inRevogado;
