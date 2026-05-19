@@ -29,12 +29,10 @@ public class Regras implements Serializable {
     @Column(name = "idRegra")
     private Integer idRegra;
 
-    // Relacionamento com a Resolução
-    @ManyToOne
-    @JoinColumn(name = "idResolucao", nullable = true)
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "idResolucao", nullable = false)
     private Resolucao resolucao;
 
-    // Relacionamento com a Portaria
     @ManyToOne
     @JoinColumn(name = "idPortaria", nullable = true)
     private Portaria portaria;

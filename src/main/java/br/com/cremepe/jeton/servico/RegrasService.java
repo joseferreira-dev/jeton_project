@@ -31,10 +31,50 @@ public class RegrasService {
 
     @Transactional
     public Regras salvar(Regras regra) {
+        if (regra.getResolucao() == null || regra.getResolucao().getIdResolucao() == null) {
+            throw new RuntimeException("Atenção: A Resolução é um campo obrigatório. Selecione uma resolução para continuar.");
+        }
+
+        // Validações de duplicidade
+        validarDuplicidade(regra);
+
+        // Validação de Regra de Negócio: Deve pertencer a pelo menos uma normativa
+        if (regra.getResolucao() == null) {
+            throw new RuntimeException("A regra deve estar vinculada obrigatoriamente a uma Resolução ou a uma Portaria.");
+        }
+
+        // Limpeza de referência caso Portaria não seja selecionada
+        if (regra.getPortaria() != null && (regra.getPortaria().getIdPortaria() == null || regra.getPortaria().getIdPortaria() == 0)) {
+            regra.setPortaria(null);
+        }
+
         if (regra.getInRevogado() == null || regra.getInRevogado().trim().isEmpty()) {
             regra.setInRevogado("N");
         }
-        return repository.save(regra);
+
+        try {
+            return repository.save(regra);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao salvar no banco de dados: verifique se os dados da regra são válidos.");
+        }
+    }
+
+    private void validarDuplicidade(Regras regra) {
+        List<Regras> existentes;
+        
+        // Procura se já existe uma regra com o mesmo nome na mesma normativa
+        if (regra.getResolucao() != null) {
+            existentes = repository.findByNomeRegraAndResolucaoIdResolucao(regra.getNomeRegra(), regra.getResolucao().getIdResolucao());
+        } else {
+            existentes = repository.findByNomeRegraAndPortariaIdPortaria(regra.getNomeRegra(), regra.getPortaria().getIdPortaria());
+        }
+
+        // Se estiver editando, ignoramos a própria regra na contagem
+        for (Regras r : existentes) {
+            if (!r.getIdRegra().equals(regra.getIdRegra())) {
+                throw new RuntimeException("Já existe uma regra com este nome cadastrada nesta normativa!");
+            }
+        }
     }
 
     @Transactional

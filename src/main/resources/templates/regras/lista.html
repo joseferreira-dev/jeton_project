@@ -92,10 +92,30 @@
                             <td th:text="${r.pontosLimitesTurno}"></td>
                             <td class="text-center"><span th:text="${r.inJudicante == 'S' ? 'Sim' : 'Não'}" th:classappend="${r.inJudicante == 'S'} ? 'badge bg-dark' : 'badge bg-light text-muted'"></span></td>
                             <td class="text-center pe-4">
-                                <a th:if="${r.inRevogado == 'N'}" th:href="@{'/regras/editar/' + ${r.idRegra}}" class="btn btn-sm btn-outline-primary me-1"><i class="fa-solid fa-pen-to-square"></i></a>
-                                <a th:if="${r.inRevogado == 'N'}" th:href="@{'/regras/excluir/' + ${r.idRegra}}" class="btn btn-sm btn-outline-warning btn-confirm me-1" data-mensagem="Deseja revogar esta Regra?" data-cor="btn-warning"><i class="fa-solid fa-ban"></i></a>
-                                <a th:href="@{'/regras/deletar/' + ${r.idRegra}}" class="btn btn-sm btn-outline-danger btn-confirm me-1" data-mensagem="Deseja excluir permanentemente esta Regra?" data-cor="btn-danger"><i class="fa-solid fa-trash-can"></i></a>
-                                <a th:if="${r.inRevogado == 'S'}" th:href="@{'/regras/restaurar/' + ${r.idRegra}}" class="btn btn-sm btn-outline-success btn-confirm" data-mensagem="Restaurar esta Regra?" data-cor="btn-success"><i class="fa-solid fa-rotate-left"></i></a>
+                                <a th:href="@{'/regras/editar/' + ${r.idRegra}}" 
+                                class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+
+                                <a th:href="@{'/regras/deletar/' + ${r.idRegra}}" 
+                                class="btn btn-sm btn-outline-danger btn-confirm me-1" 
+                                title="Excluir Definitivamente">
+                                <i class="fa-solid fa-trash-can"></i>
+                                </a>
+
+                                <a th:if="${r.inRevogado == 'N'}" 
+                                th:href="@{'/regras/excluir/' + ${r.idRegra}}" 
+                                class="btn btn-sm btn-outline-warning btn-confirm me-1" 
+                                title="Revogar Regra">
+                                <i class="fa-solid fa-ban"></i>
+                                </a>
+
+                                <a th:if="${r.inRevogado == 'S'}" 
+                                th:href="@{'/regras/restaurar/' + ${r.idRegra}}" 
+                                class="btn btn-sm btn-outline-success btn-confirm" 
+                                title="Restaurar Regra">
+                                <i class="fa-solid fa-rotate-left"></i>
+                                </a>
                             </td>
                         </tr>
                         <tr th:if="${paginaRegras.empty}"><td colspan="6" class="text-center py-4 text-muted">Nenhuma regra encontrada para os filtros aplicados.</td></tr>

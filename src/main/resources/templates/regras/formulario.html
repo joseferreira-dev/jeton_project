@@ -55,7 +55,9 @@
                                 <label class="form-label fw-bold"><i class="fa-solid fa-scale-balanced text-muted me-1"></i> Resolução Vinculada</label>
                                 <select class="form-select" th:field="*{resolucao.idResolucao}">
                                     <option value="">-- Nenhuma Resolução --</option>
-                                    <option th:each="r : ${listaResolucoes}" th:value="${r.idResolucao}" th:text="${'Resolução ' + r.numero + '/' + r.ano}"></option>
+                                    <option th:each="r : ${listaResolucoes}" 
+                                            th:value="${r.idResolucao}" 
+                                            th:text="${'Resolução ' + r.numero + '/' + r.ano}"></option>
                                 </select>
                             </div>
                             <div class="col-md-12">

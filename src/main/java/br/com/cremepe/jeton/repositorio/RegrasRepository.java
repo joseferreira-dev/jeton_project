@@ -72,4 +72,8 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
     @Modifying
     @Query("UPDATE Regras r SET r.inRevogado = 'S' WHERE r.portaria.idPortaria = :idPortaria")
     void revogarRegrasPorPortaria(@Param("idPortaria") Integer idPortaria);
+
+    List<Regras> findByNomeRegraAndResolucaoIdResolucao(String nomeRegra, Integer idResolucao);
+    
+    List<Regras> findByNomeRegraAndPortariaIdPortaria(String nomeRegra, Integer idPortaria);
 }

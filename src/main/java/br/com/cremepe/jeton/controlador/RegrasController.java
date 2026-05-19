@@ -71,12 +71,14 @@ public class RegrasController {
     }
 
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("regra") Regras regra, RedirectAttributes ra) {
+    public String salvar(@ModelAttribute("regras") Regras regra, RedirectAttributes ra) {
         try {
             regrasService.salvar(regra);
-            ra.addFlashAttribute("sucesso", "Regra de pontuação salva com sucesso!");
+            ra.addFlashAttribute("sucesso", "Regra salva com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao salvar Regra.");
+            ra.addFlashAttribute("erro", "Ocorreu um erro inesperado ao processar a regra.");
         }
         return "redirect:/regras";
     }
