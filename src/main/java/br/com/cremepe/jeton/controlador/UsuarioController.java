@@ -1,8 +1,6 @@
 package br.com.cremepe.jeton.controlador;
 
-import br.com.cremepe.jeton.dominio.NivelAcesso;
 import br.com.cremepe.jeton.dominio.Usuario;
-import br.com.cremepe.jeton.dominio.UsuarioAcesso;
 import br.com.cremepe.jeton.repositorio.UsuarioAcessoRepository;
 import br.com.cremepe.jeton.servico.AcessoService;
 import br.com.cremepe.jeton.servico.ConselheiroService;
@@ -23,11 +21,16 @@ import java.util.List;
 @RequestMapping("/usuarios")
 public class UsuarioController {
 
-    @Autowired private UsuarioService usuarioService;
-    @Autowired private ConselheiroService conselheiroService;
-    @Autowired private NivelAcessoService nivelAcessoService;
-    @Autowired private AcessoService acessoService;
-    @Autowired private UsuarioAcessoRepository usuarioAcessoRepository;
+    @Autowired
+    private UsuarioService usuarioService;
+    @Autowired
+    private ConselheiroService conselheiroService;
+    @Autowired
+    private NivelAcessoService nivelAcessoService;
+    @Autowired
+    private AcessoService acessoService;
+    @Autowired
+    private UsuarioAcessoRepository usuarioAcessoRepository;
 
     @GetMapping
     public String listar(
@@ -39,9 +42,11 @@ public class UsuarioController {
             @RequestParam(value = "dir", required = false, defaultValue = "asc") String dir,
             Model model, HttpSession session) {
 
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
 
-        Page<Usuario> paginaUsuarios = usuarioService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort, dir);
+        Page<Usuario> paginaUsuarios = usuarioService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort,
+                dir);
         model.addAttribute("paginaUsuarios", paginaUsuarios);
         model.addAttribute("termo", termo);
         model.addAttribute("situacao", situacao);
@@ -53,7 +58,7 @@ public class UsuarioController {
 
     private void carregarListasApoio(Model model, Integer idUsuario) {
         model.addAttribute("listaNiveisAcesso", nivelAcessoService.listarTodos());
-        
+
         List<String> niveisAtuais = new ArrayList<>();
         if (idUsuario != null) {
             // Traz as letras (A, C, J...) que este utilizador já possui
@@ -67,7 +72,8 @@ public class UsuarioController {
 
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("usuario", new Usuario());
         carregarListasApoio(model, null);
         return "usuario/formulario";
@@ -75,28 +81,29 @@ public class UsuarioController {
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
+
         Usuario usuario = usuarioService.buscarPorId(id).orElse(new Usuario());
-        
+
         if ("C".equals(usuario.getPessoa().getInTipoPessoa())) {
             usuario.seteConselheiro(true);
             conselheiroService.buscarPorId(id).ifPresent(c -> usuario.setCrm(c.getCrm()));
         }
-        
+
         model.addAttribute("usuario", usuario);
         carregarListasApoio(model, id);
         return "usuario/formulario";
     }
 
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("usuario") Usuario usuario, 
-                         @RequestParam(value = "niveisAcesso", required = false) List<String> niveisAcessoSelecionados,
-                         RedirectAttributes ra) {
+    public String salvar(@ModelAttribute("usuario") Usuario usuario,
+            @RequestParam(value = "niveisAcesso", required = false) List<String> niveisAcessoSelecionados,
+            RedirectAttributes ra) {
         try {
             // Grava os dados base do utilizador (Nome, CPF, Senha...)
             Usuario userSalvo = usuarioService.salvar(usuario);
-            
+
             // Lógica de Sincronização de Permissões
             Integer id = userSalvo.getIdUsuarioPessoa();
             List<String> niveisAtuais = usuarioAcessoRepository.findAll().stream()
