@@ -8,8 +8,6 @@ import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
 import br.com.cremepe.jeton.repositorio.GestaoRepository;
 import br.com.cremepe.jeton.repositorio.ComprovanteRepository;
-import br.com.cremepe.jeton.repositorio.ResolucaoRepository;
-import br.com.cremepe.jeton.servico.RegrasService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -38,8 +35,6 @@ public class AtividadeConselhalService {
     private ComprovanteRepository comprovanteRepository;
     @Autowired
     private FileStorageService fileStorageService;
-    @Autowired
-    private ResolucaoRepository resolucaoRepository;
     @Autowired
     private RegrasService regrasService;
 
