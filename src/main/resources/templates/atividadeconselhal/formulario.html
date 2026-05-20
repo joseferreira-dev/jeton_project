@@ -1,39 +1,81 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
-<head><title>Registar Atividade - Jeton</title></head>
+
+<head>
+    <title>Registar Atividade - Jeton</title>
+</head>
+
 <body>
-<div layout:fragment="conteudo">
-    <div class="mb-4">
-        <h2 class="h4 text-cremepe fw-bold">
-            <i class="fa-solid fa-clipboard-check me-2"></i>
-            <span th:text="${atividade.idAtividade == null ? 'Registar Nova Atividade' : 'Validar / Editar Atividade'}"></span>
-        </h2>
-    </div>
+    <div layout:fragment="conteudo">
+        <div class="mb-4">
+            <h2 class="h4 text-cremepe fw-bold">
+                <i class="fa-solid fa-clipboard-check me-2"></i>
+                <span
+                    th:text="${atividade.idAtividade == null ? 'Registar Nova Atividade' : 'Validar / Editar Atividade'}"></span>
+            </h2>
+        </div>
 
-    <div class="card shadow-sm">
-        <div class="card-body p-4">
-            <form th:action="@{/atividades/salvar}" th:object="${atividade}" method="post" enctype="multipart/form-data">
-                <input type="hidden" th:field="*{idAtividade}">
-                <input type="hidden" th:field="*{dataHoraRegistro}">
-                
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Gestão Referente</label>
-                        <select class="form-select" th:field="*{gestao.idGestao}" id="selectGestao" onchange="atualizarConselheiros()" required>
-                            <option value="">-- Selecione a Gestão Primeiro --</option>
-                            <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}" th:text="${g.nomeGestao}"></option>
-                        </select>
-                    </div>
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form th:action="@{/atividades/salvar}" th:object="${atividade}" method="post"
+                    enctype="multipart/form-data">
+                    <input type="hidden" th:field="*{idAtividade}">
+                    <input type="hidden" th:field="*{dataHoraRegistro}">
 
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Conselheiro</label>
-                        <select class="form-select" th:field="*{conselheiro.idPessoa}" id="selectConselheiro" required th:disabled="${atividade.idAtividade == null}">
-                            <option value="">-- Aguardando Gestão --</option>
-                            <option th:if="${atividade.conselheiro != null}" th:value="${atividade.conselheiro.idPessoa}" th:text="${atividade.conselheiro.pessoa?.nome}" selected></option>
-                        </select>
-                    </div>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Gestão Referente</label>
+                            <select class="form-select" th:field="*{gestao.idGestao}" id="selectGestao"
+                                onchange="atualizarConselheiros()" required>
+                                <option value="">-- Selecione a Gestão Primeiro --</option>
+                                <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}"
+                                    th:text="${g.nomeGestao}"></option>
+                            </select>
+                        </div>
 
-                    <div class="col-md-5">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Conselheiro</label>
+                            <select class="form-select" th:field="*{conselheiro.idPessoa}" id="selectConselheiro"
+                                required th:disabled="${atividade.idAtividade == null}">
+                                <option value="">-- Aguardando Gestão --</option>
+                                <option th:if="${atividade.conselheiro != null}"
+                                    th:value="${atividade.conselheiro.idPessoa}"
+                                    th:text="${atividade.conselheiro.pessoa?.nome}" selected></option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Data e Horário da Atividade</label>
+                            <input type="datetime-local" class="form-control" name="dataAtividadePura"
+                                id="dataAtividade"
+                                th:value="${atividade.dataHoraAtividade != null ? #temporals.format(atividade.dataHoraAtividade, 'yyyy-MM-dd-T-HH:mm').replace('-T-', 'T') : ''}"
+                                onchange="atualizarRegrasPorData()" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Turno</label>
+                            <select class="form-select" th:field="*{inTurno}" required>
+                                <option value="M">Manhã</option>
+                                <option value="T">Tarde</option>
+                                <option value="N">Noite</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Resolução Aplicada (Identificada por Data)</label>
+                            <input type="text" class="form-control" id="nomeResolucaoVisual" readonly
+                                placeholder="Selecione a data para identificar">
+                            <input type="hidden" th:field="*{regra.resolucao.idResolucao}" id="idResolucaoHidden">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Portaria Aplicada (Identificada por Data)</label>
+                            <input type="text" class="form-control" id="nomePortariaVisual" readonly
+                                placeholder="Selecione a data para identificar">
+                            <input type="hidden" th:field="*{regra.portaria.idPortaria}" id="idPortariaHidden">
+                        </div>
+
+                        <!-- <div class="col-md-5">
                         <label class="form-label fw-bold">Resolução (Filtro)</label>
                         <select class="form-select" id="selectResolucao" onchange="atualizarFiltros()">
                             <option value="">-- Selecione (Opcional) --</option>
@@ -47,39 +89,43 @@
                             <option value="">-- Selecione (Opcional) --</option>
                             <option th:each="p : ${listaPortarias}" th:value="${p.idPortaria}" th:text="${'Portaria ' + p.numero + '/' + p.ano}" th:selected="${atividade.regra?.portaria?.idPortaria == p.idPortaria}"></option>
                         </select>
-                    </div>
+                    </div> -->
 
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="button" class="btn btn-outline-secondary w-100" onclick="resetarFiltros()"><i class="fa-solid fa-eraser me-1"></i> Limpar</button>
-                    </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="resetarFiltros()"><i
+                                    class="fa-solid fa-eraser me-1"></i> Limpar</button>
+                        </div>
 
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold text-cremepe">Regra Enquadrada (Atividade Específica)</label>
-                        <select class="form-select border-primary" th:field="*{regra.idRegra}" id="selectRegra" 
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold text-cremepe">Regra Enquadrada (Atividade
+                                Específica)</label>
+                            <select class="form-select border-primary" th:field="*{regra.idRegra}" id="selectRegra"
                                 onchange="exibirGuiaRegra()" required th:disabled="${atividade.idAtividade == null}">
-                            <option value="">-- Escolha a documentação acima para desbloquear as regras --</option>
-                            <option th:if="${atividade.regra != null}" th:value="${atividade.regra.idRegra}" th:text="${atividade.regra.nomeRegra}" selected></option>
-                        </select>
-                    </div>
+                                <option value="">-- Escolha a documentação acima para desbloquear as regras --</option>
+                                <option th:if="${atividade.regra != null}" th:value="${atividade.regra.idRegra}"
+                                    th:text="${atividade.regra.nomeRegra}" selected></option>
+                            </select>
+                        </div>
 
-                    <div class="col-md-12" id="boxGuia" style="display: none;">
-                        <div class="alert alert-info border-0 shadow-sm mb-0">
-                            <h6 class="fw-bold text-primary"><i class="fa-solid fa-circle-info me-2"></i>Guia de Verificação da Atividade</h6>
-                            <hr class="my-2">
-                            <div class="row">
-                                <div class="col-md-9">
-                                    <small class="d-block text-muted fw-bold">Descrição da Atividade:</small>
-                                    <span id="guiaDescricao"></span>
-                                </div>
-                                <div class="col-md-3 text-end">
-                                    <small class="d-block text-muted fw-bold">Pontuação:</small>
-                                    <span class="badge bg-primary fs-6" id="guiaPontos">0</span> pontos
+                        <div class="col-md-12" id="boxGuia" style="display: none;">
+                            <div class="alert alert-info border-0 shadow-sm mb-0">
+                                <h6 class="fw-bold text-primary"><i class="fa-solid fa-circle-info me-2"></i>Guia de
+                                    Verificação da Atividade</h6>
+                                <hr class="my-2">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <small class="d-block text-muted fw-bold">Descrição da Atividade:</small>
+                                        <span id="guiaDescricao"></span>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <small class="d-block text-muted fw-bold">Pontuação:</small>
+                                        <span class="badge bg-primary fs-6" id="guiaPontos">0</span> pontos
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="col-md-4">
+                        <!-- <div class="col-md-4">
                         <label class="form-label fw-bold">Data e Hora da Atividade</label>
                         <input type="datetime-local" class="form-control" th:field="*{dataHoraAtividade}" required>
                     </div>
@@ -91,184 +137,228 @@
                             <option value="T">Tarde</option>
                             <option value="N">Noite</option>
                         </select>
+                    </div> -->
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Estado (Validação)</label>
+                            <select class="form-select" th:field="*{inSituacao}">
+                                <option value="P">Pendente (Aguardando Validação)</option>
+                                <option value="V">Validada (Aprovada)</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold">Estado (Validação)</label>
-                        <select class="form-select" th:field="*{inSituacao}">
-                            <option value="P">Pendente (Aguardando Validação)</option>
-                            <option value="V">Validada (Aprovada)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="row g-4 mt-2">
-                    <div class="col-md-12">
-                        <div class="card bg-light border-dashed">
-                            <div class="card-body">
-                                <h6 class="fw-bold mb-3"><i class="fa-solid fa-paperclip me-2"></i>Anexar Comprovante (Obrigatório para Jeton)</h6>
-                                <div class="row g-3">
-                                    <div class="col-md-12">
-                                        <label class="form-label small fw-bold">Nome do Comprovante (Descrição para o sistema)</label>
-                                        <input type="text" class="form-control form-control-sm" name="nomeComprovanteUsuario" 
-                                            placeholder="Ex: Certidão de comparecimento - Reunião X" required>
+                    <div class="row g-4 mt-2">
+                        <div class="col-md-12">
+                            <div class="card bg-light border-dashed">
+                                <div class="card-body">
+                                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-paperclip me-2"></i>Anexar
+                                        Comprovante (Obrigatório para Jeton)</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label small fw-bold">Nome do Comprovante (Descrição para
+                                                o sistema)</label>
+                                            <input type="text" class="form-control form-control-sm"
+                                                name="nomeComprovanteUsuario"
+                                                placeholder="Ex: Certidão de comparecimento - Reunião X" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Tipo de Documento</label>
+                                            <select class="form-select form-select-sm" name="idTipoAnexo">
+                                                <option value="">-- Selecione o Tipo --</option>
+                                                <option th:each="t : ${listaTiposAnexo}" th:value="${t.idTipo}"
+                                                    th:text="${t.nome}"></option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <label class="form-label small fw-bold">Ficheiro (PDF ou Imagem)</label>
+                                            <input type="file" class="form-control form-select-sm" name="file"
+                                                accept=".pdf,image/*">
+                                        </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Tipo de Documento</label>
-                                        <select class="form-select form-select-sm" name="idTipoAnexo">
-                                            <option value="">-- Selecione o Tipo --</option>
-                                            <option th:each="t : ${listaTiposAnexo}" th:value="${t.idTipo}" th:text="${t.nome}"></option>
-                                        </select>
+                                    <div th:if="${atividade.comprovante != null}" class="mt-3">
+                                        <span class="badge bg-success">
+                                            <i class="fa-solid fa-file-circle-check me-1"></i>
+                                            Ficheiro atual: <span
+                                                th:text="${atividade.comprovante.nomeComprovante}"></span>
+                                        </span>
                                     </div>
-                                    <div class="col-md-8">
-                                        <label class="form-label small fw-bold">Ficheiro (PDF ou Imagem)</label>
-                                        <input type="file" class="form-control form-select-sm" name="file" accept=".pdf,image/*">
-                                    </div>
-                                </div>
-                                <div th:if="${atividade.comprovante != null}" class="mt-3">
-                                    <span class="badge bg-success">
-                                        <i class="fa-solid fa-file-circle-check me-1"></i> 
-                                        Ficheiro atual: <span th:text="${atividade.comprovante.nomeComprovante}"></span>
-                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="mt-5 border-top pt-4 d-flex justify-content-between align-items-center">
-                    <div>
-                        <a th:href="@{/atividades}" class="btn btn-outline-secondary me-2">Cancelar</a>
-                        <button type="submit" class="btn btn-cremepe px-4">Salvar Atividade</button>
+                    <div class="mt-5 border-top pt-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <a th:href="@{/atividades}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-cremepe px-4">Salvar Atividade</button>
+                        </div>
                     </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
+        <script>
+            let originalResolucoes = "";
+            let originalPortarias = "";
+
+            window.onload = function () {
+                // Guarda as listas iniciais completas para podermos resetar depois
+                originalResolucoes = document.getElementById('selectResolucao').innerHTML;
+                originalPortarias = document.getElementById('selectPortaria').innerHTML;
+            };
+
+            function resetarFiltros() {
+                document.getElementById('selectResolucao').innerHTML = originalResolucoes;
+                document.getElementById('selectPortaria').innerHTML = originalPortarias;
+                document.getElementById('selectResolucao').value = "";
+                document.getElementById('selectPortaria').value = "";
+                document.getElementById('selectRegra').innerHTML = '<option value="">-- Escolha a documentação acima para desbloquear as regras --</option>';
+                document.getElementById('selectRegra').disabled = true;
+            }
+
+            function atualizarFiltros() {
+                const resId = document.getElementById('selectResolucao').value;
+                const portId = document.getElementById('selectPortaria').value;
+                const selectRegra = document.getElementById('selectRegra');
+
+                if (!resId && !portId) {
+                    resetarFiltros();
+                    return;
+                }
+
+                let url = `/atividades/api/filtros-regras?`;
+                if (resId) url += `resolucaoId=${resId}&`;
+                if (portId) url += `portariaId=${portId}`;
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        regrasCache = data.regras;
+                        selectRegra.innerHTML = '<option value=\"\">-- Selecione a Regra Ativa --</option>';
+
+                        if (data.regras && data.regras.length > 0) {
+                            data.regras.forEach(r => {
+                                selectRegra.innerHTML += `<option value="${r.id}">${r.nome}</option>`;
+                            });
+                            selectRegra.disabled = false;
+                        } else {
+                            selectRegra.innerHTML = '<option value=\"\">-- Nenhuma regra existente para esta combinação --</option>';
+                            selectRegra.disabled = true;
+                        }
+
+                        // Se selecionou só a Resolução, reduz as Portarias apenas para as que têm par com ela
+                        if (resId && !portId && data.portariasCompativeis) {
+                            const selPort = document.getElementById('selectPortaria');
+                            selPort.innerHTML = '<option value="">-- Selecione a Portaria (Opcional) --</option>';
+                            data.portariasCompativeis.forEach(p => {
+                                selPort.innerHTML += `<option value="${p.id}">${p.nome}</option>`;
+                            });
+                        }
+
+                        // Se selecionou só a Portaria, reduz as Resoluções apenas para as que têm par com ela
+                        if (portId && !resId && data.resolucoesCompativeis) {
+                            const selRes = document.getElementById('selectResolucao');
+                            selRes.innerHTML = '<option value="">-- Selecione a Resolução (Opcional) --</option>';
+                            data.resolucoesCompativeis.forEach(r => {
+                                selRes.innerHTML += `<option value="${r.id}">${r.nome}</option>`;
+                            });
+                        }
+                    });
+            }
+
+            function exibirGuiaRegra() {
+                const id = document.getElementById('selectRegra').value;
+                const box = document.getElementById('boxGuia');
+                const regra = regrasCache.find(r => r.id == id);
+
+                if (regra) {
+                    document.getElementById('guiaDescricao').innerText = regra.descricao;
+                    document.getElementById('guiaPontos').innerText = regra.pontos;
+                    box.style.display = 'block';
+                } else {
+                    box.style.display = 'none';
+                }
+            }
+
+            function atualizarConselheiros() {
+                const gestaoId = document.getElementById('selectGestao').value;
+                const selectConselheiro = document.getElementById('selectConselheiro');
+
+                if (!gestaoId) {
+                    selectConselheiro.innerHTML = '<option value="">-- Aguardando Gestão --</option>';
+                    selectConselheiro.disabled = true;
+                    return;
+                }
+
+                fetch(`/atividades/api/conselheiros-por-gestao?gestaoId=${gestaoId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        selectConselheiro.innerHTML = '<option value="">-- Selecione o Médico --</option>';
+                        if (data && data.length > 0) {
+                            data.forEach(c => {
+                                selectConselheiro.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+                            });
+                            selectConselheiro.disabled = false;
+                        } else {
+                            selectConselheiro.innerHTML = '<option value="">-- Nenhum médico vinculado a esta gestão --</option>';
+                            selectConselheiro.disabled = true;
+                        }
+                    });
+            }
+
+            // Atualize o window.onload para disparar a função caso seja uma edição
+            const originalOnload = window.onload;
+            window.onload = function () {
+                if (originalOnload) originalOnload();
+
+                // Se estiver editando (Gestão já selecionada), popula a lista de conselheiros
+                if (document.getElementById('selectGestao').value) {
+                    // Guardamos o ID do conselheiro atual antes de atualizar a lista via AJAX
+                    const idAtual = document.getElementById('selectConselheiro').value;
+                    atualizarConselheiros();
+                    // Nota: O fetch é assíncrono, para manter a seleção na edição 
+                    // seria necessário um pequeno ajuste, mas para novos registros o fluxo está perfeito.
+                }
+            };
+
+            function atualizarRegrasPorData() {
+                const dataValue = document.getElementById('dataAtividade').value;
+                const selectRegra = document.getElementById('selectRegra'); // Certifique-se de que o select de regras possui id="selectRegra"
+
+                if (!dataValue) return;
+
+                // Loader visual nas regras
+                selectRegra.innerHTML = '<option value="">Carregando regras da época...</option>';
+
+                fetch(`/atividades/api/regras-por-data?data=${dataValue}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Atualiza os inputs visuais das normativas vigentes no período
+                        document.getElementById('nomeResolucaoVisual').value = data.nomeResolucao || "Nenhuma encontrada";
+                        document.getElementById('idResolucaoHidden').value = data.idResolucao || "";
+                        document.getElementById('nomePortariaVisual').value = data.nomePortaria || "Nenhuma encontrada";
+                        document.getElementById('idPortariaHidden').value = data.idPortaria || "";
+
+                        // Limpa e popula o select de regras (contendo as inclusive revogadas)
+                        selectRegra.innerHTML = '<option value="">-- Selecione a Regra Enquadrada --</option>';
+
+                        if (data.regras && data.regras.length > 0) {
+                            data.regras.forEach(r => {
+                                selectRegra.innerHTML += `<option value="${r.id}">${r.nome} (${r.pontos} pts) - ${r.descricao}</option>`;
+                            });
+                            selectRegra.disabled = false;
+                        } else {
+                            selectRegra.innerHTML = '<option value="">Nenhuma regra cadastrada para as normativas deste período</option>';
+                            selectRegra.disabled = true;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro ao buscar regras por data:', error);
+                        selectRegra.innerHTML = '<option value="">Erro ao carregar regras</option>';
+                    });
+            }
+        </script>
     </div>
-    <script>
-        let originalResolucoes = "";
-        let originalPortarias = "";
-
-        window.onload = function() {
-            // Guarda as listas iniciais completas para podermos resetar depois
-            originalResolucoes = document.getElementById('selectResolucao').innerHTML;
-            originalPortarias = document.getElementById('selectPortaria').innerHTML;
-        };
-
-        function resetarFiltros() {
-            document.getElementById('selectResolucao').innerHTML = originalResolucoes;
-            document.getElementById('selectPortaria').innerHTML = originalPortarias;
-            document.getElementById('selectResolucao').value = "";
-            document.getElementById('selectPortaria').value = "";
-            document.getElementById('selectRegra').innerHTML = '<option value="">-- Escolha a documentação acima para desbloquear as regras --</option>';
-            document.getElementById('selectRegra').disabled = true;
-        }
-
-        function atualizarFiltros() {
-            const resId = document.getElementById('selectResolucao').value;
-            const portId = document.getElementById('selectPortaria').value;
-            const selectRegra = document.getElementById('selectRegra');
-
-            if (!resId && !portId) {
-                resetarFiltros();
-                return;
-            }
-
-            let url = `/atividades/api/filtros-regras?`;
-            if (resId) url += `resolucaoId=${resId}&`;
-            if (portId) url += `portariaId=${portId}`;
-
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    regrasCache = data.regras;
-                    selectRegra.innerHTML = '<option value=\"\">-- Selecione a Regra Ativa --</option>';
-                    
-                    if(data.regras && data.regras.length > 0) {
-                        data.regras.forEach(r => {
-                            selectRegra.innerHTML += `<option value="${r.id}">${r.nome}</option>`;
-                        });
-                        selectRegra.disabled = false;
-                    } else {
-                        selectRegra.innerHTML = '<option value=\"\">-- Nenhuma regra existente para esta combinação --</option>';
-                        selectRegra.disabled = true;
-                    }
-
-                    // Se selecionou só a Resolução, reduz as Portarias apenas para as que têm par com ela
-                    if (resId && !portId && data.portariasCompativeis) {
-                        const selPort = document.getElementById('selectPortaria');
-                        selPort.innerHTML = '<option value="">-- Selecione a Portaria (Opcional) --</option>';
-                        data.portariasCompativeis.forEach(p => {
-                            selPort.innerHTML += `<option value="${p.id}">${p.nome}</option>`;
-                        });
-                    }
-
-                    // Se selecionou só a Portaria, reduz as Resoluções apenas para as que têm par com ela
-                    if (portId && !resId && data.resolucoesCompativeis) {
-                        const selRes = document.getElementById('selectResolucao');
-                        selRes.innerHTML = '<option value="">-- Selecione a Resolução (Opcional) --</option>';
-                        data.resolucoesCompativeis.forEach(r => {
-                            selRes.innerHTML += `<option value="${r.id}">${r.nome}</option>`;
-                        });
-                    }
-                });
-        }
-
-        function exibirGuiaRegra() {
-            const id = document.getElementById('selectRegra').value;
-            const box = document.getElementById('boxGuia');
-            const regra = regrasCache.find(r => r.id == id);
-
-            if (regra) {
-                document.getElementById('guiaDescricao').innerText = regra.descricao;
-                document.getElementById('guiaPontos').innerText = regra.pontos;
-                box.style.display = 'block';
-            } else {
-                box.style.display = 'none';
-            }
-        }
-
-        function atualizarConselheiros() {
-            const gestaoId = document.getElementById('selectGestao').value;
-            const selectConselheiro = document.getElementById('selectConselheiro');
-
-            if (!gestaoId) {
-                selectConselheiro.innerHTML = '<option value="">-- Aguardando Gestão --</option>';
-                selectConselheiro.disabled = true;
-                return;
-            }
-
-            fetch(`/atividades/api/conselheiros-por-gestao?gestaoId=${gestaoId}`)
-                .then(response => response.json())
-                .then(data => {
-                    selectConselheiro.innerHTML = '<option value="">-- Selecione o Médico --</option>';
-                    if (data && data.length > 0) {
-                        data.forEach(c => {
-                            selectConselheiro.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
-                        });
-                        selectConselheiro.disabled = false;
-                    } else {
-                        selectConselheiro.innerHTML = '<option value="">-- Nenhum médico vinculado a esta gestão --</option>';
-                        selectConselheiro.disabled = true;
-                    }
-                });
-        }
-
-        // Atualize o window.onload para disparar a função caso seja uma edição
-        const originalOnload = window.onload;
-        window.onload = function() {
-            if (originalOnload) originalOnload();
-            
-            // Se estiver editando (Gestão já selecionada), popula a lista de conselheiros
-            if (document.getElementById('selectGestao').value) {
-                // Guardamos o ID do conselheiro atual antes de atualizar a lista via AJAX
-                const idAtual = document.getElementById('selectConselheiro').value;
-                atualizarConselheiros();
-                // Nota: O fetch é assíncrono, para manter a seleção na edição 
-                // seria necessário um pequeno ajuste, mas para novos registros o fluxo está perfeito.
-            }
-        };
-    </script>
-</div>
 </body>
+
 </html>

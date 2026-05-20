@@ -15,7 +15,8 @@ import java.util.List;
 @Repository
 public interface RegrasRepository extends JpaRepository<Regras, Integer> {
 
-    // Procura todas as regras não revogadas que pertencem a uma Resolução específica
+    // Procura todas as regras não revogadas que pertencem a uma Resolução
+    // específica
     List<Regras> findByResolucaoIdResolucaoAndInRevogado(Integer idResolucao, String inRevogado);
 
     // Procura regras pelo identificador se são atividades judicantes ou não
@@ -40,30 +41,30 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
     List<Resolucao> findResolucoesCompativeis(@Param("idPortaria") Integer idPortaria);
 
     // 5. Traz as regras que batem EXATAMENTE com a combinação selecionada
-    @Query("SELECT r FROM Regras r WHERE r.inRevogado = 'N' AND " +
-           "((:idResolucao IS NULL AND r.resolucao IS NULL) OR (r.resolucao.idResolucao = :idResolucao)) AND " +
-           "((:idPortaria IS NULL AND r.portaria IS NULL) OR (r.portaria.idPortaria = :idPortaria))")
-    List<Regras> findRegrasExatas(@Param("idResolucao") Integer idResolucao, @Param("idPortaria") Integer idPortaria);
+    @Query("SELECT r FROM Regras r WHERE r.inRevogado = 'N' AND "
+            + "((:idResolucao IS NULL AND r.resolucao IS NULL) OR (r.resolucao.idResolucao = :idResolucao)) AND "
+            + "((:idPortaria IS NULL AND r.portaria IS NULL) OR (r.portaria.idPortaria = :idPortaria))")
+    List<Regras> findRegrasExatas(@Param("idResolucao") Integer idResolucao,
+            @Param("idPortaria") Integer idPortaria);
 
     // Conta regras vinculadas a uma Portaria
     long countByPortariaIdPortaria(Integer idPortaria);
-    
+
     // Conta regras vinculadas a uma Resolução
     long countByResolucaoIdResolucao(Integer idResolucao);
 
-    @Query("SELECT r FROM Regras r WHERE " +
-           "(:termo IS NULL OR :termo = '' OR LOWER(r.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
-           "(:situacao IS NULL OR :situacao = '' OR r.inRevogado = :situacao)")
-    Page<Regras> pesquisarPaginado(@Param("termo") String termo, @Param("situacao") String situacao, Pageable pageable);
+    @Query("SELECT r FROM Regras r WHERE "
+            + "(:termo IS NULL OR :termo = '' OR LOWER(r.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND "
+            + "(:situacao IS NULL OR :situacao = '' OR r.inRevogado = :situacao)")
+    Page<Regras> pesquisarPaginado(@Param("termo") String termo, @Param("situacao") String situacao,
+            Pageable pageable);
 
-    @Query("SELECT r FROM Regras r WHERE " +
-       "(:termo IS NULL OR :termo = '' OR LOWER(r.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
-       "(:situacao IS NULL OR :situacao = '' OR r.inRevogado = :situacao) AND " +
-       "(:judicante IS NULL OR :judicante = '' OR r.inJudicante = :judicante)")
-    Page<Regras> pesquisarPaginado(@Param("termo") String termo, 
-                                @Param("situacao") String situacao, 
-                                @Param("judicante") String judicante, 
-                                Pageable pageable);
+    @Query("SELECT r FROM Regras r WHERE "
+            + "(:termo IS NULL OR :termo = '' OR LOWER(r.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND "
+            + "(:situacao IS NULL OR :situacao = '' OR r.inRevogado = :situacao) AND "
+            + "(:judicante IS NULL OR :judicante = '' OR r.inJudicante = :judicante)")
+    Page<Regras> pesquisarPaginado(@Param("termo") String termo, @Param("situacao") String situacao,
+            @Param("judicante") String judicante, Pageable pageable);
 
     @Modifying
     @Query("UPDATE Regras r SET r.inRevogado = 'S' WHERE r.resolucao.idResolucao = :idResolucao")
@@ -74,6 +75,23 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
     void revogarRegrasPorPortaria(@Param("idPortaria") Integer idPortaria);
 
     List<Regras> findByNomeRegraAndResolucaoIdResolucao(String nomeRegra, Integer idResolucao);
-    
+
     List<Regras> findByNomeRegraAndPortariaIdPortaria(String nomeRegra, Integer idPortaria);
+
+    // Adicione estes métodos à interface existente
+
+    @Query("SELECT r FROM Regras r WHERE r.resolucao.idResolucao = :idResolucao " +
+            "AND (:idPortaria IS NULL AND r.portaria IS NULL OR r.portaria.idPortaria = :idPortaria)")
+    List<Regras> findRegrasPorNormativasInclusiveRevogadas(@Param("idResolucao") Integer idResolucao,
+            @Param("idPortaria") Integer idPortaria);
+
+    @Query("SELECT r.resolucao FROM Regras r WHERE r.resolucao IS NOT NULL " +
+            "AND :dataAtividade BETWEEN r.resolucao.dtInicioVigencia AND COALESCE(r.resolucao.dtFimVigencia, '2099-12-31')")
+    List<br.com.cremepe.jeton.dominio.Resolucao> findResolucaoPorData(
+            @Param("dataAtividade") java.time.LocalDate dataAtividade);
+
+    @Query("SELECT r.portaria FROM Regras r WHERE r.portaria IS NOT NULL " +
+            "AND :dataAtividade BETWEEN r.portaria.dtInicioVigencia AND COALESCE(r.portaria.dtFimVigencia, '2099-12-31')")
+    List<br.com.cremepe.jeton.dominio.Portaria> findPortariaPorData(
+            @Param("dataAtividade") java.time.LocalDate dataAtividade);
 }

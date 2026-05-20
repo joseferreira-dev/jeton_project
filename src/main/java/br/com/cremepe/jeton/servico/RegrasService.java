@@ -16,8 +16,10 @@ import java.util.Optional;
 @Service
 public class RegrasService {
 
-    @Autowired private RegrasRepository repository;
-    @Autowired private AtividadeConselhalRepository atividadeRepository;
+    @Autowired
+    private RegrasRepository repository;
+    @Autowired
+    private AtividadeConselhalRepository atividadeRepository;
 
     @Transactional(readOnly = true)
     public List<Regras> listarTodos() {
@@ -32,7 +34,8 @@ public class RegrasService {
     @Transactional
     public Regras salvar(Regras regra) {
         if (regra.getResolucao() == null || regra.getResolucao().getIdResolucao() == null) {
-            throw new RuntimeException("Atenção: A Resolução é um campo obrigatório. Selecione uma resolução para continuar.");
+            throw new RuntimeException(
+                    "Atenção: A Resolução é um campo obrigatório. Selecione uma resolução para continuar.");
         }
 
         // Validações de duplicidade
@@ -40,11 +43,13 @@ public class RegrasService {
 
         // Validação de Regra de Negócio: Deve pertencer a pelo menos uma normativa
         if (regra.getResolucao() == null) {
-            throw new RuntimeException("A regra deve estar vinculada obrigatoriamente a uma Resolução ou a uma Portaria.");
+            throw new RuntimeException(
+                    "A regra deve estar vinculada obrigatoriamente a uma Resolução ou a uma Portaria.");
         }
 
         // Limpeza de referência caso Portaria não seja selecionada
-        if (regra.getPortaria() != null && (regra.getPortaria().getIdPortaria() == null || regra.getPortaria().getIdPortaria() == 0)) {
+        if (regra.getPortaria() != null
+                && (regra.getPortaria().getIdPortaria() == null || regra.getPortaria().getIdPortaria() == 0)) {
             regra.setPortaria(null);
         }
 
@@ -61,12 +66,14 @@ public class RegrasService {
 
     private void validarDuplicidade(Regras regra) {
         List<Regras> existentes;
-        
+
         // Procura se já existe uma regra com o mesmo nome na mesma normativa
         if (regra.getResolucao() != null) {
-            existentes = repository.findByNomeRegraAndResolucaoIdResolucao(regra.getNomeRegra(), regra.getResolucao().getIdResolucao());
+            existentes = repository.findByNomeRegraAndResolucaoIdResolucao(regra.getNomeRegra(),
+                    regra.getResolucao().getIdResolucao());
         } else {
-            existentes = repository.findByNomeRegraAndPortariaIdPortaria(regra.getNomeRegra(), regra.getPortaria().getIdPortaria());
+            existentes = repository.findByNomeRegraAndPortariaIdPortaria(regra.getNomeRegra(),
+                    regra.getPortaria().getIdPortaria());
         }
 
         // Se estiver editando, ignoramos a própria regra na contagem
@@ -96,42 +103,58 @@ public class RegrasService {
     @Transactional
     public void excluirFisicamente(Integer id) {
         if (atividadeRepository.countByRegraIdRegra(id) > 0) {
-            throw new RuntimeException("Não é possível excluir: existem atividades de conselheiros lançadas com esta Regra. Use a opção 'Revogar'.");
+            throw new RuntimeException(
+                    "Não é possível excluir: existem atividades de conselheiros lançadas com esta Regra. Use a opção 'Revogar'.");
         }
         repository.deleteById(id);
     }
 
     @Transactional(readOnly = true)
-    public List<Resolucao> listarResolucoesComRegras() { 
-        return repository.findResolucoesComRegras(); 
+    public List<Resolucao> listarResolucoesComRegras() {
+        return repository.findResolucoesComRegras();
     }
 
     @Transactional(readOnly = true)
-    public List<Portaria> listarPortariasComRegras() { 
-        return repository.findPortariasComRegras(); 
+    public List<Portaria> listarPortariasComRegras() {
+        return repository.findPortariasComRegras();
     }
 
     @Transactional(readOnly = true)
-    public List<Portaria> listarPortariasCompativeis(Integer idResolucao) { 
-        return repository.findPortariasCompativeis(idResolucao); 
+    public List<Portaria> listarPortariasCompativeis(Integer idResolucao) {
+        return repository.findPortariasCompativeis(idResolucao);
     }
 
     @Transactional(readOnly = true)
-    public List<Resolucao> listarResolucoesCompativeis(Integer idPortaria) { 
-        return repository.findResolucoesCompativeis(idPortaria); 
+    public List<Resolucao> listarResolucoesCompativeis(Integer idPortaria) {
+        return repository.findResolucoesCompativeis(idPortaria);
     }
 
     @Transactional(readOnly = true)
-    public List<Regras> listarRegrasExatas(Integer idResolucao, Integer idPortaria) { 
-        return repository.findRegrasExatas(idResolucao, idPortaria); 
+    public List<Regras> listarRegrasExatas(Integer idResolucao, Integer idPortaria) {
+        return repository.findRegrasExatas(idResolucao, idPortaria);
+    }
+
+    public List<Regras> listarRegrasPorNormativasInclusiveRevogadas(Integer idResolucao, Integer idPortaria) {
+        return repository.findRegrasPorNormativasInclusiveRevogadas(idResolucao, idPortaria);
+    }
+
+    public Optional<br.com.cremepe.jeton.dominio.Resolucao> buscarResolucaoPorData(java.time.LocalDate data) {
+        return repository.findResolucaoPorData(data).stream().findFirst();
+    }
+
+    public Optional<br.com.cremepe.jeton.dominio.Portaria> buscarPortariaPorData(java.time.LocalDate data) {
+        return repository.findPortariaPorData(data).stream().findFirst();
     }
 
     @Transactional(readOnly = true)
-    public Page<Regras> listarComPaginacaoEPesquisa(String termo, String situacao, String judicante, int page, int size, String sortField, String sortDir) {
-        org.springframework.data.domain.Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-            org.springframework.data.domain.Sort.by(sortField).descending() : org.springframework.data.domain.Sort.by(sortField).ascending();
-        
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sort);
+    public Page<Regras> listarComPaginacaoEPesquisa(String termo, String situacao, String judicante, int page, int size,
+            String sortField, String sortDir) {
+        org.springframework.data.domain.Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? org.springframework.data.domain.Sort.by(sortField).descending()
+                : org.springframework.data.domain.Sort.by(sortField).ascending();
+
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
+                sort);
         return repository.pesquisarPaginado(termo, situacao, judicante, pageable);
     }
 }
