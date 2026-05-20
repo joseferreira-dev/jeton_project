@@ -12,7 +12,8 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * Entidade que armazena as referências aos ficheiros de comprovação das atividades.
+ * Entidade que armazena as referências aos ficheiros de comprovação das
+ * atividades.
  */
 @Entity
 @Table(name = "comprovante")
@@ -110,8 +111,10 @@ public class Comprovante implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Comprovante that = (Comprovante) o;
         return Objects.equals(idComprovante, that.idComprovante);
     }

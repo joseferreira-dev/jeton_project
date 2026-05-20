@@ -33,16 +33,34 @@ public class ViewUserLogin implements Serializable {
     @Column(name = "permissoes", columnDefinition = "text")
     private String permissoes;
 
-    public ViewUserLogin() {}
+    public ViewUserLogin() {
+    }
 
     // ==========================================
     // APENAS GETTERS (Entidade Imutável)
     // ==========================================
 
-    public Integer getIdPessoa() { return idPessoa; }
-    public String getNome() { return nome; }
-    public String getCpf() { return cpf; }
-    public String getEmail() { return email; }
-    public String getSenha() { return senha; }
-    public String getPermissoes() { return permissoes; }
+    public Integer getIdPessoa() {
+        return idPessoa;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public String getCpf() {
+        return cpf;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getSenha() {
+        return senha;
+    }
+
+    public String getPermissoes() {
+        return permissoes;
+    }
 }

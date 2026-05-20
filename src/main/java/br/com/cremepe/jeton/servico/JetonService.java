@@ -15,11 +15,16 @@ import java.util.Optional;
 @Service
 public class JetonService {
 
-    @Autowired private JetonRepository jetonRepository;
-    @Autowired private PontosSaldoRepository pontosSaldoRepository;
-    @Autowired private AtividadeConselhalRepository atividadeRepository;
-    @Autowired private ResolucaoRepository resolucaoRepository;
-    @Autowired private GestaoConselheiroRepository gestaoConselheiroRepository;
+    @Autowired
+    private JetonRepository jetonRepository;
+    @Autowired
+    private PontosSaldoRepository pontosSaldoRepository;
+    @Autowired
+    private AtividadeConselhalRepository atividadeRepository;
+    @Autowired
+    private ResolucaoRepository resolucaoRepository;
+    @Autowired
+    private GestaoConselheiroRepository gestaoConselheiroRepository;
 
     @Transactional(readOnly = true)
     public List<PontosRemanescentesDTO> listarSaldosAgrupados() {
@@ -43,11 +48,12 @@ public class JetonService {
 
     /**
      * O MOTOR DE CÁLCULO FINANCEIRO (FECHAMENTO DE FOLHA)
-     * Este método processa todos os conselheiros ativos numa gestão para um determinado mês/ano.
+     * Este método processa todos os conselheiros ativos numa gestão para um
+     * determinado mês/ano.
      */
     @Transactional(rollbackFor = Exception.class)
     public void processarFechamentoMensal(Gestao gestao, Integer mes, Integer ano) {
-        
+
         // 1. Obtém a Resolução Ativa (Regra Financeira Magna)
         List<Resolucao> resolucoesAtivas = resolucaoRepository.findByInRevogado("N");
         if (resolucoesAtivas.isEmpty()) {
@@ -65,13 +71,17 @@ public class JetonService {
             Conselheiro conselheiro = vinculo.getConselheiro();
 
             // Proteção contra processamento duplicado no mesmo mês
-            if (jetonRepository.findByConselheiroIdPessoaAndMesAndAno(conselheiro.getIdPessoa(), mes, ano).isPresent()) {
+            if (jetonRepository.findByConselheiroIdPessoaAndMesAndAno(conselheiro.getIdPessoa(), mes, ano)
+                    .isPresent()) {
                 continue; // Já foi processado este mês, salta para o próximo conselheiro
             }
 
-            // 3. Recolher a matéria-prima (Saldos antigos + Atividades novas com comprovativo)
-            List<PontosSaldo> saldosAntigos = pontosSaldoRepository.findSaldosAtivosPorConselheiro(conselheiro.getIdPessoa());
-            List<AtividadeConselhal> atividadesNovas = atividadeRepository.findPendentesParaProcessamento(conselheiro.getIdPessoa(), mes, ano);
+            // 3. Recolher a matéria-prima (Saldos antigos + Atividades novas com
+            // comprovativo)
+            List<PontosSaldo> saldosAntigos = pontosSaldoRepository
+                    .findSaldosAtivosPorConselheiro(conselheiro.getIdPessoa());
+            List<AtividadeConselhal> atividadesNovas = atividadeRepository
+                    .findPendentesParaProcessamento(conselheiro.getIdPessoa(), mes, ano);
 
             if (saldosAntigos.isEmpty() && atividadesNovas.isEmpty()) {
                 continue; // Conselheiro não tem nada a receber, salta.
@@ -79,7 +89,7 @@ public class JetonService {
 
             // 4. Somar todos os pontos disponíveis
             double totalPontosAcumulados = 0;
-            
+
             for (PontosSaldo saldo : saldosAntigos) {
                 totalPontosAcumulados += saldo.getPontosSobrando();
                 // O saldo antigo é "consumido" na totalidade para este processamento
@@ -93,7 +103,7 @@ public class JetonService {
                 // Multiplica a quantidade de atividade pelo valor de pontos da regra
                 totalPontosAcumulados += (atividade.getQtdAtividade() * atividade.getRegra().getPontos());
                 // Marca a atividade como Processada/Concluída
-                atividade.setInSituacao("C"); 
+                atividade.setInSituacao("C");
                 atividadeRepository.save(atividade);
             }
 
@@ -103,8 +113,9 @@ public class JetonService {
 
             // 6. Aplicação do Teto (Tesoura Financeira)
             int jetonsAPagar = Math.min(jetonsConvertidos, tetoMensalJetons);
-            
-            // Se o limite foi atingido, os Jetons que ultrapassaram o teto voltam a ser convertidos em pontos de sobra
+
+            // Se o limite foi atingido, os Jetons que ultrapassaram o teto voltam a ser
+            // convertidos em pontos de sobra
             if (jetonsConvertidos > tetoMensalJetons) {
                 int jetonsCortados = jetonsConvertidos - tetoMensalJetons;
                 pontosRestantes += (jetonsCortados * pontosPorJeton);

@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Portaria;
-import br.com.cremepe.jeton.servico.PortariaService; 
+import br.com.cremepe.jeton.servico.PortariaService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -14,7 +14,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/portarias")
 public class PortariaController {
 
-    @Autowired private PortariaService portariaService;
+    @Autowired
+    private PortariaService portariaService;
 
     @GetMapping
     public String listar(
@@ -25,10 +26,12 @@ public class PortariaController {
             @RequestParam(value = "sort", required = false, defaultValue = "ano") String sort,
             @RequestParam(value = "dir", required = false, defaultValue = "desc") String dir,
             Model model, HttpSession session) {
-            
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
 
-        Page<Portaria> paginaPortarias = portariaService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort, dir);
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
+
+        Page<Portaria> paginaPortarias = portariaService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort,
+                dir);
 
         model.addAttribute("paginaPortarias", paginaPortarias);
         model.addAttribute("termo", termo);
@@ -42,14 +45,16 @@ public class PortariaController {
 
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("portaria", new Portaria());
         return "portaria/formulario";
     }
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("portaria", portariaService.buscarPorId(id).orElse(new Portaria()));
         return "portaria/formulario";
     }

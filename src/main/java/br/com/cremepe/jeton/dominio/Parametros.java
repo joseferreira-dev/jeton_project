@@ -19,7 +19,8 @@ public class Parametros implements Serializable {
     @Column(name = "bloqueaSistema", length = 1, nullable = false)
     private String bloqueaSistema;
 
-    public Parametros() {}
+    public Parametros() {
+    }
 
     public String getBloqueaSistema() {
         return bloqueaSistema;

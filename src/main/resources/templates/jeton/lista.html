@@ -1,85 +1,105 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
-<head><title>Fecho de Jetons - Jeton</title></head>
+
+<head>
+    <title>Fecho de Jetons - Jeton</title>
+</head>
+
 <body>
-<div layout:fragment="conteudo">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-calculator me-2"></i> Processamento Financeiro (Jetons)</h2>
-    </div>
-
-    <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show"><i class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-    <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show"><i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-
-    <div class="card shadow-sm border-success mb-4">
-        <div class="card-header bg-success text-white fw-bold">
-            <i class="fa-solid fa-gears me-2"></i> Executar Fecho de Folha Mensal
+    <div layout:fragment="conteudo">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-calculator me-2"></i> Processamento Financeiro
+                (Jetons)</h2>
         </div>
-        <div class="card-body">
-            <form th:action="@{/jeton/processar}" method="post">
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-5">
-                        <label class="form-label fw-bold small text-muted">Gestão Alvo</label>
-                        <select name="idGestao" class="form-select" required>
-                            <option value="">-- Selecione a Gestão --</option>
-                            <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}" th:text="${g.nomeGestao}"></option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold small text-muted">Mês</label>
-                        <input type="number" name="mes" class="form-control" min="1" max="12" th:value="${mesAtual}" required>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold small text-muted">Ano</label>
-                        <input type="number" name="ano" class="form-control" min="2000" max="2100" th:value="${anoAtual}" required>
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-success w-100 btn-confirm" 
-                                data-mensagem="Tem a certeza que deseja iniciar o processamento para este mês?<br><small class='text-muted'>O sistema converterá as atividades e saldos pendentes em Jetons de pagamento.</small>" 
+
+        <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show"><i
+                class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span><button type="button"
+                class="btn-close" data-bs-dismiss="alert"></button></div>
+        <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show"><i
+                class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button"
+                class="btn-close" data-bs-dismiss="alert"></button></div>
+
+        <div class="card shadow-sm border-success mb-4">
+            <div class="card-header bg-success text-white fw-bold">
+                <i class="fa-solid fa-gears me-2"></i> Executar Fecho de Folha Mensal
+            </div>
+            <div class="card-body">
+                <form th:action="@{/jeton/processar}" method="post">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold small text-muted">Gestão Alvo</label>
+                            <select name="idGestao" class="form-select" required>
+                                <option value="">-- Selecione a Gestão --</option>
+                                <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}"
+                                    th:text="${g.nomeGestao}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">Mês</label>
+                            <input type="number" name="mes" class="form-control" min="1" max="12" th:value="${mesAtual}"
+                                required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">Ano</label>
+                            <input type="number" name="ano" class="form-control" min="2000" max="2100"
+                                th:value="${anoAtual}" required>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-success w-100 btn-confirm"
+                                data-mensagem="Tem a certeza que deseja iniciar o processamento para este mês?<br><small class='text-muted'>O sistema converterá as atividades e saldos pendentes em Jetons de pagamento.</small>"
                                 data-icone="fa-solid fa-play">
-                            <i class="fa-solid fa-play me-1"></i> Processar Mês
-                        </button>
+                                <i class="fa-solid fa-play me-1"></i> Processar Mês
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
-    </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-light fw-bold">
-            <i class="fa-solid fa-clock-rotate-left me-2"></i> Histórico de Jetons Processados
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4">Conselheiro</th>
-                            <th>Período</th>
-                            <th>Qtd. Jetons</th>
-                            <th>Valor Total (R$)</th>
-                            <th>Gestão</th>
-                            <th class="text-center pe-4">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="j : ${lista}">
-                            <td class="ps-4 fw-bold text-cremepe" th:text="${j.conselheiro.pessoa.nome}">Conselheiro</td>
-                            <td><span class="badge bg-secondary" th:text="${j.mes + '/' + j.ano}">01/2026</span></td>
-                            <td class="fw-bold text-primary" th:text="${j.totalJeton + ' Jetons'}"></td>
-                            <td class="fw-bold text-success" th:text="${'R$ ' + #numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}"></td>
-                            <td th:text="${j.gestao.nomeGestao}">Gestão</td>
-                            <td class="text-center pe-4">
-                                <a th:href="@{'/jeton/excluir/' + ${j.idJeton}}" class="btn btn-sm btn-outline-danger btn-confirm" 
-                                   data-mensagem="Atenção: Eliminar este registo de pagamento não reverte os pontos para o Conselheiro. Confirma a exclusão?" 
-                                   data-cor="btn-danger"><i class="fa-solid fa-trash-can"></i></a>
-                            </td>
-                        </tr>
-                        <tr th:if="${#lists.isEmpty(lista)}"><td colspan="6" class="text-center py-4 text-muted">Nenhum processamento financeiro realizado ainda.</td></tr>
-                    </tbody>
-                </table>
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light fw-bold">
+                <i class="fa-solid fa-clock-rotate-left me-2"></i> Histórico de Jetons Processados
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Conselheiro</th>
+                                <th>Período</th>
+                                <th>Qtd. Jetons</th>
+                                <th>Valor Total (R$)</th>
+                                <th>Gestão</th>
+                                <th class="text-center pe-4">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="j : ${lista}">
+                                <td class="ps-4 fw-bold text-cremepe" th:text="${j.conselheiro.pessoa.nome}">Conselheiro
+                                </td>
+                                <td><span class="badge bg-secondary" th:text="${j.mes + '/' + j.ano}">01/2026</span>
+                                </td>
+                                <td class="fw-bold text-primary" th:text="${j.totalJeton + ' Jetons'}"></td>
+                                <td class="fw-bold text-success"
+                                    th:text="${'R$ ' + #numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}"></td>
+                                <td th:text="${j.gestao.nomeGestao}">Gestão</td>
+                                <td class="text-center pe-4">
+                                    <a th:href="@{'/jeton/excluir/' + ${j.idJeton}}"
+                                        class="btn btn-sm btn-outline-danger btn-confirm"
+                                        data-mensagem="Atenção: Eliminar este registo de pagamento não reverte os pontos para o Conselheiro. Confirma a exclusão?"
+                                        data-cor="btn-danger"><i class="fa-solid fa-trash-can"></i></a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(lista)}">
+                                <td colspan="6" class="text-center py-4 text-muted">Nenhum processamento financeiro
+                                    realizado ainda.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
 </body>
+
 </html>

@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.NivelAcesso;
-import br.com.cremepe.jeton.servico.NivelAcessoService; 
+import br.com.cremepe.jeton.servico.NivelAcessoService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -13,18 +13,21 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/niveis-acesso")
 public class NivelAcessoController {
 
-    @Autowired private NivelAcessoService nivelAcessoService;
+    @Autowired
+    private NivelAcessoService nivelAcessoService;
 
     @GetMapping
     public String listar(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("lista", nivelAcessoService.listarTodos());
         return "nivelacesso/lista";
     }
 
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("nivelAcesso", new NivelAcesso());
         return "nivelacesso/formulario";
     }
@@ -32,13 +35,15 @@ public class NivelAcessoController {
     // CORREÇÃO AQUI: Alterado de Integer id para String id
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") String id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("nivelAcesso", nivelAcessoService.buscarPorId(id).orElse(new NivelAcesso()));
         return "nivelacesso/formulario";
     }
 
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("nivelAcesso") NivelAcesso nivelAcesso, RedirectAttributes redirectAttributes) {
+    public String salvar(@ModelAttribute("nivelAcesso") NivelAcesso nivelAcesso,
+            RedirectAttributes redirectAttributes) {
         try {
             nivelAcessoService.salvar(nivelAcesso);
             redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso salvo com sucesso!");

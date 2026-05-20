@@ -13,25 +13,29 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/tipos-anexo")
 public class TipoAnexoController {
 
-    @Autowired private TipoAnexoService tipoAnexoService;
+    @Autowired
+    private TipoAnexoService tipoAnexoService;
 
     @GetMapping
     public String listar(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("lista", tipoAnexoService.listarTodos());
         return "tipoanexo/lista";
     }
 
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("tipoAnexo", new TipoAnexo());
         return "tipoanexo/formulario";
     }
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("tipoAnexo", tipoAnexoService.buscarPorId(id).orElse(new TipoAnexo()));
         return "tipoanexo/formulario";
     }

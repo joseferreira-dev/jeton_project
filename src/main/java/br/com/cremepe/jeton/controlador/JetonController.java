@@ -17,19 +17,22 @@ import java.util.Optional;
 @RequestMapping("/jeton")
 public class JetonController {
 
-    @Autowired private JetonService jetonService;
-    @Autowired private GestaoService gestaoService;
+    @Autowired
+    private JetonService jetonService;
+    @Autowired
+    private GestaoService gestaoService;
 
     @GetMapping
     public String listar(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
+
         // Lista o histórico de Jetons já processados
         model.addAttribute("lista", jetonService.listarTodos());
-        
+
         // Carrega as Gestões para o dropdown do formulário
         model.addAttribute("listaGestoes", gestaoService.listarTodos());
-        
+
         // Preenche automaticamente o Mês e Ano atuais para facilitar a usabilidade
         LocalDate hoje = LocalDate.now();
         model.addAttribute("mesAtual", hoje.getMonthValue());
@@ -44,21 +47,22 @@ public class JetonController {
             @RequestParam("mes") Integer mes,
             @RequestParam("ano") Integer ano,
             RedirectAttributes ra) {
-        
+
         try {
             Optional<Gestao> gestaoOpt = gestaoService.buscarPorId(idGestao);
             if (gestaoOpt.isEmpty()) {
                 throw new RuntimeException("Gestão não encontrada.");
             }
-            
+
             // Dispara o Motor de Cálculo Transacional
             jetonService.processarFechamentoMensal(gestaoOpt.get(), mes, ano);
-            ra.addFlashAttribute("sucesso", "Processamento concluído com sucesso para o período " + mes + "/" + ano + "!");
-            
+            ra.addFlashAttribute("sucesso",
+                    "Processamento concluído com sucesso para o período " + mes + "/" + ano + "!");
+
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro ao processar folha: " + e.getMessage());
         }
-        
+
         return "redirect:/jeton";
     }
 

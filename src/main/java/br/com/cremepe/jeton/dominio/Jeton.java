@@ -17,7 +17,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Entidade que representa o fecho financeiro (Jeton) de um Conselheiro num determinado mês.
+ * Entidade que representa o fecho financeiro (Jeton) de um Conselheiro num
+ * determinado mês.
  */
 @Entity
 @Table(name = "jeton")
@@ -35,7 +36,7 @@ public class Jeton implements Serializable {
     private Gestao gestao;
 
     /**
-     * Relacionamento com o Conselheiro. 
+     * Relacionamento com o Conselheiro.
      * Na base de dados a coluna é idPessoa, que é a PK de Conselheiro.
      */
     @ManyToOne
@@ -62,11 +63,7 @@ public class Jeton implements Serializable {
      * Associa este pagamento às atividades específicas que o geraram.
      */
     @ManyToMany
-    @JoinTable(
-        name = "jeton_atividade",
-        joinColumns = @JoinColumn(name = "idJeton"),
-        inverseJoinColumns = @JoinColumn(name = "idAtividade")
-    )
+    @JoinTable(name = "jeton_atividade", joinColumns = @JoinColumn(name = "idJeton"), inverseJoinColumns = @JoinColumn(name = "idAtividade"))
     private List<AtividadeConselhal> atividades = new ArrayList<>();
 
     public Jeton() {
@@ -150,8 +147,10 @@ public class Jeton implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Jeton jeton = (Jeton) o;
         return Objects.equals(idJeton, jeton.idJeton);
     }

@@ -23,16 +23,16 @@ public class LoginController {
     // Equivalente a carregar a tela de login.xhtml
     @GetMapping("/login")
     public String telaLogin() {
-        return "login"; 
+        return "login";
     }
 
     // Equivalente ao método logar() do antigo AutenticarBean.java
     @PostMapping("/autenticar")
     public String autenticar(@RequestParam("cpf") String cpf,
-                             @RequestParam("senha") String senha,
-                             HttpSession session,
-                             RedirectAttributes redirectAttributes) {
-        
+            @RequestParam("senha") String senha,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+
         // CORREÇÃO: Chama o método autenticar que já existe no seu UsuarioService!
         Optional<ViewUserLogin> usuarioOpt = usuarioService.autenticar(cpf, senha);
 
@@ -40,9 +40,9 @@ public class LoginController {
             ViewUserLogin usuarioLogado = usuarioOpt.get();
             // Guarda o usuário na sessão
             session.setAttribute("usuarioLogado", usuarioLogado);
-            
+
             // Redireciona para a página inicial
-            return "redirect:/index"; 
+            return "redirect:/index";
         } else {
             // Devolve mensagem de erro
             redirectAttributes.addFlashAttribute("erro", "CPF ou Senha inválidos!");
@@ -63,6 +63,6 @@ public class LoginController {
         if (session.getAttribute("usuarioLogado") == null) {
             return "redirect:/login";
         }
-        return "index"; 
+        return "index";
     }
 }

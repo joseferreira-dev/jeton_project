@@ -14,7 +14,7 @@ import java.util.Objects;
 
 /**
  * Entidade JPA que representa a tabela 'log_jeton'.
- * Responsável por manter a trilha de auditoria e rastreabilidade de todas as 
+ * Responsável por manter a trilha de auditoria e rastreabilidade de todas as
  * operações sensíveis realizadas no sistema.
  */
 @Entity
@@ -44,7 +44,8 @@ public class LogJeton implements Serializable {
     private LocalDateTime dataHoraLog;
 
     /**
-     * Campo configurado especificamente para receber textos longos (ex: JSON ou dumps).
+     * Campo configurado especificamente para receber textos longos (ex: JSON ou
+     * dumps).
      */
     @Column(name = "textoLog", columnDefinition = "text", nullable = false)
     private String textoLog;
@@ -98,8 +99,10 @@ public class LogJeton implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         LogJeton logJeton = (LogJeton) o;
         return Objects.equals(idLog, logJeton.idLog);
     }

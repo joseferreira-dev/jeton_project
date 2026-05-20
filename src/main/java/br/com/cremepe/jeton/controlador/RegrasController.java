@@ -18,9 +18,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/regras")
 public class RegrasController {
 
-    @Autowired private RegrasService regrasService;
-    @Autowired private PortariaService portariaService;
-    @Autowired private ResolucaoService resolucaoService;
+    @Autowired
+    private RegrasService regrasService;
+    @Autowired
+    private PortariaService portariaService;
+    @Autowired
+    private ResolucaoService resolucaoService;
 
     @GetMapping
     public String listar(
@@ -32,10 +35,12 @@ public class RegrasController {
             @RequestParam(value = "sort", required = false, defaultValue = "nomeRegra") String sort,
             @RequestParam(value = "dir", required = false, defaultValue = "asc") String dir,
             Model model, HttpSession session) {
-            
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
 
-        Page<Regras> paginaRegras = regrasService.listarComPaginacaoEPesquisa(termo, situacao, judicante, page, size, sort, dir);
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
+
+        Page<Regras> paginaRegras = regrasService.listarComPaginacaoEPesquisa(termo, situacao, judicante, page, size,
+                sort, dir);
 
         model.addAttribute("paginaRegras", paginaRegras);
         model.addAttribute("termo", termo);
@@ -50,13 +55,16 @@ public class RegrasController {
 
     private void carregarApoioFormulario(Model model) {
         // Carrega apenas as normativas que estão "Em Vigor" para o dropdown
-        model.addAttribute("listaPortarias", portariaService.listarTodos().stream().filter(p -> "N".equals(p.getInRevogado())).collect(Collectors.toList()));
-        model.addAttribute("listaResolucoes", resolucaoService.listarTodos().stream().filter(r -> "N".equals(r.getInRevogado())).collect(Collectors.toList()));
+        model.addAttribute("listaPortarias", portariaService.listarTodos().stream()
+                .filter(p -> "N".equals(p.getInRevogado())).collect(Collectors.toList()));
+        model.addAttribute("listaResolucoes", resolucaoService.listarTodos().stream()
+                .filter(r -> "N".equals(r.getInRevogado())).collect(Collectors.toList()));
     }
 
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("regra", new Regras());
         carregarApoioFormulario(model);
         return "regras/formulario";
@@ -64,7 +72,8 @@ public class RegrasController {
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("regra", regrasService.buscarPorId(id).orElse(new Regras()));
         carregarApoioFormulario(model);
         return "regras/formulario";
@@ -85,35 +94,35 @@ public class RegrasController {
 
     @GetMapping("/excluir/{id}")
     public String revogar(@PathVariable("id") Integer id, RedirectAttributes ra) {
-        try { 
-            regrasService.revogar(id); 
-            ra.addFlashAttribute("sucesso", "Regra revogada com sucesso!"); 
-        } catch (Exception e) { 
-            ra.addFlashAttribute("erro", "Erro ao revogar regra."); 
+        try {
+            regrasService.revogar(id);
+            ra.addFlashAttribute("sucesso", "Regra revogada com sucesso!");
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro ao revogar regra.");
         }
         return "redirect:/regras";
     }
 
     @GetMapping("/restaurar/{id}")
     public String restaurar(@PathVariable("id") Integer id, RedirectAttributes ra) {
-        try { 
-            regrasService.restaurar(id); 
-            ra.addFlashAttribute("sucesso", "Regra restaurada (Em Vigor)!"); 
-        } catch (Exception e) { 
-            ra.addFlashAttribute("erro", "Erro ao restaurar regra."); 
+        try {
+            regrasService.restaurar(id);
+            ra.addFlashAttribute("sucesso", "Regra restaurada (Em Vigor)!");
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro ao restaurar regra.");
         }
         return "redirect:/regras";
     }
 
     @GetMapping("/deletar/{id}")
     public String deletarFisicamente(@PathVariable("id") Integer id, RedirectAttributes ra) {
-        try { 
-            regrasService.excluirFisicamente(id); 
-            ra.addFlashAttribute("sucesso", "Regra excluída definitivamente!"); 
-        } catch (RuntimeException e) { 
-            ra.addFlashAttribute("erro", e.getMessage()); 
+        try {
+            regrasService.excluirFisicamente(id);
+            ra.addFlashAttribute("sucesso", "Regra excluída definitivamente!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro inesperado ao tentar excluir."); 
+            ra.addFlashAttribute("erro", "Erro inesperado ao tentar excluir.");
         }
         return "redirect:/regras";
     }

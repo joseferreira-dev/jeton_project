@@ -16,7 +16,8 @@ public class UsuarioAcessoId implements Serializable {
     @Column(name = "idNivel")
     private String idNivel;
 
-    public UsuarioAcessoId() {}
+    public UsuarioAcessoId() {
+    }
 
     public UsuarioAcessoId(Integer idUsuarioPessoa, String idNivel) {
         this.idUsuarioPessoa = idUsuarioPessoa;
@@ -41,11 +42,13 @@ public class UsuarioAcessoId implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         UsuarioAcessoId that = (UsuarioAcessoId) o;
-        return Objects.equals(idUsuarioPessoa, that.idUsuarioPessoa) && 
-               Objects.equals(idNivel, that.idNivel);
+        return Objects.equals(idUsuarioPessoa, that.idUsuarioPessoa) &&
+                Objects.equals(idNivel, that.idNivel);
     }
 
     @Override

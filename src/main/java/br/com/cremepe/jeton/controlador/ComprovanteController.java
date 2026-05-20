@@ -19,41 +19,47 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/comprovantes")
 public class ComprovanteController {
 
-    @Autowired private ComprovanteService comprovanteService;
-    @Autowired private FileStorageService fileStorageService;
+    @Autowired
+    private ComprovanteService comprovanteService;
+    @Autowired
+    private FileStorageService fileStorageService;
 
     @GetMapping("/download/{id}")
     public ResponseEntity<?> downloadFicheiro(@PathVariable Integer id, HttpServletRequest request) {
-        
+
         try {
             // 1. Busca os metadados na base de dados
             Comprovante comprovante = comprovanteService.buscarPorId(id)
                     .orElseThrow(() -> new RuntimeException("Comprovante não encontrado na base de dados."));
 
             // 2. Busca o ficheiro localmente ou através de Fallback no FTP
-            Resource resource = fileStorageService.loadFileAsResource(comprovante.getNomeArquivo(), comprovante.getAno(), comprovante.getMes());
+            Resource resource = fileStorageService.loadFileAsResource(comprovante.getNomeArquivo(),
+                    comprovante.getAno(), comprovante.getMes());
 
             // 3. Define o Content-Type
             String contentType = comprovante.getContentType();
-            if(contentType == null) {
+            if (contentType == null) {
                 contentType = "application/octet-stream";
             }
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
-                    // Adiciona o tamanho do ficheiro ao cabeçalho (necessário para ByteArrayResource)
-                    .contentLength(resource.contentLength()) 
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + comprovante.getNomeComprovante() + "\"")
+                    // Adiciona o tamanho do ficheiro ao cabeçalho (necessário para
+                    // ByteArrayResource)
+                    .contentLength(resource.contentLength())
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "inline; filename=\"" + comprovante.getNomeComprovante() + "\"")
                     .body(resource);
-                    
+
         } catch (Exception e) {
-            // Se o ficheiro físico não existir localmente (apagado ou no FTP antigo), 
+            // Se o ficheiro físico não existir localmente (apagado ou no FTP antigo),
             // devolvemos um HTML elegante para ser exibido dentro do iframe do Modal.
-            String htmlErro = "<html><body style='font-family: Arial, sans-serif; text-align: center; padding-top: 20%; color: #fff; background-color: #333;'>" +
-                              "<h2><span style='font-size: 50px;'>📄❌</span><br><br>Documento Indisponível</h2>" +
-                              "<p style='color: #ccc;'>O ficheiro físico não foi encontrado.</p>" +
-                              "</body></html>";
-                              
+            String htmlErro = "<html><body style='font-family: Arial, sans-serif; text-align: center; padding-top: 20%; color: #fff; background-color: #333;'>"
+                    +
+                    "<h2><span style='font-size: 50px;'>📄❌</span><br><br>Documento Indisponível</h2>" +
+                    "<p style='color: #ccc;'>O ficheiro físico não foi encontrado.</p>" +
+                    "</body></html>";
+
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .contentType(MediaType.TEXT_HTML)
                     .body(htmlErro);

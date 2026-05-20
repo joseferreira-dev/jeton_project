@@ -5,8 +5,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * DTO (Data Transfer Object) utilizado para a extração de relatórios em formato Pivot.
- * Agrupa as atividades de um Conselheiro dentro de uma Gestão, transformando as Regras 
+ * DTO (Data Transfer Object) utilizado para a extração de relatórios em formato
+ * Pivot.
+ * Agrupa as atividades de um Conselheiro dentro de uma Gestão, transformando as
+ * Regras
  * em colunas dinâmicas (Regra -> Total de Pontos/Atividades).
  * NOTA: Esta classe não possui mapeamento físico (@Entity) no banco de dados.
  */
@@ -56,7 +58,7 @@ public class RelatorioAtividadeConselhalAgrupadoDTO implements Serializable {
     public void setRegras(Map<String, Integer> regras) {
         this.regras = regras;
     }
-    
+
     // Método utilitário recomendado para adicionar regras dinâmicas com facilidade
     public void adicionarRegra(String nomeRegra, Integer valor) {
         this.regras.put(nomeRegra, valor);

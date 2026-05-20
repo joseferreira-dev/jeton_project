@@ -1,93 +1,109 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
-<head><title>Formulário de Resolução - Jeton</title></head>
+
+<head>
+    <title>Formulário de Resolução - Jeton</title>
+</head>
+
 <body>
-<div layout:fragment="conteudo">
-    <div class="mb-4">
-        <h2 class="h4 text-cremepe fw-bold">
-            <i class="fa-solid fa-scale-balanced me-2"></i>
-            <span th:text="${resolucao.idResolucao == null ? 'Registar Nova Resolução' : 'Editar Resolução'}"></span>
-        </h2>
+    <div layout:fragment="conteudo">
+        <div class="mb-4">
+            <h2 class="h4 text-cremepe fw-bold">
+                <i class="fa-solid fa-scale-balanced me-2"></i>
+                <span
+                    th:text="${resolucao.idResolucao == null ? 'Registar Nova Resolução' : 'Editar Resolução'}"></span>
+            </h2>
+        </div>
+
+        <form th:action="@{/resolucoes/salvar}" th:object="${resolucao}" method="post">
+            <input type="hidden" th:field="*{idResolucao}">
+            <input type="hidden" th:field="*{inRevogado}">
+
+            <div class="row g-4">
+                <div class="col-md-5">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold">Dados Normativos</div>
+                        <div class="card-body">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">N.º da Resolução</label>
+                                    <input type="number" class="form-control" th:field="*{numero}" required min="1">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Ano</label>
+                                    <input type="number" class="form-control" th:field="*{ano}" required min="2000"
+                                        max="2100">
+                                </div>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Início da Vigência</label>
+                                    <input type="date" class="form-control" th:field="*{dtInicioVigencia}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Fim da Vigência</label>
+                                    <input type="date" class="form-control" th:field="*{dtFimVigencia}">
+                                    <div class="form-text" style="font-size: 0.75rem;">Deixe vazio se for indeterminado.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Ementa (Descrição curta)</label>
+                                <textarea class="form-control" th:field="*{ementa}" rows="3" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Link de Publicação (Opcional)</label>
+                                <input type="url" class="form-control" th:field="*{linkPublicado}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-7">
+                    <div class="card shadow-sm h-100 border-primary">
+                        <div class="card-header bg-cremepe text-white fw-bold"><i
+                                class="fa-solid fa-gears me-2"></i>Parâmetros do Motor de Cálculo</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-primary">Valor do Jeton (R$)</label>
+                                    <input type="number" step="0.01" class="form-control" th:field="*{valorJeton}"
+                                        required min="0.01">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-info">Quantos Pontos = 1 Jeton?</label>
+                                    <input type="number" class="form-control" th:field="*{pontosPorJeton}" required
+                                        min="1" placeholder="Ex: 3">
+                                </div>
+                                <div class="col-md-4 mt-4">
+                                    <label class="form-label fw-bold text-danger">Máx. Jetons/Dia</label>
+                                    <input type="number" class="form-control" th:field="*{maxJetonsDia}" required
+                                        min="1">
+                                </div>
+                                <div class="col-md-4 mt-4">
+                                    <label class="form-label fw-bold text-danger">Máx. Jetons/Período</label>
+                                    <input type="number" class="form-control" th:field="*{maxJetonsPeriodo}" required
+                                        min="1" title="Período contínuo (Ex: manhã + tarde)">
+                                </div>
+                                <div class="col-md-4 mt-4">
+                                    <label class="form-label fw-bold text-danger">Máx. Jetons/Mês</label>
+                                    <input type="number" class="form-control border-danger" th:field="*{maxJetonsMes}"
+                                        required min="1" title="Teto máximo absoluto do mês">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+                <a th:href="@{/resolucoes}" class="btn btn-outline-secondary me-2"><i
+                        class="fa-solid fa-xmark me-1"></i> Cancelar</a>
+                <button type="submit" class="btn btn-cremepe"><i class="fa-solid fa-floppy-disk me-1"></i> Guardar
+                    Resolução</button>
+            </div>
+        </form>
     </div>
-
-    <form th:action="@{/resolucoes/salvar}" th:object="${resolucao}" method="post">
-        <input type="hidden" th:field="*{idResolucao}">
-        <input type="hidden" th:field="*{inRevogado}">
-        
-        <div class="row g-4">
-            <div class="col-md-5">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-light fw-bold">Dados Normativos</div>
-                    <div class="card-body">
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">N.º da Resolução</label>
-                                <input type="number" class="form-control" th:field="*{numero}" required min="1">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Ano</label>
-                                <input type="number" class="form-control" th:field="*{ano}" required min="2000" max="2100">
-                            </div>
-                        </div>
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Início da Vigência</label>
-                                <input type="date" class="form-control" th:field="*{dtInicioVigencia}" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Fim da Vigência</label>
-                                <input type="date" class="form-control" th:field="*{dtFimVigencia}">
-                                <div class="form-text" style="font-size: 0.75rem;">Deixe vazio se for indeterminado.</div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Ementa (Descrição curta)</label>
-                            <textarea class="form-control" th:field="*{ementa}" rows="3" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Link de Publicação (Opcional)</label>
-                            <input type="url" class="form-control" th:field="*{linkPublicado}">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-7">
-                <div class="card shadow-sm h-100 border-primary">
-                    <div class="card-header bg-cremepe text-white fw-bold"><i class="fa-solid fa-gears me-2"></i>Parâmetros do Motor de Cálculo</div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-primary">Valor do Jeton (R$)</label>
-                                <input type="number" step="0.01" class="form-control" th:field="*{valorJeton}" required min="0.01">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-info">Quantos Pontos = 1 Jeton?</label>
-                                <input type="number" class="form-control" th:field="*{pontosPorJeton}" required min="1" placeholder="Ex: 3">
-                            </div>
-                            <div class="col-md-4 mt-4">
-                                <label class="form-label fw-bold text-danger">Máx. Jetons/Dia</label>
-                                <input type="number" class="form-control" th:field="*{maxJetonsDia}" required min="1">
-                            </div>
-                            <div class="col-md-4 mt-4">
-                                <label class="form-label fw-bold text-danger">Máx. Jetons/Período</label>
-                                <input type="number" class="form-control" th:field="*{maxJetonsPeriodo}" required min="1" title="Período contínuo (Ex: manhã + tarde)">
-                            </div>
-                            <div class="col-md-4 mt-4">
-                                <label class="form-label fw-bold text-danger">Máx. Jetons/Mês</label>
-                                <input type="number" class="form-control border-danger" th:field="*{maxJetonsMes}" required min="1" title="Teto máximo absoluto do mês">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="d-flex justify-content-end mt-4">
-            <a th:href="@{/resolucoes}" class="btn btn-outline-secondary me-2"><i class="fa-solid fa-xmark me-1"></i> Cancelar</a>
-            <button type="submit" class="btn btn-cremepe"><i class="fa-solid fa-floppy-disk me-1"></i> Guardar Resolução</button>
-        </div>
-    </form>
-</div>
 </body>
+
 </html>

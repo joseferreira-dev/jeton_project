@@ -11,13 +11,14 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class AutorizacaoInterceptor implements HandlerInterceptor {
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
+
         String uri = request.getRequestURI();
-        
+
         // Rotas públicas que não precisam de login
-        if (uri.startsWith("/login") || uri.startsWith("/autenticar") || uri.startsWith("/css") || 
-            uri.startsWith("/js") || uri.startsWith("/images") || uri.startsWith("/error")) {
+        if (uri.startsWith("/login") || uri.startsWith("/autenticar") || uri.startsWith("/css") ||
+                uri.startsWith("/js") || uri.startsWith("/images") || uri.startsWith("/error")) {
             return true;
         }
 
@@ -33,7 +34,7 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
         // 2. Verificação de Autorização (Níveis de Acesso)
         String permissoes = usuarioLogado.getPermissoes() != null ? usuarioLogado.getPermissoes() : "";
         boolean isSuperAdmin = permissoes.contains("S"); // 'S' gere tudo
-        
+
         // Mapeamento das rotas vs Letras de Permissão
         if (uri.startsWith("/atividades") && !(isSuperAdmin || permissoes.contains("A"))) {
             response.sendRedirect("/index?erro=acesso_negado");
@@ -47,13 +48,13 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }
-        if ((uri.startsWith("/gestoes") || uri.startsWith("/gestao-conselheiros") || uri.startsWith("/conselheiros")) 
-             && !(isSuperAdmin || permissoes.contains("G"))) {
+        if ((uri.startsWith("/gestoes") || uri.startsWith("/gestao-conselheiros") || uri.startsWith("/conselheiros"))
+                && !(isSuperAdmin || permissoes.contains("G"))) {
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }
-        if ((uri.startsWith("/portarias") || uri.startsWith("/resolucoes") || uri.startsWith("/regras")) 
-             && !(isSuperAdmin || permissoes.contains("R"))) {
+        if ((uri.startsWith("/portarias") || uri.startsWith("/resolucoes") || uri.startsWith("/regras"))
+                && !(isSuperAdmin || permissoes.contains("R"))) {
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }

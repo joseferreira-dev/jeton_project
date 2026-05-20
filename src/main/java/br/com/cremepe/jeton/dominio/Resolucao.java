@@ -173,8 +173,10 @@ public class Resolucao implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Resolucao resolucao = (Resolucao) o;
         return Objects.equals(idResolucao, resolucao.idResolucao);
     }

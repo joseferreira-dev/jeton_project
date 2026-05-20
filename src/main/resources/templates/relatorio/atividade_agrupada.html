@@ -1,256 +1,360 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
+
 <head>
     <title>Painel de Atividades - Jeton</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* UTILIÁRIO DE FORMATAÇÃO DO DASHBOARD */
-        .dashboard-container { background-color: white; border-radius: 10px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .chart-placeholder { height: 320px; background-color: #f8f9fa; border: 2px dashed #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-weight: 500;}
-        .chart-box { height: 320px; position: relative; width: 100%; }
-        
+        .dashboard-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-placeholder {
+            height: 320px;
+            background-color: #f8f9fa;
+            border: 2px dashed #e5e7eb;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-weight: 500;
+        }
+
+        .chart-box {
+            height: 320px;
+            position: relative;
+            width: 100%;
+        }
+
         /* ESTILIZAÇÃO PREMIUM PARA IMPRESSÃO E PDF */
         @media print {
-            @page { size: landscape; margin: 1.5cm; } /* Força a página deitada para melhor ajuste da tabela e gráficos */
-            
-            .sidebar, .navbar-top, .navbar-cremepe, form, .btn, footer, .no-print { display: none !important; }
-            .main-wrapper { margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: white !important;}
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white;} /* Força a impressão das cores nos gráficos e fundos */
-            
-            .dashboard-container { box-shadow: none !important; padding: 0 !important; border: none !important; margin-bottom: 25px !important; page-break-inside: avoid; }
-            
+            @page {
+                size: landscape;
+                margin: 1.5cm;
+            }
+
+            /* Força a página deitada para melhor ajuste da tabela e gráficos */
+
+            .sidebar,
+            .navbar-top,
+            .navbar-cremepe,
+            form,
+            .btn,
+            footer,
+            .no-print {
+                display: none !important;
+            }
+
+            .main-wrapper {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                background-color: white !important;
+            }
+
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                background: white;
+            }
+
+            /* Força a impressão das cores nos gráficos e fundos */
+
+            .dashboard-container {
+                box-shadow: none !important;
+                padding: 0 !important;
+                border: none !important;
+                margin-bottom: 25px !important;
+                page-break-inside: avoid;
+            }
+
             /* Cabeçalho exclusivo para impressão */
-            .print-header { display: flex !important; align-items: center; justify-content: space-between; border-bottom: 3px solid var(--cremepe-green); padding-bottom: 15px; margin-bottom: 20px; }
-            .print-header img { max-height: 50px; }
-            
+            .print-header {
+                display: flex !important;
+                align-items: center;
+                justify-content: space-between;
+                border-bottom: 3px solid var(--cremepe-green);
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+            }
+
+            .print-header img {
+                max-height: 50px;
+            }
+
             /* Ajustes da Tabela na impressão */
-            .table { border: 1px solid #dee2e6 !important; font-size: 11pt; }
-            .table th { background-color: #f8f9fa !important; color: #000 !important; border-bottom: 2px solid var(--cremepe-gold) !important;}
-            .table th, .table td { border-color: #dee2e6 !important; padding: 6px 8px !important; }
-            
+            .table {
+                border: 1px solid #dee2e6 !important;
+                font-size: 11pt;
+            }
+
+            .table th {
+                background-color: #f8f9fa !important;
+                color: #000 !important;
+                border-bottom: 2px solid var(--cremepe-gold) !important;
+            }
+
+            .table th,
+            .table td {
+                border-color: #dee2e6 !important;
+                padding: 6px 8px !important;
+            }
+
             /* Evitar que os gráficos fiquem cortados entre duas páginas */
-            .col-md-6 { width: 50% !important; float: left !important; page-break-inside: avoid; }
+            .col-md-6 {
+                width: 50% !important;
+                float: left !important;
+                page-break-inside: avoid;
+            }
         }
     </style>
 </head>
+
 <body>
-<div layout:fragment="conteudo">
-    
-    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-chart-line me-2"></i> Painel Analítico de Atividades</h2>
-        <button type="button" onclick="window.print()" class="btn btn-outline-secondary shadow-sm">
-            <i class="fa-solid fa-file-pdf me-1"></i> Exportar PDF / Imprimir
-        </button>
-    </div>
+    <div layout:fragment="conteudo">
 
-    <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show no-print"><i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-
-    <form th:action="@{/relatorios/atividades/gerar}" method="get" class="mb-4 dashboard-container no-print border border-light">
-        <h6 class="mb-3 text-muted fw-bold text-uppercase small"><i class="fa-solid fa-filter text-primary me-1"></i> Filtros de Extração</h6>
-        <div class="row g-3">
-            
-            <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted mb-1">Gestão Base <span class="text-danger">*</span></label>
-                <select name="idGestao" id="idGestao" class="form-select bg-light" required>
-                    <option value="">Selecione a Gestão</option>
-                    <option th:each="g : ${listaGestao}" th:value="${g.idGestao}" th:text="${g.nomeGestao}" th:selected="${param.idGestao != null and param.idGestao.toString() == g.idGestao.toString()}"></option>
-                </select>
-            </div>
-            
-            <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted mb-1">Conselheiro Específico</label>
-                <select name="idConselheiro" id="conselheiro" class="form-select">
-                    <option value="">Todos os Conselheiros</option>
-                    <option th:each="c : ${listaConselheiros}" th:value="${c.idPessoa}" th:text="${c.pessoa.nome}" th:selected="${param.idConselheiro != null and param.idConselheiro.toString() == c.idPessoa.toString()}"></option>
-                </select>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted mb-1">Atividade (Regra)</label>
-                <select name="idRegra" id="regra" class="form-select">
-                    <option value="">Todas as Atividades</option>
-                    <option th:each="r : ${listaRegras}" th:value="${r.idRegra}" th:text="${r.nomeRegra}" th:selected="${param.idRegra != null and param.idRegra.toString() == r.idRegra.toString()}"></option>
-                </select>
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label small fw-bold text-muted mb-1">Data Início</label>
-                <input type="date" name="dataInicio" class="form-control" th:value="${param.dataInicio}">
-            </div>
-            
-            <div class="col-md-3">
-                <label class="form-label small fw-bold text-muted mb-1">Data Fim</label>
-                <input type="date" name="dataFim" class="form-control" th:value="${param.dataFim}">
-            </div>
-
-            <div class="col-md-6 d-flex align-items-end gap-2">
-                <button type="submit" class="btn btn-cremepe flex-grow-1"><i class="fa-solid fa-bolt me-1"></i> Gerar Relatório</button>
-                <a th:href="@{/relatorios/atividades}" class="btn btn-light border text-muted"><i class="fa-solid fa-rotate-left"></i> Redefinir</a>
-            </div>
+        <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-chart-line me-2"></i> Painel Analítico de
+                Atividades</h2>
+            <button type="button" onclick="window.print()" class="btn btn-outline-secondary shadow-sm">
+                <i class="fa-solid fa-file-pdf me-1"></i> Exportar PDF / Imprimir
+            </button>
         </div>
-    </form>
 
-    <div class="print-header d-none">
-        <div>
-            <h4 class="mb-1 fw-bold" style="color: var(--cremepe-green-dark);">Relatório Analítico de Atividades</h4>
-            <span class="text-muted small">Conselho Regional de Medicina de Pernambuco (CREMEPE)</span>
-        </div>
-        <div class="text-end">
-            <span class="d-block fw-bold small text-muted">Data de Emissão: <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span></span>
-        </div>
-    </div>
+        <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show no-print"><i
+                class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button"
+                class="btn-close" data-bs-dismiss="alert"></button></div>
 
-    <div th:if="${not #lists.isEmpty(listaRelatorio)}" class="row mb-4">
-        
-        <div class="col-12" id="chartPlaceholder">
-            <div class="dashboard-container">
-                <div class="chart-placeholder">
-                    <span><i class="fa-solid fa-spinner fa-spin me-2"></i> Processando Gráficos...</span>
+        <form th:action="@{/relatorios/atividades/gerar}" method="get"
+            class="mb-4 dashboard-container no-print border border-light">
+            <h6 class="mb-3 text-muted fw-bold text-uppercase small"><i
+                    class="fa-solid fa-filter text-primary me-1"></i> Filtros de Extração</h6>
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-muted mb-1">Gestão Base <span
+                            class="text-danger">*</span></label>
+                    <select name="idGestao" id="idGestao" class="form-select bg-light" required>
+                        <option value="">Selecione a Gestão</option>
+                        <option th:each="g : ${listaGestao}" th:value="${g.idGestao}" th:text="${g.nomeGestao}"
+                            th:selected="${param.idGestao != null and param.idGestao.toString() == g.idGestao.toString()}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-muted mb-1">Conselheiro Específico</label>
+                    <select name="idConselheiro" id="conselheiro" class="form-select">
+                        <option value="">Todos os Conselheiros</option>
+                        <option th:each="c : ${listaConselheiros}" th:value="${c.idPessoa}" th:text="${c.pessoa.nome}"
+                            th:selected="${param.idConselheiro != null and param.idConselheiro.toString() == c.idPessoa.toString()}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-muted mb-1">Atividade (Regra)</label>
+                    <select name="idRegra" id="regra" class="form-select">
+                        <option value="">Todas as Atividades</option>
+                        <option th:each="r : ${listaRegras}" th:value="${r.idRegra}" th:text="${r.nomeRegra}"
+                            th:selected="${param.idRegra != null and param.idRegra.toString() == r.idRegra.toString()}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted mb-1">Data Início</label>
+                    <input type="date" name="dataInicio" class="form-control" th:value="${param.dataInicio}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted mb-1">Data Fim</label>
+                    <input type="date" name="dataFim" class="form-control" th:value="${param.dataFim}">
+                </div>
+
+                <div class="col-md-6 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-cremepe flex-grow-1"><i class="fa-solid fa-bolt me-1"></i>
+                        Gerar Relatório</button>
+                    <a th:href="@{/relatorios/atividades}" class="btn btn-light border text-muted"><i
+                            class="fa-solid fa-rotate-left"></i> Redefinir</a>
                 </div>
             </div>
+        </form>
+
+        <div class="print-header d-none">
+            <div>
+                <h4 class="mb-1 fw-bold" style="color: var(--cremepe-green-dark);">Relatório Analítico de Atividades
+                </h4>
+                <span class="text-muted small">Conselho Regional de Medicina de Pernambuco (CREMEPE)</span>
+            </div>
+            <div class="text-end">
+                <span class="d-block fw-bold small text-muted">Data de Emissão: <span
+                        th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span></span>
+            </div>
         </div>
 
-        <div class="col-12 d-none" id="chartsContainer">
-            <div class="row">
-                <div class="col-md-6 mb-4 mb-md-0">
-                    <div class="dashboard-container h-100">
-                        <h6 class="text-cremepe fw-bold mb-3"><i class="fa-solid fa-chart-bar me-2"></i> Total de Atividades por Conselheiro</h6>
-                        <div class="chart-box">
-                            <canvas id="chartConselheiros"></canvas>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-6">
-                    <div class="dashboard-container h-100">
-                        <h6 class="text-cremepe fw-bold mb-3"><i class="fa-solid fa-chart-pie me-2"></i> Distribuição por Tipo de Atividade</h6>
-                        <div class="chart-box">
-                            <canvas id="chartRegras"></canvas>
-                        </div>
+        <div th:if="${not #lists.isEmpty(listaRelatorio)}" class="row mb-4">
+
+            <div class="col-12" id="chartPlaceholder">
+                <div class="dashboard-container">
+                    <div class="chart-placeholder">
+                        <span><i class="fa-solid fa-spinner fa-spin me-2"></i> Processando Gráficos...</span>
                     </div>
                 </div>
             </div>
+
+            <div class="col-12 d-none" id="chartsContainer">
+                <div class="row">
+                    <div class="col-md-6 mb-4 mb-md-0">
+                        <div class="dashboard-container h-100">
+                            <h6 class="text-cremepe fw-bold mb-3"><i class="fa-solid fa-chart-bar me-2"></i> Total de
+                                Atividades por Conselheiro</h6>
+                            <div class="chart-box">
+                                <canvas id="chartConselheiros"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="dashboard-container h-100">
+                            <h6 class="text-cremepe fw-bold mb-3"><i class="fa-solid fa-chart-pie me-2"></i>
+                                Distribuição por Tipo de Atividade</h6>
+                            <div class="chart-box">
+                                <canvas id="chartRegras"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div class="dashboard-container p-0 overflow-hidden">
-        
-        <div class="table-responsive p-3">
-            <table class="table table-hover table-bordered mb-0 align-middle">
-                <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
-                    <tr>
-                        <th class="ps-3" style="width: 25%;">Médico Conselheiro</th>
-                        <th style="width: 15%;">Gestão</th>
-                        <th class="text-center" th:if="${colunasRegras != null}" th:each="nomeRegra : ${colunasRegras}" th:text="${nomeRegra}"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="linha : ${listaRelatorio}">
-                        <td class="ps-3 fw-bold text-dark" th:text="${linha.conselheiro}">Nome</td>
-                        <td class="text-muted small" th:text="${linha.gestao}">Gestão</td>
-                        <td class="text-center fw-semibold text-cremepe bg-light" th:each="valor : ${linha.regras.values()}" th:text="${valor}"></td>
-                    </tr>
-                    
-                    <tr th:if="${#lists.isEmpty(listaRelatorio)}">
-                        <td colspan="100%" class="text-center py-5 text-muted bg-light">
-                            <i class="fa-solid fa-magnifying-glass-chart fa-3x mb-3 text-secondary opacity-50"></i><br>
-                            Nenhuma atividade encontrada com os parâmetros informados.<br>
-                            <small class="no-print">Utilize o painel de filtros acima para extrair dados.</small>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="dashboard-container p-0 overflow-hidden">
+
+            <div class="table-responsive p-3">
+                <table class="table table-hover table-bordered mb-0 align-middle">
+                    <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
+                        <tr>
+                            <th class="ps-3" style="width: 25%;">Médico Conselheiro</th>
+                            <th style="width: 15%;">Gestão</th>
+                            <th class="text-center" th:if="${colunasRegras != null}"
+                                th:each="nomeRegra : ${colunasRegras}" th:text="${nomeRegra}"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="linha : ${listaRelatorio}">
+                            <td class="ps-3 fw-bold text-dark" th:text="${linha.conselheiro}">Nome</td>
+                            <td class="text-muted small" th:text="${linha.gestao}">Gestão</td>
+                            <td class="text-center fw-semibold text-cremepe bg-light"
+                                th:each="valor : ${linha.regras.values()}" th:text="${valor}"></td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(listaRelatorio)}">
+                            <td colspan="100%" class="text-center py-5 text-muted bg-light">
+                                <i
+                                    class="fa-solid fa-magnifying-glass-chart fa-3x mb-3 text-secondary opacity-50"></i><br>
+                                Nenhuma atividade encontrada com os parâmetros informados.<br>
+                                <small class="no-print">Utilize o painel de filtros acima para extrair dados.</small>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
-    
-    <script th:inline="javascript">
-        /*<![CDATA[*/
-        document.addEventListener("DOMContentLoaded", function() {
-            
-            // 1. Extração segura dos dados enviados pelo Controller Java
-            var relatorioData = /*[[${listaRelatorio}]]*/ [];
-            var colunasRegras = /*[[${colunasRegras}]]*/ [];
 
-            if (relatorioData && relatorioData.length > 0 && colunasRegras) {
-                
-                // Transição da UI (Esconder Loading, Mostrar Gráficos)
-                document.getElementById('chartPlaceholder').classList.add('d-none');
-                document.getElementById('chartsContainer').classList.remove('d-none');
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            document.addEventListener("DOMContentLoaded", function () {
 
-                // 2. Preparação de Dados para o Gráfico de BARRAS (Total por Conselheiro)
-                var labelsConselheiros = [];
-                var dataConselheiros = [];
-                
-                relatorioData.forEach(function(linha) {
-                    labelsConselheiros.push(linha.conselheiro);
-                    var somaAtividades = 0;
-                    // Soma as atividades de todas as colunas para este conselheiro
-                    for (var key in linha.regras) {
-                        somaAtividades += (linha.regras[key] || 0);
-                    }
-                    dataConselheiros.push(somaAtividades);
-                });
+                // 1. Extração segura dos dados enviados pelo Controller Java
+                var relatorioData = /*[[${listaRelatorio}]]*/[];
+                var colunasRegras = /*[[${colunasRegras}]]*/[];
 
-                // 3. Preparação de Dados para o Gráfico de ROSCA (Distribuição Global por Regra)
-                var totaisPorRegra = [];
-                colunasRegras.forEach(function(regra) {
-                    var sum = 0;
-                    relatorioData.forEach(function(linha) {
-                        sum += (linha.regras[regra] || 0);
+                if (relatorioData && relatorioData.length > 0 && colunasRegras) {
+
+                    // Transição da UI (Esconder Loading, Mostrar Gráficos)
+                    document.getElementById('chartPlaceholder').classList.add('d-none');
+                    document.getElementById('chartsContainer').classList.remove('d-none');
+
+                    // 2. Preparação de Dados para o Gráfico de BARRAS (Total por Conselheiro)
+                    var labelsConselheiros = [];
+                    var dataConselheiros = [];
+
+                    relatorioData.forEach(function (linha) {
+                        labelsConselheiros.push(linha.conselheiro);
+                        var somaAtividades = 0;
+                        // Soma as atividades de todas as colunas para este conselheiro
+                        for (var key in linha.regras) {
+                            somaAtividades += (linha.regras[key] || 0);
+                        }
+                        dataConselheiros.push(somaAtividades);
                     });
-                    totaisPorRegra.push(sum);
-                });
 
-                // Paleta de Cores Institucional
-                var cores = ['#009965', '#d4af37', '#2c3e50', '#3498db', '#e67e22', '#9b59b6', '#1abc9c', '#f1c40f'];
+                    // 3. Preparação de Dados para o Gráfico de ROSCA (Distribuição Global por Regra)
+                    var totaisPorRegra = [];
+                    colunasRegras.forEach(function (regra) {
+                        var sum = 0;
+                        relatorioData.forEach(function (linha) {
+                            sum += (linha.regras[regra] || 0);
+                        });
+                        totaisPorRegra.push(sum);
+                    });
 
-                // 4. Renderização: Gráfico de Barras
-                var ctxBar = document.getElementById('chartConselheiros').getContext('2d');
-                new Chart(ctxBar, {
-                    type: 'bar',
-                    data: {
-                        labels: labelsConselheiros,
-                        datasets: [{
-                            label: 'Total de Atividades',
-                            data: dataConselheiros,
-                            backgroundColor: '#009965',
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { precision: 0 } }
+                    // Paleta de Cores Institucional
+                    var cores = ['#009965', '#d4af37', '#2c3e50', '#3498db', '#e67e22', '#9b59b6', '#1abc9c', '#f1c40f'];
+
+                    // 4. Renderização: Gráfico de Barras
+                    var ctxBar = document.getElementById('chartConselheiros').getContext('2d');
+                    new Chart(ctxBar, {
+                        type: 'bar',
+                        data: {
+                            labels: labelsConselheiros,
+                            datasets: [{
+                                label: 'Total de Atividades',
+                                data: dataConselheiros,
+                                backgroundColor: '#009965',
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { beginAtZero: true, ticks: { precision: 0 } }
+                            }
                         }
-                    }
-                });
+                    });
 
-                // 5. Renderização: Gráfico de Rosca
-                var ctxPie = document.getElementById('chartRegras').getContext('2d');
-                new Chart(ctxPie, {
-                    type: 'doughnut',
-                    data: {
-                        labels: colunasRegras,
-                        datasets: [{
-                            data: totaisPorRegra,
-                            backgroundColor: cores,
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'right', labels: { boxWidth: 12 } }
+                    // 5. Renderização: Gráfico de Rosca
+                    var ctxPie = document.getElementById('chartRegras').getContext('2d');
+                    new Chart(ctxPie, {
+                        type: 'doughnut',
+                        data: {
+                            labels: colunasRegras,
+                            datasets: [{
+                                data: totaisPorRegra,
+                                backgroundColor: cores,
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'right', labels: { boxWidth: 12 } }
+                            }
                         }
-                    }
-                });
-            }
-        });
-        /*]]>*/
-    </script>
-</div>
+                    });
+                }
+            });
+            /*]]>*/
+        </script>
+    </div>
 </body>
+
 </html>

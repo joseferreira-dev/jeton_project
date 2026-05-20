@@ -14,7 +14,8 @@ import java.util.Objects;
 
 /**
  * Entidade JPA que representa a tabela 'pontos_saldo'.
- * Atua como o livro-razão do sistema, controlando os pontos que sobram e os que são utilizados.
+ * Atua como o livro-razão do sistema, controlando os pontos que sobram e os que
+ * são utilizados.
  */
 @Entity
 @Table(name = "pontos_saldo")
@@ -29,7 +30,8 @@ public class PontosSaldo implements Serializable {
 
     /**
      * Relacionamento Opcional com a Atividade Conselhal.
-     * Como a base de dados permite NULL (NULO: YES), omitimos o parâmetro nullable = false.
+     * Como a base de dados permite NULL (NULO: YES), omitimos o parâmetro nullable
+     * = false.
      */
     @ManyToOne
     @JoinColumn(name = "idAtividade")
@@ -37,7 +39,8 @@ public class PontosSaldo implements Serializable {
 
     /**
      * Relacionamento Opcional com o fecho financeiro (Jeton).
-     * Indica em que ciclo de pagamento estes pontos foram contabilizados ou liquidados.
+     * Indica em que ciclo de pagamento estes pontos foram contabilizados ou
+     * liquidados.
      */
     @ManyToOne
     @JoinColumn(name = "idJeton")
@@ -47,7 +50,8 @@ public class PontosSaldo implements Serializable {
     @Column(name = "dataHora", nullable = false)
     private LocalDateTime dataHora;
 
-    // Utilização de Integer (Wrapper) em vez de int primitivo para segurança transacional
+    // Utilização de Integer (Wrapper) em vez de int primitivo para segurança
+    // transacional
     @Column(name = "pontosSobrando", nullable = false)
     private Integer pontosSobrando;
 
@@ -122,8 +126,10 @@ public class PontosSaldo implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         PontosSaldo that = (PontosSaldo) o;
         return Objects.equals(idPontosSaldo, that.idPontosSaldo);
     }

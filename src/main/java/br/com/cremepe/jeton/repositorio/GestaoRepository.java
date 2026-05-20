@@ -23,7 +23,7 @@ public interface GestaoRepository extends JpaRepository<Gestao, Integer> {
     @Query("SELECT COUNT(g) > 0 FROM Gestao g WHERE " +
             "(:id IS NULL OR g.idGestao != :id) AND " +
             "(g.dtInicio <= :fim AND g.dtFim >= :inicio)")
-    boolean existeSobreposicao(@Param("id") Integer id, 
-                            @Param("inicio") LocalDate inicio, 
-                            @Param("fim") LocalDate fim);
+    boolean existeSobreposicao(@Param("id") Integer id,
+            @Param("inicio") LocalDate inicio,
+            @Param("fim") LocalDate fim);
 }

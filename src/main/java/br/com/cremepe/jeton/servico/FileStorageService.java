@@ -17,10 +17,14 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
-    @Value("${ftp.locaweb.host}") private String ftpHost;
-    @Value("${ftp.locaweb.port}") private int ftpPort;
-    @Value("${ftp.locaweb.user}") private String ftpUser;
-    @Value("${ftp.locaweb.pass}") private String ftpPass;
+    @Value("${ftp.locaweb.host}")
+    private String ftpHost;
+    @Value("${ftp.locaweb.port}")
+    private int ftpPort;
+    @Value("${ftp.locaweb.user}")
+    private String ftpUser;
+    @Value("${ftp.locaweb.pass}")
+    private String ftpPass;
 
     // =========================================================================
     // UPLOAD STATELESS (Direto para Locaweb, sem tocar no disco)
@@ -32,14 +36,15 @@ public class FileStorageService {
         if (i > 0) {
             extension = originalFileName.substring(i);
         }
-        
+
         // Nome padronizado: UUID curto + extensão
         String fileName = UUID.randomUUID().toString() + extension;
 
         Session session = null;
         ChannelSftp channelSftp = null;
         try {
-            if(fileName.contains("..")) throw new RuntimeException("Caminho inválido: " + fileName);
+            if (fileName.contains(".."))
+                throw new RuntimeException("Caminho inválido: " + fileName);
 
             JSch jsch = new JSch();
             session = jsch.getSession(ftpUser, ftpHost, ftpPort);
@@ -57,25 +62,34 @@ public class FileStorageService {
             try (InputStream is = file.getInputStream()) {
                 channelSftp.put(is, fileName);
             }
-            
+
             System.out.println("Upload Stateless concluído: " + fileName);
             return fileName;
-            
+
         } catch (Exception ex) {
             throw new RuntimeException("Erro ao enviar o ficheiro " + fileName + " para o FTP.", ex);
         } finally {
-            try { if (channelSftp != null && channelSftp.isConnected()) channelSftp.disconnect(); } catch (Exception ignored) {}
-            try { if (session != null && session.isConnected()) session.disconnect(); } catch (Exception ignored) {}
+            try {
+                if (channelSftp != null && channelSftp.isConnected())
+                    channelSftp.disconnect();
+            } catch (Exception ignored) {
+            }
+            try {
+                if (session != null && session.isConnected())
+                    session.disconnect();
+            } catch (Exception ignored) {
+            }
         }
     }
 
     private void criarECarregarPasta(ChannelSftp channelSftp, String remoteDir) {
         String[] folders = remoteDir.split("/");
         for (String folder : folders) {
-            if (folder.isEmpty()) continue;
+            if (folder.isEmpty())
+                continue;
             try {
                 channelSftp.cd(folder);
-            } catch (Exception e) { 
+            } catch (Exception e) {
                 try {
                     channelSftp.mkdir(folder);
                     channelSftp.cd(folder);
@@ -115,8 +129,16 @@ public class FileStorageService {
         } catch (Exception e) {
             throw new RuntimeException("Ficheiro indisponível no FTP da Locaweb: " + e.getMessage());
         } finally {
-            try { if (channelSftp != null && channelSftp.isConnected()) channelSftp.disconnect(); } catch (Exception ignored) {}
-            try { if (session != null && session.isConnected()) session.disconnect(); } catch (Exception ignored) {}
+            try {
+                if (channelSftp != null && channelSftp.isConnected())
+                    channelSftp.disconnect();
+            } catch (Exception ignored) {
+            }
+            try {
+                if (session != null && session.isConnected())
+                    session.disconnect();
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -139,12 +161,20 @@ public class FileStorageService {
             String remoteFilePath = "jetonFiles/" + ano + "/" + mes + "/" + fileName;
             channelSftp.rm(remoteFilePath);
             System.out.println("Exclusão Stateless concluída: " + fileName);
-            
+
         } catch (Exception e) {
             System.err.println("Aviso: Falha ao remover arquivo do FTP (pode já ter sido excluído): " + e.getMessage());
         } finally {
-            try { if (channelSftp != null && channelSftp.isConnected()) channelSftp.disconnect(); } catch (Exception ignored) {}
-            try { if (session != null && session.isConnected()) session.disconnect(); } catch (Exception ignored) {}
+            try {
+                if (channelSftp != null && channelSftp.isConnected())
+                    channelSftp.disconnect();
+            } catch (Exception ignored) {
+            }
+            try {
+                if (session != null && session.isConnected())
+                    session.disconnect();
+            } catch (Exception ignored) {
+            }
         }
     }
 }

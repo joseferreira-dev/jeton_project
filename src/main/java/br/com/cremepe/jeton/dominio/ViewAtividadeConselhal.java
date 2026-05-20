@@ -18,7 +18,7 @@ public class ViewAtividadeConselhal implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Id 
+    @Id
     @Column(name = "idAtividade")
     private Integer idAtividade;
 
@@ -67,26 +67,74 @@ public class ViewAtividadeConselhal implements Serializable {
     @Column(name = "portaria")
     private String portaria;
 
-    public ViewAtividadeConselhal() {}
+    public ViewAtividadeConselhal() {
+    }
 
     // ==========================================
     // APENAS GETTERS (Entidade Imutável)
     // ==========================================
 
-    public Integer getIdAtividade() { return idAtividade; }
-    public Integer getIdGestao() { return idGestao; }
-    public Integer getIdPessoa() { return idPessoa; }
-    public Integer getIdRegra() { return idRegra; }
-    public Integer getQtdAtividade() { return qtdAtividade; }
-    public LocalDateTime getDataHoraAtividade() { return dataHoraAtividade; }
-    public LocalDateTime getDataHoraRegistro() { return dataHoraRegistro; }
-    public String getInTurno() { return inTurno; }
-    public String getSituacaoAtividade() { return situacaoAtividade; }
-    public String getNomeGestao() { return nomeGestao; }
-    public String getNome() { return nome; }
-    public String getCpf() { return cpf; }
-    public String getNomeRegra() { return nomeRegra; }
-    public Integer getPontos() { return pontos; }
-    public String getResolucao() { return resolucao; }
-    public String getPortaria() { return portaria; }
+    public Integer getIdAtividade() {
+        return idAtividade;
+    }
+
+    public Integer getIdGestao() {
+        return idGestao;
+    }
+
+    public Integer getIdPessoa() {
+        return idPessoa;
+    }
+
+    public Integer getIdRegra() {
+        return idRegra;
+    }
+
+    public Integer getQtdAtividade() {
+        return qtdAtividade;
+    }
+
+    public LocalDateTime getDataHoraAtividade() {
+        return dataHoraAtividade;
+    }
+
+    public LocalDateTime getDataHoraRegistro() {
+        return dataHoraRegistro;
+    }
+
+    public String getInTurno() {
+        return inTurno;
+    }
+
+    public String getSituacaoAtividade() {
+        return situacaoAtividade;
+    }
+
+    public String getNomeGestao() {
+        return nomeGestao;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public String getCpf() {
+        return cpf;
+    }
+
+    public String getNomeRegra() {
+        return nomeRegra;
+    }
+
+    public Integer getPontos() {
+        return pontos;
+    }
+
+    public String getResolucao() {
+        return resolucao;
+    }
+
+    public String getPortaria() {
+        return portaria;
+    }
 }

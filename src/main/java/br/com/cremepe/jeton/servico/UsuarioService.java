@@ -27,14 +27,18 @@ import br.com.cremepe.jeton.util.CpfValidador;
 @Service
 public class UsuarioService {
 
-    @Autowired private UsuarioRepository usuarioRepository;
-    @Autowired private ViewUserLoginRepository viewUserLoginRepository;
-    @Autowired private PessoaRepository pessoaRepository;
-    @Autowired private ConselheiroRepository conselheiroRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+    @Autowired
+    private ViewUserLoginRepository viewUserLoginRepository;
+    @Autowired
+    private PessoaRepository pessoaRepository;
+    @Autowired
+    private ConselheiroRepository conselheiroRepository;
 
     @Transactional
     public Usuario salvar(Usuario usuario) {
-        
+
         // 1. Limpeza e padronização do CPF
         String cpfLimpo = "";
         if (usuario.getPessoa() != null && usuario.getPessoa().getCpf() != null) {
@@ -51,8 +55,8 @@ public class UsuarioService {
         if (!cpfLimpo.isEmpty()) {
             Optional<Pessoa> pessoaExistente = pessoaRepository.findByCpf(cpfLimpo);
             if (pessoaExistente.isPresent()) {
-                if (usuario.getIdUsuarioPessoa() == null || 
-                    !usuario.getIdUsuarioPessoa().equals(pessoaExistente.get().getIdPessoa())) {
+                if (usuario.getIdUsuarioPessoa() == null ||
+                        !usuario.getIdUsuarioPessoa().equals(pessoaExistente.get().getIdPessoa())) {
                     throw new RuntimeException("Já existe um cadastro no sistema com este CPF.");
                 }
             }
@@ -62,10 +66,12 @@ public class UsuarioService {
         if (usuario.iseConselheiro() && usuario.getCrm() != null) {
             Optional<Conselheiro> conselheiroExistente = conselheiroRepository.findByCrm(usuario.getCrm());
             if (conselheiroExistente.isPresent()) {
-                // Se for um novo cadastro OU se o CRM achado pertencer a OUTRA pessoa, bloqueia!
-                if (usuario.getIdUsuarioPessoa() == null || 
-                    !usuario.getIdUsuarioPessoa().equals(conselheiroExistente.get().getIdPessoa())) {
-                    throw new RuntimeException("Já existe um médico conselheiro cadastrado com o CRM " + usuario.getCrm() + ".");
+                // Se for um novo cadastro OU se o CRM achado pertencer a OUTRA pessoa,
+                // bloqueia!
+                if (usuario.getIdUsuarioPessoa() == null ||
+                        !usuario.getIdUsuarioPessoa().equals(conselheiroExistente.get().getIdPessoa())) {
+                    throw new RuntimeException(
+                            "Já existe um médico conselheiro cadastrado com o CRM " + usuario.getCrm() + ".");
                 }
             }
         }
@@ -105,18 +111,19 @@ public class UsuarioService {
             if (usuario.getCrm() == null) {
                 throw new RuntimeException("O número do CRM é obrigatório para médicos conselheiros.");
             }
-            
+
             // Busca se já existe registro na tabela conselheiro ou cria um novo
             Conselheiro c = conselheiroRepository.findById(usuarioSalvo.getIdUsuarioPessoa())
-                                                 .orElse(new Conselheiro());
-            
+                    .orElse(new Conselheiro());
+
             c.setIdPessoa(usuarioSalvo.getIdUsuarioPessoa());
             c.setPessoa(usuarioSalvo.getPessoa());
             c.setCrm(usuario.getCrm());
             c.setInSituacao(usuarioSalvo.getInSituacao());
             conselheiroRepository.save(c);
         } else {
-            // Se o checkbox não estiver marcado, removemos da tabela conselheiro se existir (Downgrade)
+            // Se o checkbox não estiver marcado, removemos da tabela conselheiro se existir
+            // (Downgrade)
             usuarioRepository.deletarConselheiroNativo(usuarioSalvo.getIdUsuarioPessoa());
         }
 
@@ -124,14 +131,16 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Usuario> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size, String sortField, String sortDir) {
+    public Page<Usuario> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size,
+            String sortField, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
 
         String cpfPesquisa = "";
         if (termo != null && !termo.trim().isEmpty()) {
             cpfPesquisa = termo.replaceAll("[^0-9]", "");
-            if (cpfPesquisa.isEmpty()) cpfPesquisa = "###";
+            if (cpfPesquisa.isEmpty())
+                cpfPesquisa = "###";
         }
 
         return usuarioRepository.pesquisarPaginado(termo, cpfPesquisa, situacao, pageable);
@@ -153,13 +162,13 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
-    public List<Usuario> listarTodos() { 
-        return usuarioRepository.findAll(); 
+    public List<Usuario> listarTodos() {
+        return usuarioRepository.findAll();
     }
 
     @Transactional(readOnly = true)
-    public Optional<Usuario> buscarPorId(Integer id) { 
-        return usuarioRepository.findById(id); 
+    public Optional<Usuario> buscarPorId(Integer id) {
+        return usuarioRepository.findById(id);
     }
 
     private String gerarSHA256(String senha) {

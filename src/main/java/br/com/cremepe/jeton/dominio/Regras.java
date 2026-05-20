@@ -16,7 +16,8 @@ import java.util.Objects;
 
 /**
  * Entidade JPA que representa a tabela 'regras'.
- * Eixo central que define as regras de pontuação de atividades baseadas em Portarias e Resoluções.
+ * Eixo central que define as regras de pontuação de atividades baseadas em
+ * Portarias e Resoluções.
  */
 @Entity
 @Table(name = "regras")
@@ -153,6 +154,7 @@ public class Regras implements Serializable {
 
     /**
      * Define a lista de grupos de regras conjuntas.
+     * 
      * @param gruposDeRegras Nova lista de associações.
      */
     public void setGruposDeRegras(List<RegrasConjuntas> gruposDeRegras) {
@@ -179,8 +181,10 @@ public class Regras implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Regras regras = (Regras) o;
         return Objects.equals(idRegra, regras.idRegra);
     }

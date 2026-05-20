@@ -39,14 +39,11 @@ public class RegrasConjuntas implements Serializable {
 
     /**
      * Relacionamento Muitos-para-Muitos com a tabela 'regras'.
-     * O JoinTable define a tabela de ligação 'regra_conjunta_agrupada' mapeada no banco.
+     * O JoinTable define a tabela de ligação 'regra_conjunta_agrupada' mapeada no
+     * banco.
      */
     @ManyToMany
-    @JoinTable(
-        name = "regra_conjunta_agrupada",
-        joinColumns = @JoinColumn(name = "idRegraConjunta"),
-        inverseJoinColumns = @JoinColumn(name = "idRegra")
-    )
+    @JoinTable(name = "regra_conjunta_agrupada", joinColumns = @JoinColumn(name = "idRegraConjunta"), inverseJoinColumns = @JoinColumn(name = "idRegra"))
     private List<Regras> regrasAgrupadas = new ArrayList<>();
 
     public RegrasConjuntas() {
@@ -98,8 +95,10 @@ public class RegrasConjuntas implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         RegrasConjuntas that = (RegrasConjuntas) o;
         return Objects.equals(idRegraConjunta, that.idRegraConjunta);
     }

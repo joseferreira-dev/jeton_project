@@ -1,189 +1,212 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" 
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout}">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}">
+
 <head>
     <title>Usuários - Cremepe</title>
 </head>
+
 <body>
 
-<div layout:fragment="conteudo">
-    
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-users me-2"></i> Gestão de Usuários</h2>
-        <a th:href="@{/usuarios/novo}" class="btn btn-cremepe">
-            <i class="fa-solid fa-plus me-1"></i> Novo Usuário
-        </a>
-    </div>
+    <div layout:fragment="conteudo">
 
-    <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-
-    <form th:action="@{/usuarios}" method="get" class="mb-4 bg-white p-3 rounded shadow-sm border border-light">
-        <input type="hidden" name="sort" th:value="${sort}">
-        <input type="hidden" name="dir" th:value="${dir}">
-        <div class="row g-2 align-items-center">
-            <div class="col-md-5">
-                <div class="input-group">
-                    <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" name="termo" th:value="${termo}" class="form-control" placeholder="Buscar por Nome ou CPF...">
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="input-group">
-                    <label class="input-group-text bg-light" for="situacao">Status</label>
-                    <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
-                        <option value="" th:selected="${situacao == ''}">Todos</option>
-                        <option value="A" th:selected="${situacao == 'A'}">Ativos</option>
-                        <option value="I" th:selected="${situacao == 'I'}">Inativos</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="input-group">
-                    <label class="input-group-text bg-light" for="size">Exibir</label>
-                    <select name="size" id="size" class="form-select" onchange="this.form.submit()">
-                        <option value="10" th:selected="${paginaUsuarios.size == 10}">10 registros</option>
-                        <option value="20" th:selected="${paginaUsuarios.size == 20}">20 registros</option>
-                        <option value="50" th:selected="${paginaUsuarios.size == 50}">50 registros</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-cremepe w-100">Filtrar</button>
-            </div>
-        </div>
-    </form>
-
-    <div class="card shadow-sm mb-4">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
-                        <tr>
-                            <th class="ps-4">
-                                <a th:href="@{/usuarios(page=0, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort='pessoa.nome', dir=${sort == 'pessoa.nome' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-dark text-decoration-none">
-                                    Nome <i th:class="${sort == 'pessoa.nome'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
-                                </a>
-                            </th>
-                            <th>
-                                <a th:href="@{/usuarios(page=0, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort='pessoa.cpf', dir=${sort == 'pessoa.cpf' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-dark text-decoration-none">
-                                    CPF <i th:class="${sort == 'pessoa.cpf'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
-                                </a>
-                            </th>
-                            <th>
-                                <a th:href="@{/usuarios(page=0, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort='pessoa.email', dir=${sort == 'pessoa.email' and dir == 'asc' ? 'desc' : 'asc'})}" class="text-dark text-decoration-none">
-                                    E-mail <i th:class="${sort == 'pessoa.email'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
-                                </a>
-                            </th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center pe-4">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="u : ${paginaUsuarios.content}">
-                            <td class="ps-4 fw-bold text-cremepe" th:text="${u.pessoa.nome}">Nome</td>
-                            <td th:text="${u.pessoa.cpf}">CPF</td>
-                            <td th:text="${u.pessoa.email}">E-mail</td>
-                            <td class="text-center">
-                                <span th:if="${u.inSituacao == 'A'}" class="badge bg-success">Ativo</span>
-                                <span th:if="${u.inSituacao == 'I'}" class="badge bg-secondary">Inativo</span>
-                            </td>
-                            <td class="text-center pe-4">
-                                <a th:href="@{'/usuarios/editar/' + ${u.idUsuarioPessoa}}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </a>
-                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                        th:onclick="prepararExclusao([[${u.idUsuarioPessoa}]], [[${u.pessoa.nome}]], [[${u.pessoa.cpf}]])" title="Excluir">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr th:if="${paginaUsuarios.empty}">
-                            <td colspan="5" class="text-center py-4 text-muted">Nenhum usuário encontrado.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-users me-2"></i> Gestão de Usuários</h2>
+            <a th:href="@{/usuarios/novo}" class="btn btn-cremepe">
+                <i class="fa-solid fa-plus me-1"></i> Novo Usuário
+            </a>
         </div>
 
-        <div class="card-footer bg-white border-top-0 py-3" th:if="${paginaUsuarios.totalPages > 1}"
-             th:with="start=${paginaUsuarios.number > 2 ? paginaUsuarios.number - 2 : 0}, 
-                      end=${paginaUsuarios.number + 2 < paginaUsuarios.totalPages - 1 ? paginaUsuarios.number + 2 : paginaUsuarios.totalPages - 1}">
-            <nav>
-                <ul class="pagination justify-content-center mb-0">
-                    <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'">
-                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Anterior</a>
-                    </li>
-                    
-                    <li class="page-item" th:if="${start > 0}">
-                        <a class="page-link" th:href="@{/usuarios(page=0, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">1</a>
-                    </li>
-                    <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
-
-                    <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}" th:classappend="${paginaUsuarios.number == i} ? 'active'">
-                        <a class="page-link" th:href="@{/usuarios(page=${i}, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}" th:text="${i + 1}">1</a>
-                    </li>
-
-                    <li class="page-item disabled" th:if="${end < paginaUsuarios.totalPages - 2}"><a class="page-link" href="#">...</a></li>
-                    <li class="page-item" th:if="${end < paginaUsuarios.totalPages - 1}">
-                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.totalPages - 1}, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}" th:text="${paginaUsuarios.totalPages}">Última</a>
-                    </li>
-                    
-                    <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
-                        <a class="page-link" th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Próxima</a>
-                    </li>
-                </ul>
-            </nav>
+        <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    </div>
+        <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
 
-    <div class="modal fade" id="modalExclusao" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title"><i class="fa-solid fa-circle-exclamation me-2"></i>Confirmar Exclusão</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <p>Deseja excluir permanentemente este Usuário?</p>
-                    <div class="card bg-light border-start border-danger border-4">
-                        <div class="card-body py-2">
-                            <div class="mb-1"><strong>Nome:</strong> <span id="excluirNome" class="text-dark"></span></div>
-                            <div><strong>CPF:</strong> <span id="excluirCPF" class="text-dark"></span></div>
-                        </div>
+        <form th:action="@{/usuarios}" method="get" class="mb-4 bg-white p-3 rounded shadow-sm border border-light">
+            <input type="hidden" name="sort" th:value="${sort}">
+            <input type="hidden" name="dir" th:value="${dir}">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" name="termo" th:value="${termo}" class="form-control"
+                            placeholder="Buscar por Nome ou CPF...">
                     </div>
-                    <p class="text-danger small mt-3 mb-0">
-                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Esta ação não poderá ser desfeita.
-                    </p>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <a id="btnConfirmarExclusao" href="#" class="btn btn-danger px-4">
-                        <i class="fa-solid fa-trash-can me-1"></i> Excluir Usuário
-                    </a>
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <label class="input-group-text bg-light" for="situacao">Status</label>
+                        <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
+                            <option value="" th:selected="${situacao == ''}">Todos</option>
+                            <option value="A" th:selected="${situacao == 'A'}">Ativos</option>
+                            <option value="I" th:selected="${situacao == 'I'}">Inativos</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="input-group">
+                        <label class="input-group-text bg-light" for="size">Exibir</label>
+                        <select name="size" id="size" class="form-select" onchange="this.form.submit()">
+                            <option value="10" th:selected="${paginaUsuarios.size == 10}">10 registros</option>
+                            <option value="20" th:selected="${paginaUsuarios.size == 20}">20 registros</option>
+                            <option value="50" th:selected="${paginaUsuarios.size == 50}">50 registros</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-cremepe w-100">Filtrar</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
+                            <tr>
+                                <th class="ps-4">
+                                    <a th:href="@{/usuarios(page=0, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort='pessoa.nome', dir=${sort == 'pessoa.nome' and dir == 'asc' ? 'desc' : 'asc'})}"
+                                        class="text-dark text-decoration-none">
+                                        Nome <i
+                                            th:class="${sort == 'pessoa.nome'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a th:href="@{/usuarios(page=0, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort='pessoa.cpf', dir=${sort == 'pessoa.cpf' and dir == 'asc' ? 'desc' : 'asc'})}"
+                                        class="text-dark text-decoration-none">
+                                        CPF <i
+                                            th:class="${sort == 'pessoa.cpf'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a th:href="@{/usuarios(page=0, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort='pessoa.email', dir=${sort == 'pessoa.email' and dir == 'asc' ? 'desc' : 'asc'})}"
+                                        class="text-dark text-decoration-none">
+                                        E-mail <i
+                                            th:class="${sort == 'pessoa.email'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
+                                    </a>
+                                </th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center pe-4">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="u : ${paginaUsuarios.content}">
+                                <td class="ps-4 fw-bold text-cremepe" th:text="${u.pessoa.nome}">Nome</td>
+                                <td th:text="${u.pessoa.cpf}">CPF</td>
+                                <td th:text="${u.pessoa.email}">E-mail</td>
+                                <td class="text-center">
+                                    <span th:if="${u.inSituacao == 'A'}" class="badge bg-success">Ativo</span>
+                                    <span th:if="${u.inSituacao == 'I'}" class="badge bg-secondary">Inativo</span>
+                                </td>
+                                <td class="text-center pe-4">
+                                    <a th:href="@{'/usuarios/editar/' + ${u.idUsuarioPessoa}}"
+                                        class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                        th:onclick="prepararExclusao([[${u.idUsuarioPessoa}]], [[${u.pessoa.nome}]], [[${u.pessoa.cpf}]])"
+                                        title="Excluir">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr th:if="${paginaUsuarios.empty}">
+                                <td colspan="5" class="text-center py-4 text-muted">Nenhum usuário encontrado.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-footer bg-white border-top-0 py-3" th:if="${paginaUsuarios.totalPages > 1}"
+                th:with="start=${paginaUsuarios.number > 2 ? paginaUsuarios.number - 2 : 0}, 
+                      end=${paginaUsuarios.number + 2 < paginaUsuarios.totalPages - 1 ? paginaUsuarios.number + 2 : paginaUsuarios.totalPages - 1}">
+                <nav>
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item" th:classappend="${paginaUsuarios.first} ? 'disabled'">
+                            <a class="page-link"
+                                th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Anterior</a>
+                        </li>
+
+                        <li class="page-item" th:if="${start > 0}">
+                            <a class="page-link"
+                                th:href="@{/usuarios(page=0, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">1</a>
+                        </li>
+                        <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
+
+                        <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
+                            th:classappend="${paginaUsuarios.number == i} ? 'active'">
+                            <a class="page-link"
+                                th:href="@{/usuarios(page=${i}, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}"
+                                th:text="${i + 1}">1</a>
+                        </li>
+
+                        <li class="page-item disabled" th:if="${end < paginaUsuarios.totalPages - 2}"><a
+                                class="page-link" href="#">...</a></li>
+                        <li class="page-item" th:if="${end < paginaUsuarios.totalPages - 1}">
+                            <a class="page-link"
+                                th:href="@{/usuarios(page=${paginaUsuarios.totalPages - 1}, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}"
+                                th:text="${paginaUsuarios.totalPages}">Última</a>
+                        </li>
+
+                        <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
+                            <a class="page-link"
+                                th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Próxima</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modalExclusao" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title"><i class="fa-solid fa-circle-exclamation me-2"></i>Confirmar Exclusão
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p>Deseja excluir permanentemente este Usuário?</p>
+                        <div class="card bg-light border-start border-danger border-4">
+                            <div class="card-body py-2">
+                                <div class="mb-1"><strong>Nome:</strong> <span id="excluirNome"
+                                        class="text-dark"></span></div>
+                                <div><strong>CPF:</strong> <span id="excluirCPF" class="text-dark"></span></div>
+                            </div>
+                        </div>
+                        <p class="text-danger small mt-3 mb-0">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Esta ação não poderá ser desfeita.
+                        </p>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <a id="btnConfirmarExclusao" href="#" class="btn btn-danger px-4">
+                            <i class="fa-solid fa-trash-can me-1"></i> Excluir Usuário
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script th:inline="javascript">
-        function prepararExclusao(id, nome, cpf) {
-            document.getElementById('excluirNome').innerText = nome;
-            document.getElementById('excluirCPF').innerText = cpf;
-            var urlExclusao = /*[[@{/usuarios/excluir/}]]*/ '/usuarios/excluir/';
-            document.getElementById('btnConfirmarExclusao').setAttribute('href', urlExclusao + id);
-            var modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
-            modal.show();
-        }
-    </script>
-</div>
+        <script th:inline="javascript">
+            function prepararExclusao(id, nome, cpf) {
+                document.getElementById('excluirNome').innerText = nome;
+                document.getElementById('excluirCPF').innerText = cpf;
+                var urlExclusao = /*[[@{/usuarios/excluir/}]]*/ '/usuarios/excluir/';
+                document.getElementById('btnConfirmarExclusao').setAttribute('href', urlExclusao + id);
+                var modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
+                modal.show();
+            }
+        </script>
+    </div>
 
 </body>
+
 </html>

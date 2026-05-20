@@ -22,13 +22,15 @@ public interface PortariaRepository extends JpaRepository<Portaria, Integer> {
     List<Portaria> findByInRevogado(String inRevogado);
 
     @Query("SELECT p FROM Portaria p WHERE " +
-           "(:termo IS NULL OR :termo = '' OR CAST(p.numero AS string) LIKE CONCAT('%', :termo, '%') OR CAST(p.ano AS string) LIKE CONCAT('%', :termo, '%')) AND " +
-           "(:situacao IS NULL OR :situacao = '' OR p.inRevogado = :situacao)")
-    Page<Portaria> pesquisarPaginado(@Param("termo") String termo, @Param("situacao") String situacao, Pageable pageable);
+            "(:termo IS NULL OR :termo = '' OR CAST(p.numero AS string) LIKE CONCAT('%', :termo, '%') OR CAST(p.ano AS string) LIKE CONCAT('%', :termo, '%')) AND "
+            +
+            "(:situacao IS NULL OR :situacao = '' OR p.inRevogado = :situacao)")
+    Page<Portaria> pesquisarPaginado(@Param("termo") String termo, @Param("situacao") String situacao,
+            Pageable pageable);
 
     @Query("SELECT p FROM Portaria p WHERE p.dtInicioVigencia <= :dataBase " +
-           "AND (p.dtFimVigencia IS NULL OR p.dtFimVigencia >= :dataBase) " +
-           "AND p.inRevogado <> 'S' " +
-           "ORDER BY p.dtInicioVigencia DESC, p.idPortaria DESC")
+            "AND (p.dtFimVigencia IS NULL OR p.dtFimVigencia >= :dataBase) " +
+            "AND p.inRevogado <> 'S' " +
+            "ORDER BY p.dtInicioVigencia DESC, p.idPortaria DESC")
     List<Portaria> findPortariasVigentesNaData(@Param("dataBase") LocalDate dataBase);
 }

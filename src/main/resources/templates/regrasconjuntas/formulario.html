@@ -1,65 +1,78 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
-<head><title>Formulário de Regras Conjuntas - Jeton</title></head>
-<body>
-<div layout:fragment="conteudo">
-    <div class="mb-4">
-        <h2 class="h4 text-cremepe fw-bold">
-            <i class="fa-solid fa-link me-2"></i>
-            <span th:text="${regrasConjuntas.idRegraConjunta == null ? 'Novo Agrupamento de Regras' : 'Editar Agrupamento'}"></span>
-        </h2>
-    </div>
 
-    <form th:action="@{/regras-conjuntas/salvar}" th:object="${regrasConjuntas}" method="post">
-        <input type="hidden" th:field="*{idRegraConjunta}">
-        
-        <div class="row g-4">
-            <div class="col-md-5">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-light fw-bold">Parâmetros do Limite Conjunto</div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Nome do Agrupamento</label>
-                            <input type="text" class="form-control" th:field="*{nomeRegra}" placeholder="Ex: Teto Vistorias + CTs" required>
+<head>
+    <title>Formulário de Regras Conjuntas - Jeton</title>
+</head>
+
+<body>
+    <div layout:fragment="conteudo">
+        <div class="mb-4">
+            <h2 class="h4 text-cremepe fw-bold">
+                <i class="fa-solid fa-link me-2"></i>
+                <span
+                    th:text="${regrasConjuntas.idRegraConjunta == null ? 'Novo Agrupamento de Regras' : 'Editar Agrupamento'}"></span>
+            </h2>
+        </div>
+
+        <form th:action="@{/regras-conjuntas/salvar}" th:object="${regrasConjuntas}" method="post">
+            <input type="hidden" th:field="*{idRegraConjunta}">
+
+            <div class="row g-4">
+                <div class="col-md-5">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold">Parâmetros do Limite Conjunto</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Nome do Agrupamento</label>
+                                <input type="text" class="form-control" th:field="*{nomeRegra}"
+                                    placeholder="Ex: Teto Vistorias + CTs" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-danger">Teto Máximo (Pontos Limite)</label>
+                                <input type="number" step="0.5" class="form-control" th:field="*{pontosLimite}" required
+                                    min="0.5" placeholder="Ex: 5.0">
+                                <small class="text-muted">As atividades selecionadas não poderão ultrapassar este
+                                    somatório.</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Este limite aplica-se por:</label>
+                                <select class="form-select" th:field="*{inTipoLimite}" required>
+                                    <option value="D">Diário (Por Dia)</option>
+                                    <option value="T">Por Turno (Manhã/Tarde/Noite)</option>
+                                    <option value="M">Mensal (Por Mês)</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-danger">Teto Máximo (Pontos Limite)</label>
-                            <input type="number" step="0.5" class="form-control" th:field="*{pontosLimite}" required min="0.5" placeholder="Ex: 5.0">
-                            <small class="text-muted">As atividades selecionadas não poderão ultrapassar este somatório.</small>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Este limite aplica-se por:</label>
-                            <select class="form-select" th:field="*{inTipoLimite}" required>
-                                <option value="D">Diário (Por Dia)</option>
-                                <option value="T">Por Turno (Manhã/Tarde/Noite)</option>
-                                <option value="M">Mensal (Por Mês)</option>
+                    </div>
+                </div>
+
+                <div class="col-md-7">
+                    <div class="card shadow-sm h-100 border-primary">
+                        <div class="card-header bg-cremepe text-white fw-bold"><i
+                                class="fa-solid fa-list-check me-2"></i>Atividades Vinculadas a este Teto</div>
+                        <div class="card-body d-flex flex-column">
+                            <label class="form-label fw-bold text-primary mb-2">Selecione as Regras (Segure CTRL ou CMD
+                                para selecionar várias):</label>
+                            <select multiple class="form-select flex-grow-1" style="min-height: 250px;"
+                                th:field="*{regrasAgrupadas}">
+                                <option th:each="r : ${listaRegras}" th:value="${r.idRegra}"
+                                    th:text="${r.nomeRegra + ' (' + r.pontos + ' pt) - ' + (r.inRevogado == 'S' ? '[REVOGADA]' : 'Ativa')}">
+                                </option>
                             </select>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-7">
-                <div class="card shadow-sm h-100 border-primary">
-                    <div class="card-header bg-cremepe text-white fw-bold"><i class="fa-solid fa-list-check me-2"></i>Atividades Vinculadas a este Teto</div>
-                    <div class="card-body d-flex flex-column">
-                        <label class="form-label fw-bold text-primary mb-2">Selecione as Regras (Segure CTRL ou CMD para selecionar várias):</label>
-                        <select multiple class="form-select flex-grow-1" style="min-height: 250px;" th:field="*{regrasAgrupadas}">
-                            <option th:each="r : ${listaRegras}" 
-                                    th:value="${r.idRegra}" 
-                                    th:text="${r.nomeRegra + ' (' + r.pontos + ' pt) - ' + (r.inRevogado == 'S' ? '[REVOGADA]' : 'Ativa')}">
-                            </option>
-                        </select>
-                    </div>
-                </div>
+            <div class="d-flex justify-content-end mt-4">
+                <a th:href="@{/regras-conjuntas}" class="btn btn-outline-secondary me-2"><i
+                        class="fa-solid fa-xmark me-1"></i> Cancelar</a>
+                <button type="submit" class="btn btn-cremepe"><i class="fa-solid fa-floppy-disk me-1"></i> Guardar
+                    Agrupamento</button>
             </div>
-        </div>
-
-        <div class="d-flex justify-content-end mt-4">
-            <a th:href="@{/regras-conjuntas}" class="btn btn-outline-secondary me-2"><i class="fa-solid fa-xmark me-1"></i> Cancelar</a>
-            <button type="submit" class="btn btn-cremepe"><i class="fa-solid fa-floppy-disk me-1"></i> Guardar Agrupamento</button>
-        </div>
-    </form>
-</div>
+        </form>
+    </div>
 </body>
+
 </html>

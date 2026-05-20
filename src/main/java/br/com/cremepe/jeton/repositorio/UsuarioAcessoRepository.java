@@ -10,7 +10,8 @@ import java.util.List;
 @Repository
 public interface UsuarioAcessoRepository extends JpaRepository<UsuarioAcesso, UsuarioAcessoId> {
 
-    // Método bónus para o Spring Data trazer as permissões de um utilizador específico automaticamente
+    // Método bónus para o Spring Data trazer as permissões de um utilizador
+    // específico automaticamente
     List<UsuarioAcesso> findByIdIdUsuarioPessoa(Integer idUsuarioPessoa);
 
 }

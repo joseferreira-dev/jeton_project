@@ -37,10 +37,13 @@ public class RegrasConjuntasService {
     }
 
     @Transactional(readOnly = true)
-    public Page<RegrasConjuntas> listarComPaginacaoEPesquisa(String termo, String tipoLimite, int page, int size, String sortField, String sortDir) {
-        org.springframework.data.domain.Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-            org.springframework.data.domain.Sort.by(sortField).descending() : org.springframework.data.domain.Sort.by(sortField).ascending();
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sort);
+    public Page<RegrasConjuntas> listarComPaginacaoEPesquisa(String termo, String tipoLimite, int page, int size,
+            String sortField, String sortDir) {
+        org.springframework.data.domain.Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? org.springframework.data.domain.Sort.by(sortField).descending()
+                : org.springframework.data.domain.Sort.by(sortField).ascending();
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
+                sort);
         return repository.pesquisarPaginado(termo, tipoLimite, pageable);
     }
 }

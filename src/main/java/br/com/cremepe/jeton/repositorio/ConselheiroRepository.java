@@ -18,12 +18,13 @@ public interface ConselheiroRepository extends JpaRepository<Conselheiro, Intege
     Optional<Conselheiro> findByCrm(Integer crm);
 
     @Query("SELECT c FROM Conselheiro c WHERE " +
-           "(LOWER(c.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR CAST(c.crm AS string) LIKE CONCAT('%', :termo, '%')) " +
-           "AND (:situacao IS NULL OR :situacao = '' OR c.inSituacao = :situacao)")
-    Page<Conselheiro> pesquisarPaginado(@Param("termo") String termo, 
-                                        @Param("situacao") String situacao, 
-                                        Pageable pageable);
-    
+            "(LOWER(c.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR CAST(c.crm AS string) LIKE CONCAT('%', :termo, '%')) "
+            +
+            "AND (:situacao IS NULL OR :situacao = '' OR c.inSituacao = :situacao)")
+    Page<Conselheiro> pesquisarPaginado(@Param("termo") String termo,
+            @Param("situacao") String situacao,
+            Pageable pageable);
+
     @Modifying
     @Query(value = "DELETE FROM usuario WHERE idUsuarioPessoa = :id", nativeQuery = true)
     void deletarUsuarioNativo(@Param("id") Integer id);

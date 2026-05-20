@@ -27,7 +27,8 @@ public class UsuarioAcesso implements Serializable {
     @JoinColumn(name = "idNivel")
     private NivelAcesso nivelAcesso;
 
-    public UsuarioAcesso() {}
+    public UsuarioAcesso() {
+    }
 
     public UsuarioAcessoId getId() {
         return id;

@@ -14,7 +14,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/resolucoes")
 public class ResolucaoController {
 
-    @Autowired private ResolucaoService resolucaoService;
+    @Autowired
+    private ResolucaoService resolucaoService;
 
     @GetMapping
     public String listar(
@@ -25,10 +26,12 @@ public class ResolucaoController {
             @RequestParam(value = "sort", required = false, defaultValue = "ano") String sort,
             @RequestParam(value = "dir", required = false, defaultValue = "desc") String dir,
             Model model, HttpSession session) {
-            
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
 
-        Page<Resolucao> paginaResolucoes = resolucaoService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort, dir);
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
+
+        Page<Resolucao> paginaResolucoes = resolucaoService.listarComPaginacaoEPesquisa(termo, situacao, page, size,
+                sort, dir);
 
         model.addAttribute("paginaResolucoes", paginaResolucoes);
         model.addAttribute("termo", termo);
@@ -42,14 +45,16 @@ public class ResolucaoController {
 
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("resolucao", new Resolucao());
         return "resolucao/formulario";
     }
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("resolucao", resolucaoService.buscarPorId(id).orElse(new Resolucao()));
         return "resolucao/formulario";
     }

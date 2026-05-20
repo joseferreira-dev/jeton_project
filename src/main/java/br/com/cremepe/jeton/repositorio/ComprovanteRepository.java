@@ -13,7 +13,8 @@ public interface ComprovanteRepository extends JpaRepository<Comprovante, Intege
     // Busca um comprovante pelo nome físico do ficheiro
     Optional<Comprovante> findByNomeArquivo(String nomeArquivo);
 
-    // Lista todos os comprovantes de um determinado mês e ano (ótimo para filtros de relatório)
+    // Lista todos os comprovantes de um determinado mês e ano (ótimo para filtros
+    // de relatório)
     List<Comprovante> findByMesAndAno(Integer mes, Integer ano);
 
     // Navegação de relacionamento: Busca comprovantes pelo ID do Tipo de Anexo

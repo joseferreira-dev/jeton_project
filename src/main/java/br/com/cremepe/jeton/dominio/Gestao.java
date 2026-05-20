@@ -34,22 +34,44 @@ public class Gestao implements Serializable {
     public Gestao() {
     }
 
-    public Integer getIdGestao() { return idGestao; }
-    public void setIdGestao(Integer idGestao) { this.idGestao = idGestao; }
+    public Integer getIdGestao() {
+        return idGestao;
+    }
 
-    public String getNomeGestao() { return nomeGestao; }
-    public void setNomeGestao(String nomeGestao) { this.nomeGestao = nomeGestao; }
+    public void setIdGestao(Integer idGestao) {
+        this.idGestao = idGestao;
+    }
 
-    public LocalDate getDtInicio() { return dtInicio; }
-    public void setDtInicio(LocalDate dtInicio) { this.dtInicio = dtInicio; }
+    public String getNomeGestao() {
+        return nomeGestao;
+    }
 
-    public LocalDate getDtFim() { return dtFim; }
-    public void setDtFim(LocalDate dtFim) { this.dtFim = dtFim; }
+    public void setNomeGestao(String nomeGestao) {
+        this.nomeGestao = nomeGestao;
+    }
+
+    public LocalDate getDtInicio() {
+        return dtInicio;
+    }
+
+    public void setDtInicio(LocalDate dtInicio) {
+        this.dtInicio = dtInicio;
+    }
+
+    public LocalDate getDtFim() {
+        return dtFim;
+    }
+
+    public void setDtFim(LocalDate dtFim) {
+        this.dtFim = dtFim;
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Gestao gestao = (Gestao) o;
         return Objects.equals(idGestao, gestao.idGestao);
     }

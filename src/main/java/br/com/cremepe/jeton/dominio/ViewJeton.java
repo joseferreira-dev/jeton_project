@@ -49,21 +49,54 @@ public class ViewJeton implements Serializable {
     @Column(name = "nomeGestao")
     private String nomeGestao;
 
-    public ViewJeton() {}
+    public ViewJeton() {
+    }
 
     // ==========================================
     // APENAS GETTERS (Entidade Imutável)
     // ==========================================
 
-    public Integer getIdJeton() { return idJeton; }
-    public String getNome() { return nome; }
-    public String getCpf() { return cpf; }
-    public Integer getMes() { return mes; }
-    public String getMesExtenso() { return mesExtenso; }
-    public Integer getAno() { return ano; }
-    public Integer getTotalJeton() { return totalJeton; }
-    public BigDecimal getValor() { return valor; }
-    public String getValorFormatado() { return valorFormatado; }
-    public String getInSituacaoDescricao() { return inSituacaoDescricao; }
-    public String getNomeGestao() { return nomeGestao; }
+    public Integer getIdJeton() {
+        return idJeton;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public String getCpf() {
+        return cpf;
+    }
+
+    public Integer getMes() {
+        return mes;
+    }
+
+    public String getMesExtenso() {
+        return mesExtenso;
+    }
+
+    public Integer getAno() {
+        return ano;
+    }
+
+    public Integer getTotalJeton() {
+        return totalJeton;
+    }
+
+    public BigDecimal getValor() {
+        return valor;
+    }
+
+    public String getValorFormatado() {
+        return valorFormatado;
+    }
+
+    public String getInSituacaoDescricao() {
+        return inSituacaoDescricao;
+    }
+
+    public String getNomeGestao() {
+        return nomeGestao;
+    }
 }

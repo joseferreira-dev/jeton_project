@@ -87,8 +87,10 @@ public class Pessoa implements Serializable {
     // HashCode e Equals baseados no ID (Recomendação forte para Entidades JPA)
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Pessoa pessoa = (Pessoa) o;
         return Objects.equals(idPessoa, pessoa.idPessoa);
     }

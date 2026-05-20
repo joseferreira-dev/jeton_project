@@ -15,7 +15,8 @@ import jakarta.persistence.Transient;
 
 /**
  * Entidade JPA que representa a tabela 'usuario' no banco de dados.
- * Possui um relacionamento 1:1 com a entidade Pessoa, compartilhando a mesma PK.
+ * Possui um relacionamento 1:1 com a entidade Pessoa, compartilhando a mesma
+ * PK.
  */
 @Entity
 @Table(name = "usuario")
@@ -28,7 +29,8 @@ public class Usuario implements Serializable {
     @Column(name = "idUsuarioPessoa")
     private Integer idUsuarioPessoa;
 
-    // O @MapsId avisa ao Hibernate: "Use o ID desta entidade Pessoa como o meu próprio ID"
+    // O @MapsId avisa ao Hibernate: "Use o ID desta entidade Pessoa como o meu
+    // próprio ID"
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @MapsId
     @JoinColumn(name = "idUsuarioPessoa")
@@ -85,15 +87,28 @@ public class Usuario implements Serializable {
         this.inSituacao = inSituacao;
     }
 
-    public boolean iseConselheiro() { return eConselheiro; }
-    public void seteConselheiro(boolean eConselheiro) { this.eConselheiro = eConselheiro; }
-    public Integer getCrm() { return crm; }
-    public void setCrm(Integer crm) { this.crm = crm; }
+    public boolean iseConselheiro() {
+        return eConselheiro;
+    }
+
+    public void seteConselheiro(boolean eConselheiro) {
+        this.eConselheiro = eConselheiro;
+    }
+
+    public Integer getCrm() {
+        return crm;
+    }
+
+    public void setCrm(Integer crm) {
+        this.crm = crm;
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Usuario usuario = (Usuario) o;
         return Objects.equals(idUsuarioPessoa, usuario.idUsuarioPessoa);
     }

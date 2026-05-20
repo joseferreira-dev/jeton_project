@@ -13,9 +13,10 @@ public interface JetonRepository extends JpaRepository<Jeton, Integer> {
     // Encontra o pagamento específico de um Conselheiro num mês/ano para validação
     Optional<Jeton> findByConselheiroIdPessoaAndMesAndAno(Integer idPessoa, Integer mes, Integer ano);
 
-    // Lista o histórico financeiro de um Conselheiro num determinado ano, ordenado do mais recente para o mais antigo
+    // Lista o histórico financeiro de um Conselheiro num determinado ano, ordenado
+    // do mais recente para o mais antigo
     List<Jeton> findByConselheiroIdPessoaAndAnoOrderByMesDesc(Integer idPessoa, Integer ano);
-    
+
     // Lista todos os Jetons processados numa determinada gestão
     List<Jeton> findByGestaoIdGestao(Integer idGestao);
 }

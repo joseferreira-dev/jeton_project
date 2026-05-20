@@ -15,8 +15,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/regras-conjuntas")
 public class RegrasConjuntasController {
 
-    @Autowired private RegrasConjuntasService regrasConjuntasService;
-    @Autowired private RegrasService regrasService;
+    @Autowired
+    private RegrasConjuntasService regrasConjuntasService;
+    @Autowired
+    private RegrasService regrasService;
 
     @GetMapping
     public String listar(
@@ -27,10 +29,12 @@ public class RegrasConjuntasController {
             @RequestParam(value = "sort", required = false, defaultValue = "nomeRegra") String sort,
             @RequestParam(value = "dir", required = false, defaultValue = "asc") String dir,
             Model model, HttpSession session) {
-            
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
 
-        Page<RegrasConjuntas> paginaRegrasConjuntas = regrasConjuntasService.listarComPaginacaoEPesquisa(termo, tipoLimite, page, size, sort, dir);
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
+
+        Page<RegrasConjuntas> paginaRegrasConjuntas = regrasConjuntasService.listarComPaginacaoEPesquisa(termo,
+                tipoLimite, page, size, sort, dir);
 
         model.addAttribute("paginaRegrasConjuntas", paginaRegrasConjuntas);
         model.addAttribute("termo", termo);
@@ -44,7 +48,8 @@ public class RegrasConjuntasController {
 
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("regrasConjuntas", new RegrasConjuntas());
         model.addAttribute("listaRegras", regrasService.listarTodos());
         return "regrasconjuntas/formulario";
@@ -52,14 +57,16 @@ public class RegrasConjuntasController {
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("regrasConjuntas", regrasConjuntasService.buscarPorId(id).orElse(new RegrasConjuntas()));
         model.addAttribute("listaRegras", regrasService.listarTodos());
         return "regrasconjuntas/formulario";
     }
 
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("regrasConjuntas") RegrasConjuntas regrasConjuntas, RedirectAttributes redirectAttributes) {
+    public String salvar(@ModelAttribute("regrasConjuntas") RegrasConjuntas regrasConjuntas,
+            RedirectAttributes redirectAttributes) {
         try {
             regrasConjuntasService.salvar(regrasConjuntas);
             redirectAttributes.addFlashAttribute("sucesso", "Regras Conjuntas salvas com sucesso!");

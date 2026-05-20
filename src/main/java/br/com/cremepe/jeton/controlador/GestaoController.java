@@ -32,7 +32,8 @@ public class GestaoController {
             @RequestParam(value = "dir", required = false, defaultValue = "desc") String dir,
             Model model, HttpSession session) {
 
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
 
         // Chama sem a variável situacao
         Page<Gestao> pagina = gestaoService.listarComPaginacaoEPesquisa(termo, page, size, sort, dir);
@@ -42,20 +43,22 @@ public class GestaoController {
         model.addAttribute("size", size);
         model.addAttribute("sort", sort);
         model.addAttribute("dir", dir);
-        
+
         return "gestao/lista";
     }
 
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("gestao", new Gestao());
         return "gestao/formulario";
     }
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         Gestao gestao = gestaoService.buscarPorId(id)
                 .orElseThrow(() -> new IllegalArgumentException("Gestão inválida:" + id));
         model.addAttribute("gestao", gestao);
@@ -79,7 +82,8 @@ public class GestaoController {
             gestaoService.excluir(id);
             ra.addFlashAttribute("sucesso", "Gestão removida com sucesso!");
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Não foi possível remover. Verifique se existem conselheiros ou atividades vinculadas a esta gestão.");
+            ra.addFlashAttribute("erro",
+                    "Não foi possível remover. Verifique se existem conselheiros ou atividades vinculadas a esta gestão.");
         }
         return "redirect:/gestoes";
     }

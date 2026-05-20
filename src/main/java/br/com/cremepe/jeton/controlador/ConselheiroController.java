@@ -34,9 +34,11 @@ public class ConselheiroController {
             @RequestParam(value = "dir", required = false, defaultValue = "asc") String dir,
             Model model, HttpSession session) {
 
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
 
-        Page<Conselheiro> pagina = conselheiroService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort, dir);
+        Page<Conselheiro> pagina = conselheiroService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort,
+                dir);
 
         model.addAttribute("paginaConselheiros", pagina);
         model.addAttribute("termo", termo);
@@ -49,7 +51,8 @@ public class ConselheiroController {
 
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         Conselheiro conselheiro = new Conselheiro();
         conselheiro.setPessoa(new Pessoa());
         model.addAttribute("conselheiro", conselheiro);
@@ -58,11 +61,12 @@ public class ConselheiroController {
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
-        
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
+
         Conselheiro conselheiro = conselheiroService.buscarPorId(id)
                 .orElseThrow(() -> new IllegalArgumentException("Conselheiro inválido:" + id));
-        
+
         model.addAttribute("conselheiro", conselheiro);
         return "conselheiro/formulario";
     }
@@ -84,7 +88,8 @@ public class ConselheiroController {
             conselheiroService.excluir(id);
             ra.addFlashAttribute("sucesso", "Conselheiro removido com sucesso!");
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Não foi possível remover. Este conselheiro possui registros ou atividades vinculadas.");
+            ra.addFlashAttribute("erro",
+                    "Não foi possível remover. Este conselheiro possui registros ou atividades vinculadas.");
         }
         return "redirect:/conselheiros";
     }

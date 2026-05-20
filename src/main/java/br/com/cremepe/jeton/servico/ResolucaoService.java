@@ -17,8 +17,10 @@ import java.util.Optional;
 @Service
 public class ResolucaoService {
 
-    @Autowired private ResolucaoRepository repository;
-    @Autowired private RegrasRepository regrasRepository;
+    @Autowired
+    private ResolucaoRepository repository;
+    @Autowired
+    private RegrasRepository regrasRepository;
 
     @Transactional(readOnly = true)
     public List<Resolucao> listarTodos() {
@@ -59,13 +61,15 @@ public class ResolucaoService {
     @Transactional
     public void excluirFisicamente(Integer id) {
         if (regrasRepository.countByResolucaoIdResolucao(id) > 0) {
-            throw new RuntimeException("Não é possível excluir: existem regras vinculadas a esta Resolução. Use a opção 'Revogar' em vez disso.");
+            throw new RuntimeException(
+                    "Não é possível excluir: existem regras vinculadas a esta Resolução. Use a opção 'Revogar' em vez disso.");
         }
         repository.deleteById(id);
     }
 
     @Transactional(readOnly = true)
-    public Page<Resolucao> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size, String sortField, String sortDir) {
+    public Page<Resolucao> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size,
+            String sortField, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
         return repository.pesquisarPaginado(termo, situacao, pageable);

@@ -25,13 +25,16 @@ import br.com.cremepe.jeton.util.CpfValidador;
 @Service
 public class ConselheiroService {
 
-    @Autowired private ConselheiroRepository conselheiroRepository;
-    @Autowired private PessoaRepository pessoaRepository;
-    @Autowired private UsuarioRepository usuarioRepository;
+    @Autowired
+    private ConselheiroRepository conselheiroRepository;
+    @Autowired
+    private PessoaRepository pessoaRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Transactional
     public Conselheiro salvar(Conselheiro conselheiro) {
-        
+
         String cpfLimpo = "";
         if (conselheiro.getPessoa() != null && conselheiro.getPessoa().getCpf() != null) {
             cpfLimpo = conselheiro.getPessoa().getCpf().replaceAll("[^0-9]", "");
@@ -88,7 +91,8 @@ public class ConselheiroService {
             MessageDigest algoritmo = MessageDigest.getInstance("SHA-256");
             byte[] messageDigest = algoritmo.digest(senha.getBytes(StandardCharsets.UTF_8));
             StringBuilder stringHexa = new StringBuilder();
-            for (byte b : messageDigest) stringHexa.append(String.format("%02X", 0xFF & b));
+            for (byte b : messageDigest)
+                stringHexa.append(String.format("%02X", 0xFF & b));
             return stringHexa.toString();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Erro na criptografia", e);
@@ -97,17 +101,22 @@ public class ConselheiroService {
 
     // ========== MÉTODOS DE LEITURA (Mantidos iguais) ==========
     @Transactional(readOnly = true)
-    public Page<Conselheiro> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size, String sortField, String sortDir) {
+    public Page<Conselheiro> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size,
+            String sortField, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
         return conselheiroRepository.pesquisarPaginado(termo, situacao, pageable);
     }
 
     @Transactional(readOnly = true)
-    public List<Conselheiro> listarTodos() { return conselheiroRepository.findAll(); }
+    public List<Conselheiro> listarTodos() {
+        return conselheiroRepository.findAll();
+    }
 
     @Transactional(readOnly = true)
-    public Optional<Conselheiro> buscarPorId(Integer id) { return conselheiroRepository.findById(id); }
+    public Optional<Conselheiro> buscarPorId(Integer id) {
+        return conselheiroRepository.findById(id);
+    }
 
     @Transactional
     public void excluir(Integer id) {

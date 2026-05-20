@@ -15,21 +15,26 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/pontos-remanescentes")
 public class PontosRemanescentesController {
 
-    @Autowired private PontosRemanescentesService pontosService; 
-    
-    @Autowired private ConselheiroService conselheiroService;
-    @Autowired private GestaoService gestaoService;
+    @Autowired
+    private PontosRemanescentesService pontosService;
+
+    @Autowired
+    private ConselheiroService conselheiroService;
+    @Autowired
+    private GestaoService gestaoService;
 
     @GetMapping
     public String listar(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("lista", pontosService.listarTodos());
         return "pontosremanescentes/lista";
     }
 
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("pontos", new PontosSaldo());
         carregarListasDeApoio(model);
         return "pontosremanescentes/formulario";
@@ -37,7 +42,8 @@ public class PontosRemanescentesController {
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         model.addAttribute("pontos", pontosService.buscarPorId(id).orElse(new PontosSaldo()));
         carregarListasDeApoio(model);
         return "pontosremanescentes/formulario";

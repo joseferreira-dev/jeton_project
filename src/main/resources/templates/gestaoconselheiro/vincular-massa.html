@@ -1,57 +1,64 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
-<head><title>Composição da Gestão - Jeton</title></head>
-<body>
-<div layout:fragment="conteudo">
-    <div class="mb-4">
-        <h2 class="h4 text-cremepe fw-bold">
-            <i class="fa-solid fa-users-gear me-2"></i>
-            Composição: <span th:text="${gestao.nomeGestao}"></span>
-        </h2>
-        <p class="text-muted">Marque os médicos que fazem parte desta gestão.</p>
-    </div>
 
-    <div class="card shadow-sm">
-        <form th:action="@{/gestao-conselheiros/vincular/salvar}" method="post">
-            <input type="hidden" name="idGestao" th:value="${gestao.idGestao}">
-            
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width: 40px;">Sel.</th>
-                                <th>Médico Conselheiro</th>
-                                <th>CRM-PE</th>
-                                <th>CPF</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr th:each="c : ${conselheiros}">
-                                <td>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="conselheirosIds" 
-                                                th:value="${c.idPessoa}" 
+<head>
+    <title>Composição da Gestão - Jeton</title>
+</head>
+
+<body>
+    <div layout:fragment="conteudo">
+        <div class="mb-4">
+            <h2 class="h4 text-cremepe fw-bold">
+                <i class="fa-solid fa-users-gear me-2"></i>
+                Composição: <span th:text="${gestao.nomeGestao}"></span>
+            </h2>
+            <p class="text-muted">Marque os médicos que fazem parte desta gestão.</p>
+        </div>
+
+        <div class="card shadow-sm">
+            <form th:action="@{/gestao-conselheiros/vincular/salvar}" method="post">
+                <input type="hidden" name="idGestao" th:value="${gestao.idGestao}">
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 40px;">Sel.</th>
+                                    <th>Médico Conselheiro</th>
+                                    <th>CRM-PE</th>
+                                    <th>CPF</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="c : ${conselheiros}">
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="conselheirosIds"
+                                                th:value="${c.idPessoa}"
                                                 th:checked="${#lists.contains(selecionadosIds, c.idPessoa)}"
                                                 th:disabled="${#lists.contains(idsComAtividades, c.idPessoa)}">
-                                        <i th:if="${#lists.contains(idsComAtividades, c.idPessoa)}" class="fa-solid fa-lock text-muted small" title="Possui atividades e não pode ser removido"></i>
-                                    </div>
-                                </td>
-                                <td th:text="${c.pessoa.nome}" class="fw-bold">Nome</td>
-                                <td th:text="${c.crm}">0000</td>
-                                <td th:text="${c.pessoa.cpf}">000.000</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                            <i th:if="${#lists.contains(idsComAtividades, c.idPessoa)}"
+                                                class="fa-solid fa-lock text-muted small"
+                                                title="Possui atividades e não pode ser removido"></i>
+                                        </div>
+                                    </td>
+                                    <td th:text="${c.pessoa.nome}" class="fw-bold">Nome</td>
+                                    <td th:text="${c.crm}">0000</td>
+                                    <td th:text="${c.pessoa.cpf}">000.000</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="card-footer bg-light d-flex justify-content-end py-3">
-                <a th:href="@{/gestoes}" class="btn btn-outline-secondary me-2">Voltar</a>
-                <button type="submit" class="btn btn-cremepe px-4">Salvar Composição</button>
-            </div>
-        </form>
+
+                <div class="card-footer bg-light d-flex justify-content-end py-3">
+                    <a th:href="@{/gestoes}" class="btn btn-outline-secondary me-2">Voltar</a>
+                    <button type="submit" class="btn btn-cremepe px-4">Salvar Composição</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 </body>
+
 </html>

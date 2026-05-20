@@ -20,16 +20,21 @@ import java.time.LocalDate;
 @RequestMapping("/relatorios")
 public class RelatorioController {
 
-    @Autowired private RelatorioService relatorioService;
-    @Autowired private ConselheiroService conselheiroService;
-    @Autowired private GestaoService gestaoService;
-    @Autowired private RegrasService regrasService; // NOVO SERVIÇO INJETADO
+    @Autowired
+    private RelatorioService relatorioService;
+    @Autowired
+    private ConselheiroService conselheiroService;
+    @Autowired
+    private GestaoService gestaoService;
+    @Autowired
+    private RegrasService regrasService; // NOVO SERVIÇO INJETADO
 
     @GetMapping("/atividades")
     public String acessarTelaRelatorio(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
         carregarFiltros(model);
-        return "relatorio/atividade_agrupada"; 
+        return "relatorio/atividade_agrupada";
     }
 
     @GetMapping("/atividades/gerar")
@@ -40,24 +45,26 @@ public class RelatorioController {
             @RequestParam(value = "dataInicio", required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate dataInicio,
             @RequestParam(value = "dataFim", required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate dataFim,
             Model model, HttpSession session) {
-            
-        if (session.getAttribute("usuarioLogado") == null) return "redirect:/login";
+
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
 
         // Chama a nova lógica complexa
-        var dadosRelatorio = relatorioService.gerarRelatorioAgrupado(idGestao, idConselheiro, idRegra, dataInicio, dataFim);
+        var dadosRelatorio = relatorioService.gerarRelatorioAgrupado(idGestao, idConselheiro, idRegra, dataInicio,
+                dataFim);
         model.addAttribute("listaRelatorio", dadosRelatorio);
-        
+
         if (!dadosRelatorio.isEmpty()) {
             model.addAttribute("colunasRegras", dadosRelatorio.get(0).getRegras().keySet());
         }
-        
+
         carregarFiltros(model);
-        return "relatorio/atividade_agrupada"; 
+        return "relatorio/atividade_agrupada";
     }
 
     private void carregarFiltros(Model model) {
         model.addAttribute("listaConselheiros", conselheiroService.listarTodos());
-        model.addAttribute("listaGestao", gestaoService.listarTodos()); 
-        model.addAttribute("listaRegras", regrasService.listarTodos()); 
+        model.addAttribute("listaGestao", gestaoService.listarTodos());
+        model.addAttribute("listaRegras", regrasService.listarTodos());
     }
 }

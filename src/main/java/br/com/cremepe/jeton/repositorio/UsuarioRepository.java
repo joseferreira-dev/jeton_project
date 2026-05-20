@@ -18,13 +18,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     Optional<Usuario> findByPessoaCpf(String cpf);
 
     @Query("SELECT u FROM Usuario u WHERE " +
-           "(LOWER(u.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR u.pessoa.cpf LIKE CONCAT('%', :cpf, '%')) " +
-           "AND (:situacao IS NULL OR :situacao = '' OR u.inSituacao = :situacao)")
-    Page<Usuario> pesquisarPaginado(@Param("termo") String termo, 
-                                    @Param("cpf") String cpf, 
-                                    @Param("situacao") String situacao, 
-                                    Pageable pageable);
-    
+            "(LOWER(u.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR u.pessoa.cpf LIKE CONCAT('%', :cpf, '%')) " +
+            "AND (:situacao IS NULL OR :situacao = '' OR u.inSituacao = :situacao)")
+    Page<Usuario> pesquisarPaginado(@Param("termo") String termo,
+            @Param("cpf") String cpf,
+            @Param("situacao") String situacao,
+            Pageable pageable);
+
     @Modifying
     @Query(value = "DELETE FROM conselheiro WHERE idPessoa = :id", nativeQuery = true)
     void deletarConselheiroNativo(@Param("id") Integer id);

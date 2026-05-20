@@ -32,7 +32,8 @@ public class AtividadeConselhal implements Serializable {
     @JoinColumn(name = "idGestao", nullable = false)
     private Gestao gestao;
 
-    // Relacionamento com o Conselheiro (na base de dados a coluna chama-se idPessoa)
+    // Relacionamento com o Conselheiro (na base de dados a coluna chama-se
+    // idPessoa)
     @ManyToOne
     @JoinColumn(name = "idPessoa", nullable = false)
     private Conselheiro conselheiro;
@@ -42,7 +43,8 @@ public class AtividadeConselhal implements Serializable {
     @JoinColumn(name = "idRegra", nullable = false)
     private Regras regra;
 
-    // Relacionamento Opcional com o Comprovante (pois permite NULL na base de dados)
+    // Relacionamento Opcional com o Comprovante (pois permite NULL na base de
+    // dados)
     @ManyToOne
     @JoinColumn(name = "idComprovante")
     private Comprovante comprovante;
@@ -152,8 +154,10 @@ public class AtividadeConselhal implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         AtividadeConselhal that = (AtividadeConselhal) o;
         return Objects.equals(idAtividade, that.idAtividade);
     }

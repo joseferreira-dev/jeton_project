@@ -50,11 +50,13 @@ public class JetonSaldoId implements Serializable {
     // equals e hashCode rigorosos (obrigatório para chaves compostas)
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         JetonSaldoId that = (JetonSaldoId) o;
-        return Objects.equals(idJeton, that.idJeton) && 
-               Objects.equals(idPontosSaldo, that.idPontosSaldo);
+        return Objects.equals(idJeton, that.idJeton) &&
+                Objects.equals(idPontosSaldo, that.idPontosSaldo);
     }
 
     @Override

@@ -34,7 +34,8 @@ public class GestaoService {
             Optional<Gestao> gestaoExistente = gestaoRepository.findByNomeGestao(gestao.getNomeGestao().trim());
             if (gestaoExistente.isPresent()) {
                 if (gestao.getIdGestao() == null || !gestao.getIdGestao().equals(gestaoExistente.get().getIdGestao())) {
-                    throw new RuntimeException("Já existe uma gestão cadastrada com o nome '" + gestao.getNomeGestao() + "'.");
+                    throw new RuntimeException(
+                            "Já existe uma gestão cadastrada com o nome '" + gestao.getNomeGestao() + "'.");
                 }
             }
         }
@@ -47,7 +48,8 @@ public class GestaoService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Gestao> listarComPaginacaoEPesquisa(String termo, int page, int size, String sortField, String sortDir) {
+    public Page<Gestao> listarComPaginacaoEPesquisa(String termo, int page, int size, String sortField,
+            String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
         return gestaoRepository.pesquisarPaginado(termo, pageable);

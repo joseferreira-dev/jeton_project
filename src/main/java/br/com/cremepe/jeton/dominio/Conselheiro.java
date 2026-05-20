@@ -33,7 +33,8 @@ public class Conselheiro implements Serializable {
     @JoinColumn(name = "idPessoa")
     private Pessoa pessoa;
 
-    // Utiliza-se Integer (objeto) em vez de int (primitivo) porque a base de dados permite NULL
+    // Utiliza-se Integer (objeto) em vez de int (primitivo) porque a base de dados
+    // permite NULL
     @Column(name = "crm")
     private Integer crm;
 
@@ -92,8 +93,10 @@ public class Conselheiro implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Conselheiro conselheiro = (Conselheiro) o;
         return Objects.equals(idPessoa, conselheiro.idPessoa);
     }

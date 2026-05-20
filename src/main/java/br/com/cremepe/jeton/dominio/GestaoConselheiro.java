@@ -12,7 +12,8 @@ import java.util.Objects;
 
 /**
  * Entidade JPA que representa a tabela associativa 'gestao_conselheiro'.
- * Resolve o relacionamento M:N entre Gestao e Conselheiro, incluindo dados extras.
+ * Resolve o relacionamento M:N entre Gestao e Conselheiro, incluindo dados
+ * extras.
  */
 @Entity
 @Table(name = "gestao_conselheiro")
@@ -30,7 +31,8 @@ public class GestaoConselheiro implements Serializable {
     @JoinColumn(name = "idGestao")
     private Gestao gestao;
 
-    // Relacionamento com o Conselheiro (utilizamos o Conselheiro, cujo ID é o idPessoa)
+    // Relacionamento com o Conselheiro (utilizamos o Conselheiro, cujo ID é o
+    // idPessoa)
     @ManyToOne
     @MapsId("idPessoa") // Mapeia para o atributo 'idPessoa' dentro de GestaoConselheiroId
     @JoinColumn(name = "idPessoa")
@@ -80,8 +82,10 @@ public class GestaoConselheiro implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         GestaoConselheiro that = (GestaoConselheiro) o;
         return Objects.equals(id, that.id);
     }
