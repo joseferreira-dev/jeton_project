@@ -141,9 +141,11 @@
 
                         <div class="col-md-4">
                             <label class="form-label fw-bold">Estado (Validação)</label>
-                            <select class="form-select" th:field="*{inSituacao}">
+                            <select class="form-select" th:field="*{inSituacao}" required>
                                 <option value="P">Pendente (Aguardando Validação)</option>
-                                <option value="V">Validada (Aprovada)</option>
+                                <option value="C">Concluída / Homologada</option>
+                                <option value="F" th:if="${atividade.inSituacao == 'F'}">Fechada em Folha (Bloqueada)
+                                </option>
                             </select>
                         </div>
                     </div>

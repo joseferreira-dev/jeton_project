@@ -103,6 +103,19 @@ public class AtividadeConselhalController {
             @RequestParam(value = "nomeComprovanteUsuario", required = false) String nomeComprovanteUsuario,
             RedirectAttributes ra) {
         try {
+            // PONTO DE CORREÇÃO: Força a normalização da Situação em caixa alta para a
+            // Trigger do MySQL
+            if (atividade.getInSituacao() == null || atividade.getInSituacao().trim().isEmpty()) {
+                atividade.setInSituacao("P"); // Padrão se vier vazio
+            } else {
+                atividade.setInSituacao(atividade.getInSituacao().trim().toUpperCase());
+            }
+
+            // Força a flag de computação histórica como 'N' se for um registro novo
+            if (atividade.getIdAtividade() == null) {
+                atividade.setInComputada("N");
+            }
+
             if (dataAtividadePura == null || dataAtividadePura.trim().isEmpty()) {
                 ra.addFlashAttribute("erro", "A data e o horário da atividade são obrigatórios para o enquadramento.");
                 return "redirect:/atividades/novo";

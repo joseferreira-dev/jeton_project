@@ -4,8 +4,8 @@ import br.com.cremepe.jeton.dominio.PontosSaldo;
 import br.com.cremepe.jeton.dto.PontosRemanescentesDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
 import java.util.List;
 
 @Repository
@@ -28,8 +28,12 @@ public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Intege
             """)
     List<PontosRemanescentesDTO> buscarSaldosAgrupadosPorConselheiro();
 
-    // Busca saldos positivos e ativos de um conselheiro
-    @Query("SELECT p FROM PontosSaldo p WHERE p.atividade.conselheiro.idPessoa = :idPessoa AND p.inSituacao = 'A' AND p.pontosSobrando > 0 ORDER BY p.dataHora ASC")
-    List<PontosSaldo> findSaldosAtivosPorConselheiro(
-            @org.springframework.data.repository.query.Param("idPessoa") Integer idPessoa);
+    // Busca os saldos remanescentes ordenando estritamente pela normativa mais
+    // antiga (FIFO Cronológico de Resoluções)
+    @Query("SELECT ps FROM PontosSaldo ps WHERE ps.atividade.conselheiro.idPessoa = :idPessoa " +
+            "AND ps.gestao.idGestao = :idGestao AND ps.inSituacao = 'A' AND ps.pontosSobrando > 0 " +
+            "ORDER BY ps.resolucao.ano ASC, ps.resolucao.numero ASC")
+    List<PontosSaldo> findSaldosAtivosPorGestaoFifo(
+            @Param("idPessoa") Integer idPessoa,
+            @Param("idGestao") Integer idGestao);
 }

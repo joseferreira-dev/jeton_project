@@ -51,16 +51,19 @@ public class JetonController {
         try {
             Optional<Gestao> gestaoOpt = gestaoService.buscarPorId(idGestao);
             if (gestaoOpt.isEmpty()) {
-                throw new RuntimeException("Gestão não encontrada.");
+                throw new RuntimeException("A gestão informada não foi localizada.");
             }
 
-            // Dispara o Motor de Cálculo Transacional
+            // Invoca o motor de fechamento com as travas FIFO e integralidade amarradas
             jetonService.processarFechamentoMensal(gestaoOpt.get(), mes, ano);
             ra.addFlashAttribute("sucesso",
-                    "Processamento concluído com sucesso para o período " + mes + "/" + ano + "!");
+                    "Fechamento mensal processado com sucesso para a competência " + mes + "/" + ano + "!");
 
+        } catch (RuntimeException e) {
+            // Captura os bloqueios de atividades pendentes ou falta de resoluções
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao processar folha: " + e.getMessage());
+            ra.addFlashAttribute("erro", "Erro interno ao processar a folha de pagamento: " + e.getMessage());
         }
 
         return "redirect:/jeton";

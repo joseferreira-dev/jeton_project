@@ -62,4 +62,23 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("data") LocalDate data,
             @Param("turno") String turno);
 
+    // Busca atividades pendentes OU sem comprovante para uma determinada
+    // competência (Bloqueador)
+    @Query("SELECT a FROM AtividadeConselhal a WHERE a.gestao.idGestao = :idGestao " +
+            "AND (a.inSituacao = 'P' OR a.comprovante IS NULL) " +
+            "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
+    List<AtividadeConselhal> findAtividadesInconsistentesDoMes(
+            @Param("idGestao") Integer idGestao,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
+
+    // Seleciona e retorna todas as atividades homologadas (Concluídas e com
+    // Comprovante) prontas para o cálculo
+    @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa " +
+            "AND a.inSituacao = 'C' AND a.comprovante IS NOT NULL " +
+            "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
+    List<AtividadeConselhal> findHomologadasParaCalculo(
+            @Param("idPessoa") Integer idPessoa,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
 }

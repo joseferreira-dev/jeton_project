@@ -1,22 +1,10 @@
 package br.com.cremepe.jeton.dominio;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Entidade JPA que representa a tabela 'pontos_saldo'.
- * Atua como o livro-razão do sistema, controlando os pontos que sobram e os que
- * são utilizados.
- */
 @Entity
 @Table(name = "pontos_saldo")
 public class PontosSaldo implements Serializable {
@@ -28,45 +16,39 @@ public class PontosSaldo implements Serializable {
     @Column(name = "idPontosSaldo")
     private Integer idPontosSaldo;
 
-    /**
-     * Relacionamento Opcional com a Atividade Conselhal.
-     * Como a base de dados permite NULL (NULO: YES), omitimos o parâmetro nullable
-     * = false.
-     */
     @ManyToOne
     @JoinColumn(name = "idAtividade")
     private AtividadeConselhal atividade;
 
-    /**
-     * Relacionamento Opcional com o fecho financeiro (Jeton).
-     * Indica em que ciclo de pagamento estes pontos foram contabilizados ou
-     * liquidados.
-     */
     @ManyToOne
     @JoinColumn(name = "idJeton")
     private Jeton jeton;
 
-    // Espelha o tipo 'datetime' do MySQL legado
+    @ManyToOne
+    @JoinColumn(name = "idGestao")
+    private Gestao gestao;
+
+    @ManyToOne
+    @JoinColumn(name = "idResolucao")
+    private Resolucao resolucao;
+
     @Column(name = "dataHora", nullable = false)
     private LocalDateTime dataHora;
 
-    // Utilização de Integer (Wrapper) em vez de int primitivo para segurança
-    // transacional
-    @Column(name = "pontosSobrando", nullable = false)
-    private Integer pontosSobrando;
+    @Column(name = "pontosTrabalhados", nullable = false)
+    private Integer pontosTrabalhados = 0;
 
     @Column(name = "pontosUtilizados", nullable = false)
-    private Integer pontosUtilizados;
+    private Integer pontosUtilizados = 0;
 
-    @Column(name = "inSituacao", length = 1, nullable = false)
+    @Column(name = "pontosSobrando", nullable = false)
+    private Integer pontosSobrando = 0;
+
+    @Column(name = "inSituacao", nullable = false, length = 1)
     private String inSituacao;
 
     public PontosSaldo() {
     }
-
-    // ==========================================
-    // GETTERS E SETTERS
-    // ==========================================
 
     public Integer getIdPontosSaldo() {
         return idPontosSaldo;
@@ -92,6 +74,22 @@ public class PontosSaldo implements Serializable {
         this.jeton = jeton;
     }
 
+    public Gestao getGestao() {
+        return gestao;
+    }
+
+    public void setGestao(Gestao gestao) {
+        this.gestao = gestao;
+    }
+
+    public Resolucao getResolucao() {
+        return resolucao;
+    }
+
+    public void setResolucao(Resolucao resolucao) {
+        this.resolucao = resolucao;
+    }
+
     public LocalDateTime getDataHora() {
         return dataHora;
     }
@@ -100,12 +98,12 @@ public class PontosSaldo implements Serializable {
         this.dataHora = dataHora;
     }
 
-    public Integer getPontosSobrando() {
-        return pontosSobrando;
+    public Integer getPontosTrabalhados() {
+        return pontosTrabalhados;
     }
 
-    public void setPontosSobrando(Integer pontosSobrando) {
-        this.pontosSobrando = pontosSobrando;
+    public void setPontosTrabalhados(Integer pontosTrabalhados) {
+        this.pontosTrabalhados = pontosTrabalhados;
     }
 
     public Integer getPontosUtilizados() {
@@ -114,6 +112,14 @@ public class PontosSaldo implements Serializable {
 
     public void setPontosUtilizados(Integer pontosUtilizados) {
         this.pontosUtilizados = pontosUtilizados;
+    }
+
+    public Integer getPontosSobrando() {
+        return pontosSobrando;
+    }
+
+    public void setPontosSobrando(Integer pontosSobrando) {
+        this.pontosSobrando = pontosSobrando;
     }
 
     public String getInSituacao() {

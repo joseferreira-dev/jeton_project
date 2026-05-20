@@ -1,21 +1,10 @@
 package br.com.cremepe.jeton.dominio;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Entidade JPA que representa a tabela 'atividade_conselhal' na base de dados.
- * Regista as atividades diárias executadas pelos Conselheiros.
- */
 @Entity
 @Table(name = "atividade_conselhal")
 public class AtividadeConselhal implements Serializable {
@@ -27,24 +16,18 @@ public class AtividadeConselhal implements Serializable {
     @Column(name = "idAtividade")
     private Integer idAtividade;
 
-    // Relacionamento com a Gestao
     @ManyToOne
     @JoinColumn(name = "idGestao", nullable = false)
     private Gestao gestao;
 
-    // Relacionamento com o Conselheiro (na base de dados a coluna chama-se
-    // idPessoa)
     @ManyToOne
     @JoinColumn(name = "idPessoa", nullable = false)
     private Conselheiro conselheiro;
 
-    // Relacionamento com as Regras
     @ManyToOne
     @JoinColumn(name = "idRegra", nullable = false)
     private Regras regra;
 
-    // Relacionamento Opcional com o Comprovante (pois permite NULL na base de
-    // dados)
     @ManyToOne
     @JoinColumn(name = "idComprovante")
     private Comprovante comprovante;
@@ -52,25 +35,23 @@ public class AtividadeConselhal implements Serializable {
     @Column(name = "qtdAtividade", nullable = false)
     private Integer qtdAtividade;
 
-    // Uso do LocalDateTime para espelhar perfeitamente o tipo 'datetime' do MySQL
     @Column(name = "dataHoraAtividade", nullable = false)
     private LocalDateTime dataHoraAtividade;
 
     @Column(name = "dataHoraRegistro", nullable = false)
     private LocalDateTime dataHoraRegistro;
 
-    @Column(name = "inTurno", length = 1, nullable = false)
+    @Column(name = "inTurno", nullable = false, length = 1)
     private String inTurno;
 
-    @Column(name = "inSituacao", length = 1, nullable = false)
+    @Column(name = "inSituacao", nullable = false, length = 1)
     private String inSituacao;
+
+    @Column(name = "inComputada", nullable = false, length = 1)
+    private String inComputada = "N"; // 'S' para computada, 'N' para não computada
 
     public AtividadeConselhal() {
     }
-
-    // ==========================================
-    // GETTERS E SETTERS
-    // ==========================================
 
     public Integer getIdAtividade() {
         return idAtividade;
@@ -150,6 +131,14 @@ public class AtividadeConselhal implements Serializable {
 
     public void setInSituacao(String inSituacao) {
         this.inSituacao = inSituacao;
+    }
+
+    public String getInComputada() {
+        return inComputada;
+    }
+
+    public void setInComputada(String inComputada) {
+        this.inComputada = inComputada;
     }
 
     @Override

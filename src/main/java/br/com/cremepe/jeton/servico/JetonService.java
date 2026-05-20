@@ -3,14 +3,15 @@ package br.com.cremepe.jeton.servico;
 import br.com.cremepe.jeton.dominio.*;
 import br.com.cremepe.jeton.dto.PontosRemanescentesDTO;
 import br.com.cremepe.jeton.repositorio.*;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class JetonService {
@@ -36,119 +37,137 @@ public class JetonService {
         return jetonRepository.findAll();
     }
 
-    @Transactional(readOnly = true)
-    public Optional<Jeton> buscarPorId(Integer id) {
-        return jetonRepository.findById(id);
+    @Transactional
+    public void processarFechamentoMensal(Gestao gestao, Integer mes, Integer ano) {
+        // 1. VARREDURA PREVENTIVA CONTRA LANÇAMENTOS NÃO AUDITADOS
+        List<AtividadeConselhal> inconsistentes = atividadeRepository
+                .findAtividadesInconsistentesDoMes(gestao.getIdGestao(), mes, ano);
+        if (!inconsistentes.isEmpty()) {
+            throw new RuntimeException("Fechamento negado: Existem atividades pendentes ou sem anexo no período.");
+        }
+
+        // 2. BUSCA A NORMATIVA VIGENTE DO MÊS PARA O TETO MENSAL MÁXIMO
+        LocalDate dataReferencia = LocalDate.of(ano, mes, 1);
+        List<Resolucao> resolucoesDoMes = resolucaoRepository.findResoluesVigentesNaData(dataReferencia);
+        if (resolucoesDoMes.isEmpty()) {
+            throw new RuntimeException("Nenhuma Resolução ativa cadastrada para a competência " + mes + "/" + ano);
+        }
+        Resolucao normaVigenteNoMes = resolucoesDoMes.get(0);
+        int tetoMaximoJetonsMes = normaVigenteNoMes.getMaxJetonsMes();
+
+        // 3. RECUPERA CONSELHEIROS ATIVOS DO MANDATO
+        List<GestaoConselheiro> vinculos = gestaoConselheiroRepository.findByIdIdGestao(gestao.getIdGestao());
+
+        for (GestaoConselheiro vinculo : vinculos) {
+            Conselheiro conselheiro = vinculo.getConselheiro();
+
+            // Evita reprocessamento acidental de folha idêntica
+            if (jetonRepository.findByConselheiroIdPessoaAndMesAndAno(conselheiro.getIdPessoa(), mes, ano)
+                    .isPresent()) {
+                continue;
+            }
+
+            // ==============================================================================
+            // PASSO 1: CAPTURA E AGRUPAMENTO DO SALDO DAS NOVAS ATIVIDADES VALIDADAS
+            // ==============================================================================
+            List<AtividadeConselhal> novasAtividadesAptas = atividadeRepository
+                    .findHomologadasParaCalculo(conselheiro.getIdPessoa(), mes, ano);
+
+            // Agrupa novas atividades por Resolução (conforme seu requisito de segregação)
+            Map<Resolucao, Integer> pontosPorNormativaNovos = new LinkedHashMap<>();
+            for (AtividadeConselhal at : novasAtividadesAptas) {
+                if ("N".equals(at.getInComputada())) {
+                    Resolucao r = at.getRegra().getResolucao();
+                    int pts = at.getRegra().getPontos() * (at.getQtdAtividade() != null ? at.getQtdAtividade() : 1);
+                    pontosPorNormativaNovos.merge(r, pts, Integer::sum);
+                }
+            }
+
+            // Grava os novos saldos brutos gerados antes do consumo
+            pontosPorNormativaNovos.forEach((res, totalPts) -> {
+                PontosSaldo ps = new PontosSaldo();
+                ps.setGestao(gestao);
+                ps.setResolucao(res);
+                ps.setDataHora(LocalDateTime.now());
+                ps.setPontosTrabalhados(totalPts);
+                ps.setPontosSobrando(totalPts);
+                ps.setPontosUtilizados(0);
+                ps.setInSituacao("A");
+                if (!novasAtividadesAptas.isEmpty())
+                    ps.setAtividade(novasAtividadesAptas.get(0));
+                pontosSaldoRepository.save(ps);
+            });
+
+            // ==============================================================================
+            // PASSO 2: EXECUÇÃO DO MOTOR EM CASCATA CRONOLÓGICA (ALGORITMO FIFO SOLICITADO)
+            // ==============================================================================
+            List<PontosSaldo> todosSaldosDisponiveis = pontosSaldoRepository
+                    .findSaldosAtivosPorGestaoFifo(conselheiro.getIdPessoa(), gestao.getIdGestao());
+
+            int jetonsAcumuladosNoMes = 0;
+            int sobraPontosHerdada = 0;
+
+            for (PontosSaldo saldoFiltrado : todosSaldosDisponiveis) {
+                Resolucao resContexto = saldoFiltrado.getResolucao();
+                int fatorConversao = resContexto.getPontosPorJeton();
+                BigDecimal valorFinanceiroJeton = resContexto.getValorJeton();
+
+                // Soma os pontos nativos deste saldo com a sobra herdada da normativa anterior
+                int pontosDisponiveisNestaFase = saldoFiltrado.getPontosSobrando() + sobraPontosHerdada;
+                saldoFiltrado.setPontosTrabalhados(pontosDisponiveisNestaFase);
+                sobraPontosHerdada = 0; // Consumida
+
+                int capacidadeJetonsDestaFase = pontosDisponiveisNestaFase / fatorConversao;
+                int residuoFase = pontosDisponiveisNestaFase % fatorConversao;
+
+                int jetonsAfecharAgora = 0;
+
+                if (jetonsAcumuladosNoMes + capacidadeJetonsDestaFase <= tetoMaximoJetonsMes) {
+                    // Consumo integral da capacidade dessa resolução
+                    jetonsAfecharAgora = capacidadeJetonsDestaFase;
+                    saldoFiltrado.setPontosUtilizados(jetonsAfecharAgora * fatorConversao);
+                    saldoFiltrado.setPontosSobrando(residuoFase);
+                    sobraPontosHerdada = residuoFase; // Passa o resto adiante (Efeito Cascata)
+                } else {
+                    // Atingiu o teto mensal máximo permitido
+                    jetonsAfecharAgora = tetoMaximoJetonsMes - jetonsAcumuladosNoMes;
+                    saldoFiltrado.setPontosUtilizados(jetonsAfecharAgora * fatorConversao);
+                    saldoFiltrado.setPontosSobrando(pontosDisponiveisNestaFase - (jetonsAfecharAgora * fatorConversao));
+                    sobraPontosHerdada = saldoFiltrado.getPontosSobrando();
+                }
+
+                jetonsAcumuladosNoMes += jetonsAfecharAgora;
+
+                // Salva o pagamento correspondente à moeda da resolução processada
+                if (jetonsAfecharAgora > 0) {
+                    Jeton pagamento = new Jeton();
+                    pagamento.setGestao(gestao);
+                    pagamento.setConselheiro(conselheiro);
+                    pagamento.setMes(mes);
+                    pagamento.setAno(ano);
+                    pagamento.setTotalJeton(jetonsAfecharAgora);
+                    pagamento.setValor(valorFinanceiroJeton.multiply(new BigDecimal(jetonsAfecharAgora)));
+                    pagamento.setInSituacao("A");
+                    Jeton jetonSalvo = jetonRepository.save(pagamento);
+                    saldoFiltrado.setJeton(jetonSalvo);
+                }
+
+                if (saldoFiltrado.getPontosSobrando() == 0) {
+                    saldoFiltrado.setInSituacao("I"); // Totalmente exaurido
+                }
+                pontosSaldoRepository.save(saldoFiltrado);
+            }
+
+            // Marcar atividades como processadas para duplo bloqueio
+            for (AtividadeConselhal at : novasAtividadesAptas) {
+                at.setInComputada("S");
+                atividadeRepository.save(at);
+            }
+        }
     }
 
     @Transactional
     public void excluirJeton(Integer id) {
         jetonRepository.deleteById(id);
-    }
-
-    /**
-     * O MOTOR DE CÁLCULO FINANCEIRO (FECHAMENTO DE FOLHA)
-     * Este método processa todos os conselheiros ativos numa gestão para um
-     * determinado mês/ano.
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public void processarFechamentoMensal(Gestao gestao, Integer mes, Integer ano) {
-
-        // 1. Obtém a Resolução Ativa (Regra Financeira Magna)
-        List<Resolucao> resolucoesAtivas = resolucaoRepository.findByInRevogado("N");
-        if (resolucoesAtivas.isEmpty()) {
-            throw new RuntimeException("Não existe nenhuma Resolução financeira em vigor para basear os cálculos.");
-        }
-        Resolucao resolucao = resolucoesAtivas.get(0); // Assume a principal
-        Integer pontosPorJeton = resolucao.getPontosPorJeton();
-        Integer tetoMensalJetons = resolucao.getMaxJetonsMes();
-        BigDecimal valorJeton = resolucao.getValorJeton();
-
-        // 2. Obtém todos os conselheiros daquela Gestão
-        List<GestaoConselheiro> vinculos = gestaoConselheiroRepository.findByGestaoIdGestao(gestao.getIdGestao());
-
-        for (GestaoConselheiro vinculo : vinculos) {
-            Conselheiro conselheiro = vinculo.getConselheiro();
-
-            // Proteção contra processamento duplicado no mesmo mês
-            if (jetonRepository.findByConselheiroIdPessoaAndMesAndAno(conselheiro.getIdPessoa(), mes, ano)
-                    .isPresent()) {
-                continue; // Já foi processado este mês, salta para o próximo conselheiro
-            }
-
-            // 3. Recolher a matéria-prima (Saldos antigos + Atividades novas com
-            // comprovativo)
-            List<PontosSaldo> saldosAntigos = pontosSaldoRepository
-                    .findSaldosAtivosPorConselheiro(conselheiro.getIdPessoa());
-            List<AtividadeConselhal> atividadesNovas = atividadeRepository
-                    .findPendentesParaProcessamento(conselheiro.getIdPessoa(), mes, ano);
-
-            if (saldosAntigos.isEmpty() && atividadesNovas.isEmpty()) {
-                continue; // Conselheiro não tem nada a receber, salta.
-            }
-
-            // 4. Somar todos os pontos disponíveis
-            double totalPontosAcumulados = 0;
-
-            for (PontosSaldo saldo : saldosAntigos) {
-                totalPontosAcumulados += saldo.getPontosSobrando();
-                // O saldo antigo é "consumido" na totalidade para este processamento
-                saldo.setPontosUtilizados(saldo.getPontosSobrando());
-                saldo.setPontosSobrando(0);
-                saldo.setInSituacao("I"); // Inativo (Consumido)
-                pontosSaldoRepository.save(saldo);
-            }
-
-            for (AtividadeConselhal atividade : atividadesNovas) {
-                // Multiplica a quantidade de atividade pelo valor de pontos da regra
-                totalPontosAcumulados += (atividade.getQtdAtividade() * atividade.getRegra().getPontos());
-                // Marca a atividade como Processada/Concluída
-                atividade.setInSituacao("C");
-                atividadeRepository.save(atividade);
-            }
-
-            // 5. A Matemática dos Jetons
-            int jetonsConvertidos = (int) (totalPontosAcumulados / pontosPorJeton);
-            double pontosRestantes = totalPontosAcumulados % pontosPorJeton;
-
-            // 6. Aplicação do Teto (Tesoura Financeira)
-            int jetonsAPagar = Math.min(jetonsConvertidos, tetoMensalJetons);
-
-            // Se o limite foi atingido, os Jetons que ultrapassaram o teto voltam a ser
-            // convertidos em pontos de sobra
-            if (jetonsConvertidos > tetoMensalJetons) {
-                int jetonsCortados = jetonsConvertidos - tetoMensalJetons;
-                pontosRestantes += (jetonsCortados * pontosPorJeton);
-            }
-
-            // 7. Gerar o Pagamento (se houver Jetons inteiros para pagar)
-            Jeton jetonCriado = null;
-            if (jetonsAPagar > 0) {
-                Jeton j = new Jeton();
-                j.setGestao(gestao);
-                j.setConselheiro(conselheiro);
-                j.setMes(mes);
-                j.setAno(ano);
-                j.setTotalJeton(jetonsAPagar);
-                j.setValor(valorJeton.multiply(new BigDecimal(jetonsAPagar)));
-                j.setInSituacao("A"); // Ativo / Processado
-                jetonCriado = jetonRepository.save(j);
-            }
-
-            // 8. Guardar os Pontos Remanescentes (Sobras para o mês seguinte)
-            if (pontosRestantes > 0) {
-                PontosSaldo novoSaldo = new PontosSaldo();
-                // Usa a última atividade apenas como referência de ligação, tal como no legado
-                if (!atividadesNovas.isEmpty()) {
-                    novoSaldo.setAtividade(atividadesNovas.get(atividadesNovas.size() - 1));
-                }
-                novoSaldo.setJeton(jetonCriado); // Pode ser nulo se só gerou sobra
-                novoSaldo.setDataHora(LocalDateTime.now());
-                novoSaldo.setPontosSobrando((int) pontosRestantes);
-                novoSaldo.setPontosUtilizados(0);
-                novoSaldo.setInSituacao("A"); // Ativo para o próximo mês
-                pontosSaldoRepository.save(novoSaldo);
-            }
-        }
     }
 }
