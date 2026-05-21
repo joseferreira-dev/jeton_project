@@ -24,6 +24,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,22 +54,24 @@ public class AtividadeConselhalController {
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
             @RequestParam(value = "situacao", required = false, defaultValue = "") String situacao,
             @RequestParam(value = "turno", required = false, defaultValue = "") String turno,
+            @RequestParam(value = "dataInicio", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam(value = "dataFim", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate dataFim,
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") int size,
             @RequestParam(value = "sort", required = false, defaultValue = "dataHoraAtividade") String sort,
             @RequestParam(value = "dir", required = false, defaultValue = "desc") String dir,
-            Model model, HttpSession session) {
 
-        if (session.getAttribute("usuarioLogado") == null)
-            return "redirect:/login";
+            Model model) {
 
-        Page<AtividadeConselhal> pagina = atividadeService.listarComPaginacaoEPesquisa(termo, situacao, turno, page,
-                size, sort, dir);
+        Page<AtividadeConselhal> pagina = atividadeService.listarComPaginacaoEPesquisa(
+                termo, situacao, turno, dataInicio, dataFim, page, size, sort, dir);
 
         model.addAttribute("paginaAtividades", pagina);
         model.addAttribute("termo", termo);
         model.addAttribute("situacao", situacao);
         model.addAttribute("turno", turno);
+        model.addAttribute("dataInicio", dataInicio);
+        model.addAttribute("dataFim", dataFim);
         model.addAttribute("size", size);
         model.addAttribute("sort", sort);
         model.addAttribute("dir", dir);
@@ -124,6 +127,22 @@ public class AtividadeConselhalController {
             // LocalDateTime
             LocalDateTime dataHoraSelecionada = LocalDateTime.parse(dataAtividadePura);
             atividade.setDataHoraAtividade(dataHoraSelecionada);
+
+            // 1. CÁLCULO AUTOMÁTICO DO TURNO
+            int hora = dataHoraSelecionada.getHour();
+            if (hora >= 6 && hora < 12) {
+                atividade.setInTurno("M");
+            } else if (hora >= 12 && hora < 18) {
+                atividade.setInTurno("T");
+            } else {
+                atividade.setInTurno("N");
+            }
+
+            // 2. FORÇA CRIAÇÃO COMO PENDENTE (Independente do formulário)
+            if (atividade.getIdAtividade() == null) {
+                atividade.setInSituacao("P");
+                atividade.setInComputada("N");
+            }
 
             // ==============================================================================
             // CORREÇÃO: Preservar Comprovante Existente na Edição
@@ -225,6 +244,7 @@ public class AtividadeConselhalController {
     @ResponseBody
     public List<Map<String, Object>> getConselheirosPorGestao(@RequestParam Integer gestaoId) {
         return gestaoConselheiroRepository.findByIdIdGestao(gestaoId).stream()
+                .sorted(Comparator.comparing(gc -> gc.getConselheiro().getPessoa().getNome()))
                 .map(gc -> {
                     Map<String, Object> map = new HashMap<>();
                     map.put("id", gc.getConselheiro().getIdPessoa());
@@ -262,6 +282,7 @@ public class AtividadeConselhalController {
                         idPortaria);
 
                 response.put("regras", listaRegras.stream()
+                        .sorted(Comparator.comparing(Regras::getNomeRegra))
                         .map(regra -> {
                             Map<String, Object> map = new HashMap<>();
                             map.put("id", regra.getIdRegra());
@@ -278,5 +299,19 @@ public class AtividadeConselhalController {
             response.put("regras", List.of());
         }
         return response;
+    }
+
+    @GetMapping("/validar/{id}")
+    public String validar(@PathVariable("id") Integer id, RedirectAttributes ra) {
+        try {
+            atividadeService.validarAtividade(id);
+            ra.addFlashAttribute("sucesso",
+                    "Atividade validada com sucesso! Ela agora está apta a receber processamento financeiro.");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro interno ao validar: " + e.getMessage());
+        }
+        return "redirect:/atividades";
     }
 }

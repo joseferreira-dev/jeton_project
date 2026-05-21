@@ -139,11 +139,26 @@ public class AtividadeConselhalService {
     }
 
     @Transactional(readOnly = true)
-    public Page<AtividadeConselhal> listarComPaginacaoEPesquisa(String termo, String situacao, String turno, int page,
-            int size, String sortField, String sortDir) {
+    public Page<AtividadeConselhal> listarComPaginacaoEPesquisa(String termo, String situacao, String turno,
+            LocalDate dataInicio, LocalDate dataFim, int page, int size,
+            String sortField, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
-        return atividadeRepository.pesquisarPaginado(termo, situacao, turno, pageable);
+        return atividadeRepository.pesquisarPaginado(termo, situacao, turno, dataInicio, dataFim, pageable);
+    }
+
+    @Transactional
+    public void validarAtividade(Integer id) {
+        AtividadeConselhal atividade = atividadeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Atividade não encontrada."));
+
+        if ("F".equals(atividade.getInSituacao())) {
+            throw new RuntimeException("Operação negada: Esta atividade está fechada em folha.");
+        }
+
+        // Muda a situação para Validada (C)
+        atividade.setInSituacao("C");
+        atividadeRepository.save(atividade);
     }
 
     @Transactional
