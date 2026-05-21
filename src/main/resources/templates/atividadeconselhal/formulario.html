@@ -162,6 +162,7 @@
                                                 o sistema)</label>
                                             <input type="text" class="form-control form-control-sm"
                                                 name="nomeComprovanteUsuario"
+                                                th:value="${atividade.comprovante != null ? atividade.comprovante.nomeComprovante : ''}"
                                                 placeholder="Ex: Certidão de comparecimento - Reunião X" required>
                                         </div>
                                         <div class="col-md-4">
@@ -169,7 +170,9 @@
                                             <select class="form-select form-select-sm" name="idTipoAnexo">
                                                 <option value="">-- Selecione o Tipo --</option>
                                                 <option th:each="t : ${listaTiposAnexo}" th:value="${t.idTipo}"
-                                                    th:text="${t.nome}"></option>
+                                                    th:text="${t.nome}"
+                                                    th:selected="${atividade.comprovante != null && atividade.comprovante.tipoAnexo != null ? atividade.comprovante.tipoAnexo.idTipo == t.idTipo : false}">
+                                                </option>
                                             </select>
                                         </div>
                                         <div class="col-md-8">
@@ -181,8 +184,7 @@
                                     <div th:if="${atividade.comprovante != null}" class="mt-3">
                                         <span class="badge bg-success">
                                             <i class="fa-solid fa-file-circle-check me-1"></i>
-                                            Ficheiro atual: <span
-                                                th:text="${atividade.comprovante.nomeComprovante}"></span>
+                                            Ficheiro atual: <span th:text="${atividade.comprovante.nomeArquivo}"></span>
                                         </span>
                                     </div>
                                 </div>
@@ -202,87 +204,50 @@
         <script>
             let originalResolucoes = "";
             let originalPortarias = "";
+            let regrasCache = [];
 
             window.onload = function () {
-                // Guarda as listas iniciais completas para podermos resetar depois
-                originalResolucoes = document.getElementById('selectResolucao').innerHTML;
-                originalPortarias = document.getElementById('selectPortaria').innerHTML;
+                const selectRes = document.getElementById('selectResolucao');
+                const selectPort = document.getElementById('selectPortaria');
+                if (selectRes) originalResolucoes = selectRes.innerHTML;
+                if (selectPort) originalPortarias = selectPort.innerHTML;
+
+                try {
+                    // 1. Tratamento para a edição do Conselheiro
+                    const selectGestao = document.getElementById('selectGestao');
+                    if (selectGestao && selectGestao.value) {
+                        const idAtualConselheiro = document.getElementById('selectConselheiro').value;
+                        atualizarConselheiros(idAtualConselheiro);
+                    }
+                } catch (e) { console.error("Erro ao carregar conselheiro na edição:", e); }
+
+                try {
+                    // 2. Tratamento para a edição das Regras (Baseadas na data)
+                    const dataAtividade = document.getElementById('dataAtividade');
+                    const selectRegra = document.getElementById('selectRegra');
+
+                    if (dataAtividade && dataAtividade.value && selectRegra) {
+                        // Captura o valor que o Thymeleaf colocou nativamente no select antes de ser limpo
+                        const idAtualRegra = selectRegra.value;
+                        if (idAtualRegra) {
+                            atualizarRegrasPorData(idAtualRegra);
+                        }
+                    }
+                } catch (e) { console.error("Erro ao carregar regras na edição:", e); }
             };
 
             function resetarFiltros() {
-                document.getElementById('selectResolucao').innerHTML = originalResolucoes;
-                document.getElementById('selectPortaria').innerHTML = originalPortarias;
-                document.getElementById('selectResolucao').value = "";
-                document.getElementById('selectPortaria').value = "";
+                const selectRes = document.getElementById('selectResolucao');
+                const selectPort = document.getElementById('selectPortaria');
+                if (selectRes) { selectRes.innerHTML = originalResolucoes; selectRes.value = ""; }
+                if (selectPort) { selectPort.innerHTML = originalPortarias; selectPort.value = ""; }
+
                 document.getElementById('selectRegra').innerHTML = '<option value="">-- Escolha a documentação acima para desbloquear as regras --</option>';
                 document.getElementById('selectRegra').disabled = true;
+                document.getElementById('boxGuia').style.display = 'none';
             }
 
-            function atualizarFiltros() {
-                const resId = document.getElementById('selectResolucao').value;
-                const portId = document.getElementById('selectPortaria').value;
-                const selectRegra = document.getElementById('selectRegra');
-
-                if (!resId && !portId) {
-                    resetarFiltros();
-                    return;
-                }
-
-                let url = `/atividades/api/filtros-regras?`;
-                if (resId) url += `resolucaoId=${resId}&`;
-                if (portId) url += `portariaId=${portId}`;
-
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        regrasCache = data.regras;
-                        selectRegra.innerHTML = '<option value=\"\">-- Selecione a Regra Ativa --</option>';
-
-                        if (data.regras && data.regras.length > 0) {
-                            data.regras.forEach(r => {
-                                selectRegra.innerHTML += `<option value="${r.id}">${r.nome}</option>`;
-                            });
-                            selectRegra.disabled = false;
-                        } else {
-                            selectRegra.innerHTML = '<option value=\"\">-- Nenhuma regra existente para esta combinação --</option>';
-                            selectRegra.disabled = true;
-                        }
-
-                        // Se selecionou só a Resolução, reduz as Portarias apenas para as que têm par com ela
-                        if (resId && !portId && data.portariasCompativeis) {
-                            const selPort = document.getElementById('selectPortaria');
-                            selPort.innerHTML = '<option value="">-- Selecione a Portaria (Opcional) --</option>';
-                            data.portariasCompativeis.forEach(p => {
-                                selPort.innerHTML += `<option value="${p.id}">${p.nome}</option>`;
-                            });
-                        }
-
-                        // Se selecionou só a Portaria, reduz as Resoluções apenas para as que têm par com ela
-                        if (portId && !resId && data.resolucoesCompativeis) {
-                            const selRes = document.getElementById('selectResolucao');
-                            selRes.innerHTML = '<option value="">-- Selecione a Resolução (Opcional) --</option>';
-                            data.resolucoesCompativeis.forEach(r => {
-                                selRes.innerHTML += `<option value="${r.id}">${r.nome}</option>`;
-                            });
-                        }
-                    });
-            }
-
-            function exibirGuiaRegra() {
-                const id = document.getElementById('selectRegra').value;
-                const box = document.getElementById('boxGuia');
-                const regra = regrasCache.find(r => r.id == id);
-
-                if (regra) {
-                    document.getElementById('guiaDescricao').innerText = regra.descricao;
-                    document.getElementById('guiaPontos').innerText = regra.pontos;
-                    box.style.display = 'block';
-                } else {
-                    box.style.display = 'none';
-                }
-            }
-
-            function atualizarConselheiros() {
+            function atualizarConselheiros(idParaSelecionar = null) {
                 const gestaoId = document.getElementById('selectGestao').value;
                 const selectConselheiro = document.getElementById('selectConselheiro');
 
@@ -298,57 +263,49 @@
                         selectConselheiro.innerHTML = '<option value="">-- Selecione o Médico --</option>';
                         if (data && data.length > 0) {
                             data.forEach(c => {
-                                selectConselheiro.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+                                const isSelected = (idParaSelecionar && idParaSelecionar == c.id) ? 'selected' : '';
+                                selectConselheiro.innerHTML += `<option value="${c.id}" ${isSelected}>${c.nome}</option>`;
                             });
                             selectConselheiro.disabled = false;
                         } else {
                             selectConselheiro.innerHTML = '<option value="">-- Nenhum médico vinculado a esta gestão --</option>';
                             selectConselheiro.disabled = true;
                         }
-                    });
+                    })
+                    .catch(err => console.error("Erro no fetch de conselheiros:", err));
             }
 
-            // Atualize o window.onload para disparar a função caso seja uma edição
-            const originalOnload = window.onload;
-            window.onload = function () {
-                if (originalOnload) originalOnload();
-
-                // Se estiver editando (Gestão já selecionada), popula a lista de conselheiros
-                if (document.getElementById('selectGestao').value) {
-                    // Guardamos o ID do conselheiro atual antes de atualizar a lista via AJAX
-                    const idAtual = document.getElementById('selectConselheiro').value;
-                    atualizarConselheiros();
-                    // Nota: O fetch é assíncrono, para manter a seleção na edição 
-                    // seria necessário um pequeno ajuste, mas para novos registros o fluxo está perfeito.
-                }
-            };
-
-            function atualizarRegrasPorData() {
+            function atualizarRegrasPorData(idRegraParaSelecionar = null) {
                 const dataValue = document.getElementById('dataAtividade').value;
-                const selectRegra = document.getElementById('selectRegra'); // Certifique-se de que o select de regras possui id="selectRegra"
+                const selectRegra = document.getElementById('selectRegra');
 
                 if (!dataValue) return;
 
-                // Loader visual nas regras
                 selectRegra.innerHTML = '<option value="">Carregando regras da época...</option>';
 
                 fetch(`/atividades/api/regras-por-data?data=${dataValue}`)
                     .then(response => response.json())
                     .then(data => {
-                        // Atualiza os inputs visuais das normativas vigentes no período
                         document.getElementById('nomeResolucaoVisual').value = data.nomeResolucao || "Nenhuma encontrada";
                         document.getElementById('idResolucaoHidden').value = data.idResolucao || "";
                         document.getElementById('nomePortariaVisual').value = data.nomePortaria || "Nenhuma encontrada";
                         document.getElementById('idPortariaHidden').value = data.idPortaria || "";
 
-                        // Limpa e popula o select de regras (contendo as inclusive revogadas)
                         selectRegra.innerHTML = '<option value="">-- Selecione a Regra Enquadrada --</option>';
 
                         if (data.regras && data.regras.length > 0) {
+                            regrasCache = data.regras;
+
                             data.regras.forEach(r => {
-                                selectRegra.innerHTML += `<option value="${r.id}">${r.nome} (${r.pontos} pts) - ${r.descricao}</option>`;
+                                const isSelected = (idRegraParaSelecionar && idRegraParaSelecionar == r.id) ? 'selected' : '';
+                                selectRegra.innerHTML += `<option value="${r.id}" ${isSelected}>${r.nome} (${r.pontos} pts) - ${r.descricao}</option>`;
                             });
                             selectRegra.disabled = false;
+
+                            if (idRegraParaSelecionar) {
+                                // Timeout seguro para garantir que a árvore DOM renderizou a alteração do selectRegra.value
+                                setTimeout(exibirGuiaRegra, 100);
+                            }
                         } else {
                             selectRegra.innerHTML = '<option value="">Nenhuma regra cadastrada para as normativas deste período</option>';
                             selectRegra.disabled = true;
@@ -358,6 +315,20 @@
                         console.error('Erro ao buscar regras por data:', error);
                         selectRegra.innerHTML = '<option value="">Erro ao carregar regras</option>';
                     });
+            }
+
+            function exibirGuiaRegra() {
+                const id = document.getElementById('selectRegra').value;
+                const box = document.getElementById('boxGuia');
+                const regra = regrasCache.find(r => r.id == id);
+
+                if (regra) {
+                    document.getElementById('guiaDescricao').innerText = regra.descricao;
+                    document.getElementById('guiaPontos').innerText = regra.pontos;
+                    box.style.display = 'block';
+                } else {
+                    box.style.display = 'none';
+                }
             }
         </script>
     </div>

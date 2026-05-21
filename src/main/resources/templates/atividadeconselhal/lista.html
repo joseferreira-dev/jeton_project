@@ -34,7 +34,7 @@
                     <select name="situacao" class="form-select" onchange="this.form.submit()">
                         <option value="" th:selected="${situacao == ''}">Todas as Situações</option>
                         <option value="P" th:selected="${situacao == 'P'}">Pendentes</option>
-                        <option value="V" th:selected="${situacao == 'V'}">Validadas</option>
+                        <option value="V" th:selected="${situacao == 'C'}">Validadas</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -130,8 +130,10 @@
                                 <td>
                                     <span th:if="${a.inSituacao == 'P'}" class="badge bg-warning text-dark"><i
                                             class="fa-regular fa-clock me-1"></i> Pendente</span>
-                                    <span th:if="${a.inSituacao == 'V'}" class="badge bg-success"><i
+                                    <span th:if="${a.inSituacao == 'C'}" class="badge bg-success"><i
                                             class="fa-solid fa-check me-1"></i> Validada</span>
+                                    <span th:if="${a.inComputada == 'S'}" class="badge bg-primary"><i
+                                            class="fa-solid fa-check-double"></i> Computada</span>
                                 </td>
 
                                 <td class="text-center pe-4">

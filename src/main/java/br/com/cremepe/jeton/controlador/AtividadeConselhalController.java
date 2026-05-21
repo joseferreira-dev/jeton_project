@@ -103,10 +103,9 @@ public class AtividadeConselhalController {
             @RequestParam(value = "nomeComprovanteUsuario", required = false) String nomeComprovanteUsuario,
             RedirectAttributes ra) {
         try {
-            // PONTO DE CORREÇÃO: Força a normalização da Situação em caixa alta para a
-            // Trigger do MySQL
+            // Força a normalização da Situação em caixa alta para a Trigger do MySQL
             if (atividade.getInSituacao() == null || atividade.getInSituacao().trim().isEmpty()) {
-                atividade.setInSituacao("P"); // Padrão se vier vazio
+                atividade.setInSituacao("P");
             } else {
                 atividade.setInSituacao(atividade.getInSituacao().trim().toUpperCase());
             }
@@ -121,29 +120,40 @@ public class AtividadeConselhalController {
                 return "redirect:/atividades/novo";
             }
 
-            // 1. Converte a string YYYY-MM-DDTHH:mm vinda do HTML diretamente para
+            // Converte a string YYYY-MM-DDTHH:mm vinda do HTML diretamente para
             // LocalDateTime
-            // Respeitando o horário exato selecionado manualmente pelo usuário no
-            // formulário
             LocalDateTime dataHoraSelecionada = LocalDateTime.parse(dataAtividadePura);
             atividade.setDataHoraAtividade(dataHoraSelecionada);
 
-            // 2. Se foi enviado um ficheiro, processamos o comprovante primeiro
+            // ==============================================================================
+            // CORREÇÃO: Preservar Comprovante Existente na Edição
+            // ==============================================================================
             if (file != null && !file.isEmpty()) {
+                // Se um NOVO ficheiro foi enviado, processa e gera um novo registo de
+                // comprovante
                 if (idTipoAnexo == null || nomeComprovanteUsuario == null || nomeComprovanteUsuario.isEmpty()) {
                     throw new RuntimeException("O tipo e o nome do comprovante são obrigatórios.");
                 }
-
-                Comprovante comprovante = comprovanteService.guardarComprovante(file,
-                        idTipoAnexo, nomeComprovanteUsuario);
-
+                Comprovante comprovante = comprovanteService.guardarComprovante(file, idTipoAnexo,
+                        nomeComprovanteUsuario);
                 atividade.setComprovante(comprovante);
-            }
+            } else if (atividade.getIdAtividade() != null) {
+                // Se NÃO enviou ficheiro mas é uma EDIÇÃO, recupera o comprovante antigo para
+                // não o perder
+                AtividadeConselhal atividadeBanco = atividadeService.buscarPorId(atividade.getIdAtividade())
+                        .orElse(null);
+                if (atividadeBanco != null && atividadeBanco.getComprovante() != null) {
+                    atividade.setComprovante(atividadeBanco.getComprovante());
 
-            // O turno ('M', 'T', 'N') capturado pelo formulário continuará sendo repassado
-            // para a service
-            // permitindo que a validação de teto por período funcione com base no horário
-            // real inserido.
+                    // Opcional: Atualiza o nome/descrição do comprovante caso o utilizador tenha
+                    // alterado apenas o texto
+                    if (nomeComprovanteUsuario != null && !nomeComprovanteUsuario.trim().isEmpty()) {
+                        atividade.getComprovante().setNomeComprovante(nomeComprovanteUsuario.trim());
+                    }
+                }
+            }
+            // ==============================================================================
+
             atividadeService.salvarAtividade(atividade);
             ra.addFlashAttribute("sucesso", "Atividade guardada com sucesso!");
 
