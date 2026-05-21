@@ -4,9 +4,11 @@ import br.com.cremepe.jeton.dominio.AtividadeConselhal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -81,4 +83,23 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("idPessoa") Integer idPessoa,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE AtividadeConselhal a SET a.inSituacao = 'F' WHERE a.gestao.idGestao = :idGestao " +
+            "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano " +
+            "AND a.inSituacao = 'C' AND a.inComputada = 'S'")
+    int fecharAtividadesEmFolha(
+            @Param("idGestao") Integer idGestao,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
+
+    // Conta quantas atividades usam um determinado comprovante
+    long countByComprovanteIdComprovante(Integer idComprovante);
+
+    // NOVO: Força a remoção do vínculo direto no banco para evitar bloqueios do
+    // Hibernate
+    @Modifying
+    @Query("UPDATE AtividadeConselhal a SET a.comprovante = null WHERE a.idAtividade = :id")
+    void removerVinculoComprovante(@Param("id") Integer id);
 }

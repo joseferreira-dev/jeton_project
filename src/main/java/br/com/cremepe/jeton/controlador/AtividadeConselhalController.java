@@ -170,8 +170,12 @@ public class AtividadeConselhalController {
         try {
             atividadeService.excluirAtividade(id);
             ra.addFlashAttribute("sucesso", "Atividade removida com sucesso!");
+        } catch (RuntimeException e) {
+            // Captura as nossas regras de negócio (Ex: Atividade Fechada em Folha)
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao remover atividade. Pode estar vinculada a pagamentos de Jeton.");
+            // Captura qualquer outro erro de banco de dados real
+            ra.addFlashAttribute("erro", "Erro interno ao remover atividade: " + e.getMessage());
         }
         return "redirect:/atividades";
     }

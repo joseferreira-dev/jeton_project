@@ -170,4 +170,28 @@ public class JetonService {
     public void excluirJeton(Integer id) {
         jetonRepository.deleteById(id);
     }
+
+    @Transactional
+    public void realizarFechamentoDefinitivoFolha(Gestao gestao, Integer mes, Integer ano) {
+        // 1. Validação de segurança: Verificar se existem atividades C + S para fechar
+        // Se a folha nem sequer foi calculada/computada antes, não faz sentido fechar.
+
+        // 2. Executa o update em lote das Atividades Conselhais (Muda de C + S para F +
+        // S)
+        int totalAtualizado = atividadeRepository.fecharAtividadesEmFolha(gestao.getIdGestao(), mes, ano);
+
+        if (totalAtualizado == 0) {
+            throw new RuntimeException("Não foram encontradas atividades validadas e computadas (C+S) " +
+                    "para fechar na competência " + mes + "/" + ano + ".");
+        }
+
+        // 3. Opcional: Se quiser mudar o status da tabela `jeton` correspondente para
+        // 'P' (Pago/Finalizado)
+        // pode buscar os jetons da competência e alterá-los aqui.
+        List<Jeton> jetonsDoMes = jetonRepository.findByGestaoIdGestaoAndMesAndAno(gestao.getIdGestao(), mes, ano);
+        for (Jeton j : jetonsDoMes) {
+            j.setInSituacao("P"); // 'P' de Pago / Processado em Folha definitivo
+            jetonRepository.save(j);
+        }
+    }
 }

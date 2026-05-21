@@ -41,6 +41,19 @@ public class AtividadeConselhalService {
     @Transactional
     public AtividadeConselhal salvarAtividade(AtividadeConselhal atividade) {
 
+        // ==============================================================================
+        // TRAVA DE SEGURANÇA: Bloquear alteração de Atividades Fechadas em Folha (F)
+        // ==============================================================================
+        if (atividade.getIdAtividade() != null) {
+            AtividadeConselhal atividadeBanco = atividadeRepository.findById(atividade.getIdAtividade())
+                    .orElseThrow(() -> new RuntimeException("Atividade não encontrada no sistema."));
+
+            if ("F".equals(atividadeBanco.getInSituacao())) {
+                throw new RuntimeException(
+                        "Operação negada: Esta atividade já foi processada e FECHADA na folha de pagamento e não pode ser modificada.");
+            }
+        }
+
         // 1. Validar se a Gestão existe e se a data da atividade está DENTRO do mandato
         Gestao gestao = gestaoRepository.findById(atividade.getGestao().getIdGestao())
                 .orElseThrow(() -> new RuntimeException("A gestão informada não foi encontrada no sistema."));
@@ -139,13 +152,60 @@ public class AtividadeConselhalService {
 
         if (optAtividade.isPresent()) {
             AtividadeConselhal atividade = optAtividade.get();
-            Comprovante comprovante = atividade.getComprovante();
 
-            atividadeRepository.deleteById(id);
+            // ==============================================================================
+            // TRAVA DE SEGURANÇA 1: Folha Fechada
+            // ==============================================================================
+            if ("F".equals(atividade.getInSituacao())) {
+                throw new RuntimeException(
+                        "Operação negada: Esta atividade está vinculada a uma folha de pagamento FECHADA e não pode ser eliminada.");
+            }
 
-            if (comprovante != null) {
-                comprovanteRepository.delete(comprovante);
-                fileStorageService.deleteFile(comprovante.getNomeArquivo(), comprovante.getAno(), comprovante.getMes());
+            // Tenta resgatar os dados do comprovante antes de desvincular (protegido)
+            Integer idComprovante = null;
+            Comprovante comprovanteBackup = null;
+            try {
+                if (atividade.getComprovante() != null) {
+                    idComprovante = atividade.getComprovante().getIdComprovante();
+                    comprovanteBackup = atividade.getComprovante();
+                }
+            } catch (Exception e) {
+                // Comprovante fantasma - ignorado
+            }
+
+            // 1. CORTA O VÍNCULO DIRETO NO BANCO
+            atividadeRepository.removerVinculoComprovante(id);
+            atividadeRepository.flush();
+
+            // ==============================================================================
+            // TRAVA DE SEGURANÇA 2: Integridade de Dados (Ex: Vínculo com Jeton)
+            // ==============================================================================
+            try {
+                // 2. APAGA A ATIVIDADE
+                atividadeRepository.deleteById(id);
+                atividadeRepository.flush();
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                // Se o banco de dados bloquear a exclusão (por causa de uma chave estrangeira),
+                // nós capturamos o erro feio do SQL e disparamos a mensagem amigável!
+                // Como há um erro, o @Transactional fará o Rollback do passo 1 automaticamente.
+                throw new RuntimeException(
+                        "Não é possível remover esta atividade pois ela já possui vínculos com o histórico financeiro (Pagamentos de Jeton).");
+            }
+
+            // 3. TENTA APAGAR O COMPROVANTE (Se ele ainda existir no sistema e ninguém mais
+            // estiver usando)
+            if (idComprovante != null && comprovanteBackup != null) {
+                try {
+                    long outrasAtividades = atividadeRepository.countByComprovanteIdComprovante(idComprovante);
+                    if (outrasAtividades == 0) {
+                        comprovanteRepository.deleteById(idComprovante);
+                        fileStorageService.deleteFile(comprovanteBackup.getNomeArquivo(), comprovanteBackup.getAno(),
+                                comprovanteBackup.getMes());
+                    }
+                } catch (Exception e) {
+                    // Ignora silenciosamente erros na limpeza de lixo para não frustrar a exclusão
+                    // da atividade
+                }
             }
         }
     }

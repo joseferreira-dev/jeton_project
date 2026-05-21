@@ -23,34 +23,65 @@
             <div class="card-header bg-success text-white fw-bold">
                 <i class="fa-solid fa-gears me-2"></i> Executar Fecho de Folha Mensal
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <form th:action="@{/jeton/processar}" method="post">
                     <div class="row g-3 align-items-end">
                         <div class="col-md-5">
-                            <label class="form-label fw-bold small text-muted">Gestão Alvo</label>
-                            <select name="idGestao" class="form-select" required>
+                            <label class="form-label fw-bold">Gestão Ativa</label>
+                            <select class="form-select" name="idGestao" required>
                                 <option value="">-- Selecione a Gestão --</option>
                                 <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}"
                                     th:text="${g.nomeGestao}"></option>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold small text-muted">Mês</label>
-                            <input type="number" name="mes" class="form-control" min="1" max="12" th:value="${mesAtual}"
-                                required>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold small text-muted">Ano</label>
-                            <input type="number" name="ano" class="form-control" min="2000" max="2100"
-                                th:value="${anoAtual}" required>
-                        </div>
+
                         <div class="col-md-3">
-                            <button type="submit" class="btn btn-success w-100 btn-confirm"
-                                data-mensagem="Tem a certeza que deseja iniciar o processamento para este mês?<br><small class='text-muted'>O sistema converterá as atividades e saldos pendentes em Jetons de pagamento.</small>"
-                                data-icone="fa-solid fa-play">
-                                <i class="fa-solid fa-play me-1"></i> Processar Mês
-                            </button>
+                            <label class="form-label fw-bold">Mês de Competência</label>
+                            <select class="form-select" name="mes" required>
+                                <option value="1" th:selected="${mesAtual == 1}">Janeiro</option>
+                                <option value="2" th:selected="${mesAtual == 2}">Fevereiro</option>
+                                <option value="3" th:selected="${mesAtual == 3}">Março</option>
+                                <option value="4" th:selected="${mesAtual == 4}">Abril</option>
+                                <option value="5" th:selected="${mesAtual == 5}">Maio</option>
+                                <option value="6" th:selected="${mesAtual == 6}">Junho</option>
+                                <option value="7" th:selected="${mesAtual == 7}">Julho</option>
+                                <option value="8" th:selected="${mesAtual == 8}">Agosto</option>
+                                <option value="9" th:selected="${mesAtual == 9}">Setembro</option>
+                                <option value="10" th:selected="${mesAtual == 10}">Outubro</option>
+                                <option value="11" th:selected="${mesAtual == 11}">Novembro</option>
+                                <option value="12" th:selected="${mesAtual == 12}">Dezembro</option>
+                            </select>
                         </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">Ano</label>
+                            <input type="number" class="form-control" name="ano" th:value="${anoAtual}" min="2020"
+                                max="2100" required>
+                        </div>
+
+                        <div class="col-md-2">
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success fw-bold">
+                                    <i class="fa-solid fa-calculator me-1"></i> Calcular
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center bg-light p-3 rounded">
+                        <div>
+                            <h6 class="fw-bold mb-1 text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>
+                                Área de Homologação Final</h6>
+                            <small class="text-muted">Após fechar de forma definitiva, nenhuma atividade deste período
+                                poderá ser reaberta, editada ou excluída.</small>
+                        </div>
+
+                        <button type="submit" th:formaction="@{/jeton/fechar-definitivo}"
+                            class="btn btn-danger fw-bold px-4"
+                            onclick="return confirm('ATENÇÃO: Deseja realmente homologar e encerrar esta folha? Todas as atividades validadas e computadas (C+S) deste mês serão convertidas em registros permanentes de Folha (F+S) e trancadas contra edições. Esta operação não pode ser desfeita. Confirmar?');">
+                            <i class="fa-solid fa-lock me-1"></i> Homologar e Fechar Folha
+                        </button>
                     </div>
                 </form>
             </div>

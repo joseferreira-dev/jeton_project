@@ -2,6 +2,8 @@ package br.com.cremepe.jeton.repositorio;
 
 import br.com.cremepe.jeton.dominio.Jeton;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -19,4 +21,10 @@ public interface JetonRepository extends JpaRepository<Jeton, Integer> {
 
     // Lista todos os Jetons processados numa determinada gestão
     List<Jeton> findByGestaoIdGestao(Integer idGestao);
+
+    @Query("SELECT j FROM Jeton j WHERE j.gestao.idGestao = :idGestao AND j.mes = :mes AND j.ano = :ano")
+    List<Jeton> findByGestaoIdGestaoAndMesAndAno(
+            @Param("idGestao") Integer idGestao,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
 }

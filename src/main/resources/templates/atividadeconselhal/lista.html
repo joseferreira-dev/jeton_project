@@ -128,31 +128,59 @@
                                 </td>
 
                                 <td>
-                                    <span th:if="${a.inSituacao == 'P'}" class="badge bg-warning text-dark"><i
-                                            class="fa-regular fa-clock me-1"></i> Pendente</span>
-                                    <span th:if="${a.inSituacao == 'C'}" class="badge bg-success"><i
-                                            class="fa-solid fa-check me-1"></i> Validada</span>
-                                    <span th:if="${a.inSituacao == 'F'}" class="badge bg-primary"><i
-                                            class="fa-solid fa-lock"></i></i> Fechada</span>
+                                    <span th:if="${a.inSituacao == 'P'}" class="badge bg-warning text-dark">
+                                        <i class="fa-solid fa-clock me-1"></i> Pendente
+                                    </span>
+                                    <span th:if="${a.inSituacao == 'C'}" class="badge bg-success">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Validada
+                                    </span>
+                                    <span th:if="${a.inSituacao == 'F'}" class="badge bg-secondary">
+                                        <i class="fa-solid fa-lock me-1"></i> Fechada (Folha)
+                                    </span>
                                 </td>
 
-                                <td class="text-center pe-4">
-                                    <button th:if="${a.comprovante != null}" type="button"
-                                        class="btn btn-sm btn-outline-secondary me-1"
-                                        th:onclick="verComprovante([[${a.comprovante.idComprovante}]], [[${a.comprovante.nomeComprovante}]])"
-                                        title="Ver Comprovante">
-                                        <i class="fa-solid fa-file-pdf"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-info me-1"
-                                        th:onclick="verDetalhes([[${a}]])" title="Ver Detalhes Completos">
-                                        <i class="fa-solid fa-eye"></i>
-                                    </button>
-                                    <a th:href="@{'/atividades/editar/' + ${a.idAtividade}}"
-                                        class="btn btn-sm btn-outline-primary me-1"><i
-                                            class="fa-solid fa-pen-to-square"></i></a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                        th:onclick="prepararExclusao([[${a.idAtividade}]])"><i
-                                            class="fa-solid fa-trash"></i></button>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-info" th:data-id="${a.idAtividade}"
+                                            th:data-turno="${a.inTurno}" th:data-regranome="${a.regra.nomeRegra}"
+                                            th:data-regradesc="${a.regra.descricao}"
+                                            th:data-regrapontos="${a.regra.pontos}"
+                                            th:data-dataatv="${#temporals.format(a.dataHoraAtividade, 'dd/MM/yyyy HH:mm')}"
+                                            th:data-datareg="${#temporals.format(a.dataHoraRegistro, 'dd/MM/yyyy HH:mm')}"
+                                            onclick="verDetalhes(this)" title="Ver Detalhes">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+
+                                        <button th:if="${a.comprovante != null}" type="button"
+                                            class="btn btn-outline-secondary"
+                                            th:data-id="${a.comprovante.idComprovante}"
+                                            th:data-nome="${a.comprovante.nomeComprovante}"
+                                            onclick="verComprovante(this)" title="Ver Comprovante">
+                                            <i class="fa-solid fa-paperclip"></i>
+                                        </button>
+
+                                        <th:block th:if="${a.inSituacao != 'F'}">
+                                            <a th:href="@{/atividades/editar/{id}(id=${a.idAtividade})}"
+                                                class="btn btn-outline-primary" title="Editar">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger"
+                                                th:onclick="|prepararExclusao(${a.idAtividade})|" title="Excluir">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </th:block>
+
+                                        <th:block th:if="${a.inSituacao == 'F'}">
+                                            <button type="button" class="btn btn-outline-secondary disabled"
+                                                title="Bloqueado para Edição">
+                                                <i class="fa-solid fa-lock"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary disabled"
+                                                title="Bloqueado para Exclusão">
+                                                <i class="fa-solid fa-lock"></i>
+                                            </button>
+                                        </th:block>
+                                    </div>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(paginaAtividades.content)}">
@@ -258,31 +286,40 @@
                 new bootstrap.Modal(document.getElementById('modalExclusao')).show();
             }
 
-            function verDetalhes(a) {
-                const dataAtv = new Date(a.dataHoraAtividade).toLocaleString('pt-BR');
-                const dataReg = new Date(a.dataHoraRegistro).toLocaleString('pt-BR');
+            function verDetalhes(btn) {
+                // Extrai os dados do botão de forma segura
+                const id = btn.getAttribute('data-id');
+                const turnoVal = btn.getAttribute('data-turno');
+                const regraNome = btn.getAttribute('data-regranome');
+                const regraDesc = btn.getAttribute('data-regradesc');
+                const regraPontos = btn.getAttribute('data-regrapontos');
+                const dataAtv = btn.getAttribute('data-dataatv');
+                const dataReg = btn.getAttribute('data-datareg');
 
-                let html = `
-                <div class="row g-3">
-                    <div class="col-md-6"><strong>Conselheiro:</strong><br>${a.conselheiro.pessoa.nome}</div>
-                    <div class="col-md-6"><strong>Gestão:</strong><br>${a.gestao.nomeGestao}</div>
-                    <hr>
-                    <div class="col-md-12"><strong>Atividade Enquadrada:</strong><br>${a.regra.nomeRegra} - ${a.regra.descricao}</div>
-                    <div class="col-md-4"><strong>Data da Atividade:</strong><br>${dataAtv}</div>
-                    <div class="col-md-4"><strong>Turno:</strong><br>${a.inTurno == 'M' ? 'Manhã' : a.inTurno == 'T' ? 'Tarde' : 'Noite'}</div>
-                    <div class="col-md-4"><strong>Pontuação da Regra:</strong><br><span class="badge bg-primary">${a.regra.pontos} pontos</span></div>
-                    <hr>
-                    <div class="col-md-6"><small class="text-muted"><strong>Registrado em:</strong> ${dataReg}</small></div>
-                    <div class="col-md-6 text-end"><small class="text-muted"><strong>ID Atividade:</strong> #${a.idAtividade}</small></div>
-                </div>
-            `;
+                // Formata o turno
+                const turnoTexto = turnoVal === 'M' ? 'Manhã' : (turnoVal === 'T' ? 'Tarde' : 'Noite');
+
+                const html = `
+            <div class="row g-3">
+                <div class="col-md-12"><strong>Atividade Enquadrada:</strong><br>${regraNome} - ${regraDesc}</div>
+                <div class="col-md-4"><strong>Data da Atividade:</strong><br>${dataAtv}</div>
+                <div class="col-md-4"><strong>Turno:</strong><br>${turnoTexto}</div>
+                <div class="col-md-4"><strong>Pontuação da Regra:</strong><br><span class="badge bg-primary">${regraPontos} pontos</span></div>
+                <hr>
+                <div class="col-md-6"><small class="text-muted"><strong>Registrado em:</strong> ${dataReg}</small></div>
+                <div class="col-md-6 text-end"><small class="text-muted"><strong>ID Atividade:</strong> #${id}</small></div>
+            </div>
+        `;
                 document.getElementById('detalhesConteudo').innerHTML = html;
                 new bootstrap.Modal(document.getElementById('modalDetalhes')).show();
             }
 
-            function verComprovante(id, nome) {
+            function verComprovante(btn) {
+                // Extrai o ID e o Nome com base no botão clicado
+                const id = btn.getAttribute('data-id');
+                const nome = btn.getAttribute('data-nome');
+
                 document.getElementById('nomeComprovanteTitulo').innerText = nome;
-                // O link aponta para o ComprovanteController que criamos antes
                 const url = `/comprovantes/download/${id}`;
                 document.getElementById('frameComprovante').src = url;
                 new bootstrap.Modal(document.getElementById('modalComprovante')).show();

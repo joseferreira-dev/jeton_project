@@ -79,4 +79,33 @@ public class JetonController {
         }
         return "redirect:/jeton";
     }
+
+    @PostMapping("/fechar-definitivo")
+    public String fecharDefinitivo(
+            @RequestParam("idGestao") Integer idGestao,
+            @RequestParam("mes") Integer mes,
+            @RequestParam("ano") Integer ano,
+            RedirectAttributes ra) {
+
+        try {
+            Optional<Gestao> gestaoOpt = gestaoService.buscarPorId(idGestao);
+            if (gestaoOpt.isEmpty()) {
+                throw new RuntimeException("A gestão informada não foi localizada.");
+            }
+
+            // Invoca o serviço para mudar o status de C+S para F+S
+            jetonService.realizarFechamentoDefinitivoFolha(gestaoOpt.get(), mes, ano);
+
+            ra.addFlashAttribute("sucesso",
+                    "Folha de pagamento fechada e homologada definitivamente para a competência " + mes + "/" + ano
+                            + "! Todas as atividades foram bloqueadas.");
+
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro interno ao homologar o fechamento: " + e.getMessage());
+        }
+
+        return "redirect:/jeton";
+    }
 }
