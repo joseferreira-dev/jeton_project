@@ -69,13 +69,45 @@ public class JetonController {
         return "redirect:/jeton";
     }
 
+    // ==========================================================
+    // ESTORNO PONTUAL (Um conselheiro clicando na lixeira)
+    // ==========================================================
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
-            jetonService.excluirJeton(id);
-            ra.addFlashAttribute("sucesso", "Pagamento (Jeton) eliminado do histórico!");
+            jetonService.estornarJetonPontual(id);
+            ra.addFlashAttribute("sucesso",
+                    "Jeton estornado com sucesso! As atividades retornaram para C+N e os pontos foram devolvidos ao conselheiro.");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao remover Jeton. Pode estar vinculado a outras entidades.");
+            ra.addFlashAttribute("erro", "Erro ao estornar Jeton: " + e.getMessage());
+        }
+        return "redirect:/jeton";
+    }
+
+    // ==========================================================
+    // ESTORNO EM LOTE (Botão geral da folha mensal)
+    // ==========================================================
+    @PostMapping("/estornar-lote")
+    public String estornarLote(
+            @RequestParam("idGestao") Integer idGestao,
+            @RequestParam("mes") Integer mes,
+            @RequestParam("ano") Integer ano,
+            RedirectAttributes ra) {
+        try {
+            Optional<Gestao> gestaoOpt = gestaoService.buscarPorId(idGestao);
+            if (gestaoOpt.isEmpty())
+                throw new RuntimeException("A gestão informada não foi localizada.");
+
+            jetonService.estornarFolhaEmLote(gestaoOpt.get(), mes, ano);
+            ra.addFlashAttribute("sucesso", "A folha de " + mes + "/" + ano
+                    + " foi integralmente estornada. Todos os saldos e atividades foram revertidos!");
+
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro interno ao estornar a folha em lote: " + e.getMessage());
         }
         return "redirect:/jeton";
     }

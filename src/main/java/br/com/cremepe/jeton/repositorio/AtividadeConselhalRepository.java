@@ -102,4 +102,16 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
     @Modifying
     @Query("UPDATE AtividadeConselhal a SET a.comprovante = null WHERE a.idAtividade = :id")
     void removerVinculoComprovante(@Param("id") Integer id);
+
+    // NOVO: Reverte as atividades computadas (De C+S para C+N)
+    @Modifying
+    @Query("UPDATE AtividadeConselhal a SET a.inComputada = 'N' WHERE a.conselheiro.idPessoa = :idPessoa " +
+            "AND a.gestao.idGestao = :idGestao AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano "
+            +
+            "AND a.inSituacao = 'C' AND a.inComputada = 'S'")
+    void reverterAtividadesComputadas(
+            @Param("idPessoa") Integer idPessoa,
+            @Param("idGestao") Integer idGestao,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
 }

@@ -9,11 +9,11 @@
 
 // /**
 // * Componente de diagnóstico estrutural e auditoria para o banco de dados
-// Jeton.
+// * Jeton.
 // * Executa automaticamente na inicialização da aplicação para exibir tabelas,
 // * views,
 // * metadados, dados amostrais (top 5) e código completo dos gatilhos
-// (triggers).
+// * (triggers).
 // */
 // @Component
 // public class DiagnosticoDatabase implements CommandLineRunner {
@@ -142,8 +142,7 @@
 // DatabaseMetaData metaData = conn.getMetaData();
 
 // System.out.println("#########################################################################");
-// System.out.println(" MAPEAMENTO DE VISÕES LOGICAS (VIEWS) DO BANCO DE
-// DADOS");
+// System.out.println(" MAPEAMENTO DE VISÕES LOGICAS (VIEWS) DO BANCO DEDADOS");
 // System.out.println("#########################################################################\n");
 
 // try (ResultSet rsViews = metaData.getTables(catalog, null, "%", new String[]
@@ -232,10 +231,10 @@
 // System.out.println(" GATILHOS (TRIGGERS) ATIVOS DE VALIDAÇÃO FINANCEIRA");
 // System.out.println("#########################################################################\n");
 
-// String sql = "SELECT TRIGGER_NAME, EVENT_MANIPULATION, EVENT_OBJECT_TABLE,
-// ACTION_TIMING, ACTION_STATEMENT " +
-// "FROM INFORMATION_SCHEMA.TRIGGERS WHERE TRIGGER_SCHEMA = ? ORDER BY
-// EVENT_OBJECT_TABLE ASC";
+// String sql = "SELECT TRIGGER_NAME, EVENT_MANIPULATION,
+// EVENT_OBJECT_TABLE,ACTION_TIMING, ACTION_STATEMENT "
+// + "FROM INFORMATION_SCHEMA.TRIGGERS WHERE TRIGGER_SCHEMA = ? ORDER
+// BYEVENT_OBJECT_TABLE ASC";
 
 // try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 // stmt.setString(1, catalog);

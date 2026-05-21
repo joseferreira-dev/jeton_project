@@ -28,14 +28,8 @@ public interface ResolucaoRepository extends JpaRepository<Resolucao, Integer> {
     Page<Resolucao> pesquisarPaginado(@Param("termo") String termo, @Param("situacao") String situacao,
             Pageable pageable);
 
-    /**
-     * Retorna as resoluções que estão vigentes em uma determinada data.
-     * Filtra resoluções não revogadas cujo intervalo de vigência englobe a data
-     * informada.
-     */
     @Query("SELECT r FROM Resolucao r WHERE r.dtInicioVigencia <= :dataBase " +
             "AND (r.dtFimVigencia IS NULL OR r.dtFimVigencia >= :dataBase) " +
-            "AND r.inRevogado <> 'S' " +
             "ORDER BY r.dtInicioVigencia DESC, r.idResolucao DESC")
     List<Resolucao> findResoluesVigentesNaData(@Param("dataBase") LocalDate dataBase);
 }

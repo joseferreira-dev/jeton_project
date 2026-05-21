@@ -11,6 +11,8 @@ import java.util.List;
 @Repository
 public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Integer> {
 
+    List<PontosSaldo> findByJetonIdJeton(Integer idJeton);
+
     @Query("""
             SELECT new br.com.cremepe.jeton.dto.PontosRemanescentesDTO(
                 c.idPessoa,

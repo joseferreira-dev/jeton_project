@@ -167,8 +167,50 @@ public class JetonService {
     }
 
     @Transactional
-    public void excluirJeton(Integer id) {
-        jetonRepository.deleteById(id);
+    public void estornarJetonPontual(Integer idJeton) {
+        Jeton jeton = jetonRepository.findById(idJeton)
+                .orElseThrow(() -> new RuntimeException("Registro financeiro não encontrado."));
+
+        // Proteção: Não permite estornar se a folha geral já foi trancada (F)
+        if ("P".equals(jeton.getInSituacao())) {
+            throw new RuntimeException("Estorno negado: Este pagamento já foi HOMOLOGADO em folha definitiva.");
+        }
+
+        // 1. DEVOLVER OS PONTOS: Localiza os saldos afetados e restaura a carteira
+        List<PontosSaldo> saldos = pontosSaldoRepository.findByJetonIdJeton(idJeton);
+        for (PontosSaldo saldo : saldos) {
+            saldo.setPontosSobrando(saldo.getPontosSobrando() + saldo.getPontosUtilizados());
+            saldo.setPontosUtilizados(0);
+            saldo.setInSituacao("A"); // Volta a ficar Ativo/Disponível
+            saldo.setJeton(null); // Desvincula do pagamento
+            pontosSaldoRepository.save(saldo);
+        }
+
+        // 2. REVERTER ATIVIDADES: Volta o status de S (Computada) para N (Não
+        // Computada)
+        atividadeRepository.reverterAtividadesComputadas(
+                jeton.getConselheiro().getIdPessoa(),
+                jeton.getGestao().getIdGestao(),
+                jeton.getMes(),
+                jeton.getAno());
+
+        // 3. EXCLUIR O REGISTRO DE PAGAMENTO: Apaga o Jeton em si
+        jetonRepository.delete(jeton);
+    }
+
+    @Transactional
+    public void estornarFolhaEmLote(Gestao gestao, Integer mes, Integer ano) {
+        List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(gestao.getIdGestao(), mes, ano);
+
+        if (jetons.isEmpty()) {
+            throw new RuntimeException(
+                    "Não há pagamentos processados para estornar nesta competência " + mes + "/" + ano + ".");
+        }
+
+        // Executa o estorno de forma sequencial para todos os conselheiros do mês
+        for (Jeton jeton : jetons) {
+            estornarJetonPontual(jeton.getIdJeton());
+        }
     }
 
     @Transactional
