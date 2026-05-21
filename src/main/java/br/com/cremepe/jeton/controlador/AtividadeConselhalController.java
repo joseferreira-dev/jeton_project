@@ -54,27 +54,29 @@ public class AtividadeConselhalController {
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
             @RequestParam(value = "situacao", required = false, defaultValue = "") String situacao,
             @RequestParam(value = "turno", required = false, defaultValue = "") String turno,
+            @RequestParam(value = "comprovanteFiltro", required = false, defaultValue = "") String comprovanteFiltro,
             @RequestParam(value = "dataInicio", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam(value = "dataFim", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate dataFim,
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") int size,
             @RequestParam(value = "sort", required = false, defaultValue = "dataHoraAtividade") String sort,
             @RequestParam(value = "dir", required = false, defaultValue = "desc") String dir,
-
             Model model) {
 
         Page<AtividadeConselhal> pagina = atividadeService.listarComPaginacaoEPesquisa(
-                termo, situacao, turno, dataInicio, dataFim, page, size, sort, dir);
+                termo, situacao, turno, comprovanteFiltro, dataInicio, dataFim, page, size, sort, dir);
 
         model.addAttribute("paginaAtividades", pagina);
         model.addAttribute("termo", termo);
         model.addAttribute("situacao", situacao);
         model.addAttribute("turno", turno);
+        model.addAttribute("comprovanteFiltro", comprovanteFiltro);
         model.addAttribute("dataInicio", dataInicio);
         model.addAttribute("dataFim", dataFim);
         model.addAttribute("size", size);
         model.addAttribute("sort", sort);
         model.addAttribute("dir", dir);
+        model.addAttribute("reverseSortDir", dir.equalsIgnoreCase("asc") ? "desc" : "asc");
 
         return "atividadeconselhal/lista";
     }
@@ -311,6 +313,17 @@ public class AtividadeConselhalController {
             ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro interno ao validar: " + e.getMessage());
+        }
+        return "redirect:/atividades";
+    }
+
+    @GetMapping("/desvalidar/{id}")
+    public String desvalidar(@PathVariable("id") Integer id, RedirectAttributes ra) {
+        try {
+            atividadeService.desvalidarAtividade(id);
+            ra.addFlashAttribute("sucesso", "Atividade retornada ao status Pendente.");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         }
         return "redirect:/atividades";
     }

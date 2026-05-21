@@ -31,7 +31,7 @@
                     <form th:action="@{/atividades}" method="get">
                         <div class="row g-3 align-items-end">
 
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label fw-bold small text-muted">Pesquisar (Nome ou Regra)</label>
                                 <input type="text" name="termo" class="form-control" placeholder="Digite para buscar..."
                                     th:value="${termo}">
@@ -57,12 +57,32 @@
                                 </select>
                             </div>
 
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold small text-muted">Anexo / Comprovante</label>
+                                <select name="comprovanteFiltro" class="form-select">
+                                    <option value="">Todos os registos</option>
+                                    <option value="S" th:selected="${comprovanteFiltro == 'S'}">Apenas com Comprovante
+                                    </option>
+                                    <option value="N" th:selected="${comprovanteFiltro == 'N'}">Apenas sem Comprovante
+                                    </option>
+                                </select>
+                            </div>
+
                             <div class="col-md-2">
+                                <label class="form-label fw-bold small text-muted">Exibir</label>
+                                <select name="size" class="form-select">
+                                    <option value="10" th:selected="${size == 10}">10 registos</option>
+                                    <option value="20" th:selected="${size == 20}">20 registos</option>
+                                    <option value="0" th:selected="${size == 0}">Todos</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
                                 <label class="form-label fw-bold small text-muted">Data Inicial</label>
                                 <input type="date" name="dataInicio" class="form-control" th:value="${dataInicio}">
                             </div>
 
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <label class="form-label fw-bold small text-muted">Data Final</label>
                                 <input type="date" name="dataFim" class="form-control" th:value="${dataFim}">
                             </div>
@@ -191,12 +211,21 @@
                                         </button>
 
                                         <th:block th:if="${a.inSituacao != 'F'}">
-                                            <a th:if="${a.inSituacao == 'P'}"
-                                                th:href="@{/atividades/validar/{id}(id=${a.idAtividade})}"
-                                                class="btn btn-outline-success" title="Validar Atividade"
-                                                onclick="return confirm('Deseja aprovar e validar esta atividade na base de dados?');">
-                                                <i class="fa-solid fa-check-double"></i>
-                                            </a>
+                                            <th:block th:if="${a.inSituacao == 'P'}">
+                                                <button type="button" class="btn btn-outline-success"
+                                                    th:onclick="|confirmarAcao('/atividades/validar/${a.idAtividade}', 'Deseja realmente validar esta atividade?', false)|"
+                                                    title="Validar Atividade">
+                                                    <i class="fa-solid fa-check"></i>
+                                                </button>
+                                            </th:block>
+
+                                            <th:block th:if="${a.inSituacao == 'C'}">
+                                                <button type="button" class="btn btn-outline-warning"
+                                                    th:onclick="|confirmarAcao('/atividades/desvalidar/${a.idAtividade}', 'Deseja realmente desvalidar esta atividade?', true)|"
+                                                    title="Desvalidar Atividade">
+                                                    <i class="fa-solid fa-xmark"></i>
+                                                </button>
+                                            </th:block>
 
                                             <a th:href="@{/atividades/editar/{id}(id=${a.idAtividade})}"
                                                 class="btn btn-outline-primary" title="Editar">
@@ -266,9 +295,9 @@
         </div>
 
         <div class="modal fade" id="modalDetalhes" tabindex="-1">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content border-0 shadow">
-                    <div class="modal-header bg-cremepe text-white">
+                    <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title fw-bold"><i class="fa-solid fa-magnifying-glass-chart me-2"></i>Detalhes
                             da Atividade</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -312,6 +341,29 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <a id="btnConfirmarExclusao" href="#" class="btn btn-danger px-4"><i
                                 class="fa-solid fa-trash-can me-1"></i> Excluir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-labelledby="modalConfirmacaoLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow">
+                    <div id="modalConfirmacaoHeader" class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="modalConfirmacaoLabel">
+                            <i class="fa-solid fa-circle-question me-2"></i> Confirmar Ação
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p id="textoConfirmacao" class="mb-0">Tem certeza que deseja realizar esta operação?</p>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <a id="linkConfirmacao" href="#" class="btn btn-primary px-4">Confirmar</a>
                     </div>
                 </div>
             </div>
@@ -361,6 +413,24 @@
                 const url = `/comprovantes/download/${id}`;
                 document.getElementById('frameComprovante').src = url;
                 new bootstrap.Modal(document.getElementById('modalComprovante')).show();
+            }
+
+            function confirmarAcao(url, mensagem, isDesvalidar) {
+                document.getElementById('textoConfirmacao').innerText = mensagem;
+
+                const link = document.getElementById('linkConfirmacao');
+                link.setAttribute('href', url);
+
+                const modalHeader = document.getElementById('modalConfirmacaoHeader');
+
+                if (isDesvalidar) {
+                    link.className = "btn btn-warning px-4 text-white";
+                    modalHeader.className = "modal-header bg-warning text-white";
+                } else {
+                    link.className = "btn btn-success px-4";
+                }
+
+                new bootstrap.Modal(document.getElementById('modalConfirmacao')).show();
             }
         </script>
     </div>

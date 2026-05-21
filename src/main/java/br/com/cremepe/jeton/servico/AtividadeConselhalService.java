@@ -140,11 +140,19 @@ public class AtividadeConselhalService {
 
     @Transactional(readOnly = true)
     public Page<AtividadeConselhal> listarComPaginacaoEPesquisa(String termo, String situacao, String turno,
+            String comprovanteFiltro,
             LocalDate dataInicio, LocalDate dataFim, int page, int size,
             String sortField, String sortDir) {
-        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
-        Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
-        return atividadeRepository.pesquisarPaginado(termo, situacao, turno, dataInicio, dataFim, pageable);
+
+        Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Sort sort = Sort.by(direction, sortField);
+
+        Pageable pageable = (size == 0)
+                ? PageRequest.of(0, Integer.MAX_VALUE, sort)
+                : PageRequest.of(page, size, sort);
+
+        return atividadeRepository.pesquisarPaginado(termo, situacao, turno, comprovanteFiltro, dataInicio, dataFim,
+                pageable);
     }
 
     @Transactional
@@ -158,6 +166,25 @@ public class AtividadeConselhalService {
 
         // Muda a situação para Validada (C)
         atividade.setInSituacao("C");
+        atividadeRepository.save(atividade);
+    }
+
+    @Transactional
+    public void desvalidarAtividade(Integer id) {
+        AtividadeConselhal atividade = atividadeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Atividade não encontrada."));
+
+        if ("F".equals(atividade.getInSituacao())) {
+            throw new RuntimeException("Operação negada: Esta atividade está fechada em folha.");
+        }
+
+        // Regra: Só podemos desvalidar se ainda não foi processada no Jeton (Computada)
+        if ("S".equals(atividade.getInComputada())) {
+            throw new RuntimeException(
+                    "Operação negada: Esta atividade já foi computada em um processamento financeiro.");
+        }
+
+        atividade.setInSituacao("P");
         atividadeRepository.save(atividade);
     }
 

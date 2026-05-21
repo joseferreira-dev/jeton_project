@@ -26,13 +26,14 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
     // Conta quantas atividades usam uma determinada regra (Trava de segurança)
     long countByRegraIdRegra(Integer idRegra);
 
-    // NOVO: Pesquisa inteligente com paginação
-    // NOVO: Pesquisa aprimorada (Conselheiro, Regra, Situação, Turno e Data)
     @Query("SELECT a FROM AtividadeConselhal a WHERE " +
             "(LOWER(a.conselheiro.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR " +
             "LOWER(a.regra.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
             "(:situacao IS NULL OR :situacao = '' OR a.inSituacao = :situacao) AND " +
             "(:turno IS NULL OR :turno = '' OR a.inTurno = :turno) AND " +
+            "(:comprovanteFiltro IS NULL OR :comprovanteFiltro = '' OR " +
+            " (:comprovanteFiltro = 'S' AND a.comprovante IS NOT NULL) OR " +
+            " (:comprovanteFiltro = 'N' AND a.comprovante IS NULL)) AND " +
             "(CAST(:dataInicio AS date) IS NULL OR CAST(a.dataHoraAtividade AS date) >= CAST(:dataInicio AS date)) AND "
             +
             "(CAST(:dataFim AS date) IS NULL OR CAST(a.dataHoraAtividade AS date) <= CAST(:dataFim AS date))")
@@ -40,6 +41,7 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("termo") String termo,
             @Param("situacao") String situacao,
             @Param("turno") String turno,
+            @Param("comprovanteFiltro") String comprovanteFiltro,
             @Param("dataInicio") java.time.LocalDate dataInicio,
             @Param("dataFim") java.time.LocalDate dataFim,
             Pageable pageable);
