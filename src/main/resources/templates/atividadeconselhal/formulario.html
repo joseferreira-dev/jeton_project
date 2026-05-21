@@ -258,7 +258,7 @@
 
                             data.regras.forEach(r => {
                                 const isSelected = (idRegraParaSelecionar && idRegraParaSelecionar == r.id) ? 'selected' : '';
-                                selectRegra.innerHTML += `<option value="${r.id}" ${isSelected}>${r.nome} (${r.pontos} pts) - ${r.descricao}</option>`;
+                                selectRegra.innerHTML += `<option value="${r.id}" ${isSelected}>${r.nome} (${r.pontos} pts)</option>`;
                             });
                             selectRegra.disabled = false;
 
