@@ -17,6 +17,8 @@ public interface ConselheiroRepository extends JpaRepository<Conselheiro, Intege
 
     Optional<Conselheiro> findByCrm(Integer crm);
 
+    long countByInSituacao(String inSituacao);
+
     @Query("SELECT c FROM Conselheiro c WHERE " +
             "(LOWER(c.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR CAST(c.crm AS string) LIKE CONCAT('%', :termo, '%')) "
             +

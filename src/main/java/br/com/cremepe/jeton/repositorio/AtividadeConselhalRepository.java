@@ -25,6 +25,14 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
 
     long countByRegraIdRegra(Integer idRegra);
 
+    long countByInSituacao(String inSituacao);
+
+    List<AtividadeConselhal> findTop5ByOrderByDataHoraRegistroDesc();
+
+    // Método para contar todas as atividades lançadas no mês e ano correntes
+    @Query("SELECT COUNT(a) FROM AtividadeConselhal a WHERE MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
+    long countAtividadesDoMes(@Param("mes") Integer mes, @Param("ano") Integer ano);
+
     @Query("SELECT a FROM AtividadeConselhal a WHERE " +
             "(LOWER(a.conselheiro.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR " +
             "LOWER(a.regra.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +

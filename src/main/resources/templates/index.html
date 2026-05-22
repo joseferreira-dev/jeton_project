@@ -54,7 +54,7 @@
                             <div>
                                 <h6 class="text-muted fw-bold text-uppercase mb-2"
                                     style="font-size: 0.75rem; letter-spacing: 0.5px;">Atividades Pendentes</h6>
-                                <h3 class="mb-0 fw-bold text-dark" th:text="${totalPendentes ?: '24'}">24</h3>
+                                <h3 class="mb-0 fw-bold text-dark" th:text="${totalPendentes ?: '0'}">0</h3>
                             </div>
                             <div class="bg-warning bg-opacity-10 text-warning p-3 rounded">
                                 <i class="fa-solid fa-clipboard-question fs-4"></i>
@@ -72,7 +72,7 @@
                             <div>
                                 <h6 class="text-muted fw-bold text-uppercase mb-2"
                                     style="font-size: 0.75rem; letter-spacing: 0.5px;">Conselheiros Ativos</h6>
-                                <h3 class="mb-0 fw-bold text-dark" th:text="${totalConselheiros ?: '42'}">42</h3>
+                                <h3 class="mb-0 fw-bold text-dark" th:text="${totalConselheiros ?: '0'}">0</h3>
                             </div>
                             <div class="bg-primary bg-opacity-10 text-primary p-3 rounded">
                                 <i class="fa-solid fa-user-doctor fs-4"></i>
@@ -89,11 +89,11 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <h6 class="text-muted fw-bold text-uppercase mb-2"
-                                    style="font-size: 0.75rem; letter-spacing: 0.5px;">Jetons do Mês</h6>
-                                <h3 class="mb-0 fw-bold text-dark" th:text="${totalJetonsMes ?: '156'}">156</h3>
+                                    style="font-size: 0.75rem; letter-spacing: 0.5px;">Atividades do Mês</h6>
+                                <h3 class="mb-0 fw-bold text-dark" th:text="${totalAtividadesMes ?: '0'}">0</h3>
                             </div>
                             <div class="bg-success bg-opacity-10 p-3 rounded text-cremepe">
-                                <i class="fa-solid fa-coins fs-4"></i>
+                                <i class="fa-solid fa-list-check fs-4"></i>
                             </div>
                         </div>
                     </div>
@@ -107,8 +107,8 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <h6 class="text-muted fw-bold text-uppercase mb-2"
-                                    style="font-size: 0.75rem; letter-spacing: 0.5px;">Comprovativos Salvos</h6>
-                                <h3 class="mb-0 fw-bold text-dark" th:text="${totalComprovantes ?: '89'}">89</h3>
+                                    style="font-size: 0.75rem; letter-spacing: 0.5px;">Comprovantes Salvos</h6>
+                                <h3 class="mb-0 fw-bold text-dark" th:text="${totalComprovantes ?: '0'}">0</h3>
                             </div>
                             <div style="background-color: rgba(139, 92, 246, 0.1); color: #8b5cf6;" class="p-3 rounded">
                                 <i class="fa-solid fa-file-pdf fs-4"></i>
@@ -134,34 +134,36 @@
                                 <thead class="table-light text-muted small">
                                     <tr>
                                         <th class="ps-4">Conselheiro Médico</th>
-                                        <th>Atividade / Regra</th>
+                                        <th>Atividade</th>
                                         <th class="text-end pe-4">Situação</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td class="ps-4 fw-semibold text-dark">Dr(a). Maria Silva</td>
-                                        <td><span class="text-muted small d-block">Sindicância (3 pts)</span></td>
-                                        <td class="text-end pe-4"><span class="badge bg-warning text-dark"><i
-                                                    class="fa-regular fa-clock me-1"></i>Pendente</span></td>
+                                    <tr th:each="a : ${atividadesRecentes}">
+                                        <td class="ps-4 fw-semibold text-dark" th:text="${a.conselheiro.pessoa.nome}">
+                                            Dr. Exemplo</td>
+                                        <td>
+                                            <span class="text-muted small d-block"
+                                                th:text="${a.regra.nomeRegra + ' (' + (a.regra.pontos * a.qtdAtividade) + ' pts)'}">
+                                                Nome da Regra
+                                            </span>
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <span th:if="${a.inSituacao == 'P'}" class="badge bg-warning text-dark">
+                                                <i class="fa-regular fa-clock me-1"></i>Pendente
+                                            </span>
+                                            <span th:if="${a.inSituacao == 'C'}" class="badge bg-success">
+                                                <i class="fa-solid fa-check-double me-1"></i>Homologado
+                                            </span>
+                                            <span th:if="${a.inSituacao == 'F'}" class="badge bg-primary">
+                                                <i class="fa-solid fa-lock me-1"></i>Fechado
+                                            </span>
+                                        </td>
                                     </tr>
-                                    <tr>
-                                        <td class="ps-4 fw-semibold text-dark">Dr. João Santos</td>
-                                        <td><span class="text-muted small d-block">Reunião Plenária (1 pt)</span></td>
-                                        <td class="text-end pe-4"><span class="badge bg-success"><i
-                                                    class="fa-solid fa-check-double me-1"></i>Processado</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="ps-4 fw-semibold text-dark">Dr. Carlos Mendes</td>
-                                        <td><span class="text-muted small d-block">Vistoria Fiscal (2.5 pts)</span></td>
-                                        <td class="text-end pe-4"><span class="badge bg-warning text-dark"><i
-                                                    class="fa-regular fa-clock me-1"></i>Pendente</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="ps-4 fw-semibold text-dark">Dra. Ana Costa</td>
-                                        <td><span class="text-muted small d-block">Câmara Técnica (1.5 pts)</span></td>
-                                        <td class="text-end pe-4"><span class="badge bg-success"><i
-                                                    class="fa-solid fa-check-double me-1"></i>Processado</span></td>
+                                    <tr th:if="${#lists.isEmpty(atividadesRecentes)}">
+                                        <td colspan="3" class="text-center py-4 text-muted small">
+                                            <i class="fa-solid fa-inbox me-2"></i>Nenhuma atividade recente registrada.
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
