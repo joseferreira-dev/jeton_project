@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Gestao;
+import br.com.cremepe.jeton.dominio.Jeton;
 import br.com.cremepe.jeton.servico.GestaoService;
 import br.com.cremepe.jeton.servico.JetonService;
 import jakarta.servlet.http.HttpSession;
@@ -11,6 +12,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Controller
@@ -23,50 +28,83 @@ public class JetonController {
     private GestaoService gestaoService;
 
     @GetMapping
-    public String listar(Model model, HttpSession session) {
+    public String listar(
+            @RequestParam(value = "idGestao", required = false) Integer idGestao,
+            @RequestParam(value = "mes", required = false) Integer mes,
+            @RequestParam(value = "ano", required = false) Integer ano,
+            Model model, HttpSession session) {
+
         if (session.getAttribute("usuarioLogado") == null)
             return "redirect:/login";
 
-        // Lista o histórico de Jetons já processados
-        model.addAttribute("lista", jetonService.listarTodos());
-
-        // Carrega as Gestões para o dropdown do formulário
-        model.addAttribute("listaGestoes", gestaoService.listarTodos());
-
-        // Preenche automaticamente o Mês e Ano atuais para facilitar a usabilidade
         LocalDate hoje = LocalDate.now();
-        model.addAttribute("mesAtual", hoje.getMonthValue());
-        model.addAttribute("anoAtual", hoje.getYear());
+        Integer mesFiltro = mes != null ? mes : hoje.getMonthValue();
+        Integer anoFiltro = ano != null ? ano : hoje.getYear();
+
+        List<Jeton> listaBruta = new ArrayList<>();
+        if (idGestao != null) {
+            listaBruta = jetonService.listarTodos().stream()
+                    .filter(j -> j.getGestao().getIdGestao().equals(idGestao) && j.getMes().equals(mesFiltro)
+                            && j.getAno().equals(anoFiltro))
+                    .toList();
+            model.addAttribute("idGestaoSelecionada", idGestao);
+        }
+
+        // AGRUPAMENTO VISUAL: Junta os valores em 1 linha por conselheiro
+        Map<Integer, Jeton> agrupado = new LinkedHashMap<>();
+        for (Jeton j : listaBruta) {
+            Integer idPessoa = j.getConselheiro().getIdPessoa();
+            if (agrupado.containsKey(idPessoa)) {
+                Jeton existente = agrupado.get(idPessoa);
+                existente.setTotalJeton(existente.getTotalJeton() + j.getTotalJeton());
+                existente.setValor(existente.getValor().add(j.getValor()));
+            } else {
+                Jeton clone = new Jeton();
+                clone.setConselheiro(j.getConselheiro());
+                clone.setGestao(j.getGestao());
+                clone.setMes(j.getMes());
+                clone.setAno(j.getAno());
+                clone.setTotalJeton(j.getTotalJeton());
+                clone.setValor(j.getValor());
+                clone.setInSituacao(j.getInSituacao());
+                agrupado.put(idPessoa, clone);
+            }
+        }
+
+        model.addAttribute("listaJetons", agrupado.values());
+        model.addAttribute("listaGestoes", gestaoService.listarTodos());
+        model.addAttribute("mesAtual", mesFiltro);
+        model.addAttribute("anoAtual", anoFiltro);
 
         return "jeton/lista";
     }
 
     @PostMapping("/processar")
-    public String processar(
-            @RequestParam("idGestao") Integer idGestao,
-            @RequestParam("mes") Integer mes,
-            @RequestParam("ano") Integer ano,
-            RedirectAttributes ra) {
-
+    public String processar(@RequestParam("idGestao") Integer idGestao, @RequestParam("mes") Integer mes,
+            @RequestParam("ano") Integer ano, RedirectAttributes ra) {
         try {
             Optional<Gestao> gestaoOpt = gestaoService.buscarPorId(idGestao);
-            if (gestaoOpt.isEmpty()) {
-                throw new RuntimeException("A gestão informada não foi localizada.");
-            }
-
-            // Invoca o motor de fechamento com as travas FIFO e integralidade amarradas
             jetonService.processarFechamentoMensal(gestaoOpt.get(), mes, ano);
-            ra.addFlashAttribute("sucesso",
-                    "Fechamento mensal processado com sucesso para a competência " + mes + "/" + ano + "!");
-
-        } catch (RuntimeException e) {
-            // Captura os bloqueios de atividades pendentes ou falta de resoluções
-            ra.addFlashAttribute("erro", e.getMessage());
+            ra.addFlashAttribute("sucesso", "Cálculo da folha mensal executado com sucesso!");
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro interno ao processar a folha de pagamento: " + e.getMessage());
+            ra.addFlashAttribute("erro", "Erro ao processar: " + e.getMessage());
         }
+        // Redireciona aplicando o filtro automaticamente para a tela carregar os
+        // resultados
+        return "redirect:/jeton?idGestao=" + idGestao + "&mes=" + mes + "&ano=" + ano;
+    }
 
-        return "redirect:/jeton";
+    @GetMapping("/estornar/conselheiro/{idPessoa}/gestao/{idGestao}/mes/{mes}/ano/{ano}")
+    public String estornarPorConselheiro(
+            @PathVariable("idPessoa") Integer idPessoa, @PathVariable("idGestao") Integer idGestao,
+            @PathVariable("mes") Integer mes, @PathVariable("ano") Integer ano, RedirectAttributes ra) {
+        try {
+            jetonService.estornarFolhaDoConselheiro(idPessoa, idGestao, mes, ano);
+            ra.addFlashAttribute("sucesso", "Processamento do conselheiro estornado com sucesso!");
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro ao processar o estorno: " + e.getMessage());
+        }
+        return "redirect:/jeton?idGestao=" + idGestao + "&mes=" + mes + "&ano=" + ano;
     }
 
     // ==========================================================
@@ -139,5 +177,19 @@ public class JetonController {
         }
 
         return "redirect:/jeton";
+    }
+
+    @GetMapping("/estornar/{id}")
+    public String estornarJetonIndividual(@PathVariable("id") Integer idJeton, RedirectAttributes ra) {
+        try {
+            jetonService.estornarJetonPontual(idJeton);
+            ra.addFlashAttribute("sucesso",
+                    "Processamento estornado com sucesso! Os pontos e atividades foram devolvidos ao estado anterior.");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro interno ao processar o estorno: " + e.getMessage());
+        }
+        return "redirect:/jeton/lista"; // Certifique-se de que a rota de retorno coincide com a sua listagem
     }
 }

@@ -93,37 +93,73 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0 align-middle">
+                    <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th class="ps-4">Conselheiro</th>
-                                <th>Período</th>
-                                <th>Qtd. Jetons</th>
-                                <th>Valor Total (R$)</th>
-                                <th>Gestão</th>
-                                <th class="text-center pe-4">Ações</th>
+                                <th><i class="fa-solid fa-user me-1"></i> Conselheiro</th>
+                                <th class="text-center">Mês/Ano</th>
+                                <th class="text-center">Qtd. Jetons</th>
+                                <th class="text-end">Valor Total</th>
+                                <th class="text-center">Situação</th>
+                                <th class="text-center no-print">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="j : ${lista}">
-                                <td class="ps-4 fw-bold text-cremepe" th:text="${j.conselheiro.pessoa.nome}">Conselheiro
-                                </td>
-                                <td><span class="badge bg-secondary" th:text="${j.mes + '/' + j.ano}">01/2026</span>
-                                </td>
-                                <td class="fw-bold text-primary" th:text="${j.totalJeton + ' Jetons'}"></td>
-                                <td class="fw-bold text-success"
-                                    th:text="${'R$ ' + #numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}"></td>
-                                <td th:text="${j.gestao.nomeGestao}">Gestão</td>
-                                <td class="text-center pe-4">
-                                    <a th:href="@{'/jeton/excluir/' + ${j.idJeton}}"
-                                        class="btn btn-sm btn-outline-danger btn-confirm"
-                                        data-mensagem="Atenção: Eliminar este registo de pagamento não reverte os pontos para o Conselheiro. Confirma a exclusão?"
-                                        data-cor="btn-danger"><i class="fa-solid fa-trash-can"></i></a>
+                            <tr th:if="${#lists.isEmpty(listaJetons)}">
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="fa-solid fa-folder-open display-6 d-block mb-2 text-secondary"></i>
+                                    Nenhum processamento financeiro encontrado para os parâmetros selecionados.
                                 </td>
                             </tr>
-                            <tr th:if="${#lists.isEmpty(lista)}">
-                                <td colspan="6" class="text-center py-4 text-muted">Nenhum processamento financeiro
-                                    realizado ainda.</td>
+
+                            <tr th:each="j : ${listaJetons}">
+                                <td>
+                                    <span class="fw-bold text-dark"
+                                        th:text="${j.conselheiro.pessoa.nome}">Conselheiro</span>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="fa-solid fa-file-invoice-dollar me-1"></i>
+                                        Gestão: <span th:text="${j.gestao.nomeGestao}"></span>
+                                    </small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary px-2 py-1"
+                                        th:text="${j.mes + '/' + j.ano}">07/2026</span>
+                                </td>
+                                <td class="text-center fw-bold text-primary">
+                                    <span th:text="${j.totalJeton}">0</span>
+                                </td>
+                                <td class="text-end fw-bold text-success">
+                                    <span
+                                        th:text="${'R$ ' + #numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}">R$
+                                        0,00</span>
+                                </td>
+                                <td class="text-center">
+                                    <span th:if="${j.inSituacao == 'A'}" class="badge bg-warning text-darkfw-bold">
+                                        <i class="fa-solid fa-calculator me-1"></i> Calculado (Aberto)
+                                    </span>
+                                    <span th:if="${j.inSituacao == 'I'}" class="badge bg-success fw-bold">
+                                        <i class="fa-solid fa-lock me-1"></i> Homologado (Folha)
+                                    </span>
+                                </td>
+                                <td class="text-center no-print">
+                                    <div class="btn-group gap-1">
+                                        <th:block th:if="${j.inSituacao == 'A'}">
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-estorno"
+                                                th:data-pessoa="${j.conselheiro.idPessoa}"
+                                                th:data-gestao="${j.gestao.idGestao}" th:data-mes="${j.mes}"
+                                                th:data-ano="${j.ano}" th:data-nome="${j.conselheiro.pessoa.nome}"
+                                                onclick="abrirModalEstorno(this)" title="Estornar Folha do Conselheiro">
+                                                <i class="fa-solid fa-rotate-left"></i> Estornar
+                                            </button>
+                                        </th:block>
+                                        <th:block th:if="${j.inSituacao == 'I'}">
+                                            <button class="btn btn-sm btn-light" disabled>
+                                                <i class="fa-solid fa-ban"></i> Trancado
+                                            </button>
+                                        </th:block>
+                                    </div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -131,6 +167,59 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="modalEstorno" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Estorno Financeiro
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="mb-2">Você está prestes a reverter o processamento de jetons do conselheiro:</p>
+                    <h6 class="fw-bold text-dark mb-3" id="nomeConselheiroEstorno">...</h6>
+                    <small class="text-muted d-block">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Esta ação irá excluir este registro de Jeton, devolverá os pontos consumidos de volta ao Saldo
+                        Ativo do conselheiro e retornará as atividades vinculadas para o status <strong>Validada (Não
+                            Computada)</strong>.
+                    </small>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a id="linkConfirmarEstorno" href="#" class="btn btn-danger px-4 fw-bold">Confirmar e Reverter</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function abrirModalEstorno(botao) {
+            const idPessoa = botao.getAttribute('data-pessoa');
+            const idGestao = botao.getAttribute('data-gestao');
+            const mes = botao.getAttribute('data-mes');
+            const ano = botao.getAttribute('data-ano');
+            const nome = botao.getAttribute('data-nome');
+
+            document.getElementById('nomeConselheiroEstorno').innerText = nome;
+            const url = `/jeton/estornar/conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`;
+            document.getElementById('linkConfirmarEstorno').setAttribute('href', url);
+            new bootstrap.Modal(document.getElementById('modalEstorno')).show();
+        }
+
+        function abrirModalEstorno(botao) {
+            // Recupera os valores de forma segura através dos atributos data-*
+            const idJeton = botao.getAttribute('data-id');
+            const nomeConselheiro = botao.getAttribute('data-nome');
+
+            document.getElementById('nomeConselheiroEstorno').innerText = nomeConselheiro;
+            document.getElementById('linkConfirmarEstorno').setAttribute('href', '/jeton/estornar/' + idJeton);
+
+            new bootstrap.Modal(document.getElementById('modalEstorno')).show();
+        }
+    </script>
 </body>
 
 </html>

@@ -13,6 +13,8 @@ public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Intege
 
     List<PontosSaldo> findByJetonIdJeton(Integer idJeton);
 
+    // ATUALIZADO: Agora busca direto do vínculo com conselheiro, sem depender da
+    // atividade!
     @Query("""
             SELECT new br.com.cremepe.jeton.dto.PontosRemanescentesDTO(
                 c.idPessoa,
@@ -21,8 +23,7 @@ public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Intege
                 COALESCE(SUM(j.valor), 0)
             )
             FROM PontosSaldo ps
-            JOIN ps.atividade a
-            JOIN a.conselheiro c
+            JOIN ps.conselheiro c
             JOIN c.pessoa p
             LEFT JOIN ps.jeton j
             WHERE ps.inSituacao = 'A'
@@ -30,12 +31,13 @@ public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Intege
             """)
     List<PontosRemanescentesDTO> buscarSaldosAgrupadosPorConselheiro();
 
-    // Busca os saldos remanescentes ordenando estritamente pela normativa mais
-    // antiga (FIFO Cronológico de Resoluções)
-    @Query("SELECT ps FROM PontosSaldo ps WHERE ps.atividade.conselheiro.idPessoa = :idPessoa " +
+    // NOVO: A query MÁGICA do Motor FIFO (First-In, First-Out)
+    // Busca os saldos sobrando de um conselheiro, ordenados estritamente pela data
+    // mais antiga
+    @Query("SELECT ps FROM PontosSaldo ps WHERE ps.conselheiro.idPessoa = :idPessoa " +
             "AND ps.gestao.idGestao = :idGestao AND ps.inSituacao = 'A' AND ps.pontosSobrando > 0 " +
-            "ORDER BY ps.resolucao.ano ASC, ps.resolucao.numero ASC")
-    List<PontosSaldo> findSaldosAtivosPorGestaoFifo(
+            "ORDER BY ps.dataHora ASC, ps.idPontosSaldo ASC")
+    List<PontosSaldo> buscarSaldosDisponiveisOrdenadosFIFO(
             @Param("idPessoa") Integer idPessoa,
             @Param("idGestao") Integer idGestao);
 }

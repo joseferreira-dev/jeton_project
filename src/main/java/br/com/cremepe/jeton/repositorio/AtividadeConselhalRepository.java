@@ -23,7 +23,6 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
 
     long countByGestaoIdGestaoAndConselheiroIdPessoa(Integer idGestao, Integer idPessoa);
 
-    // Conta quantas atividades usam uma determinada regra (Trava de segurança)
     long countByRegraIdRegra(Integer idRegra);
 
     @Query("SELECT a FROM AtividadeConselhal a WHERE " +
@@ -42,8 +41,8 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("situacao") String situacao,
             @Param("turno") String turno,
             @Param("comprovanteFiltro") String comprovanteFiltro,
-            @Param("dataInicio") java.time.LocalDate dataInicio,
-            @Param("dataFim") java.time.LocalDate dataFim,
+            @Param("dataInicio") LocalDate dataInicio,
+            @Param("dataFim") LocalDate dataFim,
             Pageable pageable);
 
     @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa " +
@@ -74,7 +73,7 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("ano") Integer ano);
 
     @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa " +
-            "AND a.inSituacao = 'C' AND a.comprovante IS NOT NULL " +
+            "AND a.inSituacao = 'C' AND a.inComputada = 'N' " +
             "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
     List<AtividadeConselhal> findHomologadasParaCalculo(
             @Param("idPessoa") Integer idPessoa,
@@ -99,12 +98,15 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
 
     @Modifying
     @Query("UPDATE AtividadeConselhal a SET a.inComputada = 'N' WHERE a.conselheiro.idPessoa = :idPessoa " +
-            "AND a.gestao.idGestao = :idGestao AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano "
-            +
-            "AND a.inSituacao = 'C' AND a.inComputada = 'S'")
+            "AND a.gestao.idGestao = :idGestao AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
     void reverterAtividadesComputadas(
             @Param("idPessoa") Integer idPessoa,
             @Param("idGestao") Integer idGestao,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE AtividadeConselhal a SET a.inComputada = 'S' WHERE a.idAtividade IN :ids")
+    void marcarComoComputadaEmLote(@Param("ids") List<Integer> ids);
 }

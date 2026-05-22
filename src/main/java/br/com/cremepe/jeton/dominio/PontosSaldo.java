@@ -17,8 +17,12 @@ public class PontosSaldo implements Serializable {
     private Integer idPontosSaldo;
 
     @ManyToOne
-    @JoinColumn(name = "idAtividade")
+    @JoinColumn(name = "idAtividade", nullable = true)
     private AtividadeConselhal atividade;
+
+    @ManyToOne
+    @JoinColumn(name = "idPessoa")
+    private Conselheiro conselheiro;
 
     @ManyToOne
     @JoinColumn(name = "idJeton")
@@ -64,6 +68,14 @@ public class PontosSaldo implements Serializable {
 
     public void setAtividade(AtividadeConselhal atividade) {
         this.atividade = atividade;
+    }
+
+    public Conselheiro getConselheiro() {
+        return conselheiro;
+    }
+
+    public void setConselheiro(Conselheiro conselheiro) {
+        this.conselheiro = conselheiro;
     }
 
     public Jeton getJeton() {
