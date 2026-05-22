@@ -19,38 +19,53 @@
             </button>
         </div>
 
-        <div class="card shadow-sm mb-4 no-print">
+        <div class="card shadow-sm border-success mb-4 no-print">
+            <div class="card-header bg-success text-white fw-bold">
+                <i class="fa-solid fa-filter me-2"></i> Filtrar Parâmetros do Relatório
+            </div>
             <div class="card-body p-4">
                 <form th:action="@{/relatorios/atividades/gerar}" method="get">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Gestão Mandato</label>
-                            <select class="form-select" name="idGestao" id="selectGestao"
-                                onchange="atualizarConselheirosPorGestao()" required>
-                                <option value="">-- Selecione a Gestão Primeiro --</option>
-                                <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}"
-                                    th:text="${g.nomeGestao}"></option>
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Gestão Referente</label>
+                            <select class="form-select" name="idGestao" required>
+                                <option value="">-- Selecione a Gestão --</option>
+                                <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}" th:text="${g.nomeGestao}"
+                                    th:selected="${g.idGestao == idGestaoSelecionada}">
+                                </option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Médico Conselheiro (Filtrado por Gestão)</label>
-                            <select class="form-select" name="idConselheiro" id="selectConselheiro" disabled>
-                                <option value="">-- Todos os Conselheiros da Gestão --</option>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Conselheiro (Opcional)</label>
+                            <select class="form-select" name="idConselheiro">
+                                <option value="">-- Todos os Conselheiros --</option>
+                                <option th:each="c : ${listaConselheiros}" th:value="${c.idPessoa}"
+                                    th:text="${c.pessoa.nome}" th:selected="${c.idPessoa == idConselheiroSelecionado}">
+                                </option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">De (Data Realização)</label>
-                            <input type="date" class="form-control" name="dataInicio">
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Data Inicial (Opcional)</label>
+                            <input type="date" class="form-control" name="dataInicio" th:value="${dataInicio}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Até (Data Realização)</label>
-                            <input type="date" class="form-control" name="dataFim">
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Data Final (Opcional)</label>
+                            <input type="date" class="form-control" name="dataFim" th:value="${dataFim}">
                         </div>
-                        <div class="col-md-4 d-flex align-items-end">
-                            <button type="submit" class="btn btn-cremepe w-100 fw-bold">
-                                <i class="fa-solid fa-magnifying-glass me-1"></i> Processar Dados do Painel
-                            </button>
-                        </div>
+
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
+                        <a th:href="@{/relatorios/atividades}" class="btn btn-outline-secondary fw-bold px-4">
+                            <i class="fa-solid fa-eraser me-1"></i> Limpar Parâmetros
+                        </a>
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <i class="fa-solid fa-chart-pie me-1"></i> Gerar Relatório
+                        </button>
                     </div>
                 </form>
             </div>

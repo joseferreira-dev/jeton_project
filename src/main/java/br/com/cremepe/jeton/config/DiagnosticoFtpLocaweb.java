@@ -29,8 +29,7 @@
 // @Override
 // public void run(String... args) throws Exception {
 // System.out.println("\n=========================================================================");
-// System.out.println(" AUDITORIA REMOTA: LISTAGEM DE ARQUIVOS NA PASTA
-// 'jetonFiles'");
+// System.out.println(" AUDITORIA: LISTAGEM DE ARQUIVOS NA PASTA 'jetonFiles'");
 // System.out.println("=========================================================================\n");
 
 // Session session = null;
@@ -96,25 +95,17 @@
 // for (ChannelSftp.LsEntry item : itens) {
 // String nomeItem = item.getFilename();
 
-// // Ignora ponteiros circulares de navegação do Linux
 // if (".".equals(nomeItem) || "..".equals(nomeItem)) {
 // continue;
 // }
 
-// // Monta o caminho completo do item atual
 // String caminhoCompleto = caminhoCvo.endsWith("/") ? caminhoCvo + nomeItem :
 // caminhoCvo + "/" + nomeItem;
 // SftpATTRS atributos = item.getAttrs();
 
 // if (atributos.isDir()) {
-// // Se for um diretório (ex: ano ou mês), desce na árvore sem imprimir a pasta
-// na
-// // tela
 // listarApenasArquivosJetonFiles(channelSftp, caminhoCompleto);
 // } else {
-// // Se for um arquivo físico de comprovante, calcula o tamanho e exibe o
-// caminho
-// // relativo limpo
 // long tamanhoBytes = atributos.getSize();
 // long tamanhoKb = tamanhoBytes / 1024;
 // String formatacaoTamanho = tamanhoKb > 0 ? tamanhoKb + " KB"

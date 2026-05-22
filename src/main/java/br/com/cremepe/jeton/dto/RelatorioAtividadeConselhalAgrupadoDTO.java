@@ -22,6 +22,7 @@ public class RelatorioAtividadeConselhalAgrupadoDTO implements Serializable {
     // Utilização de LinkedHashMap para garantir que a ordem das colunas dinâmicas
     // inseridas pela query ou stored procedure seja mantida na exibição (UI).
     private Map<String, Integer> regras = new LinkedHashMap<>();
+    private int totalPontos;
 
     public RelatorioAtividadeConselhalAgrupadoDTO() {
     }
@@ -62,5 +63,14 @@ public class RelatorioAtividadeConselhalAgrupadoDTO implements Serializable {
     // Método utilitário recomendado para adicionar regras dinâmicas com facilidade
     public void adicionarRegra(String nomeRegra, Integer valor) {
         this.regras.put(nomeRegra, valor);
+    }
+
+    public void setTotalPontos(int totalPontos) {
+        this.totalPontos = totalPontos;
+    }
+
+    // Adicione também o método Getter (será útil para o Thymeleaf exibir na tabela)
+    public int getTotalPontos() {
+        return totalPontos;
     }
 }

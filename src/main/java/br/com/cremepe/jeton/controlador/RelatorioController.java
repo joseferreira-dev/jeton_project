@@ -49,6 +49,15 @@ public class RelatorioController {
         if (session.getAttribute("usuarioLogado") == null)
             return "redirect:/login";
 
+        // Validação básica: Gestão é obrigatória para o relatório
+        if (idGestao == null) {
+            model.addAttribute("erro", "Por favor, selecione uma gestão.");
+            carregarFiltros(model);
+            return "relatorio/atividade_agrupada";
+        }
+
+        // Executa o relatório passando os filtros (que podem ir nulos caso não
+        // preenchidos)
         var dadosRelatorio = relatorioService.gerarRelatorioAgrupado(idGestao, idConselheiro, null, dataInicio,
                 dataFim);
         model.addAttribute("listaRelatorio", dadosRelatorio);
@@ -56,6 +65,13 @@ public class RelatorioController {
         if (!dadosRelatorio.isEmpty()) {
             model.addAttribute("colunasRegras", dadosRelatorio.get(0).getRegras().keySet());
         }
+
+        // Devolve os parâmetros de busca para o formulário no HTML manter o estado
+        // visual
+        model.addAttribute("idGestaoSelecionada", idGestao);
+        model.addAttribute("idConselheiroSelecionado", idConselheiro);
+        model.addAttribute("dataInicio", dataInicio);
+        model.addAttribute("dataFim", dataFim);
 
         carregarFiltros(model);
         return "relatorio/atividade_agrupada";

@@ -21,46 +21,33 @@ public class RelatorioService {
     public List<RelatorioAtividadeConselhalAgrupadoDTO> gerarRelatorioAgrupado(
             Integer idGestao, Integer idConselheiro, Integer idRegra, LocalDate dataInicio, LocalDate dataFim) {
 
-        List<ViewAtividadeConselhal> dadosRaw = viewRepository.findByIdGestao(idGestao);
+        // 1. CHAMADA DINÂMICA AO BANCO: Delega a filtragem opcional de datas e
+        // conselheiro ao SQL
+        List<ViewAtividadeConselhal> dadosRaw = viewRepository.buscarParaRelatorioDynamic(
+                idGestao, idConselheiro, dataInicio, dataFim);
 
-        // 1. Aplicação Dinâmica dos Novos Filtros
-        if (idConselheiro != null) {
-            dadosRaw = dadosRaw.stream()
-                    .filter(at -> idConselheiro.equals(at.getIdPessoa()))
-                    .collect(Collectors.toList());
+        // Se o banco não retornar nada, interrompe para evitar NullPointerException
+        if (dadosRaw == null || dadosRaw.isEmpty()) {
+            return new ArrayList<>();
         }
 
+        // Filtro residual caso o idRegra seja informado (mantido por compatibilidade)
         if (idRegra != null) {
             dadosRaw = dadosRaw.stream()
                     .filter(at -> idRegra.equals(at.getIdRegra()))
                     .collect(Collectors.toList());
         }
 
-        if (dataInicio != null) {
-            dadosRaw = dadosRaw.stream()
-                    .filter(at -> at.getDataHoraAtividade() != null
-                            && !at.getDataHoraAtividade().toLocalDate().isBefore(dataInicio))
-                    .collect(Collectors.toList());
-        }
-
-        if (dataFim != null) {
-            dadosRaw = dadosRaw.stream()
-                    .filter(at -> at.getDataHoraAtividade() != null
-                            && !at.getDataHoraAtividade().toLocalDate().isAfter(dataFim))
-                    .collect(Collectors.toList());
-        }
-
-        if (dadosRaw.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // 2. Extrair regras ÚNICAS da base filtrada para manter as colunas alinhadas
+        // 2. Extrair regras ÚNICAS da base filtrada para manter as colunas alinhadas na
+        // tabela
         Set<String> todasRegras = dadosRaw.stream()
                 .map(ViewAtividadeConselhal::getNomeRegra)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        // 3. Agrupar os dados por Conselheiro
+        // 3. Agrupar os dados consolidados por Nome do Conselheiro
         Map<String, List<ViewAtividadeConselhal>> agrupadoPorNome = dadosRaw.stream()
+                .filter(at -> at.getNome() != null)
                 .collect(Collectors.groupingBy(ViewAtividadeConselhal::getNome));
 
         List<RelatorioAtividadeConselhalAgrupadoDTO> relatorio = new ArrayList<>();
@@ -70,19 +57,30 @@ public class RelatorioService {
             dto.setConselheiro(nome);
             dto.setGestao(atividades.get(0).getNomeGestao());
 
-            // Inicializa TODAS as regras mapeadas com ZERO
+            // Inicializa TODAS as regras mapeadas da tabela com ZERO
             todasRegras.forEach(regra -> dto.getRegras().put(regra, 0));
 
-            // Soma (Merge) os valores reais
+            // Soma (Merge) a quantidade de atividades reais executadas
             atividades.forEach(at -> {
                 Integer qtd = (at.getQtdAtividade() != null) ? at.getQtdAtividade() : 0;
-                dto.getRegras().merge(at.getNomeRegra(), qtd, Integer::sum);
+                if (at.getNomeRegra() != null) {
+                    dto.getRegras().merge(at.getNomeRegra(), qtd, Integer::sum);
+                }
             });
 
+            // Calcula o Score Total somando (Quantidade * Pontos da Regra)
+            int totalPontos = atividades.stream()
+                    .mapToInt(at -> {
+                        int qtd = (at.getQtdAtividade() != null) ? at.getQtdAtividade() : 0;
+                        int pontos = (at.getPontos() != null) ? at.getPontos() : 0;
+                        return qtd * pontos;
+                    }).sum();
+
+            dto.setTotalPontos(totalPontos);
             relatorio.add(dto);
         });
 
-        // Ordenar alfabeticamente
+        // Ordena o relatório final por ordem alfabética do conselheiro
         relatorio.sort(Comparator.comparing(RelatorioAtividadeConselhalAgrupadoDTO::getConselheiro));
 
         return relatorio;

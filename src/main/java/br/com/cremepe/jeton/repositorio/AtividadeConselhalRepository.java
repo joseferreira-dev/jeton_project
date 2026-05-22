@@ -46,8 +46,6 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("dataFim") java.time.LocalDate dataFim,
             Pageable pageable);
 
-    // Procura atividades pendentes ('P') num determinado mês e ano que já tenham
-    // comprovativo
     @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa " +
             "AND a.inSituacao = 'P' AND a.comprovante IS NOT NULL " +
             "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
@@ -56,13 +54,6 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
 
-    // =========================================================================================
-    // NOVO: Validador de Teto por Turno
-    // Calcula a soma de pontos (pontos da regra * quantidade) para um conselheiro,
-    // num dia e turno específicos
-    // Utiliza funções nativas de YEAR, MONTH e DAY do JPQL para comparar com a data
-    // recebida (LocalDate)
-    // =========================================================================================
     @Query("SELECT SUM(a.regra.pontos * a.qtdAtividade) FROM AtividadeConselhal a " +
             "WHERE a.conselheiro.idPessoa = :idPessoa " +
             "AND YEAR(a.dataHoraAtividade) = YEAR(:data) " +
@@ -74,8 +65,6 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("data") LocalDate data,
             @Param("turno") String turno);
 
-    // Busca atividades pendentes OU sem comprovante para uma determinada
-    // competência (Bloqueador)
     @Query("SELECT a FROM AtividadeConselhal a WHERE a.gestao.idGestao = :idGestao " +
             "AND (a.inSituacao = 'P' OR a.comprovante IS NULL) " +
             "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
@@ -84,8 +73,6 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
 
-    // Seleciona e retorna todas as atividades homologadas (Concluídas e com
-    // Comprovante) prontas para o cálculo
     @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa " +
             "AND a.inSituacao = 'C' AND a.comprovante IS NOT NULL " +
             "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
@@ -104,16 +91,12 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
 
-    // Conta quantas atividades usam um determinado comprovante
     long countByComprovanteIdComprovante(Integer idComprovante);
 
-    // NOVO: Força a remoção do vínculo direto no banco para evitar bloqueios do
-    // Hibernate
     @Modifying
     @Query("UPDATE AtividadeConselhal a SET a.comprovante = null WHERE a.idAtividade = :id")
     void removerVinculoComprovante(@Param("id") Integer id);
 
-    // NOVO: Reverte as atividades computadas (De C+S para C+N)
     @Modifying
     @Query("UPDATE AtividadeConselhal a SET a.inComputada = 'N' WHERE a.conselheiro.idPessoa = :idPessoa " +
             "AND a.gestao.idGestao = :idGestao AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano "
