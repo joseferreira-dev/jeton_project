@@ -39,7 +39,7 @@
 
                             <div class="col-md-2">
                                 <label class="form-label fw-bold small text-muted">Situação</label>
-                                <select name="situacao" class="form-select">
+                                <select name="situacao" class="form-select" onchange="this.form.submit()">
                                     <option value="">Todas</option>
                                     <option value="P" th:selected="${situacao == 'P'}">Pendentes</option>
                                     <option value="C" th:selected="${situacao == 'C'}">Validadas</option>
@@ -49,7 +49,7 @@
 
                             <div class="col-md-2">
                                 <label class="form-label fw-bold small text-muted">Turno</label>
-                                <select name="turno" class="form-select">
+                                <select name="turno" class="form-select" onchange="this.form.submit()">
                                     <option value="">Todos</option>
                                     <option value="M" th:selected="${turno == 'M'}">Manhã</option>
                                     <option value="T" th:selected="${turno == 'T'}">Tarde</option>
@@ -59,7 +59,7 @@
 
                             <div class="col-md-3">
                                 <label class="form-label fw-bold small text-muted">Anexo / Comprovante</label>
-                                <select name="comprovanteFiltro" class="form-select">
+                                <select name="comprovanteFiltro" class="form-select" onchange="this.form.submit()">
                                     <option value="">Todos os registos</option>
                                     <option value="S" th:selected="${comprovanteFiltro == 'S'}">Apenas com Comprovante
                                     </option>
@@ -70,7 +70,7 @@
 
                             <div class="col-md-2">
                                 <label class="form-label fw-bold small text-muted">Exibir</label>
-                                <select name="size" class="form-select">
+                                <select name="size" class="form-select" onchange="this.form.submit()">
                                     <option value="10" th:selected="${size == 10}">10 registos</option>
                                     <option value="20" th:selected="${size == 20}">20 registos</option>
                                     <option value="0" th:selected="${size == 0}">Todos</option>
