@@ -200,6 +200,7 @@ public class JetonService {
         if (jetons.isEmpty())
             return;
 
+        // 1. Apaga a "Sobra" que foi gerada e jogada para o próximo mês
         LocalDate ultimoDia = LocalDate.of(ano, mes, 1).with(java.time.temporal.TemporalAdjusters.lastDayOfMonth());
         LocalDateTime dataSobra = ultimoDia.atTime(23, 59, 59);
         List<PontosSaldo> sobras = pontosSaldoRepository.buscarSaldosDisponiveisOrdenadosFIFO(idPessoa, idGestao)
@@ -208,25 +209,55 @@ public class JetonService {
                 .toList();
         pontosSaldoRepository.deleteAll(sobras);
 
+        // 2. Desfaz a associação de Pontos e Jetons de forma cirúrgica
         for (Jeton j : jetons) {
             List<PontosSaldo> consumidos = pontosSaldoRepository.findByJetonIdJeton(j.getIdJeton());
             for (PontosSaldo s : consumidos) {
-                s.setPontosSobrando(s.getPontosTrabalhados());
-                s.setPontosUtilizados(0);
-                s.setInSituacao("A");
-                s.setJeton(null);
+                s.setJeton(null); // Quebra o vínculo para não dar erro de chave estrangeira
                 pontosSaldoRepository.save(s);
+
+                // SE O SALDO VEIO DE UMA ATIVIDADE DESTE MÊS: Nós a apagamos para ela não se
+                // duplicar ao reprocessar
+                if (s.getAtividade() != null &&
+                        s.getAtividade().getDataHoraAtividade().getMonthValue() == mes &&
+                        s.getAtividade().getDataHoraAtividade().getYear() == ano) {
+
+                    pontosSaldoRepository.delete(s);
+                }
+                // SE FOR UM SALDO HISTÓRICO (Carga Inicial ou Sobra anterior): Restauramos ele
+                // para o estado Ativo
+                else {
+                    s.setPontosSobrando(s.getPontosTrabalhados());
+                    s.setPontosUtilizados(0);
+                    s.setInSituacao("A");
+                    pontosSaldoRepository.save(s);
+                }
             }
             j.getAtividades().clear(); // Limpa as dependências da tabela jeton_atividade
             jetonRepository.delete(j);
         }
 
+        // 3. Devolve as atividades reais para o status original (C + N)
         atividadeRepository.reverterAtividadesComputadas(idPessoa, idGestao, mes, ano);
     }
 
     @Transactional
-    public void excluirJeton(Integer id) {
-        jetonRepository.deleteById(id);
+    public void estornarFolhaEmLote(Integer idGestao, Integer mes, Integer ano) {
+        List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano);
+
+        if (jetons.isEmpty()) {
+            throw new RuntimeException(
+                    "Não há pagamentos processados para estornar nesta competência " + mes + "/" + ano + ".");
+        }
+
+        // Pega os conselheiros únicos e invoca o estorno seguro para cada um deles
+        Set<Integer> conselheirosIds = jetons.stream()
+                .map(j -> j.getConselheiro().getIdPessoa())
+                .collect(Collectors.toSet());
+
+        for (Integer idPessoa : conselheirosIds) {
+            estornarFolhaDoConselheiro(idPessoa, idGestao, mes, ano);
+        }
     }
 
     @Transactional
@@ -257,17 +288,8 @@ public class JetonService {
     }
 
     @Transactional
-    public void estornarFolhaEmLote(Gestao gestao, Integer mes, Integer ano) {
-        List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(gestao.getIdGestao(), mes, ano);
-
-        if (jetons.isEmpty()) {
-            throw new RuntimeException(
-                    "Não há pagamentos processados para estornar nesta competência " + mes + "/" + ano + ".");
-        }
-
-        for (Jeton jeton : jetons) {
-            estornarJetonPontual(jeton.getIdJeton());
-        }
+    public void excluirJeton(Integer id) {
+        jetonRepository.deleteById(id);
     }
 
     @Transactional

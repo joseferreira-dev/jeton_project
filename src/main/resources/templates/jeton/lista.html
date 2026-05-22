@@ -77,11 +77,19 @@
                                 poderá ser reaberta, editada ou excluída.</small>
                         </div>
 
-                        <button type="submit" th:formaction="@{/jeton/fechar-definitivo}"
-                            class="btn btn-danger fw-bold px-4"
-                            onclick="return confirm('ATENÇÃO: Deseja realmente homologar e encerrar esta folha? Todas as atividades validadas e computadas (C+S) deste mês serão convertidas em registros permanentes de Folha (F+S) e trancadas contra edições. Esta operação não pode ser desfeita. Confirmar?');">
-                            <i class="fa-solid fa-lock me-1"></i> Homologar e Fechar Folha
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button type="button"
+                                th:if="${#lists.size(listaJetons) > 0 and listaJetons[0].inSituacao == 'A'}"
+                                class="btn btn-warning fw-bold px-4 text-dark" onclick="abrirModalEstornoLote()">
+                                <i class="fa-solid fa-rotate-left me-1"></i> Estornar Toda a Folha
+                            </button>
+
+                            <button type="submit" th:formaction="@{/jeton/fechar-definitivo}"
+                                class="btn btn-danger fw-bold px-4"
+                                onclick="return confirm('ATENÇÃO: Deseja realmente homologar e encerrar esta folha? Todas as atividades computadas serão convertidas em registros permanentes e trancadas. Confirmar?');">
+                                <i class="fa-solid fa-lock me-1"></i> Homologar e Fechar Folha
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -195,6 +203,31 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalEstornoLote" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Estorno em
+                        Lote</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="mb-2" id="textoConfirmacaoLote">Deseja realmente estornar toda a folha deste mês?</p>
+                    <small class="text-muted d-block mt-2">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Esta ação excluirá todos os jetons calculados deste período e devolverá todas as atividades e
+                        saldos históricos gerados para o status inicial.
+                    </small>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a id="linkConfirmarEstornoLote" href="#" class="btn btn-warning px-4 fw-bold text-dark">Confirmar
+                        Estorno</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         function abrirModalEstorno(botao) {
             const idPessoa = botao.getAttribute('data-pessoa');
@@ -209,15 +242,23 @@
             new bootstrap.Modal(document.getElementById('modalEstorno')).show();
         }
 
-        function abrirModalEstorno(botao) {
-            // Recupera os valores de forma segura através dos atributos data-*
-            const idJeton = botao.getAttribute('data-id');
-            const nomeConselheiro = botao.getAttribute('data-nome');
+        function abrirModalEstornoLote() {
+            // Pega os valores atualmente selecionados no formulário de busca/processamento
+            const idGestao = document.querySelector('select[name="idGestao"]').value;
+            const mes = document.querySelector('select[name="mes"]').value;
+            const ano = document.querySelector('input[name="ano"]').value;
 
-            document.getElementById('nomeConselheiroEstorno').innerText = nomeConselheiro;
-            document.getElementById('linkConfirmarEstorno').setAttribute('href', '/jeton/estornar/' + idJeton);
+            if (!idGestao || !mes || !ano) {
+                alert('Os dados de Gestão, Mês e Ano precisam estar preenchidos no filtro superior.');
+                return;
+            }
 
-            new bootstrap.Modal(document.getElementById('modalEstorno')).show();
+            document.getElementById('textoConfirmacaoLote').innerText = `Deseja realmente estornar e apagar os cálculos de todo o período ${mes}/${ano}?`;
+
+            const url = `/jeton/estornar-lote/gestao/${idGestao}/mes/${mes}/ano/${ano}`;
+            document.getElementById('linkConfirmarEstornoLote').setAttribute('href', url);
+
+            new bootstrap.Modal(document.getElementById('modalEstornoLote')).show();
         }
     </script>
 </body>

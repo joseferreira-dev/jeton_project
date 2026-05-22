@@ -124,30 +124,21 @@ public class JetonController {
         return "redirect:/jeton";
     }
 
-    // ==========================================================
-    // ESTORNO EM LOTE (Botão geral da folha mensal)
-    // ==========================================================
-    @PostMapping("/estornar-lote")
-    public String estornarLote(
-            @RequestParam("idGestao") Integer idGestao,
-            @RequestParam("mes") Integer mes,
-            @RequestParam("ano") Integer ano,
+    @GetMapping("/estornar-lote/gestao/{idGestao}/mes/{mes}/ano/{ano}")
+    public String estornarEmLote(
+            @PathVariable("idGestao") Integer idGestao,
+            @PathVariable("mes") Integer mes,
+            @PathVariable("ano") Integer ano,
             RedirectAttributes ra) {
         try {
-            Optional<Gestao> gestaoOpt = gestaoService.buscarPorId(idGestao);
-            if (gestaoOpt.isEmpty())
-                throw new RuntimeException("A gestão informada não foi localizada.");
-
-            jetonService.estornarFolhaEmLote(gestaoOpt.get(), mes, ano);
-            ra.addFlashAttribute("sucesso", "A folha de " + mes + "/" + ano
-                    + " foi integralmente estornada. Todos os saldos e atividades foram revertidos!");
-
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
+            // Invoca o serviço que limpa os processamentos de todos os conselheiros do mês
+            jetonService.estornarFolhaEmLote(idGestao, mes, ano);
+            ra.addFlashAttribute("sucesso",
+                    "A folha inteira foi estornada com sucesso! Todas as atividades foram devolvidas.");
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro interno ao estornar a folha em lote: " + e.getMessage());
+            ra.addFlashAttribute("erro", "Erro ao estornar folha em lote: " + e.getMessage());
         }
-        return "redirect:/jeton";
+        return "redirect:/jeton?idGestao=" + idGestao + "&mes=" + mes + "&ano=" + ano;
     }
 
     @PostMapping("/fechar-definitivo")
