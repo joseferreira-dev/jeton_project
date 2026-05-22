@@ -20,40 +20,51 @@
                 class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button"
                 class="btn-close" data-bs-dismiss="alert"></button></div>
 
-        <form th:action="@{/regras-conjuntas}" method="get"
-            class="mb-4 bg-white p-3 rounded shadow-sm border border-light">
+        <form th:action="@{/regras-conjuntas}" method="get" class="mb-4">
             <input type="hidden" name="sort" th:value="${sort}">
             <input type="hidden" name="dir" th:value="${dir}">
-            <div class="row g-2 align-items-center">
-                <div class="col-md-5">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
-                        <input type="text" name="termo" th:value="${termo}" class="form-control"
-                            placeholder="Buscar Agrupamento...">
-                    </div>
+
+            <div class="card shadow-sm border-success mb-4">
+                <div class="card-header bg-success text-white fw-bold">
+                    <i class="fa-solid fa-filter me-2"></i> Filtrar Regras Conjuntas
                 </div>
-                <div class="col-md-3">
-                    <div class="input-group">
-                        <label class="input-group-text bg-light" for="tipoLimite">Tipo</label>
-                        <select name="tipoLimite" id="tipoLimite" class="form-select" onchange="this.form.submit()">
-                            <option value="">Todos</option>
-                            <option value="T" th:selected="${tipoLimite == 'T'}">Por Turno</option>
-                            <option value="M" th:selected="${tipoLimite == 'M'}">Por Mês</option>
-                        </select>
+                <div class="card-body p-4">
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold small text-muted">Pesquisar (Nome do Agrupamento)</label>
+                            <input type="text" name="termo" th:value="${termo}" class="form-control"
+                                placeholder="Buscar Agrupamento...">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-muted">Tipo de Limite</label>
+                            <select name="tipoLimite" id="tipoLimite" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                <option value="T" th:selected="${tipoLimite == 'T'}">Por Turno</option>
+                                <option value="M" th:selected="${tipoLimite == 'M'}">Por Mês</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Exibir</label>
+                            <select name="size" id="size" class="form-select" onchange="this.form.submit()">
+                                <option value="10" th:selected="${size == 10}">10 registros</option>
+                                <option value="20" th:selected="${size == 20}">20 registros</option>
+                                <option value="50" th:selected="${size == 50}">50 registros</option>
+                            </select>
+                        </div>
+
                     </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="input-group">
-                        <label class="input-group-text bg-light" for="size">Exibir</label>
-                        <select name="size" id="size" class="form-select" onchange="this.form.submit()">
-                            <option value="10" th:selected="${size == 10}">10</option>
-                            <option value="20" th:selected="${size == 20}">20</option>
-                            <option value="50" th:selected="${size == 50}">50</option>
-                        </select>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
+                        <a th:href="@{/regras-conjuntas}" class="btn btn-outline-secondary fw-bold px-4">
+                            <i class="fa-solid fa-eraser me-1"></i> Limpar Filtros
+                        </a>
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i> Aplicar Filtro
+                        </button>
                     </div>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-cremepe w-100">Filtrar</button>
                 </div>
             </div>
         </form>

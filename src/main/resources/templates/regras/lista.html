@@ -20,49 +20,60 @@
                 class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button"
                 class="btn-close" data-bs-dismiss="alert"></button></div>
 
-        <form th:action="@{/regras}" method="get" class="mb-4 bg-white p-3 rounded shadow-sm border border-light">
+        <form th:action="@{/regras}" method="get" class="mb-4">
             <input type="hidden" name="sort" th:value="${sort}">
             <input type="hidden" name="dir" th:value="${dir}">
-            <div class="row g-2 align-items-center">
-                <div class="col-md-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
-                        <input type="text" name="termo" th:value="${termo}" class="form-control"
-                            placeholder="Buscar Atividade...">
-                    </div>
+
+            <div class="card shadow-sm border-success mb-4">
+                <div class="card-header bg-success text-white fw-bold">
+                    <i class="fa-solid fa-filter me-2"></i> Filtrar Regras de Pontuação
                 </div>
-                <div class="col-md-2">
-                    <div class="input-group">
-                        <label class="input-group-text bg-light" for="situacao">Estado</label>
-                        <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
-                            <option value="">Todos</option>
-                            <option value="N" th:selected="${situacao == 'N'}">Em Vigor</option>
-                            <option value="S" th:selected="${situacao == 'S'}">Revogada</option>
-                        </select>
+                <div class="card-body p-4">
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-muted">Pesquisar (Nome ou Descrição)</label>
+                            <input type="text" name="termo" th:value="${termo}" class="form-control"
+                                placeholder="Nome ou Descrição da regra...">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Estado</label>
+                            <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todos os Estados</option>
+                                <option value="N" th:selected="${situacao == 'N'}">Vigentes (Ativas)</option>
+                                <option value="S" th:selected="${situacao == 'S'}">Revogadas (Inativas)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Atividade Judicante</label>
+                            <select name="judicante" id="judicante" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todas as Atividades</option>
+                                <option value="S" th:selected="${judicante == 'S'}">Apenas Judicantes</option>
+                                <option value="N" th:selected="${judicante == 'N'}">Apenas Não Judicantes</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">Exibir</label>
+                            <select name="size" id="size" class="form-select" onchange="this.form.submit()">
+                                <option value="10" th:selected="${size == 10}">10 registros</option>
+                                <option value="20" th:selected="${size == 20}">20 registros</option>
+                                <option value="0" th:selected="${size == 0}">Todos</option>
+                            </select>
+                        </div>
+
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="input-group">
-                        <label class="input-group-text bg-light" for="judicante">Judicante</label>
-                        <select name="judicante" id="judicante" class="form-select" onchange="this.form.submit()">
-                            <option value="">Todos</option>
-                            <option value="S" th:selected="${judicante == 'S'}">Sim</option>
-                            <option value="N" th:selected="${judicante == 'N'}">Não</option>
-                        </select>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
+                        <a th:href="@{/regras}" class="btn btn-outline-secondary fw-bold px-4">
+                            <i class="fa-solid fa-eraser me-1"></i> Limpar Filtros
+                        </a>
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i> Aplicar Filtro
+                        </button>
                     </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="input-group">
-                        <label class="input-group-text bg-light" for="size">Exibir</label>
-                        <select name="size" id="size" class="form-select" onchange="this.form.submit()">
-                            <option value="10" th:selected="${size == 10}">10</option>
-                            <option value="20" th:selected="${size == 20}">20</option>
-                            <option value="50" th:selected="${size == 50}">50</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-cremepe w-100">Filtrar</button>
                 </div>
             </div>
         </form>
@@ -76,66 +87,71 @@
                                 <th class="ps-4">
                                     <a th:href="@{/regras(page=0, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort='nomeRegra', dir=${sort == 'nomeRegra' and dir == 'asc' ? 'desc' : 'asc'})}"
                                         class="text-dark text-decoration-none">
-                                        Atividade (Regra)
-                                        <i
+                                        Identificação da Regra <i
                                             th:class="${sort == 'nomeRegra'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
                                     </a>
                                 </th>
-                                <th>Normativa Base</th>
-                                <th>
-                                    <a th:href="@{/regras(page=0, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort='pontos', dir=${sort == 'pontos' and dir == 'asc' ? 'desc' : 'asc'})}"
-                                        class="text-dark text-decoration-none">
-                                        Pontos
-                                        <i
-                                            th:class="${sort == 'pontos'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
-                                    </a>
-                                </th>
-                                <th>Lim. Turno</th>
+                                <th>Normativa Vinculada</th>
+                                <th class="text-center">Pontos</th>
                                 <th class="text-center">Judicante</th>
+                                <th class="text-center">Estado</th>
                                 <th class="text-center pe-4">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:each="r : ${paginaRegras.content}"
                                 th:classappend="${r.inRevogado == 'S'} ? 'table-light text-muted'">
-                                <td class="ps-4 fw-bold text-cremepe" th:text="${r.nomeRegra}">Nome</td>
-                                <td>
-                                    <span th:if="${r.resolucao != null}" class="badge bg-secondary me-1"
-                                        th:text="${'Res. ' + r.resolucao.numero + '/' + r.resolucao.ano}"></span>
-                                    <span th:if="${r.portaria != null}" class="badge bg-info text-dark"
-                                        th:text="${'Port. ' + r.portaria.numero + '/' + r.portaria.ano}"></span>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-cremepe" th:text="${r.nomeRegra}">Nome da Regra</div>
                                 </td>
-                                <td class="fw-bold text-success" th:text="${r.pontos}"></td>
-                                <td th:text="${r.pontosLimitesTurno}"></td>
-                                <td class="text-center"><span th:text="${r.inJudicante == 'S' ? 'Sim' : 'Não'}"
-                                        th:classappend="${r.inJudicante == 'S'} ? 'badge bg-dark' : 'badge bg-light text-muted'"></span>
+                                <td>
+                                    <div class="fw-bold text-dark"
+                                        th:text="${'Resolução ' + r.resolucao.numero + '/' + r.resolucao.ano}"></div>
+                                    <div th:if="${r.portaria != null}" class="small text-muted"
+                                        th:text="${'Portaria ' + r.portaria.numero + '/' + r.portaria.ano}"></div>
+                                </td>
+                                <td class="text-center fw-bold text-success" th:text="${r.pontos}">0</td>
+                                <td class="text-center">
+                                    <span th:if="${r.inJudicante == 'S'}" class="badge bg-info text-dark"
+                                        title="Atividade Judicante (Sessões de Julgamento)"><i
+                                            class="fa-solid fa-gavel text-dark"></i> Sim</span>
+                                    <span th:if="${r.inJudicante == 'N'}" class="badge bg-light text-muted">Não</span>
+                                </td>
+                                <td class="text-center">
+                                    <span th:if="${r.inRevogado == 'N'}" class="badge bg-success"><i
+                                            class="fa-solid fa-check me-1"></i> Vigente</span>
+                                    <span th:if="${r.inRevogado == 'S'}" class="badge bg-danger"><i
+                                            class="fa-solid fa-ban me-1"></i> Revogada</span>
                                 </td>
                                 <td class="text-center pe-4">
                                     <a th:href="@{'/regras/editar/' + ${r.idRegra}}"
-                                        class="btn btn-sm btn-outline-primary me-1" title="Editar">
-                                        <i class="fa-solid fa-pen-to-square"></i>
-                                    </a>
+                                        class="btn btn-sm btn-outline-primary me-1" title="Editar"><i
+                                            class="fa-solid fa-pen-to-square"></i></a>
 
                                     <a th:href="@{'/regras/deletar/' + ${r.idRegra}}"
                                         class="btn btn-sm btn-outline-danger btn-confirm me-1"
-                                        title="Excluir Definitivamente">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </a>
+                                        title="Excluir Permanentemente"
+                                        data-mensagem="Deseja <b>EXCLUIR</b> permanentemente esta regra?<br><small class='text-danger'>Essa ação só será permitida se não houver nenhuma atividade lançada utilizando esta regra.</small>"
+                                        data-cor="btn-danger" data-icone="fa-solid fa-trash-can"><i
+                                            class="fa-solid fa-trash-can"></i></a>
 
                                     <a th:if="${r.inRevogado == 'N'}" th:href="@{'/regras/excluir/' + ${r.idRegra}}"
-                                        class="btn btn-sm btn-outline-warning btn-confirm me-1" title="Revogar Regra">
-                                        <i class="fa-solid fa-ban"></i>
-                                    </a>
+                                        class="btn btn-sm btn-outline-danger btn-confirm" title="Revogar Regra"
+                                        data-mensagem="Tem certeza que deseja <b>REVOGAR</b> esta regra?<br><small class='text-muted'>Ela deixará de aparecer para novos lançamentos de atividades conselhais.</small>"
+                                        data-cor="btn-danger" data-icone="fa-solid fa-ban"><i
+                                            class="fa-solid fa-ban"></i></a>
 
                                     <a th:if="${r.inRevogado == 'S'}" th:href="@{'/regras/restaurar/' + ${r.idRegra}}"
-                                        class="btn btn-sm btn-outline-success btn-confirm" title="Restaurar Regra">
-                                        <i class="fa-solid fa-rotate-left"></i>
-                                    </a>
+                                        class="btn btn-sm btn-outline-success btn-confirm" title="Restaurar Regra"
+                                        data-mensagem="Tem certeza que deseja <b>RESTAURAR</b> esta regra para o estado Vigente?"
+                                        data-cor="btn-success" data-icone="fa-solid fa-rotate-left"><i
+                                            class="fa-solid fa-rotate-left"></i></a>
                                 </td>
                             </tr>
                             <tr th:if="${paginaRegras.empty}">
-                                <td colspan="6" class="text-center py-4 text-muted">Nenhuma regra encontrada para os
-                                    filtros aplicados.</td>
+                                <td colspan="6" class="text-center py-4 text-muted">Nenhuma regra de pontuação
+                                    cadastrada
+                                    para os filtros atuais.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -175,8 +191,8 @@
                     </ul>
                 </nav>
             </div>
+            </form>
         </div>
-    </div>
 </body>
 
 </html>
