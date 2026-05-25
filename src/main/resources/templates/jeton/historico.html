@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}">
+
+<head>
+    <title>Histórico de Jetons - Jeton</title>
+</head>
+
+<body>
+    <div layout:fragment="conteudo">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h4 text-cremepe fw-bold">
+                <i class="fa-solid fa-clock-rotate-left me-2"></i> Histórico Contábil de Jetons (Folhas Fechadas)
+            </h2>
+        </div>
+
+        <div class="card shadow-sm border-primary mb-4">
+            <div class="card-body p-4">
+                <form th:action="@{/jeton/historico}" method="get">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-muted">Buscar Conselheiro</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i
+                                        class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                                <input type="text" class="form-control" name="termo" th:value="${termo}"
+                                    placeholder="Digite o nome do conselheiro...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Gestão</label>
+                            <select class="form-select" name="idGestao">
+                                <option value="">-- Todas as Gestões --</option>
+                                <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}" th:text="${g.nomeGestao}"
+                                    th:selected="${g.idGestao == idGestaoSelecionada}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">Mês</label>
+                            <select class="form-select" name="mes">
+                                <option value="">-- Todos --</option>
+                                <option th:each="m : ${#numbers.sequence(1, 12)}" th:value="${m}"
+                                    th:text="${m < 10 ? '0' + m : m}" th:selected="${m == mesSelecionado}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">Ano</label>
+                            <input type="number" class="form-control" name="ano" th:value="${anoSelecionado}"
+                                placeholder="Ex: 2026">
+                        </div>
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-primary w-100 fw-bold" title="Filtrar">
+                                <i class="fa-solid fa-filter"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="fa-solid fa-user me-1"></i> Conselheiro</th>
+                                <th class="text-center">Competência</th>
+                                <th class="text-center">Qtd. Jetons</th>
+                                <th class="text-end">Valor Homologado</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(listaJetons)}">
+                                <td colspan="5" class="text-center py-4 text-muted">Nenhum registro contábil de folha
+                                    fechada localizado.</td>
+                            </tr>
+                            <tr th:each="j : ${listaJetons}">
+                                <td>
+                                    <span class="fw-bold text-dark"
+                                        th:text="${j.conselheiro.pessoa.nome}">Conselheiro</span><br>
+                                    <small class="text-muted" th:text="${j.gestao.nomeGestao}">Gestão</small>
+                                </td>
+                                <td class="text-center"><span class="badge bg-dark px-2 py-1"
+                                        th:text="${j.mes + '/' + j.ano}">07/2026</span></td>
+                                <td class="text-center fw-bold text-primary" th:text="${j.totalJeton}">0</td>
+                                <td class="text-end fw-bold text-success"
+                                    th:text="${'R$ ' + #numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}">R$ 0,00
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                                        th:data-pessoa="${j.conselheiro.idPessoa}" th:data-gestao="${j.gestao.idGestao}"
+                                        th:data-mes="${j.mes}" th:data-ano="${j.ano}"
+                                        onclick="abrirModalAtividades(this)">
+                                        <i class="fa-solid fa-magnifying-glass me-1"></i> Atividades
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modalAtividades" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content shadow">
+                    <div class="modal-header bg-cremepe text-white">
+                        <h5 class="modal-title fw-bold"><i class="fa-solid fa-list-check me-2"></i> Origem dos Pontos do
+                            Jeton</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <table class="table table-striped align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Descrição da Regra de Atividade</th>
+                                    <th class="text-center">Data Ocorrência</th>
+                                    <th class="text-center pe-3">Qtd</th>
+                                </tr>
+                            </thead>
+                            <tbody id="corpoTabelaAtividades">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <th:block layout:fragment="scripts">
+            <script>
+                function abrirModalAtividades(botao) {
+                    const idPessoa = botao.getAttribute('data-pessoa');
+                    const idGestao = botao.getAttribute('data-gestao');
+                    const mes = botao.getAttribute('data-mes');
+                    const ano = botao.getAttribute('data-ano');
+
+                    const tbody = document.getElementById('corpoTabelaAtividades');
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center py-3"><i class="fa-solid fa-spinner fa-spin me-2"></i>Buscando composição de pontos...</td></tr>';
+
+                    new bootstrap.Modal(document.getElementById('modalAtividades')).show();
+
+                    fetch(`/jeton/atividades/conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
+                        .then(response => response.json())
+                        .then(dados => {
+                            tbody.innerHTML = '';
+                            if (dados.length === 0) {
+                                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-muted">Este registro originou-se exclusivamente de saldos remanescentes de meses anteriores.</td></tr>';
+                                return;
+                            }
+                            dados.forEach(at => {
+                                tbody.innerHTML += `
+                    <tr>
+                        <td class="ps-3 fw-semibold text-dark">${at.regra}</td>
+                        <td class="text-center"><span class="badge bg-secondary">${at.data.split('-').reverse().join('/')}</span></td>
+                        <td class="text-center pe-3 fw-bold text-primary">${at.qtd}</td>
+                    </tr>`;
+                            });
+                        }).catch(error => {
+                            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-danger">Erro ao carregar as atividades.</td></tr>';
+                        });
+                }
+            </script>
+        </th:block>
+    </div>
+</body>
+
+</html>

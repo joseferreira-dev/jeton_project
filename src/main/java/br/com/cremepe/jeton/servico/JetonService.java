@@ -12,7 +12,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class JetonService {
@@ -40,18 +39,44 @@ public class JetonService {
 
     @Transactional
     public void processarFechamentoMensal(Gestao gestao, Integer mes, Integer ano) {
-        // 0. AUTO-LIMPEZA E PROTEÇÃO DE RE-PROCESSAMENTO
-        List<Jeton> jetonsExistentes = jetonRepository.findByGestaoIdGestaoAndMesAndAno(gestao.getIdGestao(), mes, ano);
-        if (!jetonsExistentes.isEmpty()) {
-            Set<Integer> conselheirosParaEstorno = jetonsExistentes.stream()
-                    .map(j -> j.getConselheiro().getIdPessoa())
-                    .collect(Collectors.toSet());
-            for (Integer idPessoa : conselheirosParaEstorno) {
-                estornarFolhaDoConselheiro(idPessoa, gestao.getIdGestao(), mes, ano);
-            }
+        // =========================================================================
+        // 0. TRAVAS DE SEGURANÇA E REGRAS DE NEGÓCIO
+        // =========================================================================
+
+        // Trava 1: Nenhuma atividade Pendente ('P') no mês atual
+        long pendentesNoMes = atividadeRepository.contarAtividadesPendentesNoMes(gestao.getIdGestao(), mes, ano);
+        if (pendentesNoMes > 0) {
+            throw new RuntimeException(
+                    "Cálculo Bloqueado: Existem " + pendentesNoMes + " atividade(s) com status 'Pendente' no período "
+                            + mes + "/" + ano + ". Valide-as ou exclua-as antes de processar os Jetons.");
         }
 
-        // 1. Identificar o Teto da Competência
+        // Trava 2: Cronologia rigorosa (Meses anteriores DEVEM estar 100% Fechados em
+        // Folha Definitiva)
+        LocalDateTime inicioDoMes = LocalDate.of(ano, mes, 1).atStartOfDay();
+        long anterioresNaoFechadas = atividadeRepository.contarAtividadesAnterioresNaoFechadas(gestao.getIdGestao(),
+                inicioDoMes);
+        if (anterioresNaoFechadas > 0) {
+            throw new RuntimeException("Cálculo Bloqueado: Existem " + anterioresNaoFechadas
+                    + " atividade(s) de meses anteriores que ainda não foram homologadas/fechadas definitivamente. Você deve realizar o fechamento definitivo das folhas anteriores.");
+        }
+
+        // =========================================================================
+        // 1. AUTO-LIMPEZA BLINDADA
+        // =========================================================================
+        List<Jeton> jetonsExistentes = jetonRepository.findByGestaoIdGestaoAndMesAndAno(gestao.getIdGestao(), mes, ano);
+        List<AtividadeConselhal> atividadesComputadas = atividadeRepository.findComputadasDoMes(gestao.getIdGestao(),
+                mes, ano);
+
+        Set<Integer> conselheirosParaEstorno = new HashSet<>();
+        jetonsExistentes.forEach(j -> conselheirosParaEstorno.add(j.getConselheiro().getIdPessoa()));
+        atividadesComputadas.forEach(a -> conselheirosParaEstorno.add(a.getConselheiro().getIdPessoa()));
+
+        for (Integer idPessoa : conselheirosParaEstorno) {
+            estornarFolhaDoConselheiro(idPessoa, gestao.getIdGestao(), mes, ano);
+        }
+
+        // 1. Identificar Teto da Competência
         LocalDate ultimoDiaMes = LocalDate.of(ano, mes, 1).with(java.time.temporal.TemporalAdjusters.lastDayOfMonth());
         List<Resolucao> resolucoesVigentes = resolucaoRepository.findResoluesVigentesNaData(ultimoDiaMes);
 
@@ -68,7 +93,6 @@ public class JetonService {
         for (GestaoConselheiro vinculo : vinculos) {
             Conselheiro conselheiro = vinculo.getConselheiro();
 
-            // A. Recolher saldos antigos e novas atividades
             List<PontosSaldo> saldosAntigos = pontosSaldoRepository.buscarSaldosDisponiveisOrdenadosFIFO(
                     conselheiro.getIdPessoa(), gestao.getIdGestao());
             List<AtividadeConselhal> novasAtividades = atividadeRepository.findHomologadasParaCalculo(
@@ -80,7 +104,7 @@ public class JetonService {
             List<PontosSaldo> filaUnificada = new ArrayList<>(saldosAntigos);
             List<Integer> idsAtividadesProcessadas = new ArrayList<>();
 
-            // B. Converter atividades em Pontos na fila FIFO
+            // Transformar novas atividades em saldos na fila
             for (AtividadeConselhal atividade : novasAtividades) {
                 List<Resolucao> resAtvList = resolucaoRepository
                         .findResoluesVigentesNaData(atividade.getDataHoraAtividade().toLocalDate());
@@ -111,31 +135,34 @@ public class JetonService {
             filaUnificada
                     .sort(Comparator.comparing(PontosSaldo::getDataHora).thenComparing(PontosSaldo::getIdPontosSaldo));
 
-            // C. Módulo Matemático (Calculadora de Absorção Baseada em Teto)
-            int pontosAcumuladosJanela = 0;
+            // D. Módulo de Absorção Matemática
+            int bufferPontos = 0;
             int totalJetonsGeradosConselheiro = 0;
+            int totalPontosConsumidosGeral = 0;
             Map<Resolucao, Integer> demonstrativoJetons = new LinkedHashMap<>();
 
             for (PontosSaldo saldo : filaUnificada) {
-                pontosAcumuladosJanela += saldo.getPontosSobrando();
+                bufferPontos += saldo.getPontosSobrando();
                 Resolucao normaVigenteSaldo = saldo.getResolucao();
                 int pontosPorJeton = (normaVigenteSaldo.getPontosPorJeton() != null
                         && normaVigenteSaldo.getPontosPorJeton() > 0)
                                 ? normaVigenteSaldo.getPontosPorJeton()
                                 : 3;
 
-                int jetonsPossiveis = pontosAcumuladosJanela / pontosPorJeton;
+                int jetonsPossiveis = bufferPontos / pontosPorJeton;
                 int jetonsEfetivos = Math.min(jetonsPossiveis, maxJetonsPermitidos - totalJetonsGeradosConselheiro);
 
                 if (jetonsEfetivos > 0) {
                     demonstrativoJetons.put(normaVigenteSaldo,
                             demonstrativoJetons.getOrDefault(normaVigenteSaldo, 0) + jetonsEfetivos);
                     totalJetonsGeradosConselheiro += jetonsEfetivos;
-                    pontosAcumuladosJanela -= (jetonsEfetivos * pontosPorJeton);
+                    int consumidosAqui = jetonsEfetivos * pontosPorJeton;
+                    bufferPontos -= consumidosAqui;
+                    totalPontosConsumidosGeral += consumidosAqui;
                 }
             }
 
-            // D. Gerar Documentos Financeiros (Jetons) e Relacionamentos
+            // E. Gerar Registos Financeiros
             Jeton primeiroJetonSalvo = null;
             for (Map.Entry<Resolucao, Integer> entry : demonstrativoJetons.entrySet()) {
                 Jeton jeton = new Jeton();
@@ -144,16 +171,13 @@ public class JetonService {
                 jeton.setMes(mes);
                 jeton.setAno(ano);
                 jeton.setTotalJeton(entry.getValue());
-
                 BigDecimal valorBase = (entry.getKey().getValorJeton() != null) ? entry.getKey().getValorJeton()
                         : BigDecimal.ZERO;
                 jeton.setValor(valorBase.multiply(BigDecimal.valueOf(entry.getValue())));
                 jeton.setInSituacao("A");
 
-                // CORREÇÃO CRÍTICA: Preenche a tabela jeton_atividade!
-                if (jeton.getAtividades() == null) {
+                if (jeton.getAtividades() == null)
                     jeton.setAtividades(new ArrayList<>());
-                }
                 jeton.getAtividades().addAll(novasAtividades);
 
                 jeton = jetonRepository.save(jeton);
@@ -161,31 +185,51 @@ public class JetonService {
                     primeiroJetonSalvo = jeton;
             }
 
-            // E. Queimar os pontos da fila consumidos
-            for (PontosSaldo saldo : filaUnificada) {
-                saldo.setJeton(primeiroJetonSalvo);
-                saldo.setPontosUtilizados(saldo.getPontosUtilizados() + saldo.getPontosSobrando());
-                saldo.setPontosSobrando(0);
-                saldo.setInSituacao("I");
-                pontosSaldoRepository.save(saldo);
+            // F. UTXO Coin Splitting (Queima Fracionada de Pontos)
+            int pontosParaConsumir = totalPontosConsumidosGeral;
+
+            if (pontosParaConsumir > 0 && primeiroJetonSalvo != null) {
+                for (PontosSaldo saldo : filaUnificada) {
+                    if (pontosParaConsumir <= 0)
+                        break;
+
+                    int disponivel = saldo.getPontosSobrando();
+                    if (disponivel == 0)
+                        continue;
+
+                    int consumir = Math.min(disponivel, pontosParaConsumir);
+
+                    if (consumir < disponivel) {
+                        // Partição do Saldo (Atual guarda o consumo, Nova linha retém a sobra)
+                        saldo.setPontosSobrando(0);
+                        saldo.setPontosUtilizados(saldo.getPontosUtilizados() + consumir);
+                        saldo.setInSituacao("I");
+                        saldo.setJeton(primeiroJetonSalvo);
+                        pontosSaldoRepository.save(saldo);
+
+                        PontosSaldo remainder = new PontosSaldo();
+                        remainder.setAtividade(saldo.getAtividade());
+                        remainder.setConselheiro(saldo.getConselheiro());
+                        remainder.setGestao(saldo.getGestao());
+                        remainder.setResolucao(saldo.getResolucao());
+                        remainder.setDataHora(saldo.getDataHora());
+                        remainder.setPontosTrabalhados(disponivel - consumir);
+                        remainder.setPontosUtilizados(0);
+                        remainder.setPontosSobrando(disponivel - consumir);
+                        remainder.setInSituacao("A");
+                        pontosSaldoRepository.save(remainder);
+                    } else {
+                        // Consumo Integral
+                        saldo.setPontosSobrando(0);
+                        saldo.setPontosUtilizados(saldo.getPontosUtilizados() + consumir);
+                        saldo.setInSituacao("I");
+                        saldo.setJeton(primeiroJetonSalvo);
+                        pontosSaldoRepository.save(saldo);
+                    }
+                    pontosParaConsumir -= consumir;
+                }
             }
 
-            // F. Gerar a "Sobra" consolidada para o próximo mês
-            if (pontosAcumuladosJanela > 0) {
-                PontosSaldo sobraSaldo = new PontosSaldo();
-                sobraSaldo.setAtividade(null);
-                sobraSaldo.setConselheiro(conselheiro);
-                sobraSaldo.setGestao(gestao);
-                sobraSaldo.setResolucao(resolucaoTeto);
-                sobraSaldo.setDataHora(ultimoDiaMes.atTime(23, 59, 59));
-                sobraSaldo.setPontosTrabalhados(pontosAcumuladosJanela);
-                sobraSaldo.setPontosUtilizados(0);
-                sobraSaldo.setPontosSobrando(pontosAcumuladosJanela);
-                sobraSaldo.setInSituacao("A");
-                pontosSaldoRepository.save(sobraSaldo);
-            }
-
-            // G. CORREÇÃO CRÍTICA: Persistência direta no DB para fechar as Atividades
             if (!idsAtividadesProcessadas.isEmpty()) {
                 atividadeRepository.marcarComoComputadaEmLote(idsAtividadesProcessadas);
             }
@@ -194,70 +238,31 @@ public class JetonService {
 
     @Transactional
     public void estornarFolhaDoConselheiro(Integer idPessoa, Integer idGestao, Integer mes, Integer ano) {
+        // 1. Encontrar pagamentos e devolver pontos à origem sem perder o histórico
         List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano).stream()
                 .filter(j -> j.getConselheiro().getIdPessoa().equals(idPessoa))
                 .toList();
-        if (jetons.isEmpty())
-            return;
 
-        // 1. Apaga a "Sobra" que foi gerada e jogada para o próximo mês
-        LocalDate ultimoDia = LocalDate.of(ano, mes, 1).with(java.time.temporal.TemporalAdjusters.lastDayOfMonth());
-        LocalDateTime dataSobra = ultimoDia.atTime(23, 59, 59);
-        List<PontosSaldo> sobras = pontosSaldoRepository.buscarSaldosDisponiveisOrdenadosFIFO(idPessoa, idGestao)
-                .stream()
-                .filter(ps -> ps.getAtividade() == null && ps.getDataHora().equals(dataSobra))
-                .toList();
-        pontosSaldoRepository.deleteAll(sobras);
-
-        // 2. Desfaz a associação de Pontos e Jetons de forma cirúrgica
         for (Jeton j : jetons) {
             List<PontosSaldo> consumidos = pontosSaldoRepository.findByJetonIdJeton(j.getIdJeton());
             for (PontosSaldo s : consumidos) {
-                s.setJeton(null); // Quebra o vínculo para não dar erro de chave estrangeira
+                s.setPontosSobrando(s.getPontosSobrando() + s.getPontosUtilizados());
+                s.setPontosUtilizados(0);
+                s.setInSituacao("A");
+                s.setJeton(null);
                 pontosSaldoRepository.save(s);
-
-                // SE O SALDO VEIO DE UMA ATIVIDADE DESTE MÊS: Nós a apagamos para ela não se
-                // duplicar ao reprocessar
-                if (s.getAtividade() != null &&
-                        s.getAtividade().getDataHoraAtividade().getMonthValue() == mes &&
-                        s.getAtividade().getDataHoraAtividade().getYear() == ano) {
-
-                    pontosSaldoRepository.delete(s);
-                }
-                // SE FOR UM SALDO HISTÓRICO (Carga Inicial ou Sobra anterior): Restauramos ele
-                // para o estado Ativo
-                else {
-                    s.setPontosSobrando(s.getPontosTrabalhados());
-                    s.setPontosUtilizados(0);
-                    s.setInSituacao("A");
-                    pontosSaldoRepository.save(s);
-                }
             }
-            j.getAtividades().clear(); // Limpa as dependências da tabela jeton_atividade
+            j.getAtividades().clear();
             jetonRepository.delete(j);
         }
 
-        // 3. Devolve as atividades reais para o status original (C + N)
+        // 2. Apagar saldos espelho de atividades que ocorreram estritamente neste mês
+        List<PontosSaldo> saldosAtividadesDesteMes = pontosSaldoRepository.buscarSaldosDeAtividadesDoMes(idPessoa, mes,
+                ano);
+        pontosSaldoRepository.deleteAll(saldosAtividadesDesteMes);
+
+        // 3. Reverter as atividades
         atividadeRepository.reverterAtividadesComputadas(idPessoa, idGestao, mes, ano);
-    }
-
-    @Transactional
-    public void estornarFolhaEmLote(Integer idGestao, Integer mes, Integer ano) {
-        List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano);
-
-        if (jetons.isEmpty()) {
-            throw new RuntimeException(
-                    "Não há pagamentos processados para estornar nesta competência " + mes + "/" + ano + ".");
-        }
-
-        // Pega os conselheiros únicos e invoca o estorno seguro para cada um deles
-        Set<Integer> conselheirosIds = jetons.stream()
-                .map(j -> j.getConselheiro().getIdPessoa())
-                .collect(Collectors.toSet());
-
-        for (Integer idPessoa : conselheirosIds) {
-            estornarFolhaDoConselheiro(idPessoa, idGestao, mes, ano);
-        }
     }
 
     @Transactional
@@ -298,14 +303,43 @@ public class JetonService {
 
         if (totalAtualizado == 0) {
             throw new RuntimeException(
-                    "Não foram encontradas atividades validadas e computadas (C+S) para fechar na competência " + mes
+                    "Não foram encontradas atividades validadas e computadas para fechar na competência " + mes
                             + "/" + ano + ".");
         }
 
         List<Jeton> jetonsDoMes = jetonRepository.findByGestaoIdGestaoAndMesAndAno(gestao.getIdGestao(), mes, ano);
         for (Jeton j : jetonsDoMes) {
-            j.setInSituacao("I"); // Jeton Inativo (Fechado/Pago definitivo)
+            j.setInSituacao("E");
             jetonRepository.save(j);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<Jeton> pesquisarHistorico(Integer idGestao, Integer mes, Integer ano, String termo) {
+        String termoBusca = (termo != null && !termo.trim().isEmpty()) ? termo.trim() : null;
+        return jetonRepository.pesquisarHistorico(idGestao, mes, ano, termoBusca);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> listarAtividadesAgrupadasPorConselheiro(Integer idPessoa, Integer idGestao,
+            Integer mes, Integer ano) {
+        // Busca todos os jetons daquele conselheiro no mês especificado
+        List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano).stream()
+                .filter(j -> j.getConselheiro().getIdPessoa().equals(idPessoa))
+                .toList();
+
+        List<Map<String, Object>> resultado = new ArrayList<>();
+        for (Jeton jeton : jetons) {
+            if (jeton.getAtividades() != null) {
+                for (AtividadeConselhal at : jeton.getAtividades()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("regra", at.getRegra() != null ? at.getRegra().getNomeRegra() : "Regra não identificada");
+                    map.put("data", at.getDataHoraAtividade().toLocalDate().toString());
+                    map.put("qtd", at.getQtdAtividade());
+                    resultado.add(map);
+                }
+            }
+        }
+        return resultado;
     }
 }

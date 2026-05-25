@@ -27,4 +27,15 @@ public interface JetonRepository extends JpaRepository<Jeton, Integer> {
             @Param("idGestao") Integer idGestao,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
+
+    @Query("SELECT j FROM Jeton j WHERE j.inSituacao = 'E' " +
+            "AND (:idGestao IS NULL OR j.gestao.idGestao = :idGestao) " +
+            "AND (:mes IS NULL OR j.mes = :mes) " +
+            "AND (:ano IS NULL OR j.ano = :ano) " +
+            "AND (:termo IS NULL OR LOWER(j.conselheiro.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')))")
+    List<Jeton> pesquisarHistorico(
+            @Param("idGestao") Integer idGestao,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano,
+            @Param("termo") String termo);
 }

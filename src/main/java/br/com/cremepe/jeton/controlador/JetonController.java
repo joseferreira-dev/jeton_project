@@ -94,22 +94,6 @@ public class JetonController {
         return "redirect:/jeton?idGestao=" + idGestao + "&mes=" + mes + "&ano=" + ano;
     }
 
-    @GetMapping("/estornar/conselheiro/{idPessoa}/gestao/{idGestao}/mes/{mes}/ano/{ano}")
-    public String estornarPorConselheiro(
-            @PathVariable("idPessoa") Integer idPessoa, @PathVariable("idGestao") Integer idGestao,
-            @PathVariable("mes") Integer mes, @PathVariable("ano") Integer ano, RedirectAttributes ra) {
-        try {
-            jetonService.estornarFolhaDoConselheiro(idPessoa, idGestao, mes, ano);
-            ra.addFlashAttribute("sucesso", "Processamento do conselheiro estornado com sucesso!");
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao processar o estorno: " + e.getMessage());
-        }
-        return "redirect:/jeton?idGestao=" + idGestao + "&mes=" + mes + "&ano=" + ano;
-    }
-
-    // ==========================================================
-    // ESTORNO PONTUAL (Um conselheiro clicando na lixeira)
-    // ==========================================================
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
@@ -122,23 +106,6 @@ public class JetonController {
             ra.addFlashAttribute("erro", "Erro ao estornar Jeton: " + e.getMessage());
         }
         return "redirect:/jeton";
-    }
-
-    @GetMapping("/estornar-lote/gestao/{idGestao}/mes/{mes}/ano/{ano}")
-    public String estornarEmLote(
-            @PathVariable("idGestao") Integer idGestao,
-            @PathVariable("mes") Integer mes,
-            @PathVariable("ano") Integer ano,
-            RedirectAttributes ra) {
-        try {
-            // Invoca o serviço que limpa os processamentos de todos os conselheiros do mês
-            jetonService.estornarFolhaEmLote(idGestao, mes, ano);
-            ra.addFlashAttribute("sucesso",
-                    "A folha inteira foi estornada com sucesso! Todas as atividades foram devolvidas.");
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao estornar folha em lote: " + e.getMessage());
-        }
-        return "redirect:/jeton?idGestao=" + idGestao + "&mes=" + mes + "&ano=" + ano;
     }
 
     @PostMapping("/fechar-definitivo")
@@ -182,5 +149,41 @@ public class JetonController {
             ra.addFlashAttribute("erro", "Erro interno ao processar o estorno: " + e.getMessage());
         }
         return "redirect:/jeton/lista"; // Certifique-se de que a rota de retorno coincide com a sua listagem
+    }
+
+    @GetMapping("/historico")
+    public String exibirHistorico(
+            @RequestParam(value = "idGestao", required = false) Integer idGestao,
+            @RequestParam(value = "mes", required = false) Integer mes,
+            @RequestParam(value = "ano", required = false) Integer ano,
+            @RequestParam(value = "termo", required = false) String termo,
+            Model model, HttpSession session) {
+
+        if (session.getAttribute("usuarioLogado") == null)
+            return "redirect:/login";
+
+        List<Jeton> historico = jetonService.pesquisarHistorico(idGestao, mes, ano, termo);
+
+        model.addAttribute("listaJetons", historico);
+        model.addAttribute("listaGestoes", gestaoService.listarTodos());
+
+        // Devolve os parâmetros para manter o estado dos filtros na tela
+        model.addAttribute("idGestaoSelecionada", idGestao);
+        model.addAttribute("mesSelecionado", mes);
+        model.addAttribute("anoSelecionado", ano);
+        model.addAttribute("termo", termo);
+
+        return "jeton/historico";
+    }
+
+    @GetMapping("/atividades/conselheiro/{idPessoa}/gestao/{idGestao}/mes/{mes}/ano/{ano}")
+    @ResponseBody
+    public List<Map<String, Object>> obterAtividadesVinculadas(
+            @PathVariable("idPessoa") Integer idPessoa,
+            @PathVariable("idGestao") Integer idGestao,
+            @PathVariable("mes") Integer mes,
+            @PathVariable("ano") Integer ano) {
+
+        return jetonService.listarAtividadesAgrupadasPorConselheiro(idPessoa, idGestao, mes, ano);
     }
 }

@@ -40,4 +40,13 @@ public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Intege
     List<PontosSaldo> buscarSaldosDisponiveisOrdenadosFIFO(
             @Param("idPessoa") Integer idPessoa,
             @Param("idGestao") Integer idGestao);
+
+    @Query("SELECT ps FROM PontosSaldo ps WHERE ps.conselheiro.idPessoa = :idPessoa " +
+            "AND ps.atividade IS NOT NULL " +
+            "AND MONTH(ps.atividade.dataHoraAtividade) = :mes " +
+            "AND YEAR(ps.atividade.dataHoraAtividade) = :ano")
+    List<PontosSaldo> buscarSaldosDeAtividadesDoMes(
+            @Param("idPessoa") Integer idPessoa,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
 }
