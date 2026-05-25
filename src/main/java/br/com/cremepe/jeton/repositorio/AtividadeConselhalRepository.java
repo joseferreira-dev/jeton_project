@@ -53,14 +53,203 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("dataFim") LocalDate dataFim,
             Pageable pageable);
 
+    // @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa =
+    // :idPessoa " +
+    // "AND a.inSituacao = 'P' AND a.comprovante IS NOT NULL " +
+    // "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
+    // List<AtividadeConselhal> findPendentesParaProcessamento(
+    // @Param("idPessoa") Integer idPessoa,
+    // @Param("mes") Integer mes,
+    // @Param("ano") Integer ano);
+
+    // @Query("SELECT SUM(a.regra.pontos * a.qtdAtividade) FROM AtividadeConselhal a
+    // " +
+    // "WHERE a.conselheiro.idPessoa = :idPessoa " +
+    // "AND YEAR(a.dataHoraAtividade) = YEAR(:data) " +
+    // "AND MONTH(a.dataHoraAtividade) = MONTH(:data) " +
+    // "AND DAY(a.dataHoraAtividade) = DAY(:data) " +
+    // "AND a.inTurno = :turno")
+    // Integer sumPontosPorConselheiroDiaETurno(
+    // @Param("idPessoa") Integer idPessoa,
+    // @Param("data") LocalDate data,
+    // @Param("turno") String turno);
+
+    // @Query("SELECT a FROM AtividadeConselhal a WHERE a.gestao.idGestao =
+    // :idGestao " +
+    // "AND (a.inSituacao = 'P' OR a.comprovante IS NULL) " +
+    // "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
+    // List<AtividadeConselhal> findAtividadesInconsistentesDoMes(
+    // @Param("idGestao") Integer idGestao,
+    // @Param("mes") Integer mes,
+    // @Param("ano") Integer ano);
+
+    // @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa =
+    // :idPessoa " +
+    // "AND a.inSituacao = 'C' AND a.inComputada = 'N' " +
+    // "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
+    // List<AtividadeConselhal> findHomologadasParaCalculo(
+    // @Param("idPessoa") Integer idPessoa,
+    // @Param("mes") Integer mes,
+    // @Param("ano") Integer ano);
+
+    // @Modifying
+    // @Transactional
+    // @Query("UPDATE AtividadeConselhal a SET a.inSituacao = 'F' WHERE
+    // a.gestao.idGestao = :idGestao " +
+    // "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano "
+    // +
+    // "AND a.inSituacao = 'C' AND a.inComputada = 'S'")
+    // int fecharAtividadesEmFolha(
+    // @Param("idGestao") Integer idGestao,
+    // @Param("mes") Integer mes,
+    // @Param("ano") Integer ano);
+
+    long countByComprovanteIdComprovante(Integer idComprovante);
+
+    @Modifying
+    @Query("UPDATE AtividadeConselhal a SET a.comprovante = null WHERE a.idAtividade = :id")
+    void removerVinculoComprovante(@Param("id") Integer id);
+
+    // @Modifying
+    // @Query("UPDATE AtividadeConselhal a SET a.inComputada = 'N' WHERE
+    // a.conselheiro.idPessoa = :idPessoa " +
+    // "AND a.gestao.idGestao = :idGestao AND MONTH(a.dataHoraAtividade) = :mes AND
+    // YEAR(a.dataHoraAtividade) = :ano")
+    // void reverterAtividadesComputadas(
+    // @Param("idPessoa") Integer idPessoa,
+    // @Param("idGestao") Integer idGestao,
+    // @Param("mes") Integer mes,
+    // @Param("ano") Integer ano);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE AtividadeConselhal a SET a.inComputada = 'S' WHERE a.idAtividade IN :ids")
+    void marcarComoComputadaEmLote(@Param("ids") List<Integer> ids);
+
+    // @Query("SELECT a FROM AtividadeConselhal a WHERE a.gestao.idGestao =
+    // :idGestao " +
+    // "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano "
+    // +
+    // "AND a.inComputada = 'S'")
+    // List<AtividadeConselhal> findComputadasDoMes(
+    // @Param("idGestao") Integer idGestao,
+    // @Param("mes") Integer mes,
+    // @Param("ano") Integer ano);
+
+    // TRAVA 1: Verifica se há atividades pendentes (não validadas) no mês do
+    // cálculo
+    // @Query("SELECT COUNT(a) FROM AtividadeConselhal a WHERE a.gestao.idGestao =
+    // :idGestao " +
+    // "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano "
+    // +
+    // "AND a.inSituacao = 'P'")
+    // long contarAtividadesPendentesNoMes(
+    // @Param("idGestao") Integer idGestao,
+    // @Param("mes") Integer mes,
+    // @Param("ano") Integer ano);
+
+    // TRAVA 2: Verifica se há atividades de meses anteriores que não estão com
+    // status F (Fechada)
+    // @Query("SELECT COUNT(a) FROM AtividadeConselhal a WHERE a.gestao.idGestao =
+    // :idGestao " +
+    // "AND a.dataHoraAtividade < :inicioDoMes " +
+    // "AND a.inSituacao != 'F'")
+    // long contarAtividadesAnterioresNaoFechadas(
+    // @Param("idGestao") Integer idGestao,
+    // @Param("inicioDoMes") LocalDateTime inicioDoMes);
+
+    // =========================================================================
+    // MÉTODOS ALTERADOS PARA USAR dataHoraRegistro (competência financeira)
+    // =========================================================================
+
+    /**
+     * ALTERADO: Agora considera o MÊS/ANO da DATA DE REGISTRO, não da atividade.
+     * Busca atividades homologadas (C) e não computadas para cálculo do Jeton.
+     */
     @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa " +
-            "AND a.inSituacao = 'P' AND a.comprovante IS NOT NULL " +
-            "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
-    List<AtividadeConselhal> findPendentesParaProcessamento(
+            "AND a.inSituacao = 'C' AND a.inComputada = 'N' " +
+            "AND MONTH(a.dataHoraRegistro) = :mes AND YEAR(a.dataHoraRegistro) = :ano")
+    List<AtividadeConselhal> findHomologadasParaCalculo(
             @Param("idPessoa") Integer idPessoa,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
 
+    /**
+     * ALTERADO: Conta atividades pendentes (P) no mês/ano da DATA DE REGISTRO.
+     * Usado como trava antes do processamento.
+     */
+    @Query("SELECT COUNT(a) FROM AtividadeConselhal a WHERE a.gestao.idGestao = :idGestao " +
+            "AND MONTH(a.dataHoraRegistro) = :mes AND YEAR(a.dataHoraRegistro) = :ano " +
+            "AND a.inSituacao = 'P'")
+    long contarAtividadesPendentesNoMes(
+            @Param("idGestao") Integer idGestao,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
+
+    /**
+     * ALTERADO: Conta atividades de meses anteriores (baseado na DATA DE REGISTRO)
+     * que ainda não estão fechadas (status != 'F'). Usado para garantir fechamento
+     * cronológico.
+     */
+    @Query("SELECT COUNT(a) FROM AtividadeConselhal a WHERE a.gestao.idGestao = :idGestao " +
+            "AND a.dataHoraRegistro < :inicioDoMes " +
+            "AND a.inSituacao != 'F'")
+    long contarAtividadesAnterioresNaoFechadas(
+            @Param("idGestao") Integer idGestao,
+            @Param("inicioDoMes") LocalDateTime inicioDoMes);
+
+    /**
+     * ALTERADO: Busca atividades que já foram computadas (inComputada = 'S') no
+     * mês/ano da DATA DE REGISTRO.
+     * Usado durante o estorno automático.
+     */
+    @Query("SELECT a FROM AtividadeConselhal a WHERE a.gestao.idGestao = :idGestao " +
+            "AND MONTH(a.dataHoraRegistro) = :mes AND YEAR(a.dataHoraRegistro) = :ano " +
+            "AND a.inComputada = 'S'")
+    List<AtividadeConselhal> findComputadasDoMes(
+            @Param("idGestao") Integer idGestao,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
+
+    /**
+     * ALTERADO: Fecha as atividades em folha (status 'F') para aquelas que estão no
+     * mês/ano da DATA DE REGISTRO,
+     * estavam validadas (C) e já computadas (S).
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE AtividadeConselhal a SET a.inSituacao = 'F' WHERE a.gestao.idGestao = :idGestao " +
+            "AND MONTH(a.dataHoraRegistro) = :mes AND YEAR(a.dataHoraRegistro) = :ano " +
+            "AND a.inSituacao = 'C' AND a.inComputada = 'S'")
+    int fecharAtividadesEmFolha(
+            @Param("idGestao") Integer idGestao,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
+
+    /**
+     * ALTERADO: Reverte atividades computadas (inComputada = 'N') para um
+     * conselheiro, gestão e competência (dataHoraRegistro).
+     * Usado nos estornos.
+     */
+    @Modifying
+    @Query("UPDATE AtividadeConselhal a SET a.inComputada = 'N' WHERE a.conselheiro.idPessoa = :idPessoa " +
+            "AND a.gestao.idGestao = :idGestao AND MONTH(a.dataHoraRegistro) = :mes AND YEAR(a.dataHoraRegistro) = :ano")
+    void reverterAtividadesComputadas(
+            @Param("idPessoa") Integer idPessoa,
+            @Param("idGestao") Integer idGestao,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
+
+    // =========================================================================
+    // MÉTODOS QUE PERMANECEM USANDO dataHoraAtividade (regras de negócio local)
+    // =========================================================================
+
+    /**
+     * NÃO ALTERADO: Soma pontos por conselheiro no mesmo DIA e TURNO (base na data
+     * real).
+     * Isso evita que uma atividade registrada fora de época extrapole o limite do
+     * dia original.
+     */
     @Query("SELECT SUM(a.regra.pontos * a.qtdAtividade) FROM AtividadeConselhal a " +
             "WHERE a.conselheiro.idPessoa = :idPessoa " +
             "AND YEAR(a.dataHoraAtividade) = YEAR(:data) " +
@@ -72,76 +261,17 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("data") LocalDate data,
             @Param("turno") String turno);
 
-    @Query("SELECT a FROM AtividadeConselhal a WHERE a.gestao.idGestao = :idGestao " +
-            "AND (a.inSituacao = 'P' OR a.comprovante IS NULL) " +
-            "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
-    List<AtividadeConselhal> findAtividadesInconsistentesDoMes(
-            @Param("idGestao") Integer idGestao,
-            @Param("mes") Integer mes,
-            @Param("ano") Integer ano);
-
+    /**
+     * NÃO ALTERADO: Verifica se há atividades pendentes (P) com comprovante em
+     * determinado mês/ano
+     * (baseado na data real). Usado em processamento específico, mas mantido como
+     * estava.
+     */
     @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa " +
-            "AND a.inSituacao = 'C' AND a.inComputada = 'N' " +
+            "AND a.inSituacao = 'P' AND a.comprovante IS NOT NULL " +
             "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
-    List<AtividadeConselhal> findHomologadasParaCalculo(
+    List<AtividadeConselhal> findPendentesParaProcessamento(
             @Param("idPessoa") Integer idPessoa,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
-
-    @Modifying
-    @Transactional
-    @Query("UPDATE AtividadeConselhal a SET a.inSituacao = 'F' WHERE a.gestao.idGestao = :idGestao " +
-            "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano " +
-            "AND a.inSituacao = 'C' AND a.inComputada = 'S'")
-    int fecharAtividadesEmFolha(
-            @Param("idGestao") Integer idGestao,
-            @Param("mes") Integer mes,
-            @Param("ano") Integer ano);
-
-    long countByComprovanteIdComprovante(Integer idComprovante);
-
-    @Modifying
-    @Query("UPDATE AtividadeConselhal a SET a.comprovante = null WHERE a.idAtividade = :id")
-    void removerVinculoComprovante(@Param("id") Integer id);
-
-    @Modifying
-    @Query("UPDATE AtividadeConselhal a SET a.inComputada = 'N' WHERE a.conselheiro.idPessoa = :idPessoa " +
-            "AND a.gestao.idGestao = :idGestao AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
-    void reverterAtividadesComputadas(
-            @Param("idPessoa") Integer idPessoa,
-            @Param("idGestao") Integer idGestao,
-            @Param("mes") Integer mes,
-            @Param("ano") Integer ano);
-
-    @Modifying
-    @Transactional
-    @Query("UPDATE AtividadeConselhal a SET a.inComputada = 'S' WHERE a.idAtividade IN :ids")
-    void marcarComoComputadaEmLote(@Param("ids") List<Integer> ids);
-
-    @Query("SELECT a FROM AtividadeConselhal a WHERE a.gestao.idGestao = :idGestao " +
-            "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano " +
-            "AND a.inComputada = 'S'")
-    List<AtividadeConselhal> findComputadasDoMes(
-            @Param("idGestao") Integer idGestao,
-            @Param("mes") Integer mes,
-            @Param("ano") Integer ano);
-
-    // TRAVA 1: Verifica se há atividades pendentes (não validadas) no mês do
-    // cálculo
-    @Query("SELECT COUNT(a) FROM AtividadeConselhal a WHERE a.gestao.idGestao = :idGestao " +
-            "AND MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano " +
-            "AND a.inSituacao = 'P'")
-    long contarAtividadesPendentesNoMes(
-            @Param("idGestao") Integer idGestao,
-            @Param("mes") Integer mes,
-            @Param("ano") Integer ano);
-
-    // TRAVA 2: Verifica se há atividades de meses anteriores que não estão com
-    // status F (Fechada)
-    @Query("SELECT COUNT(a) FROM AtividadeConselhal a WHERE a.gestao.idGestao = :idGestao " +
-            "AND a.dataHoraAtividade < :inicioDoMes " +
-            "AND a.inSituacao != 'F'")
-    long contarAtividadesAnterioresNaoFechadas(
-            @Param("idGestao") Integer idGestao,
-            @Param("inicioDoMes") LocalDateTime inicioDoMes);
 }

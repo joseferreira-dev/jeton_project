@@ -41,14 +41,15 @@ public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Intege
             @Param("idPessoa") Integer idPessoa,
             @Param("idGestao") Integer idGestao);
 
-    @Query("SELECT ps FROM PontosSaldo ps WHERE ps.conselheiro.idPessoa = :idPessoa " +
-            "AND ps.atividade IS NOT NULL " +
-            "AND MONTH(ps.atividade.dataHoraAtividade) = :mes " +
-            "AND YEAR(ps.atividade.dataHoraAtividade) = :ano")
-    List<PontosSaldo> buscarSaldosDeAtividadesDoMes(
-            @Param("idPessoa") Integer idPessoa,
-            @Param("mes") Integer mes,
-            @Param("ano") Integer ano);
+    // @Query("SELECT ps FROM PontosSaldo ps WHERE ps.conselheiro.idPessoa =
+    // :idPessoa " +
+    // "AND ps.atividade IS NOT NULL " +
+    // "AND MONTH(ps.atividade.dataHoraAtividade) = :mes " +
+    // "AND YEAR(ps.atividade.dataHoraAtividade) = :ano")
+    // List<PontosSaldo> buscarSaldosDeAtividadesDoMes(
+    // @Param("idPessoa") Integer idPessoa,
+    // @Param("mes") Integer mes,
+    // @Param("ano") Integer ano);
 
     @Query("SELECT COALESCE(SUM(ps.pontosSobrando), 0) FROM PontosSaldo ps " +
             "WHERE ps.conselheiro.idPessoa = :idPessoa " +
@@ -56,4 +57,13 @@ public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Intege
             "AND ps.inSituacao = 'A'")
     Integer somarPontosSobrandoAtivos(@Param("idPessoa") Integer idPessoa,
             @Param("idGestao") Integer idGestao);
+
+    @Query("SELECT ps FROM PontosSaldo ps WHERE ps.conselheiro.idPessoa = :idPessoa " +
+            "AND ps.atividade IS NOT NULL " +
+            "AND MONTH(ps.atividade.dataHoraRegistro) = :mes " +
+            "AND YEAR(ps.atividade.dataHoraRegistro) = :ano")
+    List<PontosSaldo> buscarSaldosDeAtividadesDoMes(
+            @Param("idPessoa") Integer idPessoa,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
 }

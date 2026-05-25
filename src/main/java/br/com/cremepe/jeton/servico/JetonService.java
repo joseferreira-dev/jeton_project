@@ -48,7 +48,8 @@ public class JetonService {
         if (pendentesNoMes > 0) {
             throw new RuntimeException(
                     "Cálculo Bloqueado: Existem " + pendentesNoMes + " atividade(s) com status 'Pendente' no período "
-                            + mes + "/" + ano + ". Valide-as ou exclua-as antes de processar os Jetons.");
+                            + mes + "/" + ano
+                            + " (baseado na data de registro). Valide-as ou exclua-as antes de processar os Jetons.");
         }
 
         // Trava 2: Cronologia rigorosa (Meses anteriores DEVEM estar 100% Fechados em
@@ -58,7 +59,7 @@ public class JetonService {
                 inicioDoMes);
         if (anterioresNaoFechadas > 0) {
             throw new RuntimeException("Cálculo Bloqueado: Existem " + anterioresNaoFechadas
-                    + " atividade(s) de meses anteriores que ainda não foram homologadas/fechadas definitivamente. Você deve realizar o fechamento definitivo das folhas anteriores.");
+                    + " atividade(s) registradas em meses anteriores que ainda não foram homologadas/fechadas definitivamente.");
         }
 
         // =========================================================================
@@ -238,7 +239,7 @@ public class JetonService {
 
     @Transactional
     public void estornarFolhaDoConselheiro(Integer idPessoa, Integer idGestao, Integer mes, Integer ano) {
-        // 1. Encontrar pagamentos e devolver pontos à origem sem perder o histórico
+        // 1. Encontrar pagamentos (baseado em mes/ano – já usa a competência correta)
         List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano).stream()
                 .filter(j -> j.getConselheiro().getIdPessoa().equals(idPessoa))
                 .toList();
@@ -256,12 +257,14 @@ public class JetonService {
             jetonRepository.delete(j);
         }
 
-        // 2. Apagar saldos espelho de atividades que ocorreram estritamente neste mês
+        // 2. Apagar saldos espelho de atividades que ocorreram estritamente nesta
+        // competência
+        // (método ajustado no repositório para usar dataHoraRegistro)
         List<PontosSaldo> saldosAtividadesDesteMes = pontosSaldoRepository.buscarSaldosDeAtividadesDoMes(idPessoa, mes,
                 ano);
         pontosSaldoRepository.deleteAll(saldosAtividadesDesteMes);
 
-        // 3. Reverter as atividades
+        // 3. Reverter as atividades (método ajustado)
         atividadeRepository.reverterAtividadesComputadas(idPessoa, idGestao, mes, ano);
     }
 
@@ -283,6 +286,7 @@ public class JetonService {
             pontosSaldoRepository.save(saldo);
         }
 
+        // Reverter atividades usando a competência do Jeton (mes/ano)
         atividadeRepository.reverterAtividadesComputadas(
                 jeton.getConselheiro().getIdPessoa(),
                 jeton.getGestao().getIdGestao(),
@@ -299,12 +303,14 @@ public class JetonService {
 
     @Transactional
     public void realizarFechamentoDefinitivoFolha(Gestao gestao, Integer mes, Integer ano) {
+        // ALTERADO: usa o método fecharAtividadesEmFolha que agora considera
+        // dataHoraRegistro
         int totalAtualizado = atividadeRepository.fecharAtividadesEmFolha(gestao.getIdGestao(), mes, ano);
 
         if (totalAtualizado == 0) {
             throw new RuntimeException(
                     "Não foram encontradas atividades validadas e computadas para fechar na competência " + mes
-                            + "/" + ano + ".");
+                            + "/" + ano + " (baseado na data de registro).");
         }
 
         List<Jeton> jetonsDoMes = jetonRepository.findByGestaoIdGestaoAndMesAndAno(gestao.getIdGestao(), mes, ano);
