@@ -148,7 +148,10 @@
                                 <td class="text-center no-print">
                                     <div class="btn-group gap-1">
                                         <button type="button" class="btn btn-sm btn-outline-primary"
-                                            th:data-id="${j.idJeton}" onclick="abrirModalAtividades(this)">
+                                            th:data-pessoa="${j.conselheiro.idPessoa}"
+                                            th:data-gestao="${j.gestao.idGestao}" th:data-mes="${j.mes}"
+                                            th:data-ano="${j.ano}" th:data-nome="${j.conselheiro.pessoa.nome}"
+                                            onclick="abrirRelatorioJeton(this)">
                                             <i class="fa-solid fa-magnifying-glass"></i> Origem
                                         </button>
 
@@ -164,9 +167,250 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <script></script>
+        <!-- Modal de Confirmação para Homologação -->
+        <div class="modal fade" id="modalHomologacao" tabindex="-1" aria-labelledby="modalHomologacaoLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow border-danger">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="modalHomologacaoLabel">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Homologação
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="d-flex align-items-start">
+                            <i class="fa-solid fa-lock text-danger me-3 mt-1" style="font-size: 2rem;"></i>
+                            <div>
+                                <h6 class="fw-bold mb-2">Atenção: Esta ação é irreversível!</h6>
+                                <p class="mb-1">Deseja realmente homologar e encerrar esta folha?</p>
+                                <ul class="small text-muted mb-0 mt-2">
+                                    <li>Todas as atividades computadas serão convertidas em registros permanentes</li>
+                                    <li>Nenhuma atividade deste período poderá ser reaberta, editada ou excluída</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-xmark me-1"></i> Cancelar
+                        </button>
+                        <button type="button" class="btn btn-danger px-4" id="btnConfirmarHomologacao">
+                            <i class="fa-solid fa-lock me-1"></i> Homologar e Fechar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Alerta para Validação -->
+        <div class="modal fade" id="modalAlertaValidacao" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow border-warning">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title">
+                            <i class="fa-solid fa-circle-exclamation me-2"></i> Campos Obrigatórios
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p class="mb-0">Por favor, preencha todos os campos (Gestão, Mês e Ano) antes de homologar.</p>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-warning px-4" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-check me-1"></i> OK
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Relatório do Jeton -->
+        <div class="modal fade" id="modalRelatorio" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content shadow">
+                    <div class="modal-header bg-cremepe text-white">
+                        <h5 class="modal-title fw-bold">
+                            <i class="fa-solid fa-file-invoice me-2"></i> Composição do Jeton
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <!-- Cabeçalho com nome do conselheiro -->
+                        <div class="mb-3">
+                            <h4 class="fw-bold" id="nomeConselheiroRelatorio">Nome do Conselheiro</h4>
+                            <span class="text-muted" id="competenciaRelatorio"></span>
+                        </div>
+
+                        <!-- Resumo dos saldos -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <div class="card border-left-info shadow-sm h-100">
+                                    <div class="card-body py-2">
+                                        <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                                            Pontos Utilizados de Saldos Anteriores
+                                        </div>
+                                        <div class="h5 mb-0 fw-bold text-gray-800" id="saldoAnterior">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-left-success shadow-sm h-100">
+                                    <div class="card-body py-2">
+                                        <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                                            Pontos Utilizados do Saldo deste Mês
+                                        </div>
+                                        <div class="h5 mb-0 fw-bold text-gray-800" id="pontosAcumulados">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-left-warning shadow-sm h-100">
+                                    <div class="card-body py-2">
+                                        <div class="text-xs fw-bold text-warning text-uppercase mb-1">
+                                            Saldo Acumulado para os Próximos Meses
+                                        </div>
+                                        <div class="h5 mb-0 fw-bold text-gray-800" id="saldoFuturo">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista de atividades -->
+                        <h5 class="fw-bold"><i class="fa-solid fa-list-check me-2"></i>Atividades do Mês</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Descrição da Regra</th>
+                                        <th class="text-center">Data Ocorrência</th>
+                                        <th class="text-center">Qtd</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="corpoTabelaRelatorio">
+                                    <!-- preenchido via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script th:inline="javascript">
+            // Aguarda o DOM estar pronto
+            document.addEventListener('DOMContentLoaded', function () {
+                // Seleciona o formulário principal (action já renderizada)
+                const formProcessamento = document.querySelector('form[action="/jeton/processar"]');
+
+                // Seleciona o botão de homologar usando o atributo formaction renderizado
+                const btnHomologar = document.querySelector('button[formaction="/jeton/fechar-definitivo"]');
+
+                if (!btnHomologar || !formProcessamento) return;
+
+                // Remove o confirm() nativo
+                btnHomologar.removeAttribute('onclick');
+
+                // Flag para permitir a submissão real após confirmação no modal
+                let confirmado = false;
+
+                // Evento de clique no botão "Homologar e Fechar Folha"
+                btnHomologar.addEventListener('click', function (e) {
+                    if (confirmado) {
+                        // Submissão já confirmada, permite o comportamento padrão (submit)
+                        confirmado = false; // reseta para próximos usos
+                        return;
+                    }
+                    // Impede o envio imediato e abre o modal
+                    e.preventDefault();
+                    abrirModalHomologacao();
+                });
+
+                // Botão de confirmação dentro do modal
+                const btnConfirmar = document.getElementById('btnConfirmarHomologacao');
+                if (btnConfirmar) {
+                    btnConfirmar.addEventListener('click', function () {
+                        // Fecha o modal
+                        const modalEl = document.getElementById('modalHomologacao');
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+
+                        // Seta a flag e dispara o clique no botão original
+                        confirmado = true;
+                        btnHomologar.click();
+                    });
+                }
+
+                // Função que valida e abre o modal
+                function abrirModalHomologacao() {
+                    const selectGestao = formProcessamento.querySelector('select[name="idGestao"]');
+                    const selectMes = formProcessamento.querySelector('select[name="mes"]');
+                    const inputAno = formProcessamento.querySelector('input[name="ano"]');
+
+                    if (!selectGestao.value || !selectMes.value || !inputAno.value) {
+                        // Exibe o modal de alerta em vez do alert() nativo
+                        const modalAlerta = new bootstrap.Modal(document.getElementById('modalAlertaValidacao'));
+                        modalAlerta.show();
+                        return;
+                    }
+
+                    // Abre o modal de confirmação de homologação
+                    const modalHomologacao = new bootstrap.Modal(document.getElementById('modalHomologacao'));
+                    modalHomologacao.show();
+                }
+            });
+
+            function abrirRelatorioJeton(botao) {
+                const idPessoa = botao.getAttribute('data-pessoa');
+                const idGestao = botao.getAttribute('data-gestao');
+                const mes = botao.getAttribute('data-mes');
+                const ano = botao.getAttribute('data-ano');
+                const nome = botao.getAttribute('data-nome');
+
+                document.getElementById('nomeConselheiroRelatorio').innerText = nome || 'Conselheiro';
+                document.getElementById('competenciaRelatorio').innerText = `Competência: ${mes}/${ano}`;
+
+                const tbody = document.getElementById('corpoTabelaRelatorio');
+                tbody.innerHTML = `
+        <tr>
+            <td colspan="3" class="text-center py-3">
+                <i class="fa-solid fa-spinner fa-spin me-2"></i>Carregando dados...
+            </td>
+        </tr>`;
+
+                new bootstrap.Modal(document.getElementById('modalRelatorio')).show();
+
+                fetch(`/jeton/relatorio-conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
+                    .then(response => response.json())
+                    .then(dados => {
+                        // Atualiza os totais
+                        document.getElementById('saldoAnterior').innerText = dados.saldoAnterior || 0;
+                        document.getElementById('pontosAcumulados').innerText = dados.pontosAcumuladosMes || 0;
+                        document.getElementById('saldoFuturo').innerText = dados.saldoFuturo || 0;
+
+                        // Preenche a tabela de atividades
+                        tbody.innerHTML = '';
+                        if (dados.atividades && dados.atividades.length > 0) {
+                            dados.atividades.forEach(at => {
+                                tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-semibold text-dark">${at.regra}</td>
+                            <td class="text-center"><span class="badge bg-secondary">${at.data.split('-').reverse().join('/')}</span></td>
+                            <td class="text-center fw-bold text-primary">${at.qtd}</td>
+                        </tr>`;
+                            });
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-muted">Nenhuma atividade registrada no mês.</td></tr>';
+                        }
+                    })
+                    .catch(error => {
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-danger">Erro ao carregar os dados do relatório.</td></tr>';
+                    });
+            }
+        </script>
+    </div>
 </body>
 
 </html>

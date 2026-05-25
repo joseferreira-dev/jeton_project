@@ -1,7 +1,12 @@
 package br.com.cremepe.jeton.controlador;
 
+import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Gestao;
 import br.com.cremepe.jeton.dominio.Jeton;
+import br.com.cremepe.jeton.dominio.PontosSaldo;
+import br.com.cremepe.jeton.repositorio.JetonRepository;
+import br.com.cremepe.jeton.repositorio.PontosSaldoRepository;
+import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
 import br.com.cremepe.jeton.servico.JetonService;
 import jakarta.servlet.http.HttpSession;
@@ -13,6 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +32,12 @@ public class JetonController {
     private JetonService jetonService;
     @Autowired
     private GestaoService gestaoService;
+    @Autowired
+    private ConselheiroService conselheiroService;
+    @Autowired
+    private JetonRepository jetonRepository;
+    @Autowired
+    private PontosSaldoRepository pontosSaldoRepository;
 
     @GetMapping
     public String listar(
@@ -185,5 +197,55 @@ public class JetonController {
             @PathVariable("ano") Integer ano) {
 
         return jetonService.listarAtividadesAgrupadasPorConselheiro(idPessoa, idGestao, mes, ano);
+    }
+
+    @GetMapping("/relatorio-conselheiro/{idPessoa}/gestao/{idGestao}/mes/{mes}/ano/{ano}")
+    @ResponseBody
+    public Map<String, Object> relatorioConselheiro(
+            @PathVariable Integer idPessoa,
+            @PathVariable Integer idGestao,
+            @PathVariable Integer mes,
+            @PathVariable Integer ano) {
+
+        Conselheiro conselheiro = conselheiroService.buscarPorId(idPessoa)
+                .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado"));
+
+        List<Map<String, Object>> atividades = jetonService
+                .listarAtividadesAgrupadasPorConselheiro(idPessoa, idGestao, mes, ano);
+
+        List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano).stream()
+                .filter(j -> j.getConselheiro().getIdPessoa().equals(idPessoa))
+                .toList();
+
+        int saldoAnterior = 0;
+        int pontosAcumuladosMes = 0;
+
+        for (Jeton j : jetons) {
+            List<PontosSaldo> pontosList = pontosSaldoRepository.findByJetonIdJeton(j.getIdJeton());
+            for (PontosSaldo ps : pontosList) {
+                boolean doMesAtual = false;
+                if (ps.getAtividade() != null) {
+                    LocalDate dataAtv = ps.getAtividade().getDataHoraAtividade().toLocalDate();
+                    if (dataAtv.getYear() == ano && dataAtv.getMonthValue() == mes) {
+                        doMesAtual = true;
+                    }
+                }
+                if (doMesAtual) {
+                    pontosAcumuladosMes += ps.getPontosUtilizados();
+                } else {
+                    saldoAnterior += ps.getPontosUtilizados();
+                }
+            }
+        }
+
+        Integer saldoFuturo = pontosSaldoRepository.somarPontosSobrandoAtivos(idPessoa, idGestao);
+
+        Map<String, Object> resposta = new HashMap<>();
+        resposta.put("nomeConselheiro", conselheiro.getPessoa().getNome());
+        resposta.put("atividades", atividades);
+        resposta.put("saldoAnterior", saldoAnterior);
+        resposta.put("pontosAcumuladosMes", pontosAcumuladosMes);
+        resposta.put("saldoFuturo", saldoFuturo != null ? saldoFuturo : 0);
+        return resposta;
     }
 }
