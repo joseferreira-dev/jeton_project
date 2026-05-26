@@ -1,21 +1,16 @@
 package br.com.cremepe.jeton.controlador;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Pessoa;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/conselheiros")
@@ -24,6 +19,9 @@ public class ConselheiroController {
     @Autowired
     private ConselheiroService conselheiroService;
 
+    // =========================================================================
+    // LISTAGEM
+    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -34,7 +32,7 @@ public class ConselheiroController {
             @RequestParam(value = "dir", required = false, defaultValue = "asc") String dir,
             Model model, HttpSession session) {
 
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
 
         Page<Conselheiro> pagina = conselheiroService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort,
@@ -49,10 +47,14 @@ public class ConselheiroController {
         return "conselheiro/lista";
     }
 
+    // =========================================================================
+    // FORMULÁRIOS (NOVO / EDIÇÃO)
+    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
+
         Conselheiro conselheiro = new Conselheiro();
         conselheiro.setPessoa(new Pessoa());
         model.addAttribute("conselheiro", conselheiro);
@@ -61,18 +63,21 @@ public class ConselheiroController {
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
 
         Conselheiro conselheiro = conselheiroService.buscarPorId(id)
-                .orElseThrow(() -> new IllegalArgumentException("Conselheiro inválido:" + id));
-
+                .orElseThrow(() -> new IllegalArgumentException("Conselheiro não encontrado para o ID: " + id));
         model.addAttribute("conselheiro", conselheiro);
         return "conselheiro/formulario";
     }
 
+    // =========================================================================
+    // SALVAR (CRIAR / ATUALIZAR)
+    // =========================================================================
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("conselheiro") Conselheiro conselheiro, RedirectAttributes ra) {
+    public String salvar(@Valid @ModelAttribute("conselheiro") Conselheiro conselheiro,
+            RedirectAttributes ra) {
         try {
             conselheiroService.salvar(conselheiro);
             ra.addFlashAttribute("sucesso", "Conselheiro gravado com sucesso!");
@@ -82,6 +87,9 @@ public class ConselheiroController {
         return "redirect:/conselheiros";
     }
 
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
@@ -92,5 +100,12 @@ public class ConselheiroController {
                     "Não foi possível remover. Este conselheiro possui registros ou atividades vinculadas.");
         }
         return "redirect:/conselheiros";
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES
+    // =========================================================================
+    private boolean naoAutenticado(HttpSession session) {
+        return session.getAttribute("usuarioLogado") == null;
     }
 }

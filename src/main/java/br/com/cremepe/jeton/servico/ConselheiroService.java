@@ -1,11 +1,12 @@
 package br.com.cremepe.jeton.servico;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.Optional;
-
+import br.com.cremepe.jeton.dominio.Conselheiro;
+import br.com.cremepe.jeton.dominio.Pessoa;
+import br.com.cremepe.jeton.dominio.Usuario;
+import br.com.cremepe.jeton.repositorio.ConselheiroRepository;
+import br.com.cremepe.jeton.repositorio.PessoaRepository;
+import br.com.cremepe.jeton.repositorio.UsuarioRepository;
+import br.com.cremepe.jeton.util.CpfValidador;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,13 +15,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import br.com.cremepe.jeton.dominio.Conselheiro;
-import br.com.cremepe.jeton.dominio.Pessoa;
-import br.com.cremepe.jeton.dominio.Usuario;
-import br.com.cremepe.jeton.repositorio.ConselheiroRepository;
-import br.com.cremepe.jeton.repositorio.PessoaRepository;
-import br.com.cremepe.jeton.repositorio.UsuarioRepository;
-import br.com.cremepe.jeton.util.CpfValidador;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ConselheiroService {
@@ -32,46 +31,40 @@ public class ConselheiroService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    // =========================================================================
+    // OPERAÇÕES DE ESCRITA
+    // =========================================================================
+
     @Transactional
     public Conselheiro salvar(Conselheiro conselheiro) {
-
-        String cpfLimpo = "";
-        if (conselheiro.getPessoa() != null && conselheiro.getPessoa().getCpf() != null) {
-            cpfLimpo = conselheiro.getPessoa().getCpf().replaceAll("[^0-9]", "");
-            conselheiro.getPessoa().setCpf(cpfLimpo);
+        // 1. Valida e limpa o CPF (a entidade Pessoa normalizará)
+        Pessoa pessoa = conselheiro.getPessoa();
+        if (pessoa == null) {
+            throw new RuntimeException("Os dados da pessoa são obrigatórios.");
         }
+        String cpfLimpo = pessoa.getCpf() != null ? pessoa.getCpf().replaceAll("[^0-9]", "") : "";
+        pessoa.setCpf(cpfLimpo);
 
+        // Validação matemática do CPF
         if (cpfLimpo.isEmpty() || !CpfValidador.isCpfValido(cpfLimpo)) {
-            throw new RuntimeException("O número de CPF informado é inválido. Por favor, verifique os dígitos.");
+            throw new RuntimeException("O número de CPF informado é inválido. Verifique os dígitos.");
         }
 
-        if (!cpfLimpo.isEmpty()) {
-            Optional<Pessoa> pessoaExistente = pessoaRepository.findByCpf(cpfLimpo);
-            if (pessoaExistente.isPresent()) {
-                Pessoa p = pessoaExistente.get();
-                if (conselheiro.getIdPessoa() == null || !conselheiro.getIdPessoa().equals(p.getIdPessoa())) {
-                    if (conselheiroRepository.existsById(p.getIdPessoa())) {
-                        throw new RuntimeException("Já existe um conselheiro registrado com este CPF.");
-                    }
-                    conselheiro.setIdPessoa(p.getIdPessoa());
-                    conselheiro.getPessoa().setIdPessoa(p.getIdPessoa());
-                }
-            }
-        }
+        // 2. Verifica duplicidade de CPF na tabela pessoa
+        validarCpfUnico(cpfLimpo, conselheiro.getIdPessoa());
 
-        // 2. VALIDAÇÃO DE CRM
+        // 3. Validação de CRM (se informado)
         if (conselheiro.getCrm() != null) {
-            Optional<Conselheiro> conselExistente = conselheiroRepository.findByCrm(conselheiro.getCrm());
-            if (conselExistente.isPresent() && !conselExistente.get().getIdPessoa().equals(conselheiro.getIdPessoa())) {
-                throw new RuntimeException("Já existe um conselheiro registrado com o CRM-PE " + conselheiro.getCrm());
-            }
+            validarCrmUnico(conselheiro.getCrm(), conselheiro.getIdPessoa());
         }
 
-        // 3. DEFINE O TIPO E SALVA CONSELHEIRO (Cascade salva a Pessoa)
-        conselheiro.getPessoa().setInTipoPessoa("C");
+        // 4. Define o tipo da pessoa como Conselheiro ('C')
+        pessoa.setInTipoPessoa(Pessoa.TIPO_CONSELHEIRO);
+
+        // 5. Salva o conselheiro (cascade salvará a pessoa)
         Conselheiro conselheiroSalvo = conselheiroRepository.save(conselheiro);
 
-        // 4. GARANTE A CRIAÇÃO/ATUALIZAÇÃO DO USUÁRIO VINCULADO
+        // 6. Garante a criação/atualização do usuário vinculado
         Usuario usuario = usuarioRepository.findById(conselheiroSalvo.getIdPessoa()).orElse(new Usuario());
         usuario.setPessoa(conselheiroSalvo.getPessoa());
         usuario.setInSituacao(conselheiroSalvo.getInSituacao());
@@ -86,20 +79,44 @@ public class ConselheiroService {
         return conselheiroSalvo;
     }
 
+    private void validarCpfUnico(String cpf, Integer idAtual) {
+        Optional<Pessoa> existente = pessoaRepository.findByCpf(cpf);
+        if (existente.isPresent()) {
+            if (existente.get().getInTipoPessoa() == Pessoa.TIPO_CONSELHEIRO) {
+                if (idAtual == null || !idAtual.equals(existente.get().getIdPessoa())) {
+                    throw new RuntimeException("Já existe um conselheiro registrado com este CPF.");
+                }
+            } else {
+                throw new RuntimeException("Já existe um usuário registrado com este CPF.");
+            }
+        }
+    }
+
+    private void validarCrmUnico(Integer crm, Integer idAtual) {
+        Optional<Conselheiro> existente = conselheiroRepository.findByCrm(crm);
+        if (existente.isPresent() && (idAtual == null || !idAtual.equals(existente.get().getIdPessoa()))) {
+            throw new RuntimeException("Já existe um conselheiro registrado com o CRM-PE " + crm);
+        }
+    }
+
     private String gerarSHA256(String senha) {
         try {
             MessageDigest algoritmo = MessageDigest.getInstance("SHA-256");
             byte[] messageDigest = algoritmo.digest(senha.getBytes(StandardCharsets.UTF_8));
             StringBuilder stringHexa = new StringBuilder();
-            for (byte b : messageDigest)
+            for (byte b : messageDigest) {
                 stringHexa.append(String.format("%02X", 0xFF & b));
+            }
             return stringHexa.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Erro na criptografia", e);
+            throw new RuntimeException("Erro na criptografia da senha", e);
         }
     }
 
-    // ========== MÉTODOS DE LEITURA (Mantidos iguais) ==========
+    // =========================================================================
+    // OPERAÇÕES DE LEITURA
+    // =========================================================================
+
     @Transactional(readOnly = true)
     public Page<Conselheiro> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size,
             String sortField, String sortDir) {
@@ -118,6 +135,9 @@ public class ConselheiroService {
         return conselheiroRepository.findById(id);
     }
 
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
     @Transactional
     public void excluir(Integer id) {
         conselheiroRepository.deletarUsuarioNativo(id);
