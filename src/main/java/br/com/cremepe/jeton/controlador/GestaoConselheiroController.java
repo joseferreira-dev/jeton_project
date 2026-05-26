@@ -1,7 +1,5 @@
 package br.com.cremepe.jeton.controlador;
 
-import java.util.List;
-
 import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Gestao;
 import br.com.cremepe.jeton.dominio.GestaoConselheiro;
@@ -10,7 +8,8 @@ import br.com.cremepe.jeton.servico.GestaoConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
 import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
 import jakarta.servlet.http.HttpSession;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
@@ -18,9 +17,15 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Controller
 @RequestMapping("/gestao-conselheiros")
 public class GestaoConselheiroController {
+
+    private static final Logger log = LoggerFactory.getLogger(GestaoConselheiroController.class);
 
     @Autowired
     private GestaoConselheiroService gestaoConselheiroService;
@@ -31,6 +36,9 @@ public class GestaoConselheiroController {
     @Autowired
     private AtividadeConselhalRepository atividadeRepository;
 
+    // =========================================================================
+    // LISTAGEM
+    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -41,7 +49,7 @@ public class GestaoConselheiroController {
             @RequestParam(value = "dir", required = false, defaultValue = "asc") String dir,
             Model model, HttpSession session) {
 
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
 
         Page<GestaoConselheiro> pagina = gestaoConselheiroService.listarComPaginacaoEPesquisa(termo, situacao, page,
@@ -57,9 +65,12 @@ public class GestaoConselheiroController {
         return "gestaoconselheiro/lista";
     }
 
+    // =========================================================================
+    // FORMULÁRIOS (NOVO / EDIÇÃO)
+    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("gestaoConselheiro", new GestaoConselheiro());
         carregarListasDeApoio(model);
@@ -70,33 +81,23 @@ public class GestaoConselheiroController {
     public String alternarStatus(@PathVariable("idGestao") Integer idGestao,
             @PathVariable("idPessoa") Integer idPessoa,
             RedirectAttributes ra, HttpSession session) {
-
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
 
         try {
-            // 1. Busca o vínculo atual no banco
-            GestaoConselheiro vinculo = gestaoConselheiroService.buscarPorId(idGestao, idPessoa)
-                    .orElseThrow(() -> new IllegalArgumentException("Vínculo não encontrado."));
-
-            // 2. Inverte o status: Se for Ativo vira Inativo, e vice-versa
-            if ("A".equals(vinculo.getInSituacao())) {
-                vinculo.setInSituacao("I");
+            GestaoConselheiro vinculo = gestaoConselheiroService.buscarOuFalhar(idGestao, idPessoa);
+            if (vinculo.isAtivo()) {
+                gestaoConselheiroService.inativarVinculo(idGestao, idPessoa);
                 ra.addFlashAttribute("sucesso", "O vínculo foi INATIVADO com sucesso.");
             } else {
-                vinculo.setInSituacao("A");
+                gestaoConselheiroService.ativarVinculo(idGestao, idPessoa);
                 ra.addFlashAttribute("sucesso",
                         "O vínculo foi ATIVADO com sucesso. (Outras gestões foram inativadas automaticamente)");
             }
-
-            // 3. Salva a alteração (Isto aciona a regra inteligente do
-            // GestaoConselheiroService)
-            gestaoConselheiroService.salvar(vinculo);
-
         } catch (Exception e) {
+            log.error("Erro ao alternar status do vínculo {}/{}: {}", idGestao, idPessoa, e.getMessage());
             ra.addFlashAttribute("erro", "Erro ao tentar alternar o status do vínculo.");
         }
-
         return "redirect:/gestao-conselheiros";
     }
 
@@ -106,7 +107,8 @@ public class GestaoConselheiroController {
             gestaoConselheiroService.salvar(vinculo);
             ra.addFlashAttribute("sucesso", "Vínculo de conselheiro guardado com sucesso!");
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao guardar o vínculo: O médico já pode estar alocado a esta gestão.");
+            log.error("Erro ao salvar vínculo: {}", e.getMessage());
+            ra.addFlashAttribute("erro", "Erro ao guardar o vínculo: " + e.getMessage());
         }
         return "redirect:/gestao-conselheiros";
     }
@@ -119,32 +121,32 @@ public class GestaoConselheiroController {
             gestaoConselheiroService.excluir(idGestao, idPessoa);
             ra.addFlashAttribute("sucesso", "Vínculo removido com sucesso!");
         } catch (Exception e) {
+            log.error("Erro ao excluir vínculo {}/{}: {}", idGestao, idPessoa, e.getMessage());
             ra.addFlashAttribute("erro",
                     "Não foi possível remover o vínculo. O conselheiro já possui atividades nesta gestão.");
         }
         return "redirect:/gestao-conselheiros";
     }
 
-    private void carregarListasDeApoio(Model model) {
-        // Aproveitamos os serviços já criados para alimentar as caixas de selecção
-        model.addAttribute("listaGestoes", gestaoService.listarTodos());
-        model.addAttribute("listaConselheiros", conselheiroService.listarTodos());
-    }
-
+    // =========================================================================
+    // VÍNCULO EM MASSA
+    // =========================================================================
     @GetMapping("/vincular/{idGestao}")
     public String prepararVincularMassa(@PathVariable("idGestao") Integer idGestao, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
 
-        Gestao gestao = gestaoService.buscarPorId(idGestao).orElseThrow();
+        Gestao gestao = gestaoService.buscarPorId(idGestao)
+                .orElseThrow(() -> new IllegalArgumentException("Gestão não encontrada"));
         List<Conselheiro> todosConselheiros = conselheiroService.listarTodos();
 
-        // Pega apenas os IDs de quem já está vinculado para marcar o checkbox
+        // IDs já vinculados (todos, independente do status)
         List<Integer> selecionadosIds = gestaoConselheiroService.listarTodos().stream()
                 .filter(v -> v.getId().getIdGestao().equals(idGestao))
                 .map(v -> v.getId().getIdPessoa())
                 .toList();
 
+        // IDs que possuem atividades (para desabilitar remoção)
         List<Integer> idsComAtividades = selecionadosIds.stream()
                 .filter(idPessoa -> atividadeRepository.countByGestaoIdGestaoAndConselheiroIdPessoa(idGestao,
                         idPessoa) > 0)
@@ -166,8 +168,25 @@ public class GestaoConselheiroController {
             gestaoConselheiroService.atualizarVinculosEmMassa(idGestao, conselheirosIds);
             ra.addFlashAttribute("sucesso", "Vínculos atualizados com sucesso!");
         } catch (Exception e) {
+            log.error("Erro ao atualizar vínculos em massa para gestão {}: {}", idGestao, e.getMessage());
             ra.addFlashAttribute("erro", "Erro ao atualizar vínculos.");
         }
         return "redirect:/gestoes";
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES
+    // =========================================================================
+    private boolean naoAutenticado(HttpSession session) {
+        return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private void carregarListasDeApoio(Model model) {
+        model.addAttribute("listaGestoes", gestaoService.listarTodos());
+
+        List<Conselheiro> conselheirosOrdenados = conselheiroService.listarTodos().stream()
+                .sorted(Comparator.comparing(c -> c.getPessoa().getNome()))
+                .collect(Collectors.toList());
+        model.addAttribute("listaConselheiros", conselheirosOrdenados);
     }
 }

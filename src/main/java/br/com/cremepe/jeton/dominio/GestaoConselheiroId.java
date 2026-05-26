@@ -28,10 +28,9 @@ public class GestaoConselheiroId implements Serializable {
         this.idPessoa = idPessoa;
     }
 
-    // ==========================================
+    // =========================================================================
     // GETTERS E SETTERS
-    // ==========================================
-
+    // =========================================================================
     public Integer getIdGestao() {
         return idGestao;
     }
@@ -48,7 +47,9 @@ public class GestaoConselheiroId implements Serializable {
         this.idPessoa = idPessoa;
     }
 
-    // O equals e o hashCode são OBRIGATÓRIOS para chaves compostas no JPA
+    // =========================================================================
+    // EQUALS & HASHCODE
+    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)

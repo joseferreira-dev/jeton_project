@@ -22,6 +22,11 @@ public interface GestaoConselheiroRepository extends JpaRepository<GestaoConselh
 
     List<GestaoConselheiro> findByGestaoIdGestao(Integer idGestao);
 
+    @Query("SELECT COUNT(gc) > 0 FROM GestaoConselheiro gc WHERE gc.gestao.idGestao = :idGestao AND gc.conselheiro.idPessoa = :idPessoa")
+    boolean existsByGestaoAndConselheiro(@Param("idGestao") Integer idGestao, @Param("idPessoa") Integer idPessoa);
+
+    List<GestaoConselheiro> findByConselheiroIdPessoaAndInSituacao(Integer idPessoa, String inSituacao);
+
     @Query("SELECT gc FROM GestaoConselheiro gc WHERE " +
             "(LOWER(gc.gestao.nomeGestao) LIKE LOWER(CONCAT('%', :termo, '%')) OR " +
             "LOWER(gc.conselheiro.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
