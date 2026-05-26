@@ -1,19 +1,15 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.AtividadeConselhal;
+import br.com.cremepe.jeton.dominio.Portaria;
 import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.dominio.Resolucao;
-import br.com.cremepe.jeton.dominio.Portaria;
-import br.com.cremepe.jeton.dominio.Comprovante;
+import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
 import br.com.cremepe.jeton.servico.AtividadeConselhalService;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
 import br.com.cremepe.jeton.servico.RegrasService;
-import br.com.cremepe.jeton.servico.ComprovanteService;
 import br.com.cremepe.jeton.servico.TipoAnexoService;
-import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
-import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
-
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,16 +21,17 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.format.DateTimeParseException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/atividades")
 public class AtividadeConselhalController {
 
+    // =========================================================================
+    // DEPENDÊNCIAS
+    // =========================================================================
     @Autowired
     private AtividadeConselhalService atividadeService;
     @Autowired
@@ -47,10 +44,10 @@ public class AtividadeConselhalController {
     private GestaoConselheiroRepository gestaoConselheiroRepository;
     @Autowired
     private TipoAnexoService tipoAnexoService;
-    @Autowired
-    private AtividadeConselhalRepository atividadeRepository;
-    @Autowired
-    private ComprovanteService comprovanteService;
+
+    // =========================================================================
+    // PÁGINAS WEB (LISTAGEM, FORMULÁRIOS, AÇÕES)
+    // =========================================================================
 
     @GetMapping
     public String listar(
@@ -86,7 +83,7 @@ public class AtividadeConselhalController {
 
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("atividade", new AtividadeConselhal());
         carregarListasDeApoio(model);
@@ -95,112 +92,59 @@ public class AtividadeConselhalController {
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
-        AtividadeConselhal atividade = atividadeService.buscarPorId(id).orElseThrow();
+        AtividadeConselhal atividade = atividadeService.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Atividade não encontrada"));
         model.addAttribute("atividade", atividade);
         carregarListasDeApoio(model);
         return "atividadeconselhal/formulario";
     }
 
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("atividade") AtividadeConselhal atividade,
+    public String salvar(
+            @ModelAttribute("atividade") AtividadeConselhal atividade,
             @RequestParam("dataAtividadePura") String dataAtividadePura,
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "idTipoAnexo", required = false) Integer idTipoAnexo,
             @RequestParam(value = "nomeComprovanteUsuario", required = false) String nomeComprovanteUsuario,
             RedirectAttributes ra) {
+
         try {
-            // Força a normalização da Situação em caixa alta para a Trigger do MySQL
-            if (atividade.getInSituacao() == null || atividade.getInSituacao().trim().isEmpty()) {
-                atividade.setInSituacao("P");
-            } else {
-                atividade.setInSituacao(atividade.getInSituacao().trim().toUpperCase());
-            }
-
-            // Força a flag de computação histórica como 'N' se for um registro novo
-            if (atividade.getIdAtividade() == null) {
-                atividade.setInComputada("N");
-            }
-
-            if (dataAtividadePura == null || dataAtividadePura.trim().isEmpty()) {
-                ra.addFlashAttribute("erro", "A data e o horário da atividade são obrigatórios para o enquadramento.");
+            // 1. Validação e normalização da data/hora e turno
+            LocalDateTime dataHora = parseDataHora(dataAtividadePura, ra);
+            if (dataHora == null)
                 return "redirect:/atividades/novo";
-            }
 
-            // Converte a string YYYY-MM-DDTHH:mm vinda do HTML diretamente para
-            // LocalDateTime
-            LocalDateTime dataHoraSelecionada = LocalDateTime.parse(dataAtividadePura);
-            atividade.setDataHoraAtividade(dataHoraSelecionada);
+            atividade.setDataHoraAtividade(dataHora);
+            atividade.setInTurno(calcularTurno(dataHora.getHour()));
 
-            // 1. CÁLCULO AUTOMÁTICO DO TURNO
-            int hora = dataHoraSelecionada.getHour();
-            if (hora >= 6 && hora < 12) {
-                atividade.setInTurno("M");
-            } else if (hora >= 12 && hora < 18) {
-                atividade.setInTurno("T");
-            } else {
-                atividade.setInTurno("N");
-            }
-
-            // 2. FORÇA CRIAÇÃO COMO PENDENTE (Independente do formulário)
+            // 2. Configuração de flags iniciais (a entidade já normaliza e tem valores
+            // padrão)
             if (atividade.getIdAtividade() == null) {
-                atividade.setInSituacao("P");
-                atividade.setInComputada("N");
+                atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
+            } else {
+                // Apenas define como pendente se não houver situação (caso raro em edição).
+                if (atividade.getInSituacao() == null || atividade.getInSituacao().trim().isEmpty()) {
+                    atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
+                }
             }
 
-            // =========================================================================
-            // 3. GERENCIAMENTO DO COMPROVANTE (COM EXCLUSÃO DO ANTIGO)
-            // =========================================================================
-            Comprovante comprovanteAntigo = null;
+            // 3. Obtém o ID do comprovante antigo (se houver)
+            Integer idComprovanteAntigo = null;
             if (atividade.getIdAtividade() != null) {
                 AtividadeConselhal atividadeBanco = atividadeService.buscarPorId(atividade.getIdAtividade())
                         .orElse(null);
                 if (atividadeBanco != null && atividadeBanco.getComprovante() != null) {
-                    comprovanteAntigo = atividadeBanco.getComprovante();
+                    idComprovanteAntigo = atividadeBanco.getComprovante().getIdComprovante();
                 }
             }
 
-            // Se um NOVO ficheiro foi enviado
-            if (file != null && !file.isEmpty()) {
-                if (idTipoAnexo == null || nomeComprovanteUsuario == null || nomeComprovanteUsuario.isEmpty()) {
-                    throw new RuntimeException("O tipo e o nome do comprovante são obrigatórios.");
-                }
-
-                // Desvincula o comprovante antigo da atividade (não exclui ainda)
-                if (comprovanteAntigo != null) {
-                    atividadeService.desvincularComprovante(atividade.getIdAtividade());
-                }
-
-                // Cria o novo comprovante e associa à atividade
-                Comprovante novoComprovante = comprovanteService.guardarComprovante(file, idTipoAnexo,
-                        nomeComprovanteUsuario);
-                atividade.setComprovante(novoComprovante);
-
-            } else if (atividade.getIdAtividade() != null) {
-                // Edição SEM envio de ficheiro – mantém o comprovante antigo se existir
-                if (comprovanteAntigo != null) {
-                    atividade.setComprovante(comprovanteAntigo);
-                    // Atualiza a descrição do comprovante se o usuário digitou um novo nome
-                    if (nomeComprovanteUsuario != null && !nomeComprovanteUsuario.trim().isEmpty()) {
-                        comprovanteAntigo.setNomeComprovante(nomeComprovanteUsuario.trim());
-                        comprovanteService.atualizar(comprovanteAntigo); // método auxiliar
-                    }
-                }
-            }
-
-            // Salva a atividade (com o comprovante já atualizado)
-            atividadeService.salvarAtividade(atividade);
-
-            // Após salvar, se houve substituição de comprovante, tenta excluir o antigo
-            if (comprovanteAntigo != null && file != null && !file.isEmpty()) {
-                long outrasAtividades = atividadeRepository
-                        .countByComprovanteIdComprovante(comprovanteAntigo.getIdComprovante());
-                if (outrasAtividades == 0) {
-                    // Exclui o registro do banco e o arquivo físico do FTP
-                    comprovanteService.excluirComprovante(comprovanteAntigo.getIdComprovante());
-                }
-            }
+            // 4. Delega toda a operação (criação do novo comprovante, desvinculação,
+            // salvamento da atividade e exclusão do antigo) para o serviço, em uma única
+            // transação
+            atividadeService.salvarAtividadeComComprovante(
+                    atividade, file, idTipoAnexo, nomeComprovanteUsuario, idComprovanteAntigo);
 
             ra.addFlashAttribute("sucesso", "Atividade guardada com sucesso!");
 
@@ -218,115 +162,11 @@ public class AtividadeConselhalController {
             atividadeService.excluirAtividade(id);
             ra.addFlashAttribute("sucesso", "Atividade removida com sucesso!");
         } catch (RuntimeException e) {
-            // Captura as nossas regras de negócio (Ex: Atividade Fechada em Folha)
             ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            // Captura qualquer outro erro de banco de dados real
             ra.addFlashAttribute("erro", "Erro interno ao remover atividade: " + e.getMessage());
         }
         return "redirect:/atividades";
-    }
-
-    private void carregarListasDeApoio(Model model) {
-        model.addAttribute("listaConselheiros", conselheiroService.listarTodos());
-        model.addAttribute("listaGestoes", gestaoService.listarTodos());
-        model.addAttribute("listaResolucoes", regrasService.listarResolucoesComRegras());
-        model.addAttribute("listaPortarias", regrasService.listarPortariasComRegras());
-        model.addAttribute("listaTiposAnexo", tipoAnexoService.listarTodos());
-    }
-
-    @GetMapping("/api/filtros-regras")
-    @ResponseBody
-    public Map<String, Object> getFiltrosRegras(
-            @RequestParam(required = false) Integer resolucaoId,
-            @RequestParam(required = false) Integer portariaId) {
-
-        Map<String, Object> response = new HashMap<>();
-
-        if (resolucaoId != null && portariaId == null) {
-            response.put("portariasCompativeis", regrasService.listarPortariasCompativeis(resolucaoId).stream()
-                    .map(p -> Map.of("id", p.getIdPortaria(), "nome", "Portaria " + p.getNumero() + "/" + p.getAno()))
-                    .toList());
-        }
-        if (portariaId != null && resolucaoId == null) {
-            response.put("resolucoesCompativeis", regrasService.listarResolucoesCompativeis(portariaId).stream()
-                    .map(r -> Map.of("id", r.getIdResolucao(), "nome", "Resolução " + r.getNumero() + "/" + r.getAno()))
-                    .toList());
-        }
-
-        List<Regras> regras = regrasService.listarRegrasExatas(resolucaoId, portariaId);
-        response.put("regras", regras.stream()
-                .map(r -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", r.getIdRegra());
-                    map.put("nome", r.getNomeRegra());
-                    map.put("descricao", r.getDescricao());
-                    map.put("pontos", r.getPontos());
-                    return map;
-                }).toList());
-
-        return response;
-    }
-
-    @GetMapping("/api/conselheiros-por-gestao")
-    @ResponseBody
-    public List<Map<String, Object>> getConselheirosPorGestao(@RequestParam Integer gestaoId) {
-        return gestaoConselheiroRepository.findByIdIdGestao(gestaoId).stream()
-                .sorted(Comparator.comparing(gc -> gc.getConselheiro().getPessoa().getNome()))
-                .map(gc -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", gc.getConselheiro().getIdPessoa());
-                    map.put("nome", gc.getConselheiro().getPessoa().getNome());
-                    return map;
-                }).toList();
-    }
-
-    @GetMapping("/api/regras-por-data")
-    @ResponseBody
-    public Map<String, Object> getRegrasENormativasPorData(@RequestParam String data) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            // Se vier o formato completo de datetime (com 'T'), limpa para pegar apenas a
-            // data pura (10 caracteres)
-            String dataFormatada = data.contains("T") ? data.split("T")[0] : data;
-            LocalDate dataAtividade = LocalDate.parse(dataFormatada);
-
-            Optional<Resolucao> optResolucao = regrasService.buscarResolucaoPorData(dataAtividade);
-            Optional<Portaria> optPortaria = regrasService.buscarPortariaPorData(dataAtividade);
-
-            Integer idResolucao = optResolucao.map(Resolucao::getIdResolucao).orElse(null);
-            Integer idPortaria = optPortaria.map(Portaria::getIdPortaria).orElse(null);
-
-            response.put("idResolucao", idResolucao);
-            response.put("nomeResolucao", optResolucao.map(res -> "Resolução " + res.getNumero() + "/" + res.getAno())
-                    .orElse("Nenhuma encontrada"));
-
-            response.put("idPortaria", idPortaria);
-            response.put("nomePortaria", optPortaria.map(port -> "Portaria " + port.getNumero() + "/" + port.getAno())
-                    .orElse("Nenhuma (Apenas Resolução)"));
-
-            if (idResolucao != null) {
-                List<Regras> listaRegras = regrasService.listarRegrasPorNormativasInclusiveRevogadas(idResolucao,
-                        idPortaria);
-
-                response.put("regras", listaRegras.stream()
-                        .sorted(Comparator.comparing(Regras::getNomeRegra))
-                        .map(regra -> {
-                            Map<String, Object> map = new HashMap<>();
-                            map.put("id", regra.getIdRegra());
-                            map.put("nome", regra.getNomeRegra());
-                            map.put("descricao", regra.getDescricao());
-                            map.put("pontos", regra.getPontos());
-                            return map;
-                        }).toList());
-            } else {
-                response.put("regras", List.of());
-            }
-        } catch (Exception e) {
-            response.put("erro", "Formato de data inválido ou erro interno ao processar.");
-            response.put("regras", List.of());
-        }
-        return response;
     }
 
     @GetMapping("/validar/{id}")
@@ -352,5 +192,153 @@ public class AtividadeConselhalController {
             ra.addFlashAttribute("erro", e.getMessage());
         }
         return "redirect:/atividades";
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES PRIVADOS
+    // =========================================================================
+
+    private boolean naoAutenticado(HttpSession session) {
+        return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private LocalDateTime parseDataHora(String dataAtividadePura, RedirectAttributes ra) {
+        if (dataAtividadePura == null || dataAtividadePura.trim().isEmpty()) {
+            ra.addFlashAttribute("erro", "A data e o horário da atividade são obrigatórios para o enquadramento.");
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(dataAtividadePura);
+        } catch (DateTimeParseException e) {
+            ra.addFlashAttribute("erro", "Formato de data/hora inválido. Use 'YYYY-MM-DDTHH:mm'.");
+            return null;
+        }
+    }
+
+    private String calcularTurno(int hora) {
+        if (hora >= 6 && hora < 12)
+            return AtividadeConselhal.TURNO_MANHA;
+        if (hora >= 12 && hora < 18)
+            return AtividadeConselhal.TURNO_TARDE;
+        return AtividadeConselhal.TURNO_NOITE;
+    }
+
+    private void carregarListasDeApoio(Model model) {
+        model.addAttribute("listaConselheiros", conselheiroService.listarTodos());
+        model.addAttribute("listaGestoes", gestaoService.listarTodos());
+        model.addAttribute("listaResolucoes", regrasService.listarResolucoesComRegras());
+        model.addAttribute("listaPortarias", regrasService.listarPortariasComRegras());
+        model.addAttribute("listaTiposAnexo", tipoAnexoService.listarTodos());
+    }
+
+    // =========================================================================
+    // ENDPOINTS DA API (RESPONSE BODY)
+    // =========================================================================
+
+    @GetMapping("/api/filtros-regras")
+    @ResponseBody
+    public Map<String, Object> getFiltrosRegras(
+            @RequestParam(required = false) Integer resolucaoId,
+            @RequestParam(required = false) Integer portariaId) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        if (resolucaoId != null && portariaId == null) {
+            response.put("portariasCompativeis", regrasService.listarPortariasCompativeis(resolucaoId).stream()
+                    .map(p -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", p.getIdPortaria());
+                        map.put("nome", "Portaria " + p.getNumero() + "/" + p.getAno());
+                        return map;
+                    })
+                    .collect(Collectors.toList()));
+        }
+        if (portariaId != null && resolucaoId == null) {
+            response.put("resolucoesCompativeis", regrasService.listarResolucoesCompativeis(portariaId).stream()
+                    .map(r -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", r.getIdResolucao());
+                        map.put("nome", "Resolução " + r.getNumero() + "/" + r.getAno());
+                        return map;
+                    })
+                    .collect(Collectors.toList()));
+        }
+
+        List<Regras> regras = regrasService.listarRegrasExatas(resolucaoId, portariaId);
+        response.put("regras", regras.stream()
+                .map(this::mapearRegra)
+                .collect(Collectors.toList()));
+        return response;
+    }
+
+    @GetMapping("/api/conselheiros-por-gestao")
+    @ResponseBody
+    public List<Map<String, Object>> getConselheirosPorGestao(@RequestParam Integer gestaoId) {
+        return gestaoConselheiroRepository.findByIdIdGestao(gestaoId).stream()
+                .sorted(Comparator.comparing(gc -> gc.getConselheiro().getPessoa().getNome()))
+                .map(gc -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", gc.getConselheiro().getIdPessoa());
+                    map.put("nome", gc.getConselheiro().getPessoa().getNome());
+                    return map;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/api/regras-por-data")
+    @ResponseBody
+    public Map<String, Object> getRegrasENormativasPorData(@RequestParam String data) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String dataFormatada = data.contains("T") ? data.split("T")[0] : data;
+            LocalDate dataAtividade = LocalDate.parse(dataFormatada);
+
+            Optional<Resolucao> optResolucao = regrasService.buscarResolucaoPorData(dataAtividade);
+            Optional<Portaria> optPortaria = regrasService.buscarPortariaPorData(dataAtividade);
+
+            Integer idResolucao = optResolucao.map(Resolucao::getIdResolucao).orElse(null);
+            Integer idPortaria = optPortaria.map(Portaria::getIdPortaria).orElse(null);
+
+            response.put("idResolucao", idResolucao);
+            response.put("nomeResolucao", optResolucao.map(this::formatarResolucao).orElse("Nenhuma encontrada"));
+            response.put("idPortaria", idPortaria);
+            response.put("nomePortaria", optPortaria.map(this::formatarPortaria).orElse("Nenhuma (Apenas Resolução)"));
+
+            if (idResolucao != null) {
+                List<Regras> listaRegras = regrasService.listarRegrasPorNormativasInclusiveRevogadas(idResolucao,
+                        idPortaria);
+                response.put("regras", listaRegras.stream()
+                        .sorted(Comparator.comparing(Regras::getNomeRegra))
+                        .map(this::mapearRegra)
+                        .collect(Collectors.toList()));
+            } else {
+                response.put("regras", Collections.emptyList());
+            }
+        } catch (Exception e) {
+            response.put("erro", "Formato de data inválido ou erro interno ao processar.");
+            response.put("regras", Collections.emptyList());
+        }
+        return response;
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES DE FORMATAÇÃO (API)
+    // =========================================================================
+
+    private String formatarPortaria(Portaria p) {
+        return "Portaria " + p.getNumero() + "/" + p.getAno();
+    }
+
+    private String formatarResolucao(Resolucao r) {
+        return "Resolução " + r.getNumero() + "/" + r.getAno();
+    }
+
+    private Map<String, Object> mapearRegra(Regras regra) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", regra.getIdRegra());
+        map.put("nome", regra.getNomeRegra());
+        map.put("descricao", regra.getDescricao());
+        map.put("pontos", regra.getPontos());
+        return map;
     }
 }
