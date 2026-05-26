@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -66,4 +68,14 @@ public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Intege
             @Param("idPessoa") Integer idPessoa,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
+
+    @Query("SELECT COALESCE(SUM(ps.pontosUtilizados), 0) FROM PontosSaldo ps " +
+            "JOIN ps.atividade a " +
+            "WHERE ps.conselheiro.idPessoa = :idPessoa " +
+            "AND DATE(a.dataHoraAtividade) = :data " +
+            "AND a.inTurno = :turno " +
+            "AND ps.inSituacao = 'I'")
+    Integer sumPontosUtilizadosPorConselheiroDataTurno(@Param("idPessoa") Integer idPessoa,
+            @Param("data") LocalDate data,
+            @Param("turno") String turno);
 }

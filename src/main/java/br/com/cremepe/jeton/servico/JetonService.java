@@ -26,6 +26,8 @@ public class JetonService {
     private ResolucaoRepository resolucaoRepository;
     @Autowired
     private GestaoConselheiroRepository gestaoConselheiroRepository;
+    @Autowired
+    private RegrasService regrasService;
 
     @Transactional(readOnly = true)
     public List<PontosRemanescentesDTO> listarSaldosAgrupados() {
@@ -135,6 +137,9 @@ public class JetonService {
 
             filaUnificada
                     .sort(Comparator.comparing(PontosSaldo::getDataHora).thenComparing(PontosSaldo::getIdPontosSaldo));
+
+            // Aplica os limites por turno (operação destrutiva)
+            aplicarLimitesTurno(filaUnificada, conselheiro.getIdPessoa());
 
             // D. Módulo de Absorção Matemática
             int bufferPontos = 0;
@@ -347,5 +352,61 @@ public class JetonService {
             }
         }
         return resultado;
+    }
+
+    private void aplicarLimitesTurno(List<PontosSaldo> saldos, Integer idPessoa) {
+        // Agrupa saldos por (data, turno)
+        Map<String, List<PontosSaldo>> grupos = new LinkedHashMap<>();
+        for (PontosSaldo saldo : saldos) {
+            if (saldo.getAtividade() == null)
+                continue; // só interessa saldos originados de atividades
+            LocalDate data = saldo.getDataHora().toLocalDate();
+            String turno = saldo.getAtividade().getInTurno();
+            String chave = data.toString() + "_" + turno;
+            grupos.computeIfAbsent(chave, k -> new ArrayList<>()).add(saldo);
+        }
+
+        for (Map.Entry<String, List<PontosSaldo>> entry : grupos.entrySet()) {
+            String[] partes = entry.getKey().split("_");
+            LocalDate data = LocalDate.parse(partes[0]);
+            String turno = partes[1];
+
+            // Pontos já pagos em competências anteriores para este turno
+            Integer pagosAnterior = pontosSaldoRepository.sumPontosUtilizadosPorConselheiroDataTurno(idPessoa, data,
+                    turno);
+            int acumulado = (pagosAnterior != null) ? pagosAnterior : 0;
+
+            // Resolução vigente na data da atividade (pode ser diferente da atual)
+            Optional<Resolucao> optRes = regrasService.buscarResolucaoPorData(data);
+            if (optRes.isEmpty())
+                continue;
+            int limite = optRes.get().getPontosPorJeton();
+
+            // Ordena os saldos do grupo por dataHora (mais antigo primeiro)
+            List<PontosSaldo> saldosGrupo = entry.getValue();
+            saldosGrupo.sort(Comparator.comparing(PontosSaldo::getDataHora)
+                    .thenComparing(PontosSaldo::getIdPontosSaldo));
+
+            for (PontosSaldo saldo : saldosGrupo) {
+                int disponivel = saldo.getPontosSobrando();
+                if (disponivel == 0)
+                    continue;
+
+                if (acumulado >= limite) {
+                    // Já atingiu o limite do turno, zera o saldo
+                    saldo.setPontosSobrando(0);
+                    pontosSaldoRepository.save(saldo);
+                } else {
+                    int sobra = limite - acumulado;
+                    if (disponivel > sobra) {
+                        saldo.setPontosSobrando(sobra);
+                        acumulado = limite;
+                    } else {
+                        acumulado += disponivel;
+                    }
+                    pontosSaldoRepository.save(saldo);
+                }
+            }
+        }
     }
 }

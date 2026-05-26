@@ -2,7 +2,6 @@ package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.dominio.AtividadeConselhal;
 import br.com.cremepe.jeton.dominio.Gestao;
-import br.com.cremepe.jeton.dominio.Resolucao;
 import br.com.cremepe.jeton.dominio.Comprovante;
 import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
@@ -35,8 +34,6 @@ public class AtividadeConselhalService {
     private ComprovanteRepository comprovanteRepository;
     @Autowired
     private FileStorageService fileStorageService;
-    @Autowired
-    private RegrasService regrasService;
 
     @Transactional
     public AtividadeConselhal salvarAtividade(AtividadeConselhal atividade) {
@@ -75,24 +72,6 @@ public class AtividadeConselhalService {
             throw new RuntimeException("O médico selecionado não possui vínculo ativo com a Gestão informada.");
         }
 
-        // ==============================================================================
-        // ALTERAÇÃO: Descoberta Dinâmica de Resolução Histórica (Inclusive Revogadas)
-        // ==============================================================================
-        // Mudamos o repositório restrito para buscar a resolução que cobria esta data,
-        // mesmo que revogada
-        Resolucao resolucaoFinanceiraVigente = regrasService.buscarResolucaoPorData(dataAtividade)
-                .orElseThrow(() -> {
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                    return new IllegalStateException(
-                            "Não foi encontrada nenhuma Resolução (ativa ou revogada) cadastrada que cubra o período da data desta atividade: "
-                                    + dataAtividade.format(formatter));
-                });
-
-        // Realiza a validação de pontos do turno estabelecido pela resolução encontrada
-        // na época
-        validarLimitesTurno(atividade, resolucaoFinanceiraVigente);
-        // ==============================================================================
-
         // 3. Regras para Novas Atividades
         if (atividade.getIdAtividade() == null) {
             atividade.setDataHoraRegistro(LocalDateTime.now());
@@ -112,30 +91,6 @@ public class AtividadeConselhalService {
         }
 
         return atividadeRepository.save(atividade);
-    }
-
-    private void validarLimitesTurno(AtividadeConselhal atividade, Resolucao resolucaoVigente) {
-        LocalDate dataAtividade = atividade.getDataHoraAtividade().toLocalDate();
-
-        Integer pontosRegistrados = atividadeRepository.sumPontosPorConselheiroDiaETurno(
-                atividade.getConselheiro().getIdPessoa(),
-                dataAtividade,
-                atividade.getInTurno());
-
-        if (pontosRegistrados == null) {
-            pontosRegistrados = 0;
-        }
-
-        int pontosDaNovaAtividade = atividade.getRegra().getPontos()
-                * (atividade.getQtdAtividade() != null ? atividade.getQtdAtividade() : 1);
-        int somaTotalPontosTurno = pontosRegistrados + pontosDaNovaAtividade;
-
-        if (somaTotalPontosTurno > resolucaoVigente.getPontosPorJeton()) {
-            throw new RuntimeException("Inclusão bloqueada: A soma dos pontos neste turno ("
-                    + somaTotalPontosTurno + " pontos) excede o limite estabelecido pela Resolução n. "
-                    + resolucaoVigente.getNumero() + "/" + resolucaoVigente.getAno()
-                    + " (" + resolucaoVigente.getPontosPorJeton() + " pontos por Jeton).");
-        }
     }
 
     @Transactional(readOnly = true)
