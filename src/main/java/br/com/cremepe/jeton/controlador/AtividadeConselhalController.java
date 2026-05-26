@@ -11,6 +11,7 @@ import br.com.cremepe.jeton.servico.GestaoService;
 import br.com.cremepe.jeton.servico.RegrasService;
 import br.com.cremepe.jeton.servico.ComprovanteService;
 import br.com.cremepe.jeton.servico.TipoAnexoService;
+import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
 
 import jakarta.servlet.http.HttpSession;
@@ -45,9 +46,11 @@ public class AtividadeConselhalController {
     @Autowired
     private GestaoConselheiroRepository gestaoConselheiroRepository;
     @Autowired
-    private ComprovanteService comprovanteService;
-    @Autowired
     private TipoAnexoService tipoAnexoService;
+    @Autowired
+    private AtividadeConselhalRepository atividadeRepository;
+    @Autowired
+    private ComprovanteService comprovanteService;
 
     @GetMapping
     public String listar(
@@ -146,36 +149,59 @@ public class AtividadeConselhalController {
                 atividade.setInComputada("N");
             }
 
-            // ==============================================================================
-            // CORREÇÃO: Preservar Comprovante Existente na Edição
-            // ==============================================================================
-            if (file != null && !file.isEmpty()) {
-                // Se um NOVO ficheiro foi enviado, processa e gera um novo registo de
-                // comprovante
-                if (idTipoAnexo == null || nomeComprovanteUsuario == null || nomeComprovanteUsuario.isEmpty()) {
-                    throw new RuntimeException("O tipo e o nome do comprovante são obrigatórios.");
-                }
-                Comprovante comprovante = comprovanteService.guardarComprovante(file, idTipoAnexo,
-                        nomeComprovanteUsuario);
-                atividade.setComprovante(comprovante);
-            } else if (atividade.getIdAtividade() != null) {
-                // Se NÃO enviou ficheiro mas é uma EDIÇÃO, recupera o comprovante antigo para
-                // não o perder
+            // =========================================================================
+            // 3. GERENCIAMENTO DO COMPROVANTE (COM EXCLUSÃO DO ANTIGO)
+            // =========================================================================
+            Comprovante comprovanteAntigo = null;
+            if (atividade.getIdAtividade() != null) {
                 AtividadeConselhal atividadeBanco = atividadeService.buscarPorId(atividade.getIdAtividade())
                         .orElse(null);
                 if (atividadeBanco != null && atividadeBanco.getComprovante() != null) {
-                    atividade.setComprovante(atividadeBanco.getComprovante());
+                    comprovanteAntigo = atividadeBanco.getComprovante();
+                }
+            }
 
-                    // Opcional: Atualiza o nome/descrição do comprovante caso o utilizador tenha
-                    // alterado apenas o texto
+            // Se um NOVO ficheiro foi enviado
+            if (file != null && !file.isEmpty()) {
+                if (idTipoAnexo == null || nomeComprovanteUsuario == null || nomeComprovanteUsuario.isEmpty()) {
+                    throw new RuntimeException("O tipo e o nome do comprovante são obrigatórios.");
+                }
+
+                // Desvincula o comprovante antigo da atividade (não exclui ainda)
+                if (comprovanteAntigo != null) {
+                    atividadeService.desvincularComprovante(atividade.getIdAtividade());
+                }
+
+                // Cria o novo comprovante e associa à atividade
+                Comprovante novoComprovante = comprovanteService.guardarComprovante(file, idTipoAnexo,
+                        nomeComprovanteUsuario);
+                atividade.setComprovante(novoComprovante);
+
+            } else if (atividade.getIdAtividade() != null) {
+                // Edição SEM envio de ficheiro – mantém o comprovante antigo se existir
+                if (comprovanteAntigo != null) {
+                    atividade.setComprovante(comprovanteAntigo);
+                    // Atualiza a descrição do comprovante se o usuário digitou um novo nome
                     if (nomeComprovanteUsuario != null && !nomeComprovanteUsuario.trim().isEmpty()) {
-                        atividade.getComprovante().setNomeComprovante(nomeComprovanteUsuario.trim());
+                        comprovanteAntigo.setNomeComprovante(nomeComprovanteUsuario.trim());
+                        comprovanteService.atualizar(comprovanteAntigo); // método auxiliar
                     }
                 }
             }
-            // ==============================================================================
 
+            // Salva a atividade (com o comprovante já atualizado)
             atividadeService.salvarAtividade(atividade);
+
+            // Após salvar, se houve substituição de comprovante, tenta excluir o antigo
+            if (comprovanteAntigo != null && file != null && !file.isEmpty()) {
+                long outrasAtividades = atividadeRepository
+                        .countByComprovanteIdComprovante(comprovanteAntigo.getIdComprovante());
+                if (outrasAtividades == 0) {
+                    // Exclui o registro do banco e o arquivo físico do FTP
+                    comprovanteService.excluirComprovante(comprovanteAntigo.getIdComprovante());
+                }
+            }
+
             ra.addFlashAttribute("sucesso", "Atividade guardada com sucesso!");
 
         } catch (RuntimeException e) {

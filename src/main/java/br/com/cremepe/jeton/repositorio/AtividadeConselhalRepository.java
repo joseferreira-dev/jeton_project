@@ -274,4 +274,8 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("idPessoa") Integer idPessoa,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
+
+    @Modifying
+    @Query("UPDATE AtividadeConselhal a SET a.comprovante = NULL WHERE a.idAtividade = :id")
+    void desvincularComprovante(@Param("id") Integer idAtividade);
 }

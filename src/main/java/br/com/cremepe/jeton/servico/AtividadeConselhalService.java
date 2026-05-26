@@ -211,4 +211,10 @@ public class AtividadeConselhalService {
     public Optional<AtividadeConselhal> buscarPorId(Integer id) {
         return atividadeRepository.findById(id);
     }
+
+    @Transactional
+    public void desvincularComprovante(Integer idAtividade) {
+        atividadeRepository.desvincularComprovante(idAtividade);
+        atividadeRepository.flush();
+    }
 }

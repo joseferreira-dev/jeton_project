@@ -54,4 +54,17 @@ public class ComprovanteService {
     public Optional<Comprovante> buscarPorId(Integer id) {
         return comprovanteRepository.findById(id);
     }
+
+    @Transactional
+    public void excluirComprovante(Integer id) {
+        comprovanteRepository.findById(id).ifPresent(comp -> {
+            fileStorageService.deleteFile(comp.getNomeArquivo(), comp.getAno(), comp.getMes());
+            comprovanteRepository.delete(comp);
+        });
+    }
+
+    @Transactional
+    public Comprovante atualizar(Comprovante comprovante) {
+        return comprovanteRepository.save(comprovante);
+    }
 }
