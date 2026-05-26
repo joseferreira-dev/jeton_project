@@ -259,6 +259,9 @@ public class AtividadeConselhal implements Serializable {
         return Objects.hash(idAtividade);
     }
 
+    // =========================================================================
+    // TO_STRING
+    // =========================================================================
     @Override
     public String toString() {
         return "AtividadeConselhal{" +
