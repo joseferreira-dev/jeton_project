@@ -1,20 +1,15 @@
 package br.com.cremepe.jeton.controlador;
 
+import br.com.cremepe.jeton.dominio.Gestao;
+import br.com.cremepe.jeton.servico.GestaoService;
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import br.com.cremepe.jeton.dominio.Gestao;
-import br.com.cremepe.jeton.servico.GestaoService;
-import jakarta.servlet.http.HttpSession;
 
 @Controller
 @RequestMapping("/gestoes")
@@ -23,19 +18,21 @@ public class GestaoController {
     @Autowired
     private GestaoService gestaoService;
 
+    // =========================================================================
+    // LISTAGEM
+    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") int size,
-            @RequestParam(value = "sort", required = false, defaultValue = "dtInicio") String sort,
+            @RequestParam(value = "sort", required = false, defaultValue = Gestao.SORT_DT_INICIO) String sort,
             @RequestParam(value = "dir", required = false, defaultValue = "desc") String dir,
             Model model, HttpSession session) {
 
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
 
-        // Chama sem a variável situacao
         Page<Gestao> pagina = gestaoService.listarComPaginacaoEPesquisa(termo, page, size, sort, dir);
 
         model.addAttribute("paginaGestoes", pagina);
@@ -47,9 +44,12 @@ public class GestaoController {
         return "gestao/lista";
     }
 
+    // =========================================================================
+    // FORMULÁRIOS (NOVO / EDIÇÃO)
+    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("gestao", new Gestao());
         return "gestao/formulario";
@@ -57,16 +57,19 @@ public class GestaoController {
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
         Gestao gestao = gestaoService.buscarPorId(id)
-                .orElseThrow(() -> new IllegalArgumentException("Gestão inválida:" + id));
+                .orElseThrow(() -> new IllegalArgumentException("Gestão não encontrada para o ID: " + id));
         model.addAttribute("gestao", gestao);
         return "gestao/formulario";
     }
 
+    // =========================================================================
+    // SALVAR (CRIAR / ATUALIZAR)
+    // =========================================================================
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("gestao") Gestao gestao, RedirectAttributes ra) {
+    public String salvar(@Valid @ModelAttribute("gestao") Gestao gestao, RedirectAttributes ra) {
         try {
             gestaoService.salvar(gestao);
             ra.addFlashAttribute("sucesso", "Gestão salva com sucesso!");
@@ -76,6 +79,9 @@ public class GestaoController {
         return "redirect:/gestoes";
     }
 
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
@@ -86,5 +92,12 @@ public class GestaoController {
                     "Não foi possível remover. Verifique se existem conselheiros ou atividades vinculadas a esta gestão.");
         }
         return "redirect:/gestoes";
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES
+    // =========================================================================
+    private boolean naoAutenticado(HttpSession session) {
+        return session.getAttribute("usuarioLogado") == null;
     }
 }
