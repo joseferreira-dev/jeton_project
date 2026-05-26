@@ -1,19 +1,5 @@
 package br.com.cremepe.jeton.servico;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Pessoa;
 import br.com.cremepe.jeton.dominio.Usuario;
@@ -23,9 +9,26 @@ import br.com.cremepe.jeton.repositorio.PessoaRepository;
 import br.com.cremepe.jeton.repositorio.UsuarioRepository;
 import br.com.cremepe.jeton.repositorio.ViewUserLoginRepository;
 import br.com.cremepe.jeton.util.CpfValidador;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UsuarioService {
+
+    private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -36,52 +39,40 @@ public class UsuarioService {
     @Autowired
     private ConselheiroRepository conselheiroRepository;
 
+    // =========================================================================
+    // OPERAÇÕES DE ESCRITA
+    // =========================================================================
+
     @Transactional
     public Usuario salvar(Usuario usuario) {
-
-        // 1. Limpeza e padronização do CPF
-        String cpfLimpo = "";
-        if (usuario.getPessoa() != null && usuario.getPessoa().getCpf() != null) {
-            cpfLimpo = usuario.getPessoa().getCpf().replaceAll("[^0-9]", "");
-            usuario.getPessoa().setCpf(cpfLimpo);
+        // 1. Prepara CPF
+        Pessoa pessoa = usuario.getPessoa();
+        if (pessoa == null) {
+            throw new RuntimeException("Os dados da pessoa são obrigatórios.");
         }
+        String cpfLimpo = pessoa.getCpf() != null ? pessoa.getCpf().replaceAll("[^0-9]", "") : "";
+        pessoa.setCpf(cpfLimpo);
 
-        // 1.1 Validação matemática do CPF (Bloqueia CPFs falsos/inválidos)
+        // 2. Valida CPF
         if (cpfLimpo.isEmpty() || !CpfValidador.isCpfValido(cpfLimpo)) {
-            throw new RuntimeException("O número de CPF informado é inválido. Por favor, verifique os dígitos.");
+            throw new RuntimeException("O número de CPF informado é inválido. Verifique os dígitos.");
         }
 
-        // 2. Validação de CPF Duplicado (em toda a tabela Pessoa)
-        if (!cpfLimpo.isEmpty()) {
-            Optional<Pessoa> pessoaExistente = pessoaRepository.findByCpf(cpfLimpo);
-            if (pessoaExistente.isPresent()) {
-                if (usuario.getIdUsuarioPessoa() == null ||
-                        !usuario.getIdUsuarioPessoa().equals(pessoaExistente.get().getIdPessoa())) {
-                    throw new RuntimeException("Já existe um cadastro no sistema com este CPF.");
-                }
+        // 3. Verifica duplicidade de CPF
+        validarCpfUnico(cpfLimpo, usuario.getIdUsuarioPessoa());
+
+        // 4. Valida CRM se for conselheiro
+        if (usuario.iseConselheiro()) {
+            if (usuario.getCrm() == null) {
+                throw new RuntimeException("O número do CRM é obrigatório para médicos conselheiros.");
             }
+            validarCrmUnico(usuario.getCrm(), usuario.getIdUsuarioPessoa());
         }
 
-        // 2.1: Validação de CRM Duplicado (Se for marcado como Conselheiro)
-        if (usuario.iseConselheiro() && usuario.getCrm() != null) {
-            Optional<Conselheiro> conselheiroExistente = conselheiroRepository.findByCrm(usuario.getCrm());
-            if (conselheiroExistente.isPresent()) {
-                // Se for um novo cadastro OU se o CRM achado pertencer a OUTRA pessoa,
-                // bloqueia!
-                if (usuario.getIdUsuarioPessoa() == null ||
-                        !usuario.getIdUsuarioPessoa().equals(conselheiroExistente.get().getIdPessoa())) {
-                    throw new RuntimeException(
-                            "Já existe um médico conselheiro cadastrado com o CRM " + usuario.getCrm() + ".");
-                }
-            }
-        }
-
-        // 3. Regras de Senha e Sincronização de IDs
+        // 5. Tratamento de senha
         if (usuario.getIdUsuarioPessoa() != null && usuario.getIdUsuarioPessoa() > 0) {
-            // EDIÇÃO
             Usuario existente = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
                     .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
-
             if (usuario.getSenha() == null || usuario.getSenha().trim().isEmpty()) {
                 usuario.setSenha(existente.getSenha());
             } else {
@@ -89,86 +80,54 @@ public class UsuarioService {
             }
             usuario.getPessoa().setIdPessoa(usuario.getIdUsuarioPessoa());
         } else {
-            // NOVO CADASTRO
             usuario.setIdUsuarioPessoa(null);
-            if (usuario.getPessoa() != null) {
+            if (usuario.getPessoa() != null)
                 usuario.getPessoa().setIdPessoa(null);
-            }
             if (usuario.getSenha() == null || usuario.getSenha().trim().isEmpty()) {
                 throw new RuntimeException("A senha é obrigatória para novos usuários.");
             }
             usuario.setSenha(gerarSHA256(usuario.getSenha()));
         }
 
-        // 4. Define o tipo de pessoa ('C' para Conselheiro ou 'F' para Funcionário)
-        usuario.getPessoa().setInTipoPessoa(usuario.iseConselheiro() ? "C" : "F");
+        // 6. Define tipo de pessoa
+        pessoa.setInTipoPessoa(usuario.iseConselheiro() ? Pessoa.TIPO_CONSELHEIRO : Pessoa.TIPO_FUNCIONARIO);
 
-        // 5. Salva o Usuário (Cascade salva a Pessoa)
+        // 7. Salva usuário (cascade salva pessoa)
         Usuario usuarioSalvo = usuarioRepository.save(usuario);
+        log.info("Usuário salvo: ID={}, nome={}, tipo={}", usuarioSalvo.getIdUsuarioPessoa(),
+                usuarioSalvo.getPessoa().getNome(), pessoa.getInTipoPessoa());
 
-        // 6. LÓGICA HÍBRIDA DE CONSELHEIRO
+        // 8. Gerencia tabela conselheiro (se necessário)
         if (usuario.iseConselheiro()) {
-            if (usuario.getCrm() == null) {
-                throw new RuntimeException("O número do CRM é obrigatório para médicos conselheiros.");
-            }
-
-            // Busca se já existe registro na tabela conselheiro ou cria um novo
             Conselheiro c = conselheiroRepository.findById(usuarioSalvo.getIdUsuarioPessoa())
                     .orElse(new Conselheiro());
-
             c.setIdPessoa(usuarioSalvo.getIdUsuarioPessoa());
             c.setPessoa(usuarioSalvo.getPessoa());
             c.setCrm(usuario.getCrm());
             c.setInSituacao(usuarioSalvo.getInSituacao());
             conselheiroRepository.save(c);
+            log.debug("Registro de conselheiro sincronizado para ID={}", usuarioSalvo.getIdUsuarioPessoa());
         } else {
-            // Se o checkbox não estiver marcado, removemos da tabela conselheiro se existir
-            // (Downgrade)
             usuarioRepository.deletarConselheiroNativo(usuarioSalvo.getIdUsuarioPessoa());
         }
 
         return usuarioSalvo;
     }
 
-    @Transactional(readOnly = true)
-    public Page<Usuario> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size,
-            String sortField, String sortDir) {
-        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
-        Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
-
-        String cpfPesquisa = "";
-        if (termo != null && !termo.trim().isEmpty()) {
-            cpfPesquisa = termo.replaceAll("[^0-9]", "");
-            if (cpfPesquisa.isEmpty())
-                cpfPesquisa = "###";
+    private void validarCpfUnico(String cpf, Integer idAtual) {
+        Optional<Pessoa> existente = pessoaRepository.findByCpf(cpf);
+        if (existente.isPresent()) {
+            if (idAtual == null || !idAtual.equals(existente.get().getIdPessoa())) {
+                throw new RuntimeException("Já existe um cadastro no sistema com este CPF.");
+            }
         }
-
-        return usuarioRepository.pesquisarPaginado(termo, cpfPesquisa, situacao, pageable);
     }
 
-    @Transactional
-    public void excluir(Integer id) {
-        // Ordem segura de exclusão para evitar erros de Foreign Key
-        usuarioRepository.deletarConselheiroNativo(id);
-        usuarioRepository.deletarUsuarioNativo(id);
-        usuarioRepository.deletarPessoaNativa(id);
-    }
-
-    @Transactional(readOnly = true)
-    public Optional<ViewUserLogin> autenticar(String cpf, String senha) {
-        String cpfLimpo = cpf.replaceAll("[^0-9]", "");
-        return viewUserLoginRepository.findByCpf(cpfLimpo)
-                .filter(u -> u.getSenha().equals(gerarSHA256(senha)));
-    }
-
-    @Transactional(readOnly = true)
-    public List<Usuario> listarTodos() {
-        return usuarioRepository.findAll();
-    }
-
-    @Transactional(readOnly = true)
-    public Optional<Usuario> buscarPorId(Integer id) {
-        return usuarioRepository.findById(id);
+    private void validarCrmUnico(Integer crm, Integer idAtual) {
+        Optional<Conselheiro> existente = conselheiroRepository.findByCrm(crm);
+        if (existente.isPresent() && (idAtual == null || !idAtual.equals(existente.get().getIdPessoa()))) {
+            throw new RuntimeException("Já existe um médico conselheiro cadastrado com o CRM " + crm + ".");
+        }
     }
 
     private String gerarSHA256(String senha) {
@@ -183,5 +142,62 @@ public class UsuarioService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Erro ao processar segurança da senha", e);
         }
+    }
+
+    // =========================================================================
+    // OPERAÇÕES DE LEITURA
+    // =========================================================================
+
+    @Transactional(readOnly = true)
+    public Page<Usuario> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size,
+            String sortField, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
+        Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
+
+        String cpfPesquisa = "";
+        if (termo != null && !termo.trim().isEmpty()) {
+            cpfPesquisa = termo.replaceAll("[^0-9]", "");
+            if (cpfPesquisa.isEmpty())
+                cpfPesquisa = "###";
+        }
+        return usuarioRepository.pesquisarPaginado(termo, cpfPesquisa, situacao, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Usuario> listarTodos() {
+        return usuarioRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Usuario> buscarPorId(Integer id) {
+        return usuarioRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ViewUserLogin> autenticar(String cpf, String senha) {
+        String cpfLimpo = cpf.replaceAll("[^0-9]", "");
+        String senhaHash = gerarSHA256(senha);
+        return viewUserLoginRepository.findByCpf(cpfLimpo)
+                .filter(u -> u.getSenha().equals(senhaHash));
+    }
+
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
+    @Transactional
+    public void excluir(Integer id) {
+        // 1. Remove as permissões (usuario_acesso) primeiro
+        usuarioRepository.deletarPermissoesNativo(id);
+
+        // 2. Remove o conselheiro (se existir)
+        usuarioRepository.deletarConselheiroNativo(id);
+
+        // 3. Remove o usuário
+        usuarioRepository.deletarUsuarioNativo(id);
+
+        // 4. Remove a pessoa
+        usuarioRepository.deletarPessoaNativa(id);
+
+        log.info("Usuário e todas as dependências excluídos permanentemente: ID={}", id);
     }
 }

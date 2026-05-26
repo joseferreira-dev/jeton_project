@@ -1,22 +1,14 @@
 package br.com.cremepe.jeton.dominio;
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.util.Objects;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
-
 /**
- * Entidade JPA que representa a tabela 'usuario' no banco de dados.
- * Possui um relacionamento 1:1 com a entidade Pessoa, compartilhando a mesma
- * PK.
+ * Entidade JPA que representa a tabela 'usuario'.
+ * Possui relacionamento 1:1 com a entidade Pessoa (compartilha a mesma PK).
  */
 @Entity
 @Table(name = "usuario")
@@ -24,21 +16,31 @@ public class Usuario implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // Não usamos @GeneratedValue aqui, pois o ID vem da Pessoa
+    // =========================================================================
+    // CONSTANTES PÚBLICAS PARA SITUAÇÃO
+    // =========================================================================
+    public static final String SITUACAO_ATIVO = "A";
+    public static final String SITUACAO_INATIVO = "I";
+
+    // =========================================================================
+    // CAMPOS DA ENTIDADE
+    // =========================================================================
     @Id
     @Column(name = "idUsuarioPessoa")
     private Integer idUsuarioPessoa;
 
-    // O @MapsId avisa ao Hibernate: "Use o ID desta entidade Pessoa como o meu
-    // próprio ID"
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @NotNull
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY) // ANTES: padrão EAGER; DEPOIS:
+                                                                                       // LAZY
     @MapsId
     @JoinColumn(name = "idUsuarioPessoa")
     private Pessoa pessoa;
 
+    @Size(max = 64)
     @Column(name = "senha", length = 64)
     private String senha;
 
+    @NotNull
     @Column(name = "inSituacao", length = 1, nullable = false)
     private String inSituacao;
 
@@ -48,13 +50,40 @@ public class Usuario implements Serializable {
     @Transient
     private Integer crm;
 
+    // =========================================================================
+    // CONSTRUTORES
+    // =========================================================================
     public Usuario() {
     }
 
-    // ==========================================
-    // GETTERS E SETTERS
-    // ==========================================
+    // =========================================================================
+    // MÉTODOS DE CONVENIÊNCIA
+    // =========================================================================
+    public boolean isAtivo() {
+        return SITUACAO_ATIVO.equals(inSituacao);
+    }
 
+    public boolean isInativo() {
+        return SITUACAO_INATIVO.equals(inSituacao);
+    }
+
+    // =========================================================================
+    // JPA LIFECYCLE – NORMALIZAÇÃO
+    // =========================================================================
+    @PrePersist
+    @PreUpdate
+    protected void normalize() {
+        if (inSituacao != null) {
+            inSituacao = inSituacao.toUpperCase();
+        }
+        if (!SITUACAO_ATIVO.equals(inSituacao) && !SITUACAO_INATIVO.equals(inSituacao)) {
+            inSituacao = SITUACAO_ATIVO; // valor padrão
+        }
+    }
+
+    // =========================================================================
+    // GETTERS E SETTERS
+    // =========================================================================
     public Integer getIdUsuarioPessoa() {
         return idUsuarioPessoa;
     }
@@ -103,6 +132,9 @@ public class Usuario implements Serializable {
         this.crm = crm;
     }
 
+    // =========================================================================
+    // EQUALS & HASHCODE
+    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -116,5 +148,17 @@ public class Usuario implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(idUsuarioPessoa);
+    }
+
+    // =========================================================================
+    // TO_STRING (seguro)
+    // =========================================================================
+    @Override
+    public String toString() {
+        return "Usuario{" +
+                "id=" + idUsuarioPessoa +
+                ", nome=" + (pessoa != null ? pessoa.getNome() : "null") +
+                ", situacao=" + inSituacao +
+                '}';
     }
 }
