@@ -140,8 +140,16 @@ public class ConselheiroService {
     // =========================================================================
     @Transactional
     public void excluir(Integer id) {
-        conselheiroRepository.deletarUsuarioNativo(id);
+        // 1. Remove as permissões (usuario_acesso) primeiro
+        conselheiroRepository.deletarPermissoesNativo(id);
+
+        // 2. Remove o conselheiro (se existir)
         conselheiroRepository.deletarConselheiroNativo(id);
+
+        // 3. Remove o usuário
+        conselheiroRepository.deletarUsuarioNativo(id);
+
+        // 4. Remove a pessoa
         conselheiroRepository.deletarPessoaNativa(id);
     }
 }

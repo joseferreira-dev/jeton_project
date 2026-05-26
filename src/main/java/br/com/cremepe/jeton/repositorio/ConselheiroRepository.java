@@ -43,4 +43,9 @@ public interface ConselheiroRepository extends JpaRepository<Conselheiro, Intege
     @Transactional
     @Query(value = "DELETE FROM pessoa WHERE idPessoa = :id", nativeQuery = true)
     void deletarPessoaNativa(@Param("id") Integer id);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM usuario_acesso WHERE idUsuarioPessoa = :id", nativeQuery = true)
+    void deletarPermissoesNativo(@Param("id") Integer id);
 }
