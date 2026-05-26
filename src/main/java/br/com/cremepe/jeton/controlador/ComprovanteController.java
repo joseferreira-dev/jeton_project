@@ -4,6 +4,8 @@ import br.com.cremepe.jeton.dominio.Comprovante;
 import br.com.cremepe.jeton.servico.ComprovanteService;
 import br.com.cremepe.jeton.servico.FileStorageService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/comprovantes")
 public class ComprovanteController {
 
+    private static final Logger log = LoggerFactory.getLogger(ComprovanteController.class);
+
     @Autowired
     private ComprovanteService comprovanteService;
     @Autowired
@@ -26,43 +30,44 @@ public class ComprovanteController {
 
     @GetMapping("/download/{id}")
     public ResponseEntity<?> downloadFicheiro(@PathVariable Integer id, HttpServletRequest request) {
-
         try {
-            // 1. Busca os metadados na base de dados
             Comprovante comprovante = comprovanteService.buscarPorId(id)
                     .orElseThrow(() -> new RuntimeException("Comprovante não encontrado na base de dados."));
 
-            // 2. Busca o ficheiro localmente ou através de Fallback no FTP
-            Resource resource = fileStorageService.loadFileAsResource(comprovante.getNomeArquivo(),
-                    comprovante.getAno(), comprovante.getMes());
+            Resource resource = fileStorageService.loadFileAsResource(
+                    comprovante.getNomeArquivo(),
+                    comprovante.getAno(),
+                    comprovante.getMes());
 
-            // 3. Define o Content-Type
             String contentType = comprovante.getContentType();
-            if (contentType == null) {
+            if (contentType == null || contentType.isBlank()) {
                 contentType = "application/octet-stream";
             }
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
-                    // Adiciona o tamanho do ficheiro ao cabeçalho (necessário para
-                    // ByteArrayResource)
                     .contentLength(resource.contentLength())
                     .header(HttpHeaders.CONTENT_DISPOSITION,
                             "inline; filename=\"" + comprovante.getNomeComprovante() + "\"")
                     .body(resource);
 
         } catch (Exception e) {
-            // Se o ficheiro físico não existir localmente (apagado ou no FTP antigo),
-            // devolvemos um HTML elegante para ser exibido dentro do iframe do Modal.
-            String htmlErro = "<html><body style='font-family: Arial, sans-serif; text-align: center; padding-top: 20%; color: #fff; background-color: #333;'>"
-                    +
-                    "<h2><span style='font-size: 50px;'>📄❌</span><br><br>Documento Indisponível</h2>" +
-                    "<p style='color: #ccc;'>O ficheiro físico não foi encontrado.</p>" +
-                    "</body></html>";
-
+            log.error("Erro ao tentar baixar comprovante ID {}: {}", id, e.getMessage());
+            String htmlErro = gerarPaginaErro("Documento Indisponível",
+                    "O ficheiro físico não foi encontrado ou não pode ser acessado.");
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .contentType(MediaType.TEXT_HTML)
                     .body(htmlErro);
         }
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES PRIVADOS
+    // =========================================================================
+    private String gerarPaginaErro(String titulo, String mensagem) {
+        return "<html><body style='font-family: Arial, sans-serif; text-align: center; padding-top: 20%; color: #fff; background-color: #333;'>"
+                + "<h2><span style='font-size: 50px;'>📄❌</span><br><br>" + titulo + "</h2>"
+                + "<p style='color: #ccc;'>" + mensagem + "</p>"
+                + "</body></html>";
     }
 }

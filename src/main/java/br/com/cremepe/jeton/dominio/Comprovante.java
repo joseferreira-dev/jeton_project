@@ -1,13 +1,9 @@
 package br.com.cremepe.jeton.dominio;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -21,38 +17,60 @@ public class Comprovante implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    // =========================================================================
+    // CONSTANTES PÚBLICAS (para uso em outros serviços)
+    // =========================================================================
+    public static final String CONTENT_TYPE_PDF = "application/pdf";
+    public static final String CONTENT_TYPE_IMAGE = "image/jpeg";
+    public static final String CONTENT_TYPE_FALLBACK = "application/octet-stream";
+
+    // =========================================================================
+    // CAMPOS DA ENTIDADE
+    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idComprovante")
     private Integer idComprovante;
 
-    // Relacionamento obrigatório com o tipo de anexo
-    @ManyToOne
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idTipo", nullable = false)
     private TipoAnexo tipoAnexo;
 
-    @Column(name = "nomeComprovante", length = 70, nullable = false, unique = true)
+    @NotNull
+    @Size(max = 70)
+    @Column(name = "nomeComprovante", length = 70, nullable = false)
     private String nomeComprovante;
 
+    @NotNull
+    @Size(max = 70)
     @Column(name = "nomeArquivo", length = 70, nullable = false)
     private String nomeArquivo;
 
+    @NotNull
+    @Size(max = 20)
+    @Pattern(regexp = "^(application/pdf|image/jpeg|image/png|application/octet-stream)$", message = "Tipo de conteúdo inválido")
     @Column(name = "contentType", length = 20, nullable = false)
     private String contentType;
 
+    @NotNull
     @Column(name = "mes", nullable = false)
     private Integer mes;
 
+    @NotNull
     @Column(name = "ano", nullable = false)
     private Integer ano;
 
+    // =========================================================================
+    // CONSTRUTORES
+    // =========================================================================
     public Comprovante() {
+        // Construtor padrão exigido pelo JPA
     }
 
-    // ==========================================
+    // =========================================================================
     // GETTERS E SETTERS
-    // ==========================================
-
+    // =========================================================================
     public Integer getIdComprovante() {
         return idComprovante;
     }
@@ -109,6 +127,9 @@ public class Comprovante implements Serializable {
         this.ano = ano;
     }
 
+    // =========================================================================
+    // EQUALS & HASHCODE (baseado apenas no ID)
+    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -122,5 +143,20 @@ public class Comprovante implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(idComprovante);
+    }
+
+    // =========================================================================
+    // TO_STRING
+    // =========================================================================
+    @Override
+    public String toString() {
+        return "Comprovante{" +
+                "id=" + idComprovante +
+                ", nome='" + nomeComprovante + '\'' +
+                ", arquivo='" + nomeArquivo + '\'' +
+                ", tipo=" + (tipoAnexo != null ? tipoAnexo.getNome() : null) +
+                ", mes=" + mes +
+                ", ano=" + ano +
+                '}';
     }
 }
