@@ -84,6 +84,17 @@ body.login-body {
     padding: 30px;
 }
 
+.login-btn {
+    background-color: var(--cremepe-green);
+    color: white;
+}
+
+.login-btn:hover {
+    background-color: white;
+    color: var(--cremepe-dark-text);
+    border: 2px solid var(--cremepe-green);
+}
+
 /* =========================================================================
    ESTILOS DO NOVO MENU RESPONSIVO (Desktop Dropdown / Mobile Hamburger)
    ========================================================================= */
