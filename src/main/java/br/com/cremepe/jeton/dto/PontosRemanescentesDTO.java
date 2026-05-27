@@ -15,19 +15,14 @@ public class PontosRemanescentesDTO implements Serializable {
 
     private Integer idPessoa;
     private String nome;
-
-    // Atualizado de 'double' primitivo para 'BigDecimal' para garantir precisão
-    // absoluta
     private Long somaPontos;
     private String somaPontosFormatado;
-
     private BigDecimal somaJetons;
     private String somaJetonsFormatado;
 
     public PontosRemanescentesDTO() {
     }
 
-    // Este construtor é vital para o Spring Data JPA (explicado abaixo)
     public PontosRemanescentesDTO(Integer idPessoa, String nome, Long somaPontos, BigDecimal somaJetons) {
         this.idPessoa = idPessoa;
         this.nome = nome;
@@ -35,10 +30,9 @@ public class PontosRemanescentesDTO implements Serializable {
         this.somaJetons = somaJetons;
     }
 
-    // ==========================================
+    // =========================================================================
     // GETTERS E SETTERS
-    // ==========================================
-
+    // =========================================================================
     public Integer getIdPessoa() {
         return idPessoa;
     }

@@ -1,9 +1,9 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.PontosSaldo;
-import br.com.cremepe.jeton.servico.PontosRemanescentesService;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
+import br.com.cremepe.jeton.servico.PontosRemanescentesService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -20,20 +20,27 @@ public class PontosRemanescentesController {
 
     @Autowired
     private ConselheiroService conselheiroService;
+
     @Autowired
     private GestaoService gestaoService;
 
+    // =========================================================================
+    // LISTAGEM
+    // =========================================================================
     @GetMapping
     public String listar(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("lista", pontosService.listarTodos());
         return "pontosremanescentes/lista";
     }
 
+    // =========================================================================
+    // FORMULÁRIOS (NOVO / EDIÇÃO)
+    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("pontos", new PontosSaldo());
         carregarListasDeApoio(model);
@@ -42,33 +49,52 @@ public class PontosRemanescentesController {
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
-        model.addAttribute("pontos", pontosService.buscarPorId(id).orElse(new PontosSaldo()));
+        PontosSaldo pontos = pontosService.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Registro de pontos não encontrado"));
+        model.addAttribute("pontos", pontos);
         carregarListasDeApoio(model);
         return "pontosremanescentes/formulario";
     }
 
+    // =========================================================================
+    // SALVAR (CRIAR / ATUALIZAR)
+    // =========================================================================
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("pontos") PontosSaldo pontos, RedirectAttributes redirectAttributes) {
+    public String salvar(@ModelAttribute("pontos") PontosSaldo pontos, RedirectAttributes ra) {
         try {
             pontosService.salvar(pontos);
-            redirectAttributes.addFlashAttribute("sucesso", "Registro salvo com sucesso!");
+            ra.addFlashAttribute("sucesso", "Registro de pontos salvo com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao salvar: " + e.getMessage());
+            ra.addFlashAttribute("erro", "Erro inesperado ao salvar o registro.");
         }
         return "redirect:/pontos-remanescentes";
     }
 
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
     @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
             pontosService.excluir(id);
-            redirectAttributes.addFlashAttribute("sucesso", "Registro removido com sucesso!");
+            ra.addFlashAttribute("sucesso", "Registro de pontos removido com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao remover.");
+            ra.addFlashAttribute("erro", "Erro ao remover o registro.");
         }
         return "redirect:/pontos-remanescentes";
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES
+    // =========================================================================
+    private boolean naoAutenticado(HttpSession session) {
+        return session.getAttribute("usuarioLogado") == null;
     }
 
     private void carregarListasDeApoio(Model model) {
