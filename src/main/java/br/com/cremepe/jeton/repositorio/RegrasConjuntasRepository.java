@@ -18,6 +18,9 @@ public interface RegrasConjuntasRepository extends JpaRepository<RegrasConjuntas
     @Query("SELECT rc FROM RegrasConjuntas rc WHERE " +
             "(:termo IS NULL OR :termo = '' OR LOWER(rc.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
             "(:tipoLimite IS NULL OR :tipoLimite = '' OR rc.inTipoLimite = :tipoLimite)")
-    Page<RegrasConjuntas> pesquisarPaginado(@Param("termo") String termo, @Param("tipoLimite") String tipoLimite,
+    Page<RegrasConjuntas> pesquisarPaginado(@Param("termo") String termo,
+            @Param("tipoLimite") String tipoLimite,
             Pageable pageable);
+
+    boolean existsByNomeRegraAndIdRegraConjuntaNot(String nomeRegra, Integer idRegraConjunta);
 }

@@ -8,9 +8,10 @@
 <body>
     <div layout:fragment="conteudo">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-link me-2"></i> Gestão de Regras Conjuntas</h2>
-            <a th:href="@{/regras-conjuntas/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Novo
-                Agrupamento</a>
+            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-layer-group me-2"></i> Gestão de Regras Conjuntas
+                (Agrupamentos)</h2>
+            <a th:href="@{/regras-conjuntas/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Nova
+                Regra Conjunta</a>
         </div>
 
         <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show"><i
@@ -32,17 +33,18 @@
                     <div class="row g-3 align-items-end">
 
                         <div class="col-md-5">
-                            <label class="form-label fw-bold small text-muted">Pesquisar (Nome do Agrupamento)</label>
+                            <label class="form-label fw-bold small text-muted">Pesquisar (Nome)</label>
                             <input type="text" name="termo" th:value="${termo}" class="form-control"
-                                placeholder="Buscar Agrupamento...">
+                                placeholder="Buscar por nome...">
                         </div>
 
                         <div class="col-md-4">
                             <label class="form-label fw-bold small text-muted">Tipo de Limite</label>
                             <select name="tipoLimite" id="tipoLimite" class="form-select" onchange="this.form.submit()">
                                 <option value="">Todos</option>
+                                <option value="D" th:selected="${tipoLimite == 'D'}">Diário</option>
                                 <option value="T" th:selected="${tipoLimite == 'T'}">Por Turno</option>
-                                <option value="M" th:selected="${tipoLimite == 'M'}">Por Mês</option>
+                                <option value="M" th:selected="${tipoLimite == 'M'}">Mensal</option>
                             </select>
                         </div>
 
@@ -51,7 +53,7 @@
                             <select name="size" id="size" class="form-select" onchange="this.form.submit()">
                                 <option value="10" th:selected="${size == 10}">10 registros</option>
                                 <option value="20" th:selected="${size == 20}">20 registros</option>
-                                <option value="50" th:selected="${size == 50}">50 registros</option>
+                                <option value="0" th:selected="${size == 0}">Todos</option>
                             </select>
                         </div>
 
@@ -76,41 +78,43 @@
                         <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
                             <tr>
                                 <th class="ps-4">
-                                    <a th:href="@{/regras-conjuntas(page=0, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort='nomeAgrupamento', dir=${sort == 'nomeAgrupamento' and dir == 'asc' ? 'desc' : 'asc'})}"
+                                    <a th:href="@{/regras-conjuntas(page=0, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort='nomeRegra', dir=${sort == 'nomeRegra' and dir == 'asc' ? 'desc' : 'asc'})}"
                                         class="text-dark text-decoration-none">
-                                        Nome do Agrupamento
-                                        <i
-                                            th:class="${sort == 'nomeAgrupamento'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
+                                        Nome do Agrupamento <i
+                                            th:class="${sort == 'nomeRegra'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
                                     </a>
                                 </th>
-                                <th>Tipo de Limite</th>
-                                <th>Valor Limite</th>
+                                <th class="text-center">Tipo de Limite</th>
+                                <th class="text-center">Limite de Pontos</th>
                                 <th class="text-center pe-4">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:each="rc : ${paginaRegrasConjuntas.content}">
-                                <td class="ps-4 fw-bold text-cremepe" th:text="${rc.nomeAgrupamento}">Agrupamento</td>
-                                <td>
-                                    <span th:if="${rc.tipoLimite == 'T'}" class="badge bg-info text-dark"><i
-                                            class="fa-regular fa-clock me-1"></i> Por Turno</span>
-                                    <span th:if="${rc.tipoLimite == 'M'}" class="badge bg-primary"><i
-                                            class="fa-regular fa-calendar-days me-1"></i> Por Mês</span>
+                                <td class="ps-4 fw-bold text-cremepe" th:text="${rc.nomeRegra}">Nome da Regra</td>
+                                <td class="text-center">
+                                    <span th:if="${rc.inTipoLimite == 'D'}"
+                                        class="badge bg-info text-dark">Diário</span>
+                                    <span th:if="${rc.inTipoLimite == 'T'}" class="badge bg-warning text-dark">Por
+                                        Turno</span>
+                                    <span th:if="${rc.inTipoLimite == 'M'}" class="badge bg-success">Mensal</span>
                                 </td>
-                                <td th:text="${rc.valorLimite}">0</td>
+                                <td class="text-center fw-bold" th:text="${rc.pontosLimite}">0</td>
                                 <td class="text-center pe-4">
-                                    <a th:href="@{'/regras-conjuntas/editar/' + ${rc.idConjunto}}"
-                                        class="btn btn-sm btn-outline-primary me-1"><i
+                                    <a th:href="@{'/regras-conjuntas/editar/' + ${rc.idRegraConjunta}}"
+                                        class="btn btn-sm btn-outline-primary me-1" title="Editar"><i
                                             class="fa-solid fa-pen-to-square"></i></a>
-                                    <a th:href="@{'/regras-conjuntas/excluir/' + ${rc.idConjunto}}"
-                                        class="btn btn-sm btn-outline-danger btn-confirm"
-                                        data-mensagem="Deseja excluir permanentemente este Agrupamento de Regras?"
-                                        data-cor="btn-danger"><i class="fa-solid fa-trash-can"></i></a>
+
+                                    <a th:href="@{'/regras-conjuntas/excluir/' + ${rc.idRegraConjunta}}"
+                                        class="btn btn-sm btn-outline-danger btn-confirm" title="Excluir"
+                                        data-mensagem="Deseja <b>EXCLUIR</b> esta regra conjunta?<br><small class='text-danger'>Apenas possível se não houver regras vinculadas.</small>"
+                                        data-cor="btn-danger" data-icone="fa-solid fa-trash-can"><i
+                                            class="fa-solid fa-trash-can"></i></a>
                                 </td>
                             </tr>
                             <tr th:if="${paginaRegrasConjuntas.empty}">
-                                <td colspan="4" class="text-center py-4 text-muted">Nenhum agrupamento encontrado para
-                                    os filtros aplicados.</td>
+                                <td colspan="4" class="text-center py-4 text-muted">Nenhuma regra conjunta encontrada
+                                    para os filtros aplicados.</td>
                             </tr>
                         </tbody>
                     </table>

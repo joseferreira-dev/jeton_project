@@ -1,8 +1,8 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.RegrasConjuntas;
-import br.com.cremepe.jeton.servico.RegrasConjuntasService; // Certifique-se de ter este Service
-import br.com.cremepe.jeton.servico.RegrasService; // Para popular as caixas de seleção
+import br.com.cremepe.jeton.servico.RegrasConjuntasService;
+import br.com.cremepe.jeton.servico.RegrasService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -20,6 +20,9 @@ public class RegrasConjuntasController {
     @Autowired
     private RegrasService regrasService;
 
+    // =========================================================================
+    // LISTAGEM
+    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -30,60 +33,84 @@ public class RegrasConjuntasController {
             @RequestParam(value = "dir", required = false, defaultValue = "asc") String dir,
             Model model, HttpSession session) {
 
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
 
-        Page<RegrasConjuntas> paginaRegrasConjuntas = regrasConjuntasService.listarComPaginacaoEPesquisa(termo,
-                tipoLimite, page, size, sort, dir);
-
-        model.addAttribute("paginaRegrasConjuntas", paginaRegrasConjuntas);
+        Page<RegrasConjuntas> pagina = regrasConjuntasService.listarComPaginacaoEPesquisa(
+                termo, tipoLimite, page, size, sort, dir);
+        model.addAttribute("paginaRegrasConjuntas", pagina);
         model.addAttribute("termo", termo);
         model.addAttribute("tipoLimite", tipoLimite);
         model.addAttribute("size", size);
         model.addAttribute("sort", sort);
         model.addAttribute("dir", dir);
-
         return "regrasconjuntas/lista";
     }
 
+    // =========================================================================
+    // FORMULÁRIOS
+    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("regrasConjuntas", new RegrasConjuntas());
-        model.addAttribute("listaRegras", regrasService.listarTodos());
+        carregarListasApoio(model);
         return "regrasconjuntas/formulario";
     }
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
-        model.addAttribute("regrasConjuntas", regrasConjuntasService.buscarPorId(id).orElse(new RegrasConjuntas()));
-        model.addAttribute("listaRegras", regrasService.listarTodos());
+        RegrasConjuntas regra = regrasConjuntasService.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Regra Conjunta não encontrada"));
+        model.addAttribute("regrasConjuntas", regra);
+        carregarListasApoio(model);
         return "regrasconjuntas/formulario";
     }
 
+    private void carregarListasApoio(Model model) {
+        model.addAttribute("listaRegras", regrasService.listarTodos());
+    }
+
+    // =========================================================================
+    // SALVAR
+    // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@ModelAttribute("regrasConjuntas") RegrasConjuntas regrasConjuntas,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes ra) {
         try {
             regrasConjuntasService.salvar(regrasConjuntas);
-            redirectAttributes.addFlashAttribute("sucesso", "Regras Conjuntas salvas com sucesso!");
+            ra.addFlashAttribute("sucesso", "Regras Conjuntas salvas com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao salvar Regras Conjuntas.");
+            ra.addFlashAttribute("erro", "Erro inesperado ao salvar as Regras Conjuntas.");
         }
         return "redirect:/regras-conjuntas";
     }
 
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
             regrasConjuntasService.excluir(id);
-            ra.addFlashAttribute("sucesso", "Agrupamento de regras removido com sucesso!");
+            ra.addFlashAttribute("sucesso", "Regra Conjunta removida com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao remover o agrupamento.");
+            ra.addFlashAttribute("erro", "Erro ao remover a Regra Conjunta.");
         }
         return "redirect:/regras-conjuntas";
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES
+    // =========================================================================
+    private boolean naoAutenticado(HttpSession session) {
+        return session.getAttribute("usuarioLogado") == null;
     }
 }
