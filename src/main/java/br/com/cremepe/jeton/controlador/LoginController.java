@@ -7,6 +7,8 @@ import br.com.cremepe.jeton.repositorio.ComprovanteRepository;
 import br.com.cremepe.jeton.repositorio.ConselheiroRepository;
 import br.com.cremepe.jeton.servico.UsuarioService;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -22,10 +24,13 @@ import java.util.Optional;
 @Controller
 public class LoginController {
 
+    private static final Logger log = LoggerFactory.getLogger(LoginController.class);
+    private static final String ERRO_LOGIN = "CPF ou Senha inválidos!";
+
     @Autowired
     private UsuarioService usuarioService;
 
-    // Injeção dos repositórios para alimentar o Dashboard
+    // Dashboard
     @Autowired
     private AtividadeConselhalRepository atividadeRepository;
     @Autowired
@@ -44,48 +49,55 @@ public class LoginController {
             HttpSession session,
             RedirectAttributes redirectAttributes) {
 
+        // Validação simples antes de consultar o banco
+        if (cpf == null || cpf.isBlank() || senha == null || senha.isBlank()) {
+            log.warn("Tentativa de login com CPF ou senha vazios");
+            return redirectToLoginWithError(redirectAttributes);
+        }
+
         Optional<ViewUserLogin> usuarioOpt = usuarioService.autenticar(cpf, senha);
 
         if (usuarioOpt.isPresent()) {
             ViewUserLogin usuarioLogado = usuarioOpt.get();
             session.setAttribute("usuarioLogado", usuarioLogado);
+            log.info("Login bem-sucedido: usuário {} (ID {})", usuarioLogado.getNome(), usuarioLogado.getIdPessoa());
             return "redirect:/index";
         } else {
-            redirectAttributes.addFlashAttribute("erro", "CPF ou Senha inválidos!");
-            return "redirect:/login";
+            log.warn("Falha de autenticação para CPF: {}", cpf.replaceAll(".(?=.{4})", "*")); // oculta parte do CPF
+            return redirectToLoginWithError(redirectAttributes);
         }
+    }
+
+    private String redirectToLoginWithError(RedirectAttributes ra) {
+        ra.addFlashAttribute("erro", ERRO_LOGIN);
+        return "redirect:/login";
     }
 
     @GetMapping("/sair")
     public String sair(HttpSession session) {
+        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        if (usuario != null) {
+            log.info("Logout do usuário: {}", usuario.getNome());
+        }
         session.invalidate();
         return "redirect:/login";
     }
 
-    // Página inicial (Dashboard) totalmente funcional e dinâmica
     @GetMapping("/index")
     public String index(HttpSession session, Model model) {
-        if (session.getAttribute("usuarioLogado") == null) {
+        ViewUserLogin usuarioLogado = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        if (usuarioLogado == null) {
             return "redirect:/login";
         }
 
-        // 1. Total de Atividades Pendentes de Validação (Situação 'P')
+        // Métricas do dashboard
         long totalPendentes = atividadeRepository.countByInSituacao("P");
-
-        // 2. Total de Conselheiros Ativos (Situação 'A')
         long totalConselheiros = conselheiroRepository.countByInSituacao("A");
-
-        // 3. Atividades Registadas no Mês Atual
         LocalDate hoje = LocalDate.now();
         long totalAtividadesMes = atividadeRepository.countAtividadesDoMes(hoje.getMonthValue(), hoje.getYear());
-
-        // 4. Total de Comprovantes Salvos
         long totalComprovantes = comprovanteRepository.count();
-
-        // 5. Atividades Recentes
         List<AtividadeConselhal> atividadesRecentes = atividadeRepository.findTop5ByOrderByDataHoraRegistroDesc();
 
-        // Envia as métricas para a tela index.html
         model.addAttribute("totalPendentes", totalPendentes);
         model.addAttribute("totalConselheiros", totalConselheiros);
         model.addAttribute("totalAtividadesMes", totalAtividadesMes);

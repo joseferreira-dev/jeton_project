@@ -1,14 +1,19 @@
 package br.com.cremepe.jeton.seguranca;
 
+import br.com.cremepe.jeton.dominio.NivelAcesso;
 import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
 public class AutorizacaoInterceptor implements HandlerInterceptor {
+
+    private static final Logger log = LoggerFactory.getLogger(AutorizacaoInterceptor.class);
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
@@ -16,53 +21,61 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
 
         String uri = request.getRequestURI();
 
-        // Rotas públicas que não precisam de login
-        if (uri.startsWith("/login") || uri.startsWith("/autenticar") || uri.startsWith("/css") ||
-                uri.startsWith("/js") || uri.startsWith("/images") || uri.startsWith("/error")) {
+        // Rotas públicas
+        if (uri.startsWith("/login") || uri.startsWith("/autenticar") ||
+                uri.startsWith("/css") || uri.startsWith("/js") || uri.startsWith("/images") ||
+                uri.startsWith("/error")) {
             return true;
         }
 
         HttpSession session = request.getSession();
         ViewUserLogin usuarioLogado = (ViewUserLogin) session.getAttribute("usuarioLogado");
 
-        // 1. Verificação de Autenticação (Login)
+        // 1. Autenticação
         if (usuarioLogado == null) {
             response.sendRedirect("/login");
             return false;
         }
 
-        // 2. Verificação de Autorização (Níveis de Acesso)
-        String permissoes = usuarioLogado.getPermissoes() != null ? usuarioLogado.getPermissoes() : "";
-        boolean isSuperAdmin = permissoes.contains("S"); // 'S' gere tudo
+        // 2. Autorização
+        boolean isSuperAdmin = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_SUPER_ADMIN);
 
-        // Mapeamento das rotas vs Letras de Permissão
-        if (uri.startsWith("/atividades") && !(isSuperAdmin || permissoes.contains("A"))) {
+        // Mapeamento de rotas vs permissões
+        if (uri.startsWith("/atividades")
+                && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL))) {
+            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão A", usuarioLogado.getNome(), uri);
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }
-        if (uri.startsWith("/comprovantes") && !(isSuperAdmin || permissoes.contains("C"))) {
+        if (uri.startsWith("/comprovantes")
+                && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_COMPROVANTES))) {
+            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão C", usuarioLogado.getNome(), uri);
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }
-        if (uri.startsWith("/jeton") && !(isSuperAdmin || permissoes.contains("J"))) {
+        if (uri.startsWith("/jeton") && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_JETONS))) {
+            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão J", usuarioLogado.getNome(), uri);
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }
-        if ((uri.startsWith("/gestoes") || uri.startsWith("/gestao-conselheiros") || uri.startsWith("/conselheiros"))
-                && !(isSuperAdmin || permissoes.contains("G"))) {
+        if ((uri.startsWith("/gestoes") || uri.startsWith("/gestao-conselheiros") || uri.startsWith("/conselheiros")) &&
+                !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_GESTAO_CONSELHEIROS))) {
+            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão G", usuarioLogado.getNome(), uri);
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }
-        if ((uri.startsWith("/portarias") || uri.startsWith("/resolucoes") || uri.startsWith("/regras"))
-                && !(isSuperAdmin || permissoes.contains("R"))) {
+        if ((uri.startsWith("/portarias") || uri.startsWith("/resolucoes") || uri.startsWith("/regras")) &&
+                !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_PORTARIAS_RESOLUCOES))) {
+            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão R", usuarioLogado.getNome(), uri);
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }
-        if (uri.startsWith("/usuarios") && !(isSuperAdmin || permissoes.contains("U"))) {
+        if (uri.startsWith("/usuarios") && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_USUARIOS))) {
+            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão U", usuarioLogado.getNome(), uri);
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }
 
-        return true; // Acesso Permitido
+        return true;
     }
 }
