@@ -1,21 +1,16 @@
 package br.com.cremepe.jeton.servico;
 
-import br.com.cremepe.jeton.dominio.AtividadeConselhal;
-import br.com.cremepe.jeton.dominio.Comprovante;
-import br.com.cremepe.jeton.dominio.Gestao;
-import br.com.cremepe.jeton.dominio.TipoAnexo;
-import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
-import br.com.cremepe.jeton.repositorio.ComprovanteRepository;
-import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
-import br.com.cremepe.jeton.repositorio.GestaoRepository;
-import br.com.cremepe.jeton.repositorio.TipoAnexoRepository;
-
+import br.com.cremepe.jeton.dominio.*;
+import br.com.cremepe.jeton.repositorio.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,9 +22,8 @@ import java.util.Optional;
 @Service
 public class AtividadeConselhalService {
 
-    // =========================================================================
-    // DEPENDÊNCIAS
-    // =========================================================================
+    private static final Logger log = LoggerFactory.getLogger(AtividadeConselhalService.class);
+
     @Autowired
     private AtividadeConselhalRepository atividadeRepository;
     @Autowired
@@ -42,18 +36,25 @@ public class AtividadeConselhalService {
     private TipoAnexoRepository tipoAnexoRepository;
     @Autowired
     private FileStorageService fileStorageService;
+    @Autowired
+    private LogJetonService logJetonService;
+    @Autowired
+    private PessoaRepository pessoaRepository;
+    @Autowired
+    private RegrasRepository regrasRepository;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA (CRUD)
     // =========================================================================
 
     @Transactional
-    public AtividadeConselhal salvarAtividade(AtividadeConselhal atividade) {
+    public AtividadeConselhal salvarAtividade(AtividadeConselhal atividade, Integer idUsuarioLogado) {
         validarAtividadeNaoFechada(atividade.getIdAtividade());
         Gestao gestao = validarGestaoEvinculo(atividade);
         validarDataDentroDoMandato(atividade.getDataHoraAtividade().toLocalDate(), gestao);
 
-        if (atividade.getIdAtividade() == null) {
+        boolean isNova = atividade.getIdAtividade() == null;
+        if (isNova) {
             atividade.setDataHoraRegistro(LocalDateTime.now());
             if (atividade.getInSituacao() == null || atividade.getInSituacao().isEmpty()) {
                 atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
@@ -64,7 +65,37 @@ public class AtividadeConselhalService {
             atividade.setQtdAtividade(1);
         }
 
-        return atividadeRepository.save(atividade);
+        AtividadeConselhal salva = atividadeRepository.save(atividade);
+
+        // Buscar nomes diretamente dos repositórios para evitar lazy loading
+        // problemático
+        String nomeConselheiro = buscarNomeConselheiro(salva.getConselheiro().getIdPessoa());
+        String nomeGestao = buscarNomeGestao(salva.getGestao().getIdGestao());
+        String nomeRegra = buscarNomeRegra(salva.getRegra().getIdRegra());
+        String dataHora = salva.getDataHoraAtividade().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        String situacaoDesc = salva.getInSituacao().equals(AtividadeConselhal.SITUACAO_PENDENTE) ? "Pendente"
+                : salva.getInSituacao().equals(AtividadeConselhal.SITUACAO_VALIDADA) ? "Validada" : "Fechada";
+
+        if (isNova) {
+            String textoLog = String.format(
+                    "Nova atividade criada: ID=%d, Conselheiro='%s' (ID=%d), Gestão='%s' (ID=%d), Regra='%s', Data/Hora=%s, Quantidade=%d, Situação=%s",
+                    salva.getIdAtividade(), nomeConselheiro, salva.getConselheiro().getIdPessoa(),
+                    nomeGestao, salva.getGestao().getIdGestao(), nomeRegra, dataHora,
+                    salva.getQtdAtividade(), situacaoDesc);
+            logJetonService.registrarLog("atividade_conselhal", idUsuarioLogado, textoLog);
+            log.info("Atividade criada: ID={}, conselheiro={}, gestão={}", salva.getIdAtividade(), nomeConselheiro,
+                    nomeGestao);
+        } else {
+            String textoLog = String.format(
+                    "Atividade editada: ID=%d, Conselheiro='%s' (ID=%d), Gestão='%s' (ID=%d), Regra='%s', Data/Hora=%s, Quantidade=%d, Situação=%s",
+                    salva.getIdAtividade(), nomeConselheiro, salva.getConselheiro().getIdPessoa(),
+                    nomeGestao, salva.getGestao().getIdGestao(), nomeRegra, dataHora,
+                    salva.getQtdAtividade(), situacaoDesc);
+            logJetonService.registrarLog("atividade_conselhal", idUsuarioLogado, textoLog);
+            log.debug("Atividade editada: ID={}", salva.getIdAtividade());
+        }
+
+        return salva;
     }
 
     @Transactional
@@ -72,7 +103,8 @@ public class AtividadeConselhalService {
             MultipartFile file,
             Integer idTipoAnexo,
             String nomeComprovanteUsuario,
-            Integer idComprovanteAntigo) {
+            Integer idComprovanteAntigo,
+            Integer idUsuarioLogado) {
 
         // 1. Se há um comprovante antigo, desvincula da atividade (mas não apaga ainda)
         if (idComprovanteAntigo != null) {
@@ -91,12 +123,15 @@ public class AtividadeConselhalService {
                     && !nomeComprovanteUsuario.equals(antigo.getNomeComprovante())) {
                 antigo.setNomeComprovante(nomeComprovanteUsuario);
                 comprovanteRepository.save(antigo);
+                logJetonService.registrarLog("comprovante", idUsuarioLogado,
+                        "Nome do comprovante alterado: ID " + antigo.getIdComprovante() + " para '"
+                                + nomeComprovanteUsuario + "'");
             }
             atividade.setComprovante(antigo);
         }
 
         // 3. Salva a atividade (com o comprovante já gerenciado)
-        salvarAtividade(atividade);
+        salvarAtividade(atividade, idUsuarioLogado);
 
         // 4. Após salvar, exclui o comprovante antigo se não for mais usado
         if (idComprovanteAntigo != null && file != null && !file.isEmpty()) {
@@ -105,8 +140,19 @@ public class AtividadeConselhalService {
                 comprovanteRepository.findById(idComprovanteAntigo).ifPresent(comp -> {
                     fileStorageService.deleteFile(comp.getNomeArquivo(), comp.getAno(), comp.getMes());
                     comprovanteRepository.delete(comp);
+                    logJetonService.registrarLog("comprovante", idUsuarioLogado,
+                            "Comprovante antigo excluído (ID " + idComprovanteAntigo + ") - sem vínculos");
                 });
             }
+        }
+
+        // Log adicional sobre o vínculo do comprovante
+        if (novoComprovante != null && atividade.getIdAtividade() != null) {
+            String textoLog = String.format(
+                    "Atividade ID %d vinculada a novo comprovante ID %d (arquivo: %s, tipo: %s)",
+                    atividade.getIdAtividade(), novoComprovante.getIdComprovante(),
+                    novoComprovante.getNomeArquivo(), novoComprovante.getTipoAnexo().getNome());
+            logJetonService.registrarLog("atividade_conselhal", idUsuarioLogado, textoLog);
         }
     }
 
@@ -125,18 +171,32 @@ public class AtividadeConselhalService {
         return comprovanteRepository.save(comp);
     }
 
-    @Transactional
-    public void validarAtividade(Integer id) {
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void validarAtividade(Integer id, Integer idUsuarioLogado) {
         AtividadeConselhal atividade = buscarAtividadeOuLancarExcecao(id);
         if (AtividadeConselhal.SITUACAO_FECHADA.equals(atividade.getInSituacao())) {
             throw new RuntimeException("Operação negada: Esta atividade está fechada em folha.");
         }
+        String situacaoAntiga = atividade.getInSituacao();
         atividade.setInSituacao(AtividadeConselhal.SITUACAO_VALIDADA);
         atividadeRepository.save(atividade);
+
+        String nomeConselheiro = buscarNomeConselheiro(atividade.getConselheiro().getIdPessoa());
+        String nomeGestao = buscarNomeGestao(atividade.getGestao().getIdGestao());
+
+        String textoLog = String.format(
+                "Atividade ID %d validada (situação alterada de %s para %s). Conselheiro: '%s' (ID=%d), Gestão: '%s' (ID=%d)",
+                id,
+                situacaoAntiga.equals(AtividadeConselhal.SITUACAO_PENDENTE) ? "Pendente" : situacaoAntiga,
+                "Validada",
+                nomeConselheiro, atividade.getConselheiro().getIdPessoa(),
+                nomeGestao, atividade.getGestao().getIdGestao());
+        logJetonService.registrarLog("atividade_conselhal", idUsuarioLogado, textoLog);
+        log.info("Atividade validada: ID={}, conselheiro={}", id, nomeConselheiro);
     }
 
-    @Transactional
-    public void desvalidarAtividade(Integer id) {
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void desvalidarAtividade(Integer id, Integer idUsuarioLogado) {
         AtividadeConselhal atividade = buscarAtividadeOuLancarExcecao(id);
         if (AtividadeConselhal.SITUACAO_FECHADA.equals(atividade.getInSituacao())) {
             throw new RuntimeException("Operação negada: Esta atividade está fechada em folha.");
@@ -145,18 +205,36 @@ public class AtividadeConselhalService {
             throw new RuntimeException(
                     "Operação negada: Esta atividade já foi computada em um processamento financeiro.");
         }
+        String situacaoAntiga = atividade.getInSituacao();
         atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
         atividadeRepository.save(atividade);
+
+        String nomeConselheiro = buscarNomeConselheiro(atividade.getConselheiro().getIdPessoa());
+        String nomeGestao = buscarNomeGestao(atividade.getGestao().getIdGestao());
+
+        String textoLog = String.format(
+                "Atividade ID %d desvalidada (situação alterada de %s para %s). Conselheiro: '%s' (ID=%d), Gestão: '%s' (ID=%d)",
+                id,
+                situacaoAntiga.equals(AtividadeConselhal.SITUACAO_VALIDADA) ? "Validada" : situacaoAntiga,
+                "Pendente",
+                nomeConselheiro, atividade.getConselheiro().getIdPessoa(),
+                nomeGestao, atividade.getGestao().getIdGestao());
+        logJetonService.registrarLog("atividade_conselhal", idUsuarioLogado, textoLog);
+        log.info("Atividade desvalidada: ID={}, conselheiro={}", id, nomeConselheiro);
     }
 
-    @Transactional
-    public void excluirAtividade(Integer id) {
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void excluirAtividade(Integer id, Integer idUsuarioLogado) {
         AtividadeConselhal atividade = buscarAtividadeOuLancarExcecao(id);
-        if (AtividadeConselhal.SITUACAO_FECHADA.equals(atividade.getInSituacao())) {
+
+        // Impede exclusão se estiver fechada OU computada
+        if (AtividadeConselhal.SITUACAO_FECHADA.equals(atividade.getInSituacao())
+                || AtividadeConselhal.COMPUTADA_SIM.equals(atividade.getInComputada())) {
             throw new RuntimeException(
-                    "Operação negada: Esta atividade está vinculada a uma folha de pagamento FECHADA e não pode ser eliminada.");
+                    "Operação negada: Esta atividade não pode ser excluída pois já foi processada (computada ou fechada).");
         }
 
+        // Coleta dados do comprovante (se houver) antes de excluir
         Integer idComprovante = null;
         Comprovante comprovanteBackup = null;
         if (atividade.getComprovante() != null) {
@@ -164,9 +242,7 @@ public class AtividadeConselhalService {
             comprovanteBackup = atividade.getComprovante();
         }
 
-        // Desvincula o comprovante (apenas na tabela atividade)
-        atividadeRepository.desvincularComprovante(id);
-
+        // 1. Exclui a atividade (isso desvincula o comprovante automaticamente)
         try {
             atividadeRepository.deleteById(id);
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
@@ -174,26 +250,52 @@ public class AtividadeConselhalService {
                     "Não é possível remover esta atividade pois ela já possui vínculos com o histórico financeiro (Pagamentos de Jeton).");
         }
 
-        // Remove o comprovante físico e o registro se não for mais usado
-        if (idComprovante != null && comprovanteBackup != null) {
-            try {
-                long outrasAtividades = atividadeRepository.countByComprovanteIdComprovante(idComprovante);
-                if (outrasAtividades == 0) {
+        // 2. Se havia um comprovante e nenhuma outra atividade o usa, exclui o
+        // comprovante
+        if (idComprovante != null) {
+            long outrasAtividades = atividadeRepository.countByComprovanteIdComprovante(idComprovante);
+            if (outrasAtividades == 0) {
+                try {
                     comprovanteRepository.deleteById(idComprovante);
                     fileStorageService.deleteFile(comprovanteBackup.getNomeArquivo(),
                             comprovanteBackup.getAno(),
                             comprovanteBackup.getMes());
+                    logJetonService.registrarLog("comprovante", idUsuarioLogado,
+                            "Comprovante ID " + idComprovante + " excluído (sem outras atividades vinculadas)");
+                } catch (Exception e) {
+                    log.warn("Falha ao excluir comprovante ID {} durante exclusão da atividade {}: {}",
+                            idComprovante, id, e.getMessage());
                 }
-            } catch (Exception e) {
-                // Falha silenciosa na limpeza do comprovante (não impede a exclusão da
-                // atividade)
             }
         }
+
+        // 3. Registra log da exclusão
+        String nomeConselheiro = buscarNomeConselheiro(atividade.getConselheiro().getIdPessoa());
+        String nomeGestao = buscarNomeGestao(atividade.getGestao().getIdGestao());
+        String nomeRegra = buscarNomeRegra(atividade.getRegra().getIdRegra());
+        String dataHora = atividade.getDataHoraAtividade().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        String textoLog = String.format(
+                "Atividade excluída: ID=%d, Conselheiro='%s' (ID=%d), Gestão='%s' (ID=%d), Regra='%s', Data/Hora=%s, Quantidade=%d, Situação=%s%s",
+                id, nomeConselheiro, atividade.getConselheiro().getIdPessoa(),
+                nomeGestao, atividade.getGestao().getIdGestao(), nomeRegra, dataHora,
+                atividade.getQtdAtividade(),
+                atividade.getInSituacao().equals(AtividadeConselhal.SITUACAO_PENDENTE) ? "Pendente"
+                        : atividade.getInSituacao().equals(AtividadeConselhal.SITUACAO_VALIDADA) ? "Validada"
+                                : "Fechada",
+                idComprovante != null
+                        ? ", Comprovante associado ID=" + idComprovante + " (" + comprovanteBackup.getNomeComprovante()
+                                + ")"
+                        : "");
+        logJetonService.registrarLog("atividade_conselhal", idUsuarioLogado, textoLog);
+        log.info("Atividade excluída: ID={}, conselheiro={}, gestão={}", id, nomeConselheiro, nomeGestao);
     }
 
     @Transactional
-    public void desvincularComprovante(Integer idAtividade) {
+    public void desvincularComprovante(Integer idAtividade, Integer idUsuarioLogado) {
         atividadeRepository.desvincularComprovante(idAtividade);
+        logJetonService.registrarLog("atividade_conselhal", idUsuarioLogado,
+                "Comprovante desvinculado da atividade ID " + idAtividade);
+        log.debug("Comprovante desvinculado da atividade {}", idAtividade);
     }
 
     // =========================================================================
@@ -217,7 +319,29 @@ public class AtividadeConselhalService {
     }
 
     // =========================================================================
-    // MÉTODOS PRIVADOS AUXILIARES
+    // MÉTODOS PRIVADOS AUXILIARES PARA LOG (BUSCA DE NOMES)
+    // =========================================================================
+
+    private String buscarNomeConselheiro(Integer idPessoa) {
+        return pessoaRepository.findById(idPessoa)
+                .map(Pessoa::getNome)
+                .orElse("Conselheiro ID " + idPessoa);
+    }
+
+    private String buscarNomeRegra(Integer idRegra) {
+        return regrasRepository.findById(idRegra)
+                .map(Regras::getNomeRegra)
+                .orElse("Regra ID " + idRegra);
+    }
+
+    private String buscarNomeGestao(Integer idGestao) {
+        return gestaoRepository.findById(idGestao)
+                .map(Gestao::getNomeGestao)
+                .orElse("Gestão ID " + idGestao);
+    }
+
+    // =========================================================================
+    // MÉTODOS PRIVADOS AUXILIARES (VALIDAÇÕES)
     // =========================================================================
 
     private void validarAtividadeNaoFechada(Integer idAtividade) {

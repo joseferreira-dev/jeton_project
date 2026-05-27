@@ -4,6 +4,7 @@ import br.com.cremepe.jeton.dominio.AtividadeConselhal;
 import br.com.cremepe.jeton.dominio.Portaria;
 import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.dominio.Resolucao;
+import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
 import br.com.cremepe.jeton.servico.AtividadeConselhalService;
 import br.com.cremepe.jeton.servico.ConselheiroService;
@@ -108,6 +109,7 @@ public class AtividadeConselhalController {
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "idTipoAnexo", required = false) Integer idTipoAnexo,
             @RequestParam(value = "nomeComprovanteUsuario", required = false) String nomeComprovanteUsuario,
+            HttpSession session,
             RedirectAttributes ra) {
 
         try {
@@ -140,11 +142,13 @@ public class AtividadeConselhalController {
                 }
             }
 
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+
             // 4. Delega toda a operação (criação do novo comprovante, desvinculação,
             // salvamento da atividade e exclusão do antigo) para o serviço, em uma única
             // transação
             atividadeService.salvarAtividadeComComprovante(
-                    atividade, file, idTipoAnexo, nomeComprovanteUsuario, idComprovanteAntigo);
+                    atividade, file, idTipoAnexo, nomeComprovanteUsuario, idComprovanteAntigo, idUsuarioLogado);
 
             ra.addFlashAttribute("sucesso", "Atividade guardada com sucesso!");
 
@@ -157,9 +161,10 @@ public class AtividadeConselhalController {
     }
 
     @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
-            atividadeService.excluirAtividade(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            atividadeService.excluirAtividade(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Atividade removida com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -170,9 +175,10 @@ public class AtividadeConselhalController {
     }
 
     @GetMapping("/validar/{id}")
-    public String validar(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String validar(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
-            atividadeService.validarAtividade(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            atividadeService.validarAtividade(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso",
                     "Atividade validada com sucesso! Ela agora está apta a receber processamento financeiro.");
         } catch (RuntimeException e) {
@@ -184,9 +190,10 @@ public class AtividadeConselhalController {
     }
 
     @GetMapping("/desvalidar/{id}")
-    public String desvalidar(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String desvalidar(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
-            atividadeService.desvalidarAtividade(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            atividadeService.desvalidarAtividade(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Atividade retornada ao status Pendente.");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -200,6 +207,11 @@ public class AtividadeConselhalController {
 
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private Integer getIdUsuarioLogado(HttpSession session) {
+        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        return usuario != null ? usuario.getIdPessoa() : null;
     }
 
     private LocalDateTime parseDataHora(String dataAtividadePura, RedirectAttributes ra) {
