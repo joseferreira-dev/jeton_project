@@ -81,7 +81,7 @@ public class JetonService {
 
         // 1. Identificar Teto da Competência
         LocalDate ultimoDiaMes = LocalDate.of(ano, mes, 1).with(java.time.temporal.TemporalAdjusters.lastDayOfMonth());
-        List<Resolucao> resolucoesVigentes = resolucaoRepository.findResoluesVigentesNaData(ultimoDiaMes);
+        List<Resolucao> resolucoesVigentes = resolucaoRepository.findResolucoesVigentesNaData(ultimoDiaMes);
 
         if (resolucoesVigentes.isEmpty()) {
             throw new RuntimeException("Nenhuma Resolução ativa cadastrada para a competência " + mes + "/" + ano);
@@ -110,7 +110,7 @@ public class JetonService {
             // Transformar novas atividades em saldos na fila
             for (AtividadeConselhal atividade : novasAtividades) {
                 List<Resolucao> resAtvList = resolucaoRepository
-                        .findResoluesVigentesNaData(atividade.getDataHoraAtividade().toLocalDate());
+                        .findResolucoesVigentesNaData(atividade.getDataHoraAtividade().toLocalDate());
                 Resolucao resolucaoAtividade = resAtvList.isEmpty() ? resolucaoTeto : resAtvList.get(0);
 
                 PontosSaldo novoSaldo = new PontosSaldo();

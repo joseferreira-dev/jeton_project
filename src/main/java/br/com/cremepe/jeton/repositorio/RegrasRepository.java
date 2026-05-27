@@ -94,4 +94,8 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
             "AND :dataAtividade BETWEEN r.portaria.dtInicioVigencia AND COALESCE(r.portaria.dtFimVigencia, '2099-12-31')")
     List<br.com.cremepe.jeton.dominio.Portaria> findPortariaPorData(
             @Param("dataAtividade") java.time.LocalDate dataAtividade);
+
+    @Modifying
+    @Query("UPDATE Regras r SET r.inRevogado = 'N' WHERE r.resolucao.idResolucao = :idResolucao")
+    void restaurarRegrasPorResolucao(@Param("idResolucao") Integer idResolucao);
 }

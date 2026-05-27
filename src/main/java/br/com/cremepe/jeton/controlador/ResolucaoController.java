@@ -17,6 +17,9 @@ public class ResolucaoController {
     @Autowired
     private ResolucaoService resolucaoService;
 
+    // =========================================================================
+    // LISTAGEM
+    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -27,25 +30,25 @@ public class ResolucaoController {
             @RequestParam(value = "dir", required = false, defaultValue = "desc") String dir,
             Model model, HttpSession session) {
 
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
 
-        Page<Resolucao> paginaResolucoes = resolucaoService.listarComPaginacaoEPesquisa(termo, situacao, page, size,
-                sort, dir);
-
-        model.addAttribute("paginaResolucoes", paginaResolucoes);
+        Page<Resolucao> pagina = resolucaoService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort, dir);
+        model.addAttribute("paginaResolucoes", pagina);
         model.addAttribute("termo", termo);
         model.addAttribute("situacao", situacao);
         model.addAttribute("size", size);
         model.addAttribute("sort", sort);
         model.addAttribute("dir", dir);
-
         return "resolucao/lista";
     }
 
+    // =========================================================================
+    // FORMULÁRIOS
+    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("resolucao", new Resolucao());
         return "resolucao/formulario";
@@ -53,47 +56,67 @@ public class ResolucaoController {
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
-        model.addAttribute("resolucao", resolucaoService.buscarPorId(id).orElse(new Resolucao()));
+        Resolucao resolucao = resolucaoService.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Resolução não encontrada"));
+        model.addAttribute("resolucao", resolucao);
         return "resolucao/formulario";
     }
 
+    // =========================================================================
+    // SALVAR
+    // =========================================================================
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("resolucao") Resolucao resolucao, RedirectAttributes redirectAttributes) {
+    public String salvar(@ModelAttribute("resolucao") Resolucao resolucao, RedirectAttributes ra) {
         try {
             resolucaoService.salvar(resolucao);
-            redirectAttributes.addFlashAttribute("sucesso", "Resolução salva com sucesso!");
+            ra.addFlashAttribute("sucesso", "Resolução salva com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao salvar Resolução.");
+            ra.addFlashAttribute("erro", "Erro inesperado ao salvar resolução.");
         }
         return "redirect:/resolucoes";
     }
 
-    @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+    // =========================================================================
+    // REVOGAÇÃO (SOFT DELETE)
+    // =========================================================================
+    @GetMapping("/revogar/{id}")
+    public String revogar(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
-            resolucaoService.revogar(id); // Usa o novo método
-            redirectAttributes.addFlashAttribute("sucesso", "Resolução revogada com sucesso!");
+            resolucaoService.revogar(id);
+            ra.addFlashAttribute("sucesso", "Resolução revogada com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao revogar Resolução.");
+            ra.addFlashAttribute("erro", "Erro ao revogar resolução.");
         }
         return "redirect:/resolucoes";
     }
 
+    // =========================================================================
+    // RESTAURAR
+    // =========================================================================
     @GetMapping("/restaurar/{id}")
-    public String restaurar(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+    public String restaurar(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
             resolucaoService.restaurar(id);
-            redirectAttributes.addFlashAttribute("sucesso", "Resolução restaurada (Em Vigor) com sucesso!");
+            ra.addFlashAttribute("sucesso", "Resolução restaurada (em vigor) com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao restaurar Resolução.");
+            ra.addFlashAttribute("erro", "Erro ao restaurar resolução.");
         }
         return "redirect:/resolucoes";
     }
 
+    // =========================================================================
+    // EXCLUSÃO FÍSICA (PERMANENTE)
+    // =========================================================================
     @GetMapping("/deletar/{id}")
-    public String deletar(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String deletarFisicamente(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
             resolucaoService.excluirFisicamente(id);
             ra.addFlashAttribute("sucesso", "Resolução excluída definitivamente.");
@@ -103,5 +126,12 @@ public class ResolucaoController {
             ra.addFlashAttribute("erro", "Erro inesperado ao excluir resolução.");
         }
         return "redirect:/resolucoes";
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES
+    // =========================================================================
+    private boolean naoAutenticado(HttpSession session) {
+        return session.getAttribute("usuarioLogado") == null;
     }
 }
