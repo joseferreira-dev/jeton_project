@@ -3,23 +3,152 @@ package br.com.cremepe.jeton.servico;
 import br.com.cremepe.jeton.dominio.Portaria;
 import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.dominio.Resolucao;
-import br.com.cremepe.jeton.repositorio.RegrasRepository;
 import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
+import br.com.cremepe.jeton.repositorio.PortariaRepository;
+import br.com.cremepe.jeton.repositorio.RegrasRepository;
+import br.com.cremepe.jeton.repositorio.ResolucaoRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class RegrasService {
 
+    private static final Logger log = LoggerFactory.getLogger(RegrasService.class);
+
     @Autowired
     private RegrasRepository repository;
     @Autowired
+    private ResolucaoRepository resolucaoRepository;
+    @Autowired
+    private PortariaRepository portariaRepository;
+    @Autowired
     private AtividadeConselhalRepository atividadeRepository;
+
+    // =========================================================================
+    // OPERAÇÕES DE ESCRITA (CRUD)
+    // =========================================================================
+
+    @Transactional
+    public Regras salvar(Regras regra) {
+        // 1. Carrega a Resolução gerenciada (managed) do banco
+        Resolucao resolucaoManaged = carregarResolucaoGerenciada(regra.getResolucao());
+        regra.setResolucao(resolucaoManaged);
+
+        // 2. Carrega a Portaria gerenciada (se existir)
+        if (regra.getPortaria() != null && regra.getPortaria().getIdPortaria() != null) {
+            Portaria portariaManaged = carregarPortariaGerenciada(regra.getPortaria().getIdPortaria());
+            regra.setPortaria(portariaManaged);
+        } else {
+            regra.setPortaria(null);
+        }
+
+        // 3. Validações
+        validarPortaria(regra);
+        validarDuplicidade(regra);
+        normalizarFlags(regra);
+
+        // 4. Salva a regra
+        Regras salva = repository.save(regra);
+        log.info("Regra salva: id={}, nome={}", salva.getIdRegra(), salva.getNomeRegra());
+        return salva;
+    }
+
+    private Resolucao carregarResolucaoGerenciada(Resolucao resolucao) {
+        if (resolucao == null || resolucao.getIdResolucao() == null) {
+            throw new RuntimeException("A resolução é obrigatória. Selecione uma resolução válida.");
+        }
+        return resolucaoRepository.findById(resolucao.getIdResolucao())
+                .orElseThrow(
+                        () -> new RuntimeException("Resolução não encontrada com ID: " + resolucao.getIdResolucao()));
+    }
+
+    private Portaria carregarPortariaGerenciada(Integer idPortaria) {
+        if (idPortaria == null)
+            return null;
+        return portariaRepository.findById(idPortaria)
+                .orElseThrow(() -> new RuntimeException("Portaria não encontrada com ID: " + idPortaria));
+    }
+
+    private void validarPortaria(Regras regra) {
+        if (regra.getPortaria() != null && regra.getPortaria().isRevogado()) {
+            throw new RuntimeException("Não é possível vincular a regra a uma portaria revogada.");
+        }
+    }
+
+    private void validarDuplicidade(Regras regra) {
+        Integer idAtual = regra.getIdRegra() != null ? regra.getIdRegra() : 0;
+        boolean existe = repository.existsByNomeRegraAndIdRegraNot(regra.getNomeRegra(), idAtual);
+        if (existe) {
+            throw new RuntimeException("Já existe uma regra cadastrada com o nome '" + regra.getNomeRegra() + "'.");
+        }
+    }
+
+    private void normalizarFlags(Regras regra) {
+        if (regra.getInRevogado() == null || regra.getInRevogado().trim().isEmpty()) {
+            regra.setInRevogado(Regras.REVOGADO_NAO);
+        }
+        if (regra.getInJudicante() == null || regra.getInJudicante().trim().isEmpty()) {
+            regra.setInJudicante(Regras.JUDICANTE_NAO);
+        }
+        if (regra.getPontos() == null) {
+            regra.setPontos(0);
+        }
+        if (regra.getPontosLimitesTurno() == null) {
+            regra.setPontosLimitesTurno(0);
+        }
+    }
+
+    @Transactional
+    public void revogar(Integer id) {
+        Regras regra = buscarOuFalhar(id);
+        if (regra.isRevogado()) {
+            throw new RuntimeException("A regra já está revogada.");
+        }
+        regra.setInRevogado(Regras.REVOGADO_SIM);
+        repository.save(regra);
+        log.info("Regra revogada: id={}, nome={}", id, regra.getNomeRegra());
+    }
+
+    @Transactional
+    public void restaurar(Integer id) {
+        Regras regra = buscarOuFalhar(id);
+        if (!regra.isRevogado()) {
+            throw new RuntimeException("A regra já está em vigor.");
+        }
+        regra.setInRevogado(Regras.REVOGADO_NAO);
+        repository.save(regra);
+        log.info("Regra restaurada: id={}, nome={}", id, regra.getNomeRegra());
+    }
+
+    @Transactional
+    public void excluirFisicamente(Integer id) {
+        Regras regra = buscarOuFalhar(id);
+        if (!regra.isRevogado()) {
+            throw new RuntimeException("Para excluir fisicamente, a regra deve estar revogada primeiro.");
+        }
+        long countAtividades = atividadeRepository.countByRegraIdRegra(id);
+        if (countAtividades > 0) {
+            throw new RuntimeException("Não é possível excluir a regra pois existem " + countAtividades +
+                    " atividade(s) vinculada(s) a ela. Revogue-a ou use 'Revogar' em vez disso.");
+        }
+        repository.deleteById(id);
+        log.info("Regra excluída fisicamente: id={}", id);
+    }
+
+    // =========================================================================
+    // OPERAÇÕES DE LEITURA (CONSULTAS)
+    // =========================================================================
 
     @Transactional(readOnly = true)
     public List<Regras> listarTodos() {
@@ -31,83 +160,23 @@ public class RegrasService {
         return repository.findById(id);
     }
 
-    @Transactional
-    public Regras salvar(Regras regra) {
-        if (regra.getResolucao() == null || regra.getResolucao().getIdResolucao() == null) {
-            throw new RuntimeException(
-                    "Atenção: A Resolução é um campo obrigatório. Selecione uma resolução para continuar.");
-        }
-
-        // Validações de duplicidade
-        validarDuplicidade(regra);
-
-        // Validação de Regra de Negócio: Deve pertencer a pelo menos uma normativa
-        if (regra.getResolucao() == null) {
-            throw new RuntimeException(
-                    "A regra deve estar vinculada obrigatoriamente a uma Resolução ou a uma Portaria.");
-        }
-
-        // Limpeza de referência caso Portaria não seja selecionada
-        if (regra.getPortaria() != null
-                && (regra.getPortaria().getIdPortaria() == null || regra.getPortaria().getIdPortaria() == 0)) {
-            regra.setPortaria(null);
-        }
-
-        if (regra.getInRevogado() == null || regra.getInRevogado().trim().isEmpty()) {
-            regra.setInRevogado("N");
-        }
-
-        try {
-            return repository.save(regra);
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar no banco de dados: verifique se os dados da regra são válidos.");
-        }
+    @Transactional(readOnly = true)
+    public Regras buscarOuFalhar(Integer id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Regra não encontrada com ID: " + id));
     }
 
-    private void validarDuplicidade(Regras regra) {
-        List<Regras> existentes;
-
-        // Procura se já existe uma regra com o mesmo nome na mesma normativa
-        if (regra.getResolucao() != null) {
-            existentes = repository.findByNomeRegraAndResolucaoIdResolucao(regra.getNomeRegra(),
-                    regra.getResolucao().getIdResolucao());
-        } else {
-            existentes = repository.findByNomeRegraAndPortariaIdPortaria(regra.getNomeRegra(),
-                    regra.getPortaria().getIdPortaria());
-        }
-
-        // Se estiver editando, ignoramos a própria regra na contagem
-        for (Regras r : existentes) {
-            if (!r.getIdRegra().equals(regra.getIdRegra())) {
-                throw new RuntimeException("Já existe uma regra com este nome cadastrada nesta normativa!");
-            }
-        }
+    @Transactional(readOnly = true)
+    public Page<Regras> listarComPaginacaoEPesquisa(String termo, String situacao, String judicante,
+            int page, int size, String sortField, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
+        Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
+        return repository.pesquisarPaginado(termo, situacao, judicante, pageable);
     }
 
-    @Transactional
-    public void revogar(Integer id) {
-        repository.findById(id).ifPresent(r -> {
-            r.setInRevogado("S");
-            repository.save(r);
-        });
-    }
-
-    @Transactional
-    public void restaurar(Integer id) {
-        repository.findById(id).ifPresent(r -> {
-            r.setInRevogado("N");
-            repository.save(r);
-        });
-    }
-
-    @Transactional
-    public void excluirFisicamente(Integer id) {
-        if (atividadeRepository.countByRegraIdRegra(id) > 0) {
-            throw new RuntimeException(
-                    "Não é possível excluir: existem atividades de conselheiros lançadas com esta Regra. Use a opção 'Revogar'.");
-        }
-        repository.deleteById(id);
-    }
+    // =========================================================================
+    // MÉTODOS AUXILIARES UTILIZADOS POR OUTROS SERVIÇOS
+    // =========================================================================
 
     @Transactional(readOnly = true)
     public List<Resolucao> listarResolucoesComRegras() {
@@ -134,27 +203,20 @@ public class RegrasService {
         return repository.findRegrasExatas(idResolucao, idPortaria);
     }
 
+    @Transactional(readOnly = true)
     public List<Regras> listarRegrasPorNormativasInclusiveRevogadas(Integer idResolucao, Integer idPortaria) {
         return repository.findRegrasPorNormativasInclusiveRevogadas(idResolucao, idPortaria);
     }
 
-    public Optional<br.com.cremepe.jeton.dominio.Resolucao> buscarResolucaoPorData(java.time.LocalDate data) {
-        return repository.findResolucaoPorData(data).stream().findFirst();
-    }
-
-    public Optional<br.com.cremepe.jeton.dominio.Portaria> buscarPortariaPorData(java.time.LocalDate data) {
-        return repository.findPortariaPorData(data).stream().findFirst();
+    @Transactional(readOnly = true)
+    public Optional<Resolucao> buscarResolucaoPorData(LocalDate data) {
+        List<Resolucao> lista = repository.findResolucaoPorData(data);
+        return lista.isEmpty() ? Optional.empty() : Optional.of(lista.get(0));
     }
 
     @Transactional(readOnly = true)
-    public Page<Regras> listarComPaginacaoEPesquisa(String termo, String situacao, String judicante, int page, int size,
-            String sortField, String sortDir) {
-        org.springframework.data.domain.Sort sort = sortDir.equalsIgnoreCase("desc")
-                ? org.springframework.data.domain.Sort.by(sortField).descending()
-                : org.springframework.data.domain.Sort.by(sortField).ascending();
-
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
-                sort);
-        return repository.pesquisarPaginado(termo, situacao, judicante, pageable);
+    public Optional<Portaria> buscarPortariaPorData(LocalDate data) {
+        List<Portaria> lista = repository.findPortariaPorData(data);
+        return lista.isEmpty() ? Optional.empty() : Optional.of(lista.get(0));
     }
 }

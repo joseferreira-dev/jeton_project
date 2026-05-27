@@ -1,14 +1,7 @@
 package br.com.cremepe.jeton.dominio;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,48 +18,121 @@ public class Regras implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    // =========================================================================
+    // CONSTANTES
+    // =========================================================================
+    public static final String REVOGADO_SIM = "S";
+    public static final String REVOGADO_NAO = "N";
+
+    public static final String JUDICANTE_SIM = "S";
+    public static final String JUDICANTE_NAO = "N";
+
+    // =========================================================================
+    // CAMPOS
+    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idRegra")
     private Integer idRegra;
 
-    @ManyToOne(optional = false)
+    @NotNull(message = "A resolução é obrigatória")
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "idResolucao", nullable = false)
     private Resolucao resolucao;
 
-    @ManyToOne
-    @JoinColumn(name = "idPortaria", nullable = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "idPortaria")
     private Portaria portaria;
 
-    // Mapeamento inverso do Muitos-para-Muitos
     @ManyToMany(mappedBy = "regrasAgrupadas")
     private List<RegrasConjuntas> gruposDeRegras = new ArrayList<>();
 
+    @NotNull(message = "O nome da regra é obrigatório")
+    @Size(min = 3, max = 70, message = "O nome deve ter entre 3 e 70 caracteres")
     @Column(name = "nomeRegra", length = 70, nullable = false, unique = true)
     private String nomeRegra;
 
-    // Campo de texto longo opcional
     @Column(name = "descricao", columnDefinition = "text")
     private String descricao;
 
+    @NotNull(message = "A pontuação é obrigatória")
+    @Positive(message = "A pontuação deve ser maior que zero")
     @Column(name = "pontos", nullable = false)
     private Integer pontos = 0;
 
-    @Column(name = "inRevogado", length = 1, nullable = false)
-    private String inRevogado;
+    @NotNull
+    @Pattern(regexp = "[SN]", message = "inRevogado deve ser S ou N")
+    @Column(name = "inRevogado", nullable = false, length = 1)
+    private String inRevogado = REVOGADO_NAO;
 
+    @NotNull(message = "O limite de pontos por turno é obrigatório")
+    @PositiveOrZero(message = "O limite de pontos por turno deve ser zero ou positivo")
     @Column(name = "pontosLimitesTurno", nullable = false)
-    private Integer pontosLimitesTurno;
+    private Integer pontosLimitesTurno = 0;
 
-    @Column(name = "inJudicante", length = 1, nullable = false)
-    private String inJudicante;
+    @NotNull
+    @Pattern(regexp = "[SN]", message = "inJudicante deve ser S ou N")
+    @Column(name = "inJudicante", nullable = false, length = 1)
+    private String inJudicante = JUDICANTE_NAO;
 
+    // =========================================================================
+    // CONSTRUTORES
+    // =========================================================================
     public Regras() {
     }
 
-    // ==========================================
+    // =========================================================================
+    // MÉTODOS DE CONVENIÊNCIA
+    // =========================================================================
+    public boolean isRevogado() {
+        return REVOGADO_SIM.equals(inRevogado);
+    }
+
+    public boolean isEmVigor() {
+        return REVOGADO_NAO.equals(inRevogado);
+    }
+
+    public boolean isJudicante() {
+        return JUDICANTE_SIM.equals(inJudicante);
+    }
+
+    public boolean isNaoJudicante() {
+        return JUDICANTE_NAO.equals(inJudicante);
+    }
+
+    // =========================================================================
+    // JPA LIFECYCLE – NORMALIZAÇÃO
+    // =========================================================================
+    @PrePersist
+    @PreUpdate
+    protected void normalize() {
+        if (nomeRegra != null) {
+            nomeRegra = nomeRegra.trim();
+        }
+        if (inRevogado != null) {
+            inRevogado = inRevogado.toUpperCase();
+        }
+        if (inJudicante != null) {
+            inJudicante = inJudicante.toUpperCase();
+        }
+        // Garante valores padrão
+        if (!REVOGADO_SIM.equals(inRevogado) && !REVOGADO_NAO.equals(inRevogado)) {
+            inRevogado = REVOGADO_NAO;
+        }
+        if (!JUDICANTE_SIM.equals(inJudicante) && !JUDICANTE_NAO.equals(inJudicante)) {
+            inJudicante = JUDICANTE_NAO;
+        }
+        if (pontosLimitesTurno == null) {
+            pontosLimitesTurno = 0;
+        }
+        if (pontos == null) {
+            pontos = 0;
+        }
+    }
+
+    // =========================================================================
     // GETTERS E SETTERS
-    // ==========================================
+    // =========================================================================
 
     public Integer getIdRegra() {
         return idRegra;
@@ -140,32 +206,21 @@ public class Regras implements Serializable {
         this.inJudicante = inJudicante;
     }
 
-    // ==========================================
+    // =========================================================================
     // MÉTODOS PARA O RELACIONAMENTO BIDIRECIONAL
-    // ==========================================
+    // =========================================================================
 
-    /**
-     * Retorna a lista de grupos de regras conjuntas aos quais esta regra pertence.
-     * Útil para validar limites cumulativos na camada de serviço.
-     */
     public List<RegrasConjuntas> getGruposDeRegras() {
         return gruposDeRegras;
     }
 
-    /**
-     * Define a lista de grupos de regras conjuntas.
-     * 
-     * @param gruposDeRegras Nova lista de associações.
-     */
     public void setGruposDeRegras(List<RegrasConjuntas> gruposDeRegras) {
         this.gruposDeRegras = gruposDeRegras;
     }
 
-    // -------------------------------------------------------------------------
-    // DICA DE ARQUITETURA: Métodos Utilitários (Helper Methods)
-    // -------------------------------------------------------------------------
-    // Em relacionamentos Muitos-para-Muitos, é recomendável ter métodos para
-    // garantir a consistência de ambos os lados da associação em memória.
+    // =========================================================================
+    // MÉTODOS UTILITÁRIOS
+    // =========================================================================
 
     public void adicionarAoGrupo(RegrasConjuntas grupo) {
         this.gruposDeRegras.add(grupo);
@@ -178,6 +233,10 @@ public class Regras implements Serializable {
         this.gruposDeRegras.remove(grupo);
         grupo.getRegrasAgrupadas().remove(this);
     }
+
+    // =========================================================================
+    // EQUALS & HASHCODE
+    // =========================================================================
 
     @Override
     public boolean equals(Object o) {
@@ -192,5 +251,20 @@ public class Regras implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(idRegra);
+    }
+
+    // =========================================================================
+    // TO_STRING
+    // =========================================================================
+
+    @Override
+    public String toString() {
+        return "Regras{" +
+                "id=" + idRegra +
+                ", nome='" + nomeRegra + '\'' +
+                ", pontos=" + pontos +
+                ", revogado=" + inRevogado +
+                ", judicante=" + inJudicante +
+                '}';
     }
 }

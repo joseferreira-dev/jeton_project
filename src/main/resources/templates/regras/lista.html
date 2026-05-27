@@ -135,7 +135,7 @@
                                         data-cor="btn-danger" data-icone="fa-solid fa-trash-can"><i
                                             class="fa-solid fa-trash-can"></i></a>
 
-                                    <a th:if="${r.inRevogado == 'N'}" th:href="@{'/regras/excluir/' + ${r.idRegra}}"
+                                    <a th:if="${r.inRevogado == 'N'}" th:href="@{'/regras/revogar/' + ${r.idRegra}}"
                                         class="btn btn-sm btn-outline-danger btn-confirm" title="Revogar Regra"
                                         data-mensagem="Tem certeza que deseja <b>REVOGAR</b> esta regra?<br><small class='text-muted'>Ela deixará de aparecer para novos lançamentos de atividades conselhais.</small>"
                                         data-cor="btn-danger" data-icone="fa-solid fa-ban"><i
