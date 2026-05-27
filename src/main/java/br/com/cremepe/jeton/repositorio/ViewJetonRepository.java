@@ -9,7 +9,5 @@ import java.util.List;
 @Repository
 public interface ViewJetonRepository extends JpaRepository<ViewJeton, Integer> {
 
-    // Lista consolidada financeira formatada para o ecrã (ex: "Janeiro", "R$
-    // 1.500,00")
     List<ViewJeton> findByCpfAndAnoOrderByMesDesc(String cpf, Integer ano);
 }

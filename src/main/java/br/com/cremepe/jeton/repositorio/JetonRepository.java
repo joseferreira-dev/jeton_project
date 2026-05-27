@@ -12,19 +12,14 @@ import java.util.Optional;
 @Repository
 public interface JetonRepository extends JpaRepository<Jeton, Integer> {
 
-    // Encontra o pagamento específico de um Conselheiro num mês/ano para validação
     Optional<Jeton> findByConselheiroIdPessoaAndMesAndAno(Integer idPessoa, Integer mes, Integer ano);
 
-    // Lista o histórico financeiro de um Conselheiro num determinado ano, ordenado
-    // do mais recente para o mais antigo
     List<Jeton> findByConselheiroIdPessoaAndAnoOrderByMesDesc(Integer idPessoa, Integer ano);
 
-    // Lista todos os Jetons processados numa determinada gestão
     List<Jeton> findByGestaoIdGestao(Integer idGestao);
 
     @Query("SELECT j FROM Jeton j WHERE j.gestao.idGestao = :idGestao AND j.mes = :mes AND j.ano = :ano")
-    List<Jeton> findByGestaoIdGestaoAndMesAndAno(
-            @Param("idGestao") Integer idGestao,
+    List<Jeton> findByGestaoIdGestaoAndMesAndAno(@Param("idGestao") Integer idGestao,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
 
@@ -33,8 +28,7 @@ public interface JetonRepository extends JpaRepository<Jeton, Integer> {
             "AND (:mes IS NULL OR j.mes = :mes) " +
             "AND (:ano IS NULL OR j.ano = :ano) " +
             "AND (:termo IS NULL OR LOWER(j.conselheiro.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')))")
-    List<Jeton> pesquisarHistorico(
-            @Param("idGestao") Integer idGestao,
+    List<Jeton> pesquisarHistorico(@Param("idGestao") Integer idGestao,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano,
             @Param("termo") String termo);

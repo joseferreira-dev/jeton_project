@@ -27,10 +27,9 @@ public class JetonSaldoId implements Serializable {
         this.idPontosSaldo = idPontosSaldo;
     }
 
-    // ==========================================
+    // =========================================================================
     // GETTERS E SETTERS
-    // ==========================================
-
+    // =========================================================================
     public Integer getIdJeton() {
         return idJeton;
     }
@@ -47,7 +46,9 @@ public class JetonSaldoId implements Serializable {
         this.idPontosSaldo = idPontosSaldo;
     }
 
-    // equals e hashCode rigorosos (obrigatório para chaves compostas)
+    // =========================================================================
+    // EQUALS & HASHCODE (baseado na chave composta)
+    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)

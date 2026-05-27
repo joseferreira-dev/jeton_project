@@ -1,15 +1,9 @@
 package br.com.cremepe.jeton.dominio;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -26,53 +20,103 @@ public class Jeton implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    // =========================================================================
+    // CONSTANTES PARA inSituacao (valores do banco)
+    // =========================================================================
+    public static final String SITUACAO_ATIVO = "A";
+    public static final String SITUACAO_PAGO = "P";
+    public static final String SITUACAO_EXCLUIDO = "E";
+
+    // =========================================================================
+    // CAMPOS
+    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idJeton")
     private Integer idJeton;
 
-    @ManyToOne
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idGestao", nullable = false)
     private Gestao gestao;
 
-    /**
-     * Relacionamento com o Conselheiro.
-     * Na base de dados a coluna é idPessoa, que é a PK de Conselheiro.
-     */
-    @ManyToOne
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idPessoa", nullable = false)
     private Conselheiro conselheiro;
 
+    @NotNull
+    @Positive(message = "Mês deve ser entre 1 e 12")
     @Column(name = "mes", nullable = false)
     private Integer mes;
 
+    @NotNull
+    @Positive(message = "Ano deve ser positivo")
     @Column(name = "ano", nullable = false)
     private Integer ano;
 
+    @NotNull
+    @PositiveOrZero(message = "Total de Jetons não pode ser negativo")
     @Column(name = "totalJeton", nullable = false)
     private Integer totalJeton;
 
+    @NotNull
+    @PositiveOrZero(message = "Valor não pode ser negativo")
     @Column(name = "valor", precision = 10, scale = 2, nullable = false)
     private BigDecimal valor;
 
+    @NotNull
     @Column(name = "inSituacao", length = 1, nullable = false)
     private String inSituacao;
 
-    /**
-     * Mapeamento da tabela de ligação 'jeton_atividade'.
-     * Associa este pagamento às atividades específicas que o geraram.
-     */
     @ManyToMany
     @JoinTable(name = "jeton_atividade", joinColumns = @JoinColumn(name = "idJeton"), inverseJoinColumns = @JoinColumn(name = "idAtividade"))
     private List<AtividadeConselhal> atividades = new ArrayList<>();
 
+    // =========================================================================
+    // CONSTRUTORES
+    // =========================================================================
     public Jeton() {
     }
 
-    // ==========================================
-    // GETTERS E SETTERS
-    // ==========================================
+    // =========================================================================
+    // MÉTODOS DE CONVENIÊNCIA
+    // =========================================================================
+    public boolean isAtivo() {
+        return SITUACAO_ATIVO.equals(inSituacao);
+    }
 
+    public boolean isPago() {
+        return SITUACAO_PAGO.equals(inSituacao);
+    }
+
+    public boolean isExcluido() {
+        return SITUACAO_EXCLUIDO.equals(inSituacao);
+    }
+
+    // =========================================================================
+    // JPA LIFECYCLE – NORMALIZAÇÃO
+    // =========================================================================
+    @PrePersist
+    @PreUpdate
+    protected void normalize() {
+        if (inSituacao != null) {
+            inSituacao = inSituacao.toUpperCase();
+        }
+        if (!SITUACAO_ATIVO.equals(inSituacao) &&
+                !SITUACAO_PAGO.equals(inSituacao) &&
+                !SITUACAO_EXCLUIDO.equals(inSituacao)) {
+            inSituacao = SITUACAO_ATIVO;
+        }
+        if (totalJeton == null)
+            totalJeton = 0;
+        if (valor == null)
+            valor = BigDecimal.ZERO;
+    }
+
+    // =========================================================================
+    // GETTERS E SETTERS
+    // =========================================================================
     public Integer getIdJeton() {
         return idJeton;
     }
@@ -145,6 +189,9 @@ public class Jeton implements Serializable {
         this.atividades = atividades;
     }
 
+    // =========================================================================
+    // EQUALS & HASHCODE
+    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -158,5 +205,20 @@ public class Jeton implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(idJeton);
+    }
+
+    // =========================================================================
+    // TO_STRING
+    // =========================================================================
+    @Override
+    public String toString() {
+        return "Jeton{" +
+                "id=" + idJeton +
+                ", mes=" + mes +
+                ", ano=" + ano +
+                ", totalJeton=" + totalJeton +
+                ", valor=" + valor +
+                ", situacao=" + inSituacao +
+                '}';
     }
 }
