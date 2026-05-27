@@ -37,6 +37,8 @@ public class AtividadeConselhalService {
     @Autowired
     private FileStorageService fileStorageService;
     @Autowired
+    private ComprovanteService comprovanteService;
+    @Autowired
     private LogJetonService logJetonService;
     @Autowired
     private PessoaRepository pessoaRepository;
@@ -114,7 +116,7 @@ public class AtividadeConselhalService {
         // 2. Se um novo arquivo foi enviado, cria e salva o novo comprovante
         Comprovante novoComprovante = null;
         if (file != null && !file.isEmpty()) {
-            novoComprovante = criarComprovante(file, idTipoAnexo, nomeComprovanteUsuario);
+            novoComprovante = criarComprovante(file, idTipoAnexo, nomeComprovanteUsuario, idUsuarioLogado);
             atividade.setComprovante(novoComprovante);
         } else if (atividade.getIdAtividade() != null && idComprovanteAntigo != null) {
             // Mantém o antigo, mas atualiza nome se necessário
@@ -156,7 +158,8 @@ public class AtividadeConselhalService {
         }
     }
 
-    private Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo, String nomeComprovanteUsuario) {
+    private Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo,
+            String nomeComprovanteUsuario, Integer idUsuarioLogado) {
         LocalDate hoje = LocalDate.now();
         String nomeArquivo = fileStorageService.storeFileToFtp(file, hoje.getYear(), hoje.getMonthValue());
         TipoAnexo tipo = tipoAnexoRepository.findById(idTipoAnexo)
@@ -168,7 +171,7 @@ public class AtividadeConselhalService {
         comp.setContentType(file.getContentType());
         comp.setMes(hoje.getMonthValue());
         comp.setAno(hoje.getYear());
-        return comprovanteRepository.save(comp);
+        return comprovanteService.guardarComprovante(file, idTipoAnexo, nomeComprovanteUsuario, idUsuarioLogado);
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
