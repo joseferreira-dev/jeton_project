@@ -24,6 +24,9 @@ public class UsuarioAcessoId implements Serializable {
         this.idNivel = idNivel;
     }
 
+    // =========================================================================
+    // GETTERS E SETTERS
+    // =========================================================================
     public Integer getIdUsuarioPessoa() {
         return idUsuarioPessoa;
     }
@@ -40,6 +43,9 @@ public class UsuarioAcessoId implements Serializable {
         this.idNivel = idNivel;
     }
 
+    // =========================================================================
+    // EQUALS & HASHCODE
+    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -54,5 +60,16 @@ public class UsuarioAcessoId implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(idUsuarioPessoa, idNivel);
+    }
+
+    // =========================================================================
+    // TO_STRING
+    // =========================================================================
+    @Override
+    public String toString() {
+        return "UsuarioAcessoId{" +
+                "usuario=" + idUsuarioPessoa +
+                ", nivel='" + idNivel + '\'' +
+                '}';
     }
 }
