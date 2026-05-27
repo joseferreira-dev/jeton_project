@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -16,15 +16,14 @@ public interface ViewAtividadeConselhalRepository extends JpaRepository<ViewAtiv
 
     List<ViewAtividadeConselhal> findByIdGestao(Integer idGestao);
 
-    // NOVA QUERY: Permite filtros opcionais de Conselheiro, Data Início e Data Fim
     @Query("SELECT v FROM ViewAtividadeConselhal v WHERE v.idGestao = :idGestao " +
             "AND (:idConselheiro IS NULL OR v.idPessoa = :idConselheiro) " +
-            "AND (CAST(:dataInicio AS date) IS NULL OR CAST(v.dataHoraAtividade AS date) >= :dataInicio) " +
-            "AND (CAST(:dataFim AS date) IS NULL OR CAST(v.dataHoraAtividade AS date) <= :dataFim) " +
+            "AND (:inicio IS NULL OR v.dataHoraAtividade >= :inicio) " +
+            "AND (:fim IS NULL OR v.dataHoraAtividade <= :fim) " +
             "ORDER BY v.dataHoraAtividade DESC")
-    List<ViewAtividadeConselhal> buscarParaRelatorioDynamic(
+    List<ViewAtividadeConselhal> buscarParaRelatorio(
             @Param("idGestao") Integer idGestao,
             @Param("idConselheiro") Integer idConselheiro,
-            @Param("dataInicio") LocalDate dataInicio,
-            @Param("dataFim") LocalDate dataFim);
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim);
 }
