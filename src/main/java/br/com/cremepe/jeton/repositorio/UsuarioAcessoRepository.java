@@ -14,4 +14,6 @@ public interface UsuarioAcessoRepository extends JpaRepository<UsuarioAcesso, Us
     // específico automaticamente
     List<UsuarioAcesso> findByIdIdUsuarioPessoa(Integer idUsuarioPessoa);
 
+    boolean existsByIdIdNivel(String idNivel);
+
 }

@@ -7,8 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface NivelAcessoRepository extends JpaRepository<NivelAcesso, String> { // Note o 'String' como tipo da PK
+public interface NivelAcessoRepository extends JpaRepository<NivelAcesso, String> {
 
-    // Busca exata pelo nome do nível (ex: "Administrador")
     Optional<NivelAcesso> findByNomeNivel(String nomeNivel);
 }
