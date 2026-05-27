@@ -4,6 +4,7 @@ import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Gestao;
 import br.com.cremepe.jeton.dominio.Jeton;
 import br.com.cremepe.jeton.dominio.PontosSaldo;
+import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.repositorio.JetonRepository;
 import br.com.cremepe.jeton.repositorio.PontosSaldoRepository;
 import br.com.cremepe.jeton.servico.ConselheiroService;
@@ -17,12 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Controller
 @RequestMapping("/jeton")
@@ -101,13 +97,15 @@ public class JetonController {
     public String processar(@RequestParam("idGestao") Integer idGestao,
             @RequestParam("mes") Integer mes,
             @RequestParam("ano") Integer ano,
+            HttpSession session,
             RedirectAttributes ra) {
         try {
             Optional<Gestao> gestaoOpt = gestaoService.buscarPorId(idGestao);
             if (gestaoOpt.isEmpty()) {
                 throw new RuntimeException("Gestão não encontrada.");
             }
-            jetonService.processarFechamentoMensal(gestaoOpt.get(), mes, ano);
+            Integer idUsuario = getIdUsuarioLogado(session);
+            jetonService.processarFechamentoMensal(gestaoOpt.get(), mes, ano, idUsuario);
             ra.addFlashAttribute("sucesso", "Cálculo da folha mensal executado com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -124,13 +122,15 @@ public class JetonController {
     public String fecharDefinitivo(@RequestParam("idGestao") Integer idGestao,
             @RequestParam("mes") Integer mes,
             @RequestParam("ano") Integer ano,
+            HttpSession session,
             RedirectAttributes ra) {
         try {
             Optional<Gestao> gestaoOpt = gestaoService.buscarPorId(idGestao);
             if (gestaoOpt.isEmpty()) {
                 throw new RuntimeException("Gestão não encontrada.");
             }
-            jetonService.realizarFechamentoDefinitivoFolha(gestaoOpt.get(), mes, ano);
+            Integer idUsuario = getIdUsuarioLogado(session);
+            jetonService.realizarFechamentoDefinitivoFolha(gestaoOpt.get(), mes, ano, idUsuario);
             ra.addFlashAttribute("sucesso", "Folha fechada e homologada definitivamente para " + mes + "/" + ano);
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -144,9 +144,12 @@ public class JetonController {
     // ESTORNAR UM JETON ESPECÍFICO
     // =========================================================================
     @GetMapping("/estornar/{id}")
-    public String estornarJeton(@PathVariable("id") Integer idJeton, RedirectAttributes ra) {
+    public String estornarJeton(@PathVariable("id") Integer idJeton,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            jetonService.estornarJetonPontual(idJeton);
+            Integer idUsuario = getIdUsuarioLogado(session);
+            jetonService.estornarJetonPontual(idJeton, idUsuario);
             ra.addFlashAttribute("sucesso", "Jeton estornado com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -249,5 +252,10 @@ public class JetonController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private Integer getIdUsuarioLogado(HttpSession session) {
+        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }
