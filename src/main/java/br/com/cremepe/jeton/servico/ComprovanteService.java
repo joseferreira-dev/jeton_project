@@ -43,7 +43,7 @@ public class ComprovanteService {
         int mes = dataAtual.getMonthValue();
 
         // 1. Envia o ficheiro para o FTP e obtém o nome único
-        String nomeArquivoGerado = fileStorageService.storeFileToFtp(file, ano, mes);
+        String nomeArquivoGerado = fileStorageService.storeFileToFtp(file, ano, mes, idUsuarioLogado);
         log.debug("Arquivo enviado para FTP: {}", nomeArquivoGerado);
 
         // 2. Busca o Tipo de Anexo
@@ -91,7 +91,7 @@ public class ComprovanteService {
             int mes = comp.getMes();
 
             // Remove o arquivo físico do FTP
-            fileStorageService.deleteFile(comp.getNomeArquivo(), comp.getAno(), comp.getMes());
+            fileStorageService.deleteFile(comp.getNomeArquivo(), comp.getAno(), comp.getMes(), idUsuarioLogado);
             // Remove o registro do banco
             comprovanteRepository.delete(comp);
 

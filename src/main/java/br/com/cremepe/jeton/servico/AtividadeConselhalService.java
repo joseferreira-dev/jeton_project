@@ -140,7 +140,7 @@ public class AtividadeConselhalService {
             long outrasAtividades = atividadeRepository.countByComprovanteIdComprovante(idComprovanteAntigo);
             if (outrasAtividades == 0) {
                 comprovanteRepository.findById(idComprovanteAntigo).ifPresent(comp -> {
-                    fileStorageService.deleteFile(comp.getNomeArquivo(), comp.getAno(), comp.getMes());
+                    fileStorageService.deleteFile(comp.getNomeArquivo(), comp.getAno(), comp.getMes(), idUsuarioLogado);
                     comprovanteRepository.delete(comp);
                     logJetonService.registrarLog("comprovante", idUsuarioLogado,
                             "Comprovante antigo excluído (ID " + idComprovanteAntigo + ") - sem vínculos");
@@ -161,7 +161,8 @@ public class AtividadeConselhalService {
     private Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo,
             String nomeComprovanteUsuario, Integer idUsuarioLogado) {
         LocalDate hoje = LocalDate.now();
-        String nomeArquivo = fileStorageService.storeFileToFtp(file, hoje.getYear(), hoje.getMonthValue());
+        String nomeArquivo = fileStorageService.storeFileToFtp(file, hoje.getYear(), hoje.getMonthValue(),
+                idUsuarioLogado);
         TipoAnexo tipo = tipoAnexoRepository.findById(idTipoAnexo)
                 .orElseThrow(() -> new RuntimeException("Tipo de anexo inválido"));
         Comprovante comp = new Comprovante();
@@ -262,7 +263,8 @@ public class AtividadeConselhalService {
                     comprovanteRepository.deleteById(idComprovante);
                     fileStorageService.deleteFile(comprovanteBackup.getNomeArquivo(),
                             comprovanteBackup.getAno(),
-                            comprovanteBackup.getMes());
+                            comprovanteBackup.getMes(),
+                            idUsuarioLogado);
                     logJetonService.registrarLog("comprovante", idUsuarioLogado,
                             "Comprovante ID " + idComprovante + " excluído (sem outras atividades vinculadas)");
                 } catch (Exception e) {
