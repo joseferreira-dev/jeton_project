@@ -4,11 +4,10 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
- * DTO (Data Transfer Object) / Projection.
- * Utilizado para encapsular o resultado de consultas agregadas (SOMAS e GROUP
- * BY)
- * referentes aos saldos dos conselheiros para exibição em tela ou relatórios.
- * NOTA: Esta classe não possui mapeamento no banco de dados.
+ * DTO Utilizado para encapsular o resultado de consultas agregadas (SOMAS e
+ * GROUP BY) referentes aos saldos dos conselheiros para exibição em tela ou
+ * relatórios.
+ * NOTA: Esta classe não possui mapeamento físico (@Entity) no banco de dados.
  */
 public class PontosRemanescentesDTO implements Serializable {
 
