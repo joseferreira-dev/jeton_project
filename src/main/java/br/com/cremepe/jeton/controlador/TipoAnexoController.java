@@ -16,17 +16,23 @@ public class TipoAnexoController {
     @Autowired
     private TipoAnexoService tipoAnexoService;
 
+    // =========================================================================
+    // LISTAGEM
+    // =========================================================================
     @GetMapping
     public String listar(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("lista", tipoAnexoService.listarTodos());
         return "tipoanexo/lista";
     }
 
+    // =========================================================================
+    // FORMULÁRIOS
+    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("tipoAnexo", new TipoAnexo());
         return "tipoanexo/formulario";
@@ -34,31 +40,50 @@ public class TipoAnexoController {
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
-        model.addAttribute("tipoAnexo", tipoAnexoService.buscarPorId(id).orElse(new TipoAnexo()));
+        TipoAnexo tipoAnexo = tipoAnexoService.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Tipo de anexo não encontrado"));
+        model.addAttribute("tipoAnexo", tipoAnexo);
         return "tipoanexo/formulario";
     }
 
+    // =========================================================================
+    // SALVAR (CRIAR / ATUALIZAR)
+    // =========================================================================
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("tipoAnexo") TipoAnexo tipoAnexo, RedirectAttributes redirectAttributes) {
+    public String salvar(@ModelAttribute("tipoAnexo") TipoAnexo tipoAnexo, RedirectAttributes ra) {
         try {
             tipoAnexoService.salvar(tipoAnexo);
-            redirectAttributes.addFlashAttribute("sucesso", "Tipo de Anexo salvo com sucesso!");
+            ra.addFlashAttribute("sucesso", "Tipo de Anexo salvo com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao salvar Tipo de Anexo.");
+            ra.addFlashAttribute("erro", "Erro inesperado ao salvar tipo de anexo.");
         }
         return "redirect:/tipos-anexo";
     }
 
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
     @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
             tipoAnexoService.excluir(id);
-            redirectAttributes.addFlashAttribute("sucesso", "Tipo de Anexo removido!");
+            ra.addFlashAttribute("sucesso", "Tipo de Anexo removido com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao remover Tipo de Anexo.");
+            ra.addFlashAttribute("erro", "Erro ao remover tipo de anexo.");
         }
         return "redirect:/tipos-anexo";
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES
+    // =========================================================================
+    private boolean naoAutenticado(HttpSession session) {
+        return session.getAttribute("usuarioLogado") == null;
     }
 }

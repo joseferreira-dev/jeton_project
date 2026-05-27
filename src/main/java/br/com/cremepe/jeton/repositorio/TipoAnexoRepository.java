@@ -10,9 +10,7 @@ import java.util.Optional;
 @Repository
 public interface TipoAnexoRepository extends JpaRepository<TipoAnexo, Integer> {
 
-    // Encontra um tipo de anexo pelo seu nome exato (que é único na base de dados)
     Optional<TipoAnexo> findByNome(String nome);
 
-    // Lista tipos de anexos filtrando se exigem publicação (ex: 'S' ou 'N')
     List<TipoAnexo> findByExigePublicacao(String exigePublicacao);
 }
