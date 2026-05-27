@@ -17,6 +17,9 @@ public class PortariaController {
     @Autowired
     private PortariaService portariaService;
 
+    // =========================================================================
+    // LISTAGEM
+    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -27,25 +30,25 @@ public class PortariaController {
             @RequestParam(value = "dir", required = false, defaultValue = "desc") String dir,
             Model model, HttpSession session) {
 
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
 
-        Page<Portaria> paginaPortarias = portariaService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort,
-                dir);
-
-        model.addAttribute("paginaPortarias", paginaPortarias);
+        Page<Portaria> pagina = portariaService.listarComPaginacaoEPesquisa(termo, situacao, page, size, sort, dir);
+        model.addAttribute("paginaPortarias", pagina);
         model.addAttribute("termo", termo);
         model.addAttribute("situacao", situacao);
         model.addAttribute("size", size);
         model.addAttribute("sort", sort);
         model.addAttribute("dir", dir);
-
         return "portaria/lista";
     }
 
+    // =========================================================================
+    // FORMULÁRIOS
+    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("portaria", new Portaria());
         return "portaria/formulario";
@@ -53,47 +56,67 @@ public class PortariaController {
 
     @GetMapping("/editar/{id}")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session))
             return "redirect:/login";
-        model.addAttribute("portaria", portariaService.buscarPorId(id).orElse(new Portaria()));
+        Portaria portaria = portariaService.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Portaria não encontrada"));
+        model.addAttribute("portaria", portaria);
         return "portaria/formulario";
     }
 
+    // =========================================================================
+    // SALVAR
+    // =========================================================================
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("portaria") Portaria portaria, RedirectAttributes redirectAttributes) {
+    public String salvar(@ModelAttribute("portaria") Portaria portaria, RedirectAttributes ra) {
         try {
             portariaService.salvar(portaria);
-            redirectAttributes.addFlashAttribute("sucesso", "Portaria salva com sucesso!");
+            ra.addFlashAttribute("sucesso", "Portaria salva com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao salvar Portaria: " + e.getMessage());
+            ra.addFlashAttribute("erro", "Erro inesperado ao salvar portaria.");
         }
         return "redirect:/portarias";
     }
 
-    @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+    // =========================================================================
+    // REVOGAÇÃO (SOFT DELETE)
+    // =========================================================================
+    @GetMapping("/revogar/{id}")
+    public String revogar(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
-            portariaService.revogar(id); // Usa o novo método
-            redirectAttributes.addFlashAttribute("sucesso", "Portaria revogada com sucesso!");
+            portariaService.revogar(id);
+            ra.addFlashAttribute("sucesso", "Portaria revogada com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao revogar Portaria.");
+            ra.addFlashAttribute("erro", "Erro ao revogar portaria.");
         }
         return "redirect:/portarias";
     }
 
+    // =========================================================================
+    // RESTAURAR
+    // =========================================================================
     @GetMapping("/restaurar/{id}")
-    public String restaurar(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+    public String restaurar(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
             portariaService.restaurar(id);
-            redirectAttributes.addFlashAttribute("sucesso", "Portaria restaurada (Em Vigor) com sucesso!");
+            ra.addFlashAttribute("sucesso", "Portaria restaurada (em vigor) com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("erro", "Erro ao restaurar Portaria.");
+            ra.addFlashAttribute("erro", "Erro ao restaurar portaria.");
         }
         return "redirect:/portarias";
     }
 
+    // =========================================================================
+    // EXCLUSÃO FÍSICA (PERMANENTE)
+    // =========================================================================
     @GetMapping("/deletar/{id}")
-    public String deletar(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String deletarFisicamente(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
             portariaService.excluirFisicamente(id);
             ra.addFlashAttribute("sucesso", "Portaria excluída definitivamente.");
@@ -103,5 +126,12 @@ public class PortariaController {
             ra.addFlashAttribute("erro", "Erro inesperado ao excluir portaria.");
         }
         return "redirect:/portarias";
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES
+    // =========================================================================
+    private boolean naoAutenticado(HttpSession session) {
+        return session.getAttribute("usuarioLogado") == null;
     }
 }

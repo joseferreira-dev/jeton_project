@@ -131,11 +131,12 @@
                                             class="fa-solid fa-trash-can"></i></a>
 
                                     <a th:if="${p.inRevogado == 'N'}"
-                                        th:href="@{'/portarias/excluir/' + ${p.idPortaria}}"
+                                        th:href="@{'/portarias/revogar/' + ${p.idPortaria}}"
                                         class="btn btn-sm btn-outline-danger btn-confirm" title="Revogar"
-                                        data-mensagem="Tem certeza que deseja <b>REVOGAR</b> esta Portaria?<br><small class='text-muted'>Ela deixará de ser listada para novos cadastros.</small>"
-                                        data-cor="btn-danger" data-icone="fa-solid fa-ban"><i
-                                            class="fa-solid fa-ban"></i></a>
+                                        data-mensagem="Tem certeza que deseja <b>REVOGAR</b> esta Portaria?<br><small
+                                            class='text-muted'>Ela deixará de ser listada para novos cadastros.</small>" data-cor="btn-danger" data-icone="fa-solid fa-ban">
+                                        <i class="fa-solid fa-ban"></i>
+                                    </a>
 
                                     <a th:if="${p.inRevogado == 'S'}"
                                         th:href="@{'/portarias/restaurar/' + ${p.idPortaria}}"
