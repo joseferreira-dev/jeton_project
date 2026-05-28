@@ -18,20 +18,40 @@ public class PontosRemanescentesService {
 
     @Autowired
     private PontosSaldoRepository repository;
+    @Autowired
+    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
     @Transactional
-    public PontosSaldo salvar(PontosSaldo pontos) {
+    public PontosSaldo salvar(PontosSaldo pontos, Integer idUsuarioLogado) {
+        boolean isNovo = pontos.getIdPontosSaldo() == null;
+        Integer idConselheiro = pontos.getConselheiro() != null ? pontos.getConselheiro().getIdPessoa() : null;
+        Integer idGestao = pontos.getGestao() != null ? pontos.getGestao().getIdGestao() : null;
+        Integer pontosTrabalhados = pontos.getPontosTrabalhados();
+        Integer pontosUtilizados = pontos.getPontosUtilizados();
+        Integer pontosSobrando = pontos.getPontosSobrando();
+        String situacao = pontos.getInSituacao();
+
         validarIntegridade(pontos);
         normalizar(pontos);
         PontosSaldo salvo = repository.save(pontos);
-        log.info("Saldo de pontos salvo: id={}, conselheiro={}, pontosSobrando={}",
-                salvo.getIdPontosSaldo(),
-                salvo.getConselheiro() != null ? salvo.getConselheiro().getIdPessoa() : null,
-                salvo.getPontosSobrando());
+
+        log.info(
+                "Saldo de pontos {}: id={}, conselheiro={}, gestão={}, pontosTrabalhados={}, pontosUtilizados={}, pontosSobrando={}, situação={}",
+                isNovo ? "criado" : "atualizado",
+                salvo.getIdPontosSaldo(), idConselheiro, idGestao,
+                pontosTrabalhados, pontosUtilizados, pontosSobrando, situacao);
+
+        String textoLog = String.format(
+                "Saldo de pontos %s: ID=%d, Conselheiro ID=%d, Gestão ID=%d, Pontos Trabalhados=%d, Pontos Utilizados=%d, Pontos Sobrando=%d, Situação='%s'",
+                isNovo ? "criado" : "atualizado",
+                salvo.getIdPontosSaldo(), idConselheiro, idGestao,
+                pontosTrabalhados, pontosUtilizados, pontosSobrando, situacao);
+        logJetonService.registrarLog("pontos_saldo", idUsuarioLogado, textoLog);
+
         return salvo;
     }
 
@@ -68,8 +88,13 @@ public class PontosRemanescentesService {
     }
 
     @Transactional
-    public void excluir(Integer id) {
+    public void excluir(Integer id, Integer idUsuarioLogado) {
         PontosSaldo saldo = buscarOuFalhar(id);
+        Integer idConselheiro = saldo.getConselheiro() != null ? saldo.getConselheiro().getIdPessoa() : null;
+        Integer idGestao = saldo.getGestao() != null ? saldo.getGestao().getIdGestao() : null;
+        Integer pontosSobrando = saldo.getPontosSobrando();
+        String situacao = saldo.getInSituacao();
+
         if (saldo.isUtilizado()) {
             throw new RuntimeException("Não é possível excluir um saldo que já foi utilizado em pagamentos.");
         }
@@ -78,7 +103,14 @@ public class PontosRemanescentesService {
                     "Não é possível excluir um saldo ativo com pontos remanescentes. Considere inativá-lo.");
         }
         repository.deleteById(id);
-        log.info("Saldo de pontos excluído fisicamente: id={}", id);
+        log.info(
+                "Saldo de pontos excluído fisicamente: id={}, conselheiro={}, gestão={}, pontosSobrando={}, situação={}",
+                id, idConselheiro, idGestao, pontosSobrando, situacao);
+
+        String textoLog = String.format(
+                "Saldo de pontos excluído: ID=%d, Conselheiro ID=%d, Gestão ID=%d, Pontos Sobrando=%d, Situação='%s'",
+                id, idConselheiro, idGestao, pontosSobrando, situacao);
+        logJetonService.registrarLog("pontos_saldo", idUsuarioLogado, textoLog);
     }
 
     // =========================================================================

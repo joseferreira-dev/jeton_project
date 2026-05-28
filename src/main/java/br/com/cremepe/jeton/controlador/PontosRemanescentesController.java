@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.PontosSaldo;
+import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
 import br.com.cremepe.jeton.servico.PontosRemanescentesService;
@@ -17,10 +18,8 @@ public class PontosRemanescentesController {
 
     @Autowired
     private PontosRemanescentesService pontosService;
-
     @Autowired
     private ConselheiroService conselheiroService;
-
     @Autowired
     private GestaoService gestaoService;
 
@@ -62,9 +61,12 @@ public class PontosRemanescentesController {
     // SALVAR (CRIAR / ATUALIZAR)
     // =========================================================================
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("pontos") PontosSaldo pontos, RedirectAttributes ra) {
+    public String salvar(@ModelAttribute("pontos") PontosSaldo pontos,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            pontosService.salvar(pontos);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            pontosService.salvar(pontos, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Registro de pontos salvo com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -78,9 +80,12 @@ public class PontosRemanescentesController {
     // EXCLUSÃO
     // =========================================================================
     @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String excluir(@PathVariable("id") Integer id,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            pontosService.excluir(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            pontosService.excluir(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Registro de pontos removido com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -95,6 +100,11 @@ public class PontosRemanescentesController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private Integer getIdUsuarioLogado(HttpSession session) {
+        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        return usuario != null ? usuario.getIdPessoa() : null;
     }
 
     private void carregarListasDeApoio(Model model) {
