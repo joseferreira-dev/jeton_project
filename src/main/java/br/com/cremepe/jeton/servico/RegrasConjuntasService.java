@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.dominio.RegrasConjuntas;
 import br.com.cremepe.jeton.repositorio.RegrasConjuntasRepository;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class RegrasConjuntasService {
@@ -22,17 +24,42 @@ public class RegrasConjuntasService {
 
     @Autowired
     private RegrasConjuntasRepository repository;
+    @Autowired
+    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
     @Transactional
-    public RegrasConjuntas salvar(RegrasConjuntas regra) {
+    public RegrasConjuntas salvar(RegrasConjuntas regra, Integer idUsuarioLogado) {
+        boolean isNovo = regra.getIdRegraConjunta() == null;
+        String nome = regra.getNomeRegra();
+        String tipoLimite = regra.getInTipoLimite();
+        Integer pontosLimite = regra.getPontosLimite();
+
         validarNomeUnico(regra);
         normalizarFlags(regra);
         RegrasConjuntas salva = repository.save(regra);
-        log.info("Regra Conjunta salva: id={}, nome={}", salva.getIdRegraConjunta(), salva.getNomeRegra());
+
+        // Coleta os nomes (ou IDs) das regras associadas a este grupo
+        String regrasVinculadas = "";
+        if (salva.getRegrasAgrupadas() != null && !salva.getRegrasAgrupadas().isEmpty()) {
+            regrasVinculadas = salva.getRegrasAgrupadas().stream()
+                    .map(Regras::getNomeRegra)
+                    .collect(Collectors.joining("; "));
+        }
+
+        log.info("Regra Conjunta {}: id={}, nome='{}', tipoLimite={}, pontosLimite={}, regras=[{}]",
+                isNovo ? "criada" : "atualizada",
+                salva.getIdRegraConjunta(), nome, tipoLimite, pontosLimite, regrasVinculadas);
+
+        String textoLog = String.format(
+                "Regra Conjunta %s: ID=%d, Nome='%s', TipoLimite='%s', PontosLimite=%d, RegrasVinculadas=[%s]",
+                isNovo ? "criada" : "atualizada",
+                salva.getIdRegraConjunta(), nome, tipoLimite, pontosLimite, regrasVinculadas);
+        logJetonService.registrarLog("regras_conjuntas", idUsuarioLogado, textoLog);
+
         return salva;
     }
 
@@ -55,19 +82,35 @@ public class RegrasConjuntasService {
     }
 
     @Transactional
-    public void excluir(Integer id) {
+    public void excluir(Integer id, Integer idUsuarioLogado) {
         RegrasConjuntas regra = buscarOuFalhar(id);
+        String nome = regra.getNomeRegra();
+        String tipoLimite = regra.getInTipoLimite();
+        Integer pontosLimite = regra.getPontosLimite();
+
+        // Coleta os nomes (ou IDs) das regras associadas antes de remover as
+        // associações
+        String regrasVinculadas = "";
+        if (regra.getRegrasAgrupadas() != null && !regra.getRegrasAgrupadas().isEmpty()) {
+            regrasVinculadas = regra.getRegrasAgrupadas().stream()
+                    .map(Regras::getNomeRegra)
+                    .collect(Collectors.joining("; "));
+        }
 
         // Remove todas as associações com regras (limpa a tabela de ligação)
         if (regra.getRegrasAgrupadas() != null && !regra.getRegrasAgrupadas().isEmpty()) {
             regra.getRegrasAgrupadas().clear();
             repository.save(regra);
-            log.info("Associações de regras removidas para o agrupamento id={}", id);
+            log.info("Associações de regras removidas para o agrupamento id={}, regras=[{}]", id, regrasVinculadas);
         }
 
-        // Agora pode excluir o agrupamento
         repository.deleteById(id);
-        log.info("Regra Conjunta excluída: id={}", id);
+        log.info("Regra Conjunta excluída: id={}, nome='{}'", id, nome);
+
+        String textoLog = String.format(
+                "Regra Conjunta excluída: ID=%d, Nome='%s', TipoLimite='%s', PontosLimite=%d, RegrasVinculadas=[%s]",
+                id, nome, tipoLimite, pontosLimite, regrasVinculadas);
+        logJetonService.registrarLog("regras_conjuntas", idUsuarioLogado, textoLog);
     }
 
     // =========================================================================

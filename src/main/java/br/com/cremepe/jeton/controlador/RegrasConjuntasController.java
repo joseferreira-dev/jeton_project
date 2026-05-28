@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.RegrasConjuntas;
+import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.RegrasConjuntasService;
 import br.com.cremepe.jeton.servico.RegrasService;
 import jakarta.servlet.http.HttpSession;
@@ -63,8 +64,7 @@ public class RegrasConjuntasController {
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
         if (naoAutenticado(session))
             return "redirect:/login";
-        RegrasConjuntas regra = regrasConjuntasService.buscarPorId(id)
-                .orElseThrow(() -> new IllegalArgumentException("Regra Conjunta não encontrada"));
+        RegrasConjuntas regra = regrasConjuntasService.buscarOuFalhar(id);
         model.addAttribute("regrasConjuntas", regra);
         carregarListasApoio(model);
         return "regrasconjuntas/formulario";
@@ -79,9 +79,11 @@ public class RegrasConjuntasController {
     // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@ModelAttribute("regrasConjuntas") RegrasConjuntas regrasConjuntas,
+            HttpSession session,
             RedirectAttributes ra) {
         try {
-            regrasConjuntasService.salvar(regrasConjuntas);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            regrasConjuntasService.salvar(regrasConjuntas, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Regras Conjuntas salvas com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -95,9 +97,12 @@ public class RegrasConjuntasController {
     // EXCLUSÃO
     // =========================================================================
     @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String excluir(@PathVariable("id") Integer id,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            regrasConjuntasService.excluir(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            regrasConjuntasService.excluir(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Regra Conjunta removida com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -112,5 +117,10 @@ public class RegrasConjuntasController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private Integer getIdUsuarioLogado(HttpSession session) {
+        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }
