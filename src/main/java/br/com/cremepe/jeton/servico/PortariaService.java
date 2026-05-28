@@ -26,20 +26,43 @@ public class PortariaService {
     private PortariaRepository repository;
     @Autowired
     private RegrasRepository regrasRepository;
+    @Autowired
+    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
     @Transactional
-    public Portaria salvar(Portaria portaria) {
+    public Portaria salvar(Portaria portaria, Integer idUsuarioLogado) {
+        boolean isNovo = portaria.getIdPortaria() == null;
+        Integer numero = portaria.getNumero();
+        Integer ano = portaria.getAno();
+        LocalDate dtInicio = portaria.getDtInicioVigencia();
+        LocalDate dtFim = portaria.getDtFimVigencia();
+        String link = portaria.getLinkPublicado();
+
         validarUnicidade(portaria);
         validarSobreposicao(portaria);
         if (portaria.getInRevogado() == null || portaria.getInRevogado().trim().isEmpty()) {
             portaria.setInRevogado(Portaria.REVOGADO_NAO);
         }
         Portaria salva = repository.save(portaria);
-        log.info("Portaria salva: id={}, número={}/{}", salva.getIdPortaria(), salva.getNumero(), salva.getAno());
+
+        log.info("Portaria {}: id={}, número={}/{}, vigência={} até {}, revogado={}",
+                isNovo ? "criada" : "atualizada",
+                salva.getIdPortaria(), numero, ano, dtInicio, dtFim, salva.getInRevogado());
+
+        String textoLog = String.format(
+                "Portaria %s: ID=%d, Número=%d/%d, Início Vigência=%s, Fim Vigência=%s, Link=%s, Revogado='%s'",
+                isNovo ? "criada" : "atualizada",
+                salva.getIdPortaria(), numero, ano,
+                dtInicio != null ? dtInicio : "null",
+                dtFim != null ? dtFim : "null",
+                link != null ? link : "null",
+                salva.getInRevogado());
+        logJetonService.registrarLog("portaria", idUsuarioLogado, textoLog);
+
         return salva;
     }
 
@@ -73,30 +96,42 @@ public class PortariaService {
     }
 
     @Transactional
-    public void revogar(Integer id) {
+    public void revogar(Integer id, Integer idUsuarioLogado) {
         Portaria portaria = buscarOuFalhar(id);
         if (portaria.isRevogado()) {
             throw new RuntimeException("A portaria já está revogada.");
         }
+        String numeroAno = portaria.getNumero() + "/" + portaria.getAno();
         portaria.setInRevogado(Portaria.REVOGADO_SIM);
         repository.save(portaria);
         regrasRepository.revogarRegrasPorPortaria(id);
-        log.info("Portaria revogada: id={}, número={}/{}", id, portaria.getNumero(), portaria.getAno());
+        log.info("Portaria revogada: id={}, número={}", id, numeroAno);
+
+        String textoLog = String.format(
+                "Portaria revogada: ID=%d, Número=%d/%d, Início Vigência=%s, Fim Vigência=%s",
+                id, portaria.getNumero(), portaria.getAno(),
+                portaria.getDtInicioVigencia(), portaria.getDtFimVigencia());
+        logJetonService.registrarLog("portaria", idUsuarioLogado, textoLog);
     }
 
     @Transactional
-    public void restaurar(Integer id) {
+    public void restaurar(Integer id, Integer idUsuarioLogado) {
         Portaria portaria = buscarOuFalhar(id);
         if (!portaria.isRevogado()) {
             throw new RuntimeException("A portaria já está em vigor.");
         }
         portaria.setInRevogado(Portaria.REVOGADO_NAO);
         repository.save(portaria);
-        log.info("Portaria restaurada: id={}", id);
+        log.info("Portaria restaurada: id={}, número={}/{}", id, portaria.getNumero(), portaria.getAno());
+
+        String textoLog = String.format(
+                "Portaria restaurada: ID=%d, Número=%d/%d",
+                id, portaria.getNumero(), portaria.getAno());
+        logJetonService.registrarLog("portaria", idUsuarioLogado, textoLog);
     }
 
     @Transactional
-    public void excluirFisicamente(Integer id) {
+    public void excluirFisicamente(Integer id, Integer idUsuarioLogado) {
         Portaria portaria = buscarOuFalhar(id);
         if (!portaria.isRevogado()) {
             throw new RuntimeException("Para excluir fisicamente, a portaria deve estar revogada primeiro.");
@@ -106,8 +141,14 @@ public class PortariaService {
             throw new RuntimeException("Não é possível excluir a portaria pois existem " + countRegras +
                     " regra(s) vinculada(s). Revogue-as ou exclua-as antes.");
         }
+        String numeroAno = portaria.getNumero() + "/" + portaria.getAno();
         repository.deleteById(id);
-        log.info("Portaria excluída fisicamente: id={}", id);
+        log.info("Portaria excluída fisicamente: id={}, número={}", id, numeroAno);
+
+        String textoLog = String.format(
+                "Portaria excluída fisicamente: ID=%d, Número=%d/%d",
+                id, portaria.getNumero(), portaria.getAno());
+        logJetonService.registrarLog("portaria", idUsuarioLogado, textoLog);
     }
 
     // =========================================================================

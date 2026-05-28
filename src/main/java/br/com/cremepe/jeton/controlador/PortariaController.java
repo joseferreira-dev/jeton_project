@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Portaria;
+import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.PortariaService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,9 +69,12 @@ public class PortariaController {
     // SALVAR
     // =========================================================================
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("portaria") Portaria portaria, RedirectAttributes ra) {
+    public String salvar(@ModelAttribute("portaria") Portaria portaria,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            portariaService.salvar(portaria);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            portariaService.salvar(portaria, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Portaria salva com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -84,9 +88,12 @@ public class PortariaController {
     // REVOGAÇÃO (SOFT DELETE)
     // =========================================================================
     @GetMapping("/revogar/{id}")
-    public String revogar(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String revogar(@PathVariable("id") Integer id,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            portariaService.revogar(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            portariaService.revogar(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Portaria revogada com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -100,9 +107,12 @@ public class PortariaController {
     // RESTAURAR
     // =========================================================================
     @GetMapping("/restaurar/{id}")
-    public String restaurar(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String restaurar(@PathVariable("id") Integer id,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            portariaService.restaurar(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            portariaService.restaurar(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Portaria restaurada (em vigor) com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -116,9 +126,12 @@ public class PortariaController {
     // EXCLUSÃO FÍSICA (PERMANENTE)
     // =========================================================================
     @GetMapping("/deletar/{id}")
-    public String deletarFisicamente(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String deletarFisicamente(@PathVariable("id") Integer id,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            portariaService.excluirFisicamente(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            portariaService.excluirFisicamente(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Portaria excluída definitivamente.");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -133,5 +146,10 @@ public class PortariaController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private Integer getIdUsuarioLogado(HttpSession session) {
+        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }
