@@ -160,18 +160,6 @@ public class AtividadeConselhalService {
 
     private Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo,
             String nomeComprovanteUsuario, Integer idUsuarioLogado) {
-        LocalDate hoje = LocalDate.now();
-        String nomeArquivo = fileStorageService.storeFileToFtp(file, hoje.getYear(), hoje.getMonthValue(),
-                idUsuarioLogado);
-        TipoAnexo tipo = tipoAnexoRepository.findById(idTipoAnexo)
-                .orElseThrow(() -> new RuntimeException("Tipo de anexo inválido"));
-        Comprovante comp = new Comprovante();
-        comp.setTipoAnexo(tipo);
-        comp.setNomeComprovante(nomeComprovanteUsuario);
-        comp.setNomeArquivo(nomeArquivo);
-        comp.setContentType(file.getContentType());
-        comp.setMes(hoje.getMonthValue());
-        comp.setAno(hoje.getYear());
         return comprovanteService.guardarComprovante(file, idTipoAnexo, nomeComprovanteUsuario, idUsuarioLogado);
     }
 
