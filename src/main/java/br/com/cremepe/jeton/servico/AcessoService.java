@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,15 +24,15 @@ public class AcessoService {
 
     @Autowired
     private UsuarioAcessoRepository usuarioAcessoRepository;
-
     @Autowired
     private UsuarioRepository usuarioRepository;
-
     @Autowired
     private NivelAcessoRepository nivelAcessoRepository;
+    @Autowired
+    private LogJetonService logJetonService;
 
     @Transactional
-    public UsuarioAcesso concederPermissao(Integer idUsuario, String idNivel) {
+    public UsuarioAcesso concederPermissao(Integer idUsuario, String idNivel, Integer idUsuarioLogado) {
         UsuarioAcessoId idComposto = new UsuarioAcessoId(idUsuario, idNivel);
 
         return usuarioAcessoRepository.findById(idComposto).orElseGet(() -> {
@@ -47,20 +48,47 @@ public class AcessoService {
 
             UsuarioAcesso salvo = usuarioAcessoRepository.save(novaPermissao);
             log.info("Permissão concedida: usuário {} -> nível {}", idUsuario, idNivel);
+
+            String textoLog = String.format(
+                    "Permissão concedida: Usuário ID=%d (%s) recebeu nível '%s' (%s)",
+                    idUsuario, usuario.getPessoa().getNome(), idNivel, nivelAcesso.getNomeNivel());
+            logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
+
             return salvo;
         });
     }
 
     @Transactional
-    public void revogarPermissao(Integer idUsuario, String idNivel) {
+    public void revogarPermissao(Integer idUsuario, String idNivel, Integer idUsuarioLogado) {
+        // Buscar dados antes de revogar para o log
+        Optional<Usuario> usuarioOpt = usuarioRepository.findById(idUsuario);
+        Optional<NivelAcesso> nivelOpt = nivelAcessoRepository.findById(idNivel);
+
         usuarioAcessoRepository.deleteById(new UsuarioAcessoId(idUsuario, idNivel));
         log.info("Permissão revogada: usuário {} -> nível {}", idUsuario, idNivel);
+
+        if (usuarioOpt.isPresent() && nivelOpt.isPresent()) {
+            String textoLog = String.format(
+                    "Permissão revogada: Usuário ID=%d (%s) perdeu nível '%s' (%s)",
+                    idUsuario, usuarioOpt.get().getPessoa().getNome(), idNivel, nivelOpt.get().getNomeNivel());
+            logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
+        } else {
+            String textoLog = String.format(
+                    "Permissão revogada: Usuário ID=%d, Nível='%s' (detalhes não encontrados)",
+                    idUsuario, idNivel);
+            logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
+        }
     }
 
     @Transactional
-    public void revogarTodasPermissoes(Integer idUsuario) {
+    public void revogarTodasPermissoes(Integer idUsuario, Integer idUsuarioLogado) {
         usuarioAcessoRepository.deleteByUsuarioId(idUsuario);
         log.info("Todas as permissões do usuário {} foram revogadas", idUsuario);
+
+        String textoLog = String.format(
+                "Todas as permissões do usuário ID=%d foram revogadas",
+                idUsuario);
+        logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
     }
 
     @Transactional(readOnly = true)

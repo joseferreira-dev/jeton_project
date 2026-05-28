@@ -38,13 +38,22 @@ public class UsuarioService {
     private PessoaRepository pessoaRepository;
     @Autowired
     private ConselheiroRepository conselheiroRepository;
+    @Autowired
+    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
     @Transactional
-    public Usuario salvar(Usuario usuario) {
+    public Usuario salvar(Usuario usuario, Integer idUsuarioLogado) {
+        boolean isNovo = usuario.getIdUsuarioPessoa() == null;
+        String nome = usuario.getPessoa().getNome();
+        String cpf = usuario.getPessoa().getCpf();
+        String tipoPessoa = usuario.iseConselheiro() ? "Conselheiro" : "Funcionário";
+        String situacao = usuario.getInSituacao();
+        Integer crm = usuario.getCrm();
+
         // 1. Prepara CPF
         Pessoa pessoa = usuario.getPessoa();
         if (pessoa == null) {
@@ -94,8 +103,9 @@ public class UsuarioService {
 
         // 7. Salva usuário (cascade salva pessoa)
         Usuario usuarioSalvo = usuarioRepository.save(usuario);
-        log.info("Usuário salvo: ID={}, nome={}, tipo={}", usuarioSalvo.getIdUsuarioPessoa(),
-                usuarioSalvo.getPessoa().getNome(), pessoa.getInTipoPessoa());
+        log.info("Usuário {}: ID={}, nome='{}', tipo={}, situação={}",
+                isNovo ? "criado" : "atualizado",
+                usuarioSalvo.getIdUsuarioPessoa(), nome, tipoPessoa, situacao);
 
         // 8. Gerencia tabela conselheiro (se necessário)
         if (usuario.iseConselheiro()) {
@@ -110,6 +120,14 @@ public class UsuarioService {
         } else {
             usuarioRepository.deletarConselheiroNativo(usuarioSalvo.getIdUsuarioPessoa());
         }
+
+        // Log de auditoria
+        String textoLog = String.format(
+                "Usuário %s: ID=%d, Nome='%s', CPF=%s, Tipo='%s', Situação='%s'%s",
+                isNovo ? "criado" : "atualizado",
+                usuarioSalvo.getIdUsuarioPessoa(), nome, cpfLimpo, tipoPessoa, situacao,
+                crm != null ? ", CRM=" + crm : "");
+        logJetonService.registrarLog("usuario", idUsuarioLogado, textoLog);
 
         return usuarioSalvo;
     }
@@ -185,7 +203,19 @@ public class UsuarioService {
     // EXCLUSÃO
     // =========================================================================
     @Transactional
-    public void excluir(Integer id) {
+    public void excluir(Integer id, Integer idUsuarioLogado) {
+        // Busca o usuário antes de excluir para obter dados para o log
+        Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
+        if (usuarioOpt.isEmpty()) {
+            log.warn("Tentativa de excluir usuário inexistente ID={}", id);
+            throw new RuntimeException("Usuário não encontrado para exclusão.");
+        }
+        Usuario usuario = usuarioOpt.get();
+        String nome = usuario.getPessoa().getNome();
+        String cpf = usuario.getPessoa().getCpf();
+        String tipoPessoa = usuario.getPessoa().isConselheiro() ? "Conselheiro" : "Funcionário";
+        String situacao = usuario.getInSituacao();
+
         // 1. Remove as permissões (usuario_acesso) primeiro
         usuarioRepository.deletarPermissoesNativo(id);
 
@@ -198,6 +228,12 @@ public class UsuarioService {
         // 4. Remove a pessoa
         usuarioRepository.deletarPessoaNativa(id);
 
-        log.info("Usuário e todas as dependências excluídos permanentemente: ID={}", id);
+        log.info("Usuário excluído: ID={}, nome='{}', CPF={}, tipo={}, situação={}",
+                id, nome, cpf, tipoPessoa, situacao);
+
+        String textoLog = String.format(
+                "Usuário excluído: ID=%d, Nome='%s', CPF=%s, Tipo='%s', Situação='%s'",
+                id, nome, cpf, tipoPessoa, situacao);
+        logJetonService.registrarLog("usuario", idUsuarioLogado, textoLog);
     }
 }

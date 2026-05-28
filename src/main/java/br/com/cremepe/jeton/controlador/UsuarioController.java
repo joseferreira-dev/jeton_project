@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Usuario;
+import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.repositorio.UsuarioAcessoRepository;
 import br.com.cremepe.jeton.servico.AcessoService;
 import br.com.cremepe.jeton.servico.ConselheiroService;
@@ -98,10 +99,13 @@ public class UsuarioController {
     @PostMapping("/salvar")
     public String salvar(@Valid @ModelAttribute("usuario") Usuario usuario,
             @RequestParam(value = "niveisAcesso", required = false) List<String> niveisAcessoSelecionados,
+            HttpSession session,
             RedirectAttributes ra) {
         try {
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+
             // Grava o usuário
-            Usuario userSalvo = usuarioService.salvar(usuario);
+            Usuario userSalvo = usuarioService.salvar(usuario, idUsuarioLogado);
 
             // Sincroniza permissões (níveis de acesso)
             Integer id = userSalvo.getIdUsuarioPessoa();
@@ -115,13 +119,13 @@ public class UsuarioController {
             // Concede novos níveis
             for (String nivel : selecionados) {
                 if (!niveisAtuais.contains(nivel)) {
-                    acessoService.concederPermissao(id, nivel);
+                    acessoService.concederPermissao(id, nivel, idUsuarioLogado);
                 }
             }
             // Revoga níveis desmarcados
             for (String nivelAtual : niveisAtuais) {
                 if (!selecionados.contains(nivelAtual)) {
-                    acessoService.revogarPermissao(id, nivelAtual);
+                    acessoService.revogarPermissao(id, nivelAtual, idUsuarioLogado);
                 }
             }
 
@@ -138,9 +142,10 @@ public class UsuarioController {
     // EXCLUSÃO
     // =========================================================================
     @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
-            usuarioService.excluir(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            usuarioService.excluir(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Utilizador removido com sucesso!");
         } catch (Exception e) {
             log.error("Erro ao excluir usuário ID={}: {}", id, e.getMessage());
@@ -154,6 +159,11 @@ public class UsuarioController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private Integer getIdUsuarioLogado(HttpSession session) {
+        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        return usuario != null ? usuario.getIdPessoa() : null;
     }
 
     private void carregarListasApoio(Model model, Integer idUsuario) {
