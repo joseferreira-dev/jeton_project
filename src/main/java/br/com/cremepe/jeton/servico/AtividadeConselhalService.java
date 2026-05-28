@@ -33,8 +33,6 @@ public class AtividadeConselhalService {
     @Autowired
     private ComprovanteRepository comprovanteRepository;
     @Autowired
-    private TipoAnexoRepository tipoAnexoRepository;
-    @Autowired
     private FileStorageService fileStorageService;
     @Autowired
     private ComprovanteService comprovanteService;
