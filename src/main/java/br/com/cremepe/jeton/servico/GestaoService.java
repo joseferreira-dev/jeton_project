@@ -2,6 +2,8 @@ package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.dominio.Gestao;
 import br.com.cremepe.jeton.repositorio.GestaoRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -10,25 +12,45 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class GestaoService {
 
+    private static final Logger log = LoggerFactory.getLogger(GestaoService.class);
+
     @Autowired
     private GestaoRepository gestaoRepository;
+    @Autowired
+    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
     @Transactional
-    public Gestao salvar(Gestao gestao) {
+    public Gestao salvar(Gestao gestao, Integer idUsuarioLogado) {
+        boolean isNovo = gestao.getIdGestao() == null;
+
         validarDatas(gestao);
         validarNomeUnico(gestao);
         validarSobreposicao(gestao);
-        return gestaoRepository.save(gestao);
+
+        Gestao salva = gestaoRepository.save(gestao);
+
+        log.info("Gestão {}: ID={}, nome='{}', período={} até {}",
+                isNovo ? "criada" : "atualizada",
+                salva.getIdGestao(), salva.getNomeGestao(), salva.getDtInicio(), salva.getDtFim());
+
+        String textoLog = String.format(
+                "Gestão %s: ID=%d, Nome='%s', Início=%s, Fim=%s",
+                isNovo ? "criada" : "atualizada",
+                salva.getIdGestao(), salva.getNomeGestao(), salva.getDtInicio(), salva.getDtFim());
+        logJetonService.registrarLog("gestao", idUsuarioLogado, textoLog);
+
+        return salva;
     }
 
     private void validarDatas(Gestao gestao) {
@@ -92,11 +114,25 @@ public class GestaoService {
     // =========================================================================
 
     @Transactional
-    public void excluir(Integer id) {
-        // Aqui você pode adicionar verificações de integridade (ex: se existem
-        // conselheiros ou atividades vinculados)
-        // Antes de excluir, o controller já trata a mensagem de erro, mas você pode
-        // lançar exceção aqui.
+    public void excluir(Integer id, Integer idUsuarioLogado) {
+        // Busca a gestão antes de excluir para obter dados para o log
+        Optional<Gestao> gestaoOpt = gestaoRepository.findById(id);
+        if (gestaoOpt.isEmpty()) {
+            log.warn("Tentativa de excluir gestão inexistente ID={}", id);
+            throw new RuntimeException("Gestão não encontrada para exclusão.");
+        }
+        Gestao gestao = gestaoOpt.get();
+        String nome = gestao.getNomeGestao();
+        LocalDate dtInicio = gestao.getDtInicio();
+        LocalDate dtFim = gestao.getDtFim();
+
         gestaoRepository.deleteById(id);
+
+        log.info("Gestão excluída: ID={}, nome='{}', período={} até {}", id, nome, dtInicio, dtFim);
+
+        String textoLog = String.format(
+                "Gestão excluída: ID=%d, Nome='%s', Início=%s, Fim=%s",
+                id, nome, dtInicio, dtFim);
+        logJetonService.registrarLog("gestao", idUsuarioLogado, textoLog);
     }
 }
