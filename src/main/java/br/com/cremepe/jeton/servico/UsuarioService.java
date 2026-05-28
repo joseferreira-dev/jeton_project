@@ -49,7 +49,6 @@ public class UsuarioService {
     public Usuario salvar(Usuario usuario, Integer idUsuarioLogado) {
         boolean isNovo = usuario.getIdUsuarioPessoa() == null;
         String nome = usuario.getPessoa().getNome();
-        String cpf = usuario.getPessoa().getCpf();
         String tipoPessoa = usuario.iseConselheiro() ? "Conselheiro" : "Funcionário";
         String situacao = usuario.getInSituacao();
         Integer crm = usuario.getCrm();
