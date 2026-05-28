@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Regras;
+import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.RegrasService;
 import br.com.cremepe.jeton.servico.PortariaService;
 import br.com.cremepe.jeton.servico.ResolucaoService;
@@ -78,7 +79,6 @@ public class RegrasController {
     }
 
     private void carregarApoioFormulario(Model model) {
-        // Apenas normativas "Em Vigor" para seleção
         model.addAttribute("listaPortarias", portariaService.listarTodos().stream()
                 .filter(p -> p.isEmVigor())
                 .collect(Collectors.toList()));
@@ -88,12 +88,15 @@ public class RegrasController {
     }
 
     // =========================================================================
-    // SALVAR
+    // SALVAR (CRIAR / ATUALIZAR)
     // =========================================================================
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("regra") Regras regra, RedirectAttributes ra) {
+    public String salvar(@ModelAttribute("regra") Regras regra,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            regrasService.salvar(regra);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            regrasService.salvar(regra, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Regra salva com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -107,9 +110,12 @@ public class RegrasController {
     // REVOGAÇÃO (SOFT DELETE)
     // =========================================================================
     @GetMapping("/revogar/{id}")
-    public String revogar(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String revogar(@PathVariable("id") Integer id,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            regrasService.revogar(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            regrasService.revogar(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Regra revogada com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -123,9 +129,12 @@ public class RegrasController {
     // RESTAURAR
     // =========================================================================
     @GetMapping("/restaurar/{id}")
-    public String restaurar(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String restaurar(@PathVariable("id") Integer id,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            regrasService.restaurar(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            regrasService.restaurar(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Regra restaurada (em vigor) com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -136,12 +145,15 @@ public class RegrasController {
     }
 
     // =========================================================================
-    // EXCLUSÃO FÍSICA (PERMANENTE)
+    // EXCLUSÃO PERMANENTE
     // =========================================================================
     @GetMapping("/deletar/{id}")
-    public String deletarFisicamente(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String deletarFisicamente(@PathVariable("id") Integer id,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            regrasService.excluirFisicamente(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            regrasService.excluirFisicamente(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Regra excluída definitivamente.");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -156,5 +168,10 @@ public class RegrasController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private Integer getIdUsuarioLogado(HttpSession session) {
+        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }

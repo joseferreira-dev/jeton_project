@@ -34,18 +34,27 @@ public class RegrasService {
     private PortariaRepository portariaRepository;
     @Autowired
     private AtividadeConselhalRepository atividadeRepository;
+    @Autowired
+    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA (CRUD)
     // =========================================================================
 
     @Transactional
-    public Regras salvar(Regras regra) {
-        // 1. Carrega a Resolução gerenciada (managed) do banco
+    public Regras salvar(Regras regra, Integer idUsuarioLogado) {
+        boolean isNovo = regra.getIdRegra() == null;
+        String nomeRegra = regra.getNomeRegra();
+        Integer pontos = regra.getPontos();
+        Integer limiteTurno = regra.getPontosLimitesTurno();
+        String judicante = regra.getInJudicante();
+        String revogado = regra.getInRevogado();
+
+        // Carrega a Resolução gerenciada do banco
         Resolucao resolucaoManaged = carregarResolucaoGerenciada(regra.getResolucao());
         regra.setResolucao(resolucaoManaged);
 
-        // 2. Carrega a Portaria gerenciada (se existir)
+        // Carrega a Portaria gerenciada (se existir)
         if (regra.getPortaria() != null && regra.getPortaria().getIdPortaria() != null) {
             Portaria portariaManaged = carregarPortariaGerenciada(regra.getPortaria().getIdPortaria());
             regra.setPortaria(portariaManaged);
@@ -53,14 +62,29 @@ public class RegrasService {
             regra.setPortaria(null);
         }
 
-        // 3. Validações
+        // Validações
         validarPortaria(regra);
         validarDuplicidade(regra);
         normalizarFlags(regra);
 
-        // 4. Salva a regra
+        // Salva a regra
         Regras salva = repository.save(regra);
-        log.info("Regra salva: id={}, nome={}", salva.getIdRegra(), salva.getNomeRegra());
+        log.info("Regra {}: id={}, nome='{}', pontos={}, limiteTurno={}, judicante={}, revogado={}",
+                isNovo ? "criada" : "atualizada",
+                salva.getIdRegra(), nomeRegra, pontos, limiteTurno, judicante, revogado);
+
+        // Log de auditoria
+        String textoLog = String.format(
+                "Regra %s: ID=%d, Nome='%s', Pontos=%d, LimiteTurno=%d, Judicante='%s', Revogado='%s', Resolução='%s' (ID=%d)%s",
+                isNovo ? "criada" : "atualizada",
+                salva.getIdRegra(), nomeRegra, pontos, limiteTurno, judicante, revogado,
+                resolucaoManaged.getNumero() + "/" + resolucaoManaged.getAno(), resolucaoManaged.getIdResolucao(),
+                regra.getPortaria() != null
+                        ? String.format(", Portaria='%d/%d' (ID=%d)", regra.getPortaria().getNumero(),
+                                regra.getPortaria().getAno(), regra.getPortaria().getIdPortaria())
+                        : "");
+        logJetonService.registrarLog("regras", idUsuarioLogado, textoLog);
+
         return salva;
     }
 
@@ -101,49 +125,59 @@ public class RegrasService {
         if (regra.getInJudicante() == null || regra.getInJudicante().trim().isEmpty()) {
             regra.setInJudicante(Regras.JUDICANTE_NAO);
         }
-        if (regra.getPontos() == null) {
+        if (regra.getPontos() == null)
             regra.setPontos(0);
-        }
-        if (regra.getPontosLimitesTurno() == null) {
+        if (regra.getPontosLimitesTurno() == null)
             regra.setPontosLimitesTurno(0);
-        }
     }
 
     @Transactional
-    public void revogar(Integer id) {
+    public void revogar(Integer id, Integer idUsuarioLogado) {
         Regras regra = buscarOuFalhar(id);
         if (regra.isRevogado()) {
             throw new RuntimeException("A regra já está revogada.");
         }
+        String nome = regra.getNomeRegra();
         regra.setInRevogado(Regras.REVOGADO_SIM);
         repository.save(regra);
-        log.info("Regra revogada: id={}, nome={}", id, regra.getNomeRegra());
+        log.info("Regra revogada: id={}, nome={}", id, nome);
+
+        String textoLog = String.format("Regra revogada: ID=%d, Nome='%s'", id, nome);
+        logJetonService.registrarLog("regras", idUsuarioLogado, textoLog);
     }
 
     @Transactional
-    public void restaurar(Integer id) {
+    public void restaurar(Integer id, Integer idUsuarioLogado) {
         Regras regra = buscarOuFalhar(id);
         if (!regra.isRevogado()) {
             throw new RuntimeException("A regra já está em vigor.");
         }
+        String nome = regra.getNomeRegra();
         regra.setInRevogado(Regras.REVOGADO_NAO);
         repository.save(regra);
-        log.info("Regra restaurada: id={}, nome={}", id, regra.getNomeRegra());
+        log.info("Regra restaurada: id={}, nome={}", id, nome);
+
+        String textoLog = String.format("Regra restaurada: ID=%d, Nome='%s'", id, nome);
+        logJetonService.registrarLog("regras", idUsuarioLogado, textoLog);
     }
 
     @Transactional
-    public void excluirFisicamente(Integer id) {
+    public void excluirFisicamente(Integer id, Integer idUsuarioLogado) {
         Regras regra = buscarOuFalhar(id);
         if (!regra.isRevogado()) {
-            throw new RuntimeException("Para excluir fisicamente, a regra deve estar revogada primeiro.");
+            throw new RuntimeException("Para excluir, a regra deve estar revogada primeiro.");
         }
         long countAtividades = atividadeRepository.countByRegraIdRegra(id);
         if (countAtividades > 0) {
             throw new RuntimeException("Não é possível excluir a regra pois existem " + countAtividades +
                     " atividade(s) vinculada(s) a ela. Revogue-a ou use 'Revogar' em vez disso.");
         }
+        String nome = regra.getNomeRegra();
         repository.deleteById(id);
-        log.info("Regra excluída fisicamente: id={}", id);
+        log.info("Regra excluída: id={}, nome={}", id, nome);
+
+        String textoLog = String.format("Regra excluída: ID=%d, Nome='%s'", id, nome);
+        logJetonService.registrarLog("regras", idUsuarioLogado, textoLog);
     }
 
     // =========================================================================
