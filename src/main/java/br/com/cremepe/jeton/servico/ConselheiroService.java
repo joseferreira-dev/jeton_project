@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.dominio.Conselheiro;
+import br.com.cremepe.jeton.dominio.NivelAcesso;
 import br.com.cremepe.jeton.dominio.Pessoa;
 import br.com.cremepe.jeton.dominio.Usuario;
 import br.com.cremepe.jeton.repositorio.ConselheiroRepository;
@@ -34,6 +35,8 @@ public class ConselheiroService {
     private PessoaRepository pessoaRepository;
     @Autowired
     private UsuarioRepository usuarioRepository;
+    @Autowired
+    private AcessoService acessoService;
     @Autowired
     private LogJetonService logJetonService;
 
@@ -121,6 +124,15 @@ public class ConselheiroService {
             throw new RuntimeException("A senha é obrigatória para criar o acesso no sistema.");
         }
         usuarioRepository.save(usuario);
+
+        // Concede permissões padrão apenas para novos conselheiros
+        if (isNovo) {
+            acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL);
+            acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_COMPROVANTES);
+            acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_JETONS);
+            acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_PONTOS_REMANESCENTES);
+            log.info("Permissões padrão concedidas para o novo conselheiro ID={}", conselheiroSalvo.getIdPessoa());
+        }
 
         // Log de auditoria
         String textoLog = String.format(
