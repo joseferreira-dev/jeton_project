@@ -26,20 +26,50 @@ public class ResolucaoService {
     private ResolucaoRepository repository;
     @Autowired
     private RegrasRepository regrasRepository;
+    @Autowired
+    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
     @Transactional
-    public Resolucao salvar(Resolucao resolucao) {
+    public Resolucao salvar(Resolucao resolucao, Integer idUsuarioLogado) {
+        boolean isNovo = resolucao.getIdResolucao() == null;
+        Integer numero = resolucao.getNumero();
+        Integer ano = resolucao.getAno();
+        LocalDate dtInicio = resolucao.getDtInicioVigencia();
+        LocalDate dtFim = resolucao.getDtFimVigencia();
+        String ementa = resolucao.getEmenta();
+        Integer pontosPorJeton = resolucao.getPontosPorJeton();
+        Integer maxJetonsDia = resolucao.getMaxJetonsDia();
+        Integer maxJetonsPeriodo = resolucao.getMaxJetonsPeriodo();
+        Integer maxJetonsMes = resolucao.getMaxJetonsMes();
+        String valorJeton = resolucao.getValorJeton() != null ? resolucao.getValorJeton().toString() : "null";
+
         validarUnicidade(resolucao);
         validarSobreposicao(resolucao);
         if (resolucao.getInRevogado() == null || resolucao.getInRevogado().trim().isEmpty()) {
             resolucao.setInRevogado(Resolucao.REVOGADO_NAO);
         }
+
         Resolucao salva = repository.save(resolucao);
-        log.info("Resolução salva: id={}, número={}/{}", salva.getIdResolucao(), salva.getNumero(), salva.getAno());
+
+        log.info("Resolução {}: id={}, número={}/{}, vigência={} até {}, revogado={}",
+                isNovo ? "criada" : "atualizada",
+                salva.getIdResolucao(), numero, ano, dtInicio, dtFim, salva.getInRevogado());
+
+        String textoLog = String.format(
+                "Resolução %s: ID=%d, Número=%d/%d, Início Vigência=%s, Fim Vigência=%s, Ementa=%s, Pontos por Jeton=%d, MaxJetonsDia=%d, MaxJetonsPeriodo=%d, MaxJetonsMes=%d, Valor Jeton=%s, Revogado='%s'",
+                isNovo ? "criada" : "atualizada",
+                salva.getIdResolucao(), numero, ano,
+                dtInicio != null ? dtInicio : "null",
+                dtFim != null ? dtFim : "null",
+                ementa != null ? ementa.substring(0, Math.min(ementa.length(), 100)) : "null",
+                pontosPorJeton, maxJetonsDia, maxJetonsPeriodo, maxJetonsMes, valorJeton,
+                salva.getInRevogado());
+        logJetonService.registrarLog("resolucao", idUsuarioLogado, textoLog);
+
         return salva;
     }
 
@@ -73,19 +103,26 @@ public class ResolucaoService {
     }
 
     @Transactional
-    public void revogar(Integer id) {
+    public void revogar(Integer id, Integer idUsuarioLogado) {
         Resolucao resolucao = buscarOuFalhar(id);
         if (resolucao.isRevogado()) {
             throw new RuntimeException("A resolução já está revogada.");
         }
+        String numeroAno = resolucao.getNumero() + "/" + resolucao.getAno();
         resolucao.setInRevogado(Resolucao.REVOGADO_SIM);
         repository.save(resolucao);
         regrasRepository.revogarRegrasPorResolucao(id);
-        log.info("Resolução revogada: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
+        log.info("Resolução revogada: id={}, número={}", id, numeroAno);
+
+        String textoLog = String.format(
+                "Resolução revogada: ID=%d, Número=%d/%d, Início Vigência=%s, Fim Vigência=%s",
+                id, resolucao.getNumero(), resolucao.getAno(),
+                resolucao.getDtInicioVigencia(), resolucao.getDtFimVigencia());
+        logJetonService.registrarLog("resolucao", idUsuarioLogado, textoLog);
     }
 
     @Transactional
-    public void restaurar(Integer id) {
+    public void restaurar(Integer id, Integer idUsuarioLogado) {
         Resolucao resolucao = buscarOuFalhar(id);
         if (!resolucao.isRevogado()) {
             throw new RuntimeException("A resolução já está em vigor.");
@@ -93,22 +130,33 @@ public class ResolucaoService {
         resolucao.setInRevogado(Resolucao.REVOGADO_NAO);
         repository.save(resolucao);
         regrasRepository.restaurarRegrasPorResolucao(id);
-        log.info("Resolução restaurada (e suas regras vinculadas): id={}", id);
+        log.info("Resolução restaurada: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
+
+        String textoLog = String.format(
+                "Resolução restaurada (e suas regras vinculadas): ID=%d, Número=%d/%d",
+                id, resolucao.getNumero(), resolucao.getAno());
+        logJetonService.registrarLog("resolucao", idUsuarioLogado, textoLog);
     }
 
     @Transactional
-    public void excluirFisicamente(Integer id) {
+    public void excluirFisicamente(Integer id, Integer idUsuarioLogado) {
         Resolucao resolucao = buscarOuFalhar(id);
         if (!resolucao.isRevogado()) {
-            throw new RuntimeException("Para excluir fisicamente, a resolução deve estar revogada primeiro.");
+            throw new RuntimeException("Para excluir, a resolução deve estar revogada primeiro.");
         }
         long countRegras = regrasRepository.countByResolucaoIdResolucao(id);
         if (countRegras > 0) {
             throw new RuntimeException("Não é possível excluir a resolução pois existem " + countRegras +
                     " regra(s) vinculada(s). Revogue-as ou exclua-as antes.");
         }
+        String numeroAno = resolucao.getNumero() + "/" + resolucao.getAno();
         repository.deleteById(id);
-        log.info("Resolução excluída fisicamente: id={}", id);
+        log.info("Resolução excluída: id={}, número={}", id, numeroAno);
+
+        String textoLog = String.format(
+                "Resolução excluída: ID=%d, Número=%d/%d",
+                id, resolucao.getNumero(), resolucao.getAno());
+        logJetonService.registrarLog("resolucao", idUsuarioLogado, textoLog);
     }
 
     // =========================================================================

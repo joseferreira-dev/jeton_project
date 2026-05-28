@@ -134,7 +134,7 @@ public class PortariaService {
     public void excluirFisicamente(Integer id, Integer idUsuarioLogado) {
         Portaria portaria = buscarOuFalhar(id);
         if (!portaria.isRevogado()) {
-            throw new RuntimeException("Para excluir fisicamente, a portaria deve estar revogada primeiro.");
+            throw new RuntimeException("Para excluir, a portaria deve estar revogada primeiro.");
         }
         long countRegras = regrasRepository.countByPortariaIdPortaria(id);
         if (countRegras > 0) {
@@ -143,10 +143,10 @@ public class PortariaService {
         }
         String numeroAno = portaria.getNumero() + "/" + portaria.getAno();
         repository.deleteById(id);
-        log.info("Portaria excluída fisicamente: id={}, número={}", id, numeroAno);
+        log.info("Portaria excluída: id={}, número={}", id, numeroAno);
 
         String textoLog = String.format(
-                "Portaria excluída fisicamente: ID=%d, Número=%d/%d",
+                "Portaria excluída: ID=%d, Número=%d/%d",
                 id, portaria.getNumero(), portaria.getAno());
         logJetonService.registrarLog("portaria", idUsuarioLogado, textoLog);
     }
