@@ -7,6 +7,8 @@ import br.com.cremepe.jeton.repositorio.ConselheiroRepository;
 import br.com.cremepe.jeton.repositorio.PessoaRepository;
 import br.com.cremepe.jeton.repositorio.UsuarioRepository;
 import br.com.cremepe.jeton.util.CpfValidador;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,57 +26,109 @@ import java.util.Optional;
 @Service
 public class ConselheiroService {
 
+    private static final Logger log = LoggerFactory.getLogger(ConselheiroService.class);
+
     @Autowired
     private ConselheiroRepository conselheiroRepository;
     @Autowired
     private PessoaRepository pessoaRepository;
     @Autowired
     private UsuarioRepository usuarioRepository;
+    @Autowired
+    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
     @Transactional
-    public Conselheiro salvar(Conselheiro conselheiro) {
-        // 1. Valida e limpa o CPF (a entidade Pessoa normalizará)
-        Pessoa pessoa = conselheiro.getPessoa();
-        if (pessoa == null) {
-            throw new RuntimeException("Os dados da pessoa são obrigatórios.");
+    public Conselheiro salvar(Conselheiro conselheiro, Integer idUsuarioLogado) {
+        // Se for uma edição (ID informado), carrega a entidade existente
+        boolean isNovo = conselheiro.getIdPessoa() == null;
+        Conselheiro conselheiroExistente = null;
+
+        if (!isNovo) {
+            conselheiroExistente = conselheiroRepository.findById(conselheiro.getIdPessoa())
+                    .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado para edição."));
         }
+
+        // Obtém a pessoa a ser salva (pode ser a nova ou a existente)
+        Pessoa pessoa;
+        if (isNovo) {
+            pessoa = conselheiro.getPessoa();
+            if (pessoa == null) {
+                throw new RuntimeException("Os dados da pessoa são obrigatórios.");
+            }
+            // Define o tipo como Conselheiro (CORREÇÃO AQUI)
+            pessoa.setInTipoPessoa(Pessoa.TIPO_CONSELHEIRO);
+        } else {
+            pessoa = conselheiroExistente.getPessoa();
+            // Atualiza os campos da pessoa com os dados vindos do formulário
+            pessoa.setNome(conselheiro.getPessoa().getNome());
+            pessoa.setCpf(conselheiro.getPessoa().getCpf());
+            pessoa.setEmail(conselheiro.getPessoa().getEmail());
+            // O tipo permanece CONSELHEIRO
+            pessoa.setInTipoPessoa(Pessoa.TIPO_CONSELHEIRO);
+        }
+
+        // Normaliza e valida CPF
         String cpfLimpo = pessoa.getCpf() != null ? pessoa.getCpf().replaceAll("[^0-9]", "") : "";
         pessoa.setCpf(cpfLimpo);
-
-        // Validação matemática do CPF
         if (cpfLimpo.isEmpty() || !CpfValidador.isCpfValido(cpfLimpo)) {
             throw new RuntimeException("O número de CPF informado é inválido. Verifique os dígitos.");
         }
 
-        // 2. Verifica duplicidade de CPF na tabela pessoa
-        validarCpfUnico(cpfLimpo, conselheiro.getIdPessoa());
+        // Valida duplicidade de CPF (ignorando o próprio registro)
+        validarCpfUnico(cpfLimpo, isNovo ? null : conselheiroExistente.getIdPessoa());
 
-        // 3. Validação de CRM (se informado)
-        if (conselheiro.getCrm() != null) {
-            validarCrmUnico(conselheiro.getCrm(), conselheiro.getIdPessoa());
+        // Valida CRM (se informado)
+        Integer crm = conselheiro.getCrm();
+        if (crm != null) {
+            validarCrmUnico(crm, isNovo ? null : conselheiroExistente.getIdPessoa());
         }
 
-        // 4. Define o tipo da pessoa como Conselheiro ('C')
-        pessoa.setInTipoPessoa(Pessoa.TIPO_CONSELHEIRO);
+        // Prepara o conselheiro final
+        Conselheiro conselheiroFinal;
+        if (isNovo) {
+            conselheiroFinal = conselheiro;
+            conselheiroFinal.setPessoa(pessoa);
+            conselheiroFinal.setIdPessoa(null); // será gerado pelo JPA
+            // Garante situação padrão se não informada
+            if (conselheiroFinal.getInSituacao() == null || conselheiroFinal.getInSituacao().isEmpty()) {
+                conselheiroFinal.setInSituacao(Conselheiro.SITUACAO_ATIVO);
+            }
+        } else {
+            conselheiroFinal = conselheiroExistente;
+            conselheiroFinal.setCrm(crm);
+            conselheiroFinal.setInSituacao(conselheiro.getInSituacao());
+        }
 
-        // 5. Salva o conselheiro (cascade salvará a pessoa)
-        Conselheiro conselheiroSalvo = conselheiroRepository.save(conselheiro);
+        // Salva o conselheiro (cascade salvará a pessoa)
+        Conselheiro conselheiroSalvo = conselheiroRepository.save(conselheiroFinal);
+        log.info("Conselheiro {}: ID={}, nome='{}', CRM={}, situação={}",
+                isNovo ? "criado" : "atualizado",
+                conselheiroSalvo.getIdPessoa(), pessoa.getNome(), crm != null ? crm : 0,
+                conselheiroSalvo.getInSituacao());
 
-        // 6. Garante a criação/atualização do usuário vinculado
+        // Sincroniza o usuário vinculado
         Usuario usuario = usuarioRepository.findById(conselheiroSalvo.getIdPessoa()).orElse(new Usuario());
         usuario.setPessoa(conselheiroSalvo.getPessoa());
         usuario.setInSituacao(conselheiroSalvo.getInSituacao());
 
         if (conselheiro.getSenhaAcesso() != null && !conselheiro.getSenhaAcesso().trim().isEmpty()) {
             usuario.setSenha(gerarSHA256(conselheiro.getSenhaAcesso()));
-        } else if (usuario.getSenha() == null) {
+        } else if (usuario.getSenha() == null && isNovo) {
             throw new RuntimeException("A senha é obrigatória para criar o acesso no sistema.");
         }
         usuarioRepository.save(usuario);
+
+        // Log de auditoria
+        String textoLog = String.format(
+                "Conselheiro %s: ID=%d, Nome='%s', CPF=%s, CRM=%d, Situação='%s'",
+                isNovo ? "criado" : "atualizado",
+                conselheiroSalvo.getIdPessoa(), pessoa.getNome(), cpfLimpo, crm != null ? crm : 0,
+                conselheiroSalvo.getInSituacao());
+        logJetonService.registrarLog("conselheiro", idUsuarioLogado, textoLog);
 
         return conselheiroSalvo;
     }
@@ -139,7 +193,19 @@ public class ConselheiroService {
     // EXCLUSÃO
     // =========================================================================
     @Transactional
-    public void excluir(Integer id) {
+    public void excluir(Integer id, Integer idUsuarioLogado) {
+        // Busca o conselheiro antes de excluir para obter dados para o log
+        Optional<Conselheiro> conselheiroOpt = conselheiroRepository.findById(id);
+        if (conselheiroOpt.isEmpty()) {
+            log.warn("Tentativa de excluir conselheiro inexistente ID={}", id);
+            throw new RuntimeException("Conselheiro não encontrado para exclusão.");
+        }
+        Conselheiro conselheiro = conselheiroOpt.get();
+        String nome = conselheiro.getPessoa().getNome();
+        String cpf = conselheiro.getPessoa().getCpf();
+        Integer crm = conselheiro.getCrm();
+        String situacao = conselheiro.getInSituacao();
+
         // 1. Remove as permissões (usuario_acesso) primeiro
         conselheiroRepository.deletarPermissoesNativo(id);
 
@@ -151,5 +217,13 @@ public class ConselheiroService {
 
         // 4. Remove a pessoa
         conselheiroRepository.deletarPessoaNativa(id);
+
+        log.info("Conselheiro excluído: ID={}, nome='{}', CPF={}, CRM={}, situação={}",
+                id, nome, cpf, crm, situacao);
+
+        String textoLog = String.format(
+                "Conselheiro excluído: ID=%d, Nome='%s', CPF=%s, CRM=%d, Situação='%s'",
+                id, nome, cpf, crm, situacao);
+        logJetonService.registrarLog("conselheiro", idUsuarioLogado, textoLog);
     }
 }

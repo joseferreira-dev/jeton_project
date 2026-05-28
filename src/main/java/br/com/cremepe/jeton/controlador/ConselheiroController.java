@@ -2,6 +2,7 @@ package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Pessoa;
+import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -77,9 +78,11 @@ public class ConselheiroController {
     // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@Valid @ModelAttribute("conselheiro") Conselheiro conselheiro,
+            HttpSession session,
             RedirectAttributes ra) {
         try {
-            conselheiroService.salvar(conselheiro);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            conselheiroService.salvar(conselheiro, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Conselheiro gravado com sucesso!");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro ao gravar: " + e.getMessage());
@@ -91,9 +94,10 @@ public class ConselheiroController {
     // EXCLUSÃO
     // =========================================================================
     @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
-            conselheiroService.excluir(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            conselheiroService.excluir(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Conselheiro removido com sucesso!");
         } catch (Exception e) {
             ra.addFlashAttribute("erro",
@@ -107,5 +111,10 @@ public class ConselheiroController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private Integer getIdUsuarioLogado(HttpSession session) {
+        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }
