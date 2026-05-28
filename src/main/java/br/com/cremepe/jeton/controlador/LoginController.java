@@ -5,6 +5,7 @@ import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repositorio.ComprovanteRepository;
 import br.com.cremepe.jeton.repositorio.ConselheiroRepository;
+import br.com.cremepe.jeton.servico.LogJetonService;
 import br.com.cremepe.jeton.servico.UsuarioService;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
@@ -29,6 +30,8 @@ public class LoginController {
 
     @Autowired
     private UsuarioService usuarioService;
+    @Autowired
+    private LogJetonService logJetonService;
 
     // Dashboard
     @Autowired
@@ -52,18 +55,28 @@ public class LoginController {
         // Validação simples antes de consultar o banco
         if (cpf == null || cpf.isBlank() || senha == null || senha.isBlank()) {
             log.warn("Tentativa de login com CPF ou senha vazios");
+            // Não registra em log_jeton pois não há usuário identificado
             return redirectToLoginWithError(redirectAttributes);
         }
 
+        String cpfMascarado = cpf.replaceAll(".(?=.{4})", "*");
         Optional<ViewUserLogin> usuarioOpt = usuarioService.autenticar(cpf, senha);
 
         if (usuarioOpt.isPresent()) {
             ViewUserLogin usuarioLogado = usuarioOpt.get();
             session.setAttribute("usuarioLogado", usuarioLogado);
             log.info("Login bem-sucedido: usuário {} (ID {})", usuarioLogado.getNome(), usuarioLogado.getIdPessoa());
+
+            // Log de auditoria para login bem-sucedido
+            String textoLog = String.format(
+                    "Login bem-sucedido: Usuário ID=%d, Nome='%s', CPF=%s",
+                    usuarioLogado.getIdPessoa(), usuarioLogado.getNome(), cpfMascarado);
+            logJetonService.registrarLog("login", usuarioLogado.getIdPessoa(), textoLog);
+
             return "redirect:/index";
         } else {
-            log.warn("Falha de autenticação para CPF: {}", cpf.replaceAll(".(?=.{4})", "*")); // oculta parte do CPF
+            log.warn("Falha de autenticação para CPF: {}", cpfMascarado);
+
             return redirectToLoginWithError(redirectAttributes);
         }
     }
@@ -77,7 +90,13 @@ public class LoginController {
     public String sair(HttpSession session) {
         ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
         if (usuario != null) {
-            log.info("Logout do usuário: {}", usuario.getNome());
+            log.info("Logout do usuário: {} (ID {})", usuario.getNome(), usuario.getIdPessoa());
+
+            // Log de auditoria para logout
+            String textoLog = String.format(
+                    "Logout realizado: Usuário ID=%d, Nome='%s'",
+                    usuario.getIdPessoa(), usuario.getNome());
+            logJetonService.registrarLog("login", usuario.getIdPessoa(), textoLog);
         }
         session.invalidate();
         return "redirect:/login";
