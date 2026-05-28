@@ -3,6 +3,7 @@ package br.com.cremepe.jeton.controlador;
 import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Gestao;
 import br.com.cremepe.jeton.dominio.GestaoConselheiro;
+import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
@@ -85,12 +86,13 @@ public class GestaoConselheiroController {
             return "redirect:/login";
 
         try {
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
             GestaoConselheiro vinculo = gestaoConselheiroService.buscarOuFalhar(idGestao, idPessoa);
             if (vinculo.isAtivo()) {
-                gestaoConselheiroService.inativarVinculo(idGestao, idPessoa);
+                gestaoConselheiroService.inativarVinculo(idGestao, idPessoa, idUsuarioLogado);
                 ra.addFlashAttribute("sucesso", "O vínculo foi INATIVADO com sucesso.");
             } else {
-                gestaoConselheiroService.ativarVinculo(idGestao, idPessoa);
+                gestaoConselheiroService.ativarVinculo(idGestao, idPessoa, idUsuarioLogado);
                 ra.addFlashAttribute("sucesso",
                         "O vínculo foi ATIVADO com sucesso. (Outras gestões foram inativadas automaticamente)");
             }
@@ -102,9 +104,12 @@ public class GestaoConselheiroController {
     }
 
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("gestaoConselheiro") GestaoConselheiro vinculo, RedirectAttributes ra) {
+    public String salvar(@ModelAttribute("gestaoConselheiro") GestaoConselheiro vinculo,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            gestaoConselheiroService.salvar(vinculo);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            gestaoConselheiroService.salvar(vinculo, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Vínculo de conselheiro guardado com sucesso!");
         } catch (Exception e) {
             log.error("Erro ao salvar vínculo: {}", e.getMessage());
@@ -116,9 +121,11 @@ public class GestaoConselheiroController {
     @GetMapping("/excluir/{idGestao}/{idPessoa}")
     public String excluir(@PathVariable("idGestao") Integer idGestao,
             @PathVariable("idPessoa") Integer idPessoa,
+            HttpSession session,
             RedirectAttributes ra) {
         try {
-            gestaoConselheiroService.excluir(idGestao, idPessoa);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            gestaoConselheiroService.excluir(idGestao, idPessoa, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Vínculo removido com sucesso!");
         } catch (Exception e) {
             log.error("Erro ao excluir vínculo {}/{}: {}", idGestao, idPessoa, e.getMessage());
@@ -163,9 +170,11 @@ public class GestaoConselheiroController {
     @PostMapping("/vincular/salvar")
     public String salvarVincularMassa(@RequestParam("idGestao") Integer idGestao,
             @RequestParam(value = "conselheirosIds", required = false) List<Integer> conselheirosIds,
+            HttpSession session,
             RedirectAttributes ra) {
         try {
-            gestaoConselheiroService.atualizarVinculosEmMassa(idGestao, conselheirosIds);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            gestaoConselheiroService.atualizarVinculosEmMassa(idGestao, conselheirosIds, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Vínculos atualizados com sucesso!");
         } catch (Exception e) {
             log.error("Erro ao atualizar vínculos em massa para gestão {}: {}", idGestao, e.getMessage());
@@ -179,6 +188,11 @@ public class GestaoConselheiroController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private Integer getIdUsuarioLogado(HttpSession session) {
+        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        return usuario != null ? usuario.getIdPessoa() : null;
     }
 
     private void carregarListasDeApoio(Model model) {
