@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}">
+
+<head>
+    <title>Logs de Auditoria - Jeton</title>
+</head>
+
+<body>
+    <div layout:fragment="conteudo">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h4 text-cremepe fw-bold">
+                <i class="fa-solid fa-history me-2"></i> Logs de Auditoria
+            </h2>
+        </div>
+
+        <div class="card shadow-sm border-success mb-4">
+            <div class="card-header bg-success text-white fw-bold">
+                <i class="fa-solid fa-filter me-2"></i> Filtrar Logs
+            </div>
+            <div class="card-body p-4">
+                <form th:action="@{/logs}" method="get" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">Tabela</label>
+                        <select name="nomeTabela" class="form-select">
+                            <option value="">-- Todas --</option>
+                            <option th:each="entry : ${opcoesTabelas}" th:value="${entry.key}" th:text="${entry.value}"
+                                th:selected="${nomeTabela != null and nomeTabela.equals(entry.key)}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">Data Inicial</label>
+                        <input type="date" name="dataInicio" class="form-control" th:value="${dataInicio}">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">Data Final</label>
+                        <input type="date" name="dataFim" class="form-control" th:value="${dataFim}">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">Exibir</label>
+                        <select name="size" class="form-select" onchange="this.form.submit()">
+                            <option value="10" th:selected="${size == 10}">10 registros</option>
+                            <option value="20" th:selected="${size == 20}">20 registros</option>
+                            <option value="0" th:selected="${size == 0}">Todos</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 mt-3 d-flex justify-content-end gap-2">
+                        <a th:href="@{/logs}" class="btn btn-outline-secondary">
+                            <i class="fa-solid fa-eraser me-1"></i> Limpar
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Usuário</th>
+                                <th>Tabela</th>
+                                <th>Ação / Detalhe</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${paginaLogs.empty}">
+                                <td colspan="4" class="text-center py-4 text-muted">
+                                    <i class="fa-solid fa-inbox fs-2 mb-2 d-block"></i>
+                                    Nenhum registro de auditoria encontrado.
+                                </td>
+                            </tr>
+                            <tr th:each="log : ${paginaLogs.content}">
+                                <td style="white-space: nowrap;"
+                                    th:text="${#temporals.format(log.dataHoraLog, 'dd/MM/yyyy HH:mm:ss')}">Data</td>
+                                <td>
+                                    <span th:text="${log.usuario.pessoa.nome}">Usuário</span><br>
+                                    <small class="text-muted"
+                                        th:text="'ID: ' + ${log.usuario.idUsuarioPessoa}">ID</small>
+                                </td>
+                                <td><span class="badge bg-secondary" th:text="${log.nomeTabela}">tabela</span></td>
+                                <td>
+                                    <div style="max-width: 500px; word-break: break-word; white-space: normal;"
+                                        th:text="${log.textoLog}"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Paginação -->
+            <!-- Paginação com números -->
+            <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaLogs.totalPages > 1}"
+                th:with="start=${paginaLogs.number > 2 ? paginaLogs.number - 2 : 0}, 
+          end=${paginaLogs.number + 2 < paginaLogs.totalPages - 1 ? paginaLogs.number + 2 : paginaLogs.totalPages - 1}">
+                <nav>
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item" th:classappend="${paginaLogs.first} ? 'disabled'">
+                            <a class="page-link"
+                                th:href="@{/logs(page=${paginaLogs.number - 1}, size=${size}, nomeTabela=${nomeTabela}, dataInicio=${dataInicio}, dataFim=${dataFim})}">Anterior</a>
+                        </li>
+
+                        <li class="page-item" th:if="${start > 0}">
+                            <a class="page-link"
+                                th:href="@{/logs(page=0, size=${size}, nomeTabela=${nomeTabela}, dataInicio=${dataInicio}, dataFim=${dataFim})}">1</a>
+                        </li>
+                        <li class="page-item disabled" th:if="${start > 1}"><span class="page-link">...</span></li>
+
+                        <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
+                            th:classappend="${paginaLogs.number == i} ? 'active'">
+                            <a class="page-link"
+                                th:href="@{/logs(page=${i}, size=${size}, nomeTabela=${nomeTabela}, dataInicio=${dataInicio}, dataFim=${dataFim})}"
+                                th:text="${i + 1}">1</a>
+                        </li>
+
+                        <li class="page-item disabled" th:if="${end < paginaLogs.totalPages - 2}"><span
+                                class="page-link">...</span></li>
+                        <li class="page-item" th:if="${end < paginaLogs.totalPages - 1}">
+                            <a class="page-link"
+                                th:href="@{/logs(page=${paginaLogs.totalPages - 1}, size=${size}, nomeTabela=${nomeTabela}, dataInicio=${dataInicio}, dataFim=${dataFim})}"
+                                th:text="${paginaLogs.totalPages}">Última</a>
+                        </li>
+
+                        <li class="page-item" th:classappend="${paginaLogs.last} ? 'disabled'">
+                            <a class="page-link"
+                                th:href="@{/logs(page=${paginaLogs.number + 1}, size=${size}, nomeTabela=${nomeTabela}, dataInicio=${dataInicio}, dataFim=${dataFim})}">Próxima</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

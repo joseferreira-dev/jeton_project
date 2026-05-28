@@ -7,6 +7,8 @@ import br.com.cremepe.jeton.repositorio.UsuarioRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,5 +54,11 @@ public class LogJetonService {
     @Transactional(readOnly = true)
     public List<LogJeton> listarLogsPorTabelaEPeriodo(String nomeTabela, LocalDateTime inicio, LocalDateTime fim) {
         return logRepository.findByNomeTabelaAndDataHoraLogBetween(nomeTabela, inicio, fim);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<LogJeton> listarComFiltros(String nomeTabela, LocalDateTime dataInicio, LocalDateTime dataFim,
+            Pageable pageable) {
+        return logRepository.pesquisarComFiltros(nomeTabela, dataInicio, dataFim, pageable);
     }
 }

@@ -74,6 +74,11 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
                 && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_USUARIOS))) {
             permissaoFaltante = NivelAcesso.NIVEL_USUARIOS;
             log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão U", usuarioLogado.getNome(), uri);
+        } else if (uri.startsWith("/logs")
+                && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_NIVEIS_ACESSO))) {
+            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão N", usuarioLogado.getNome(), uri);
+            response.sendRedirect("/index?erro=acesso_negado");
+            return false;
         }
 
         // Se houve bloqueio por falta de permissão, registra auditoria e redireciona
