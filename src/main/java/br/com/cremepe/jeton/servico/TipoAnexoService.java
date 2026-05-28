@@ -19,16 +19,19 @@ public class TipoAnexoService {
 
     @Autowired
     private TipoAnexoRepository repository;
-
     @Autowired
     private ComprovanteRepository comprovanteRepository;
+    @Autowired
+    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
     @Transactional
-    public TipoAnexo salvar(TipoAnexo tipoAnexo) {
+    public TipoAnexo salvar(TipoAnexo tipoAnexo, Integer idUsuarioLogado) {
+        boolean isNovo = tipoAnexo.getIdTipo() == null;
+
         validarNomeUnico(tipoAnexo);
 
         // Garante que exigePublicacao tenha valor padrão se não informado
@@ -37,7 +40,16 @@ public class TipoAnexoService {
         }
 
         TipoAnexo salvo = repository.save(tipoAnexo);
-        log.info("Tipo de anexo salvo: id={}, nome={}", salvo.getIdTipo(), salvo.getNome());
+        log.info("Tipo de anexo {}: id={}, nome={}, exigePublicacao={}",
+                isNovo ? "criado" : "atualizado",
+                salvo.getIdTipo(), salvo.getNome(), salvo.getExigePublicacao());
+
+        String textoLog = String.format(
+                "Tipo de anexo %s: ID=%d, Nome='%s', ExigePublicacao='%s'",
+                isNovo ? "criado" : "atualizado",
+                salvo.getIdTipo(), salvo.getNome(), salvo.getExigePublicacao());
+        logJetonService.registrarLog("tipo_anexo", idUsuarioLogado, textoLog);
+
         return salvo;
     }
 
@@ -53,15 +65,31 @@ public class TipoAnexoService {
     }
 
     @Transactional
-    public void excluir(Integer id) {
+    public void excluir(Integer id, Integer idUsuarioLogado) {
+        // Busca o tipo antes de excluir para obter dados para o log
+        Optional<TipoAnexo> tipoOpt = repository.findById(id);
+        if (tipoOpt.isEmpty()) {
+            log.warn("Tentativa de excluir tipo de anexo inexistente ID={}", id);
+            throw new RuntimeException("Tipo de anexo não encontrado para exclusão.");
+        }
+        TipoAnexo tipo = tipoOpt.get();
+        String nome = tipo.getNome();
+        String exigePublicacao = tipo.getExigePublicacao();
+
         // Verifica se existem comprovantes usando este tipo
         long count = comprovanteRepository.findByTipoAnexoIdTipo(id).size();
         if (count > 0) {
             throw new RuntimeException("Não é possível excluir este tipo de anexo pois existem " + count +
                     " comprovante(s) vinculado(s) a ele.");
         }
+
         repository.deleteById(id);
-        log.info("Tipo de anexo excluído: id={}", id);
+        log.info("Tipo de anexo excluído: id={}, nome={}", id, nome);
+
+        String textoLog = String.format(
+                "Tipo de anexo excluído: ID=%d, Nome='%s', ExigePublicacao='%s'",
+                id, nome, exigePublicacao);
+        logJetonService.registrarLog("tipo_anexo", idUsuarioLogado, textoLog);
     }
 
     // =========================================================================

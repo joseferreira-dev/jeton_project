@@ -3,7 +3,6 @@ package br.com.cremepe.jeton.servico;
 import br.com.cremepe.jeton.dominio.NivelAcesso;
 import br.com.cremepe.jeton.repositorio.NivelAcessoRepository;
 import br.com.cremepe.jeton.repositorio.UsuarioAcessoRepository;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,15 +21,28 @@ public class NivelAcessoService {
     private NivelAcessoRepository repository;
     @Autowired
     private UsuarioAcessoRepository usuarioAcessoRepository;
+    @Autowired
+    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
     @Transactional
-    public NivelAcesso salvar(NivelAcesso nivel) {
+    public NivelAcesso salvar(NivelAcesso nivel, Integer idUsuarioLogado) {
+        boolean isNovo = nivel.getIdNivel() == null || nivel.getIdNivel().trim().isEmpty();
+
         validarNomeUnico(nivel);
         NivelAcesso salvo = repository.save(nivel);
-        log.info("Nível de acesso salvo: id={}, nome={}", salvo.getIdNivel(), salvo.getNomeNivel());
+
+        log.info("Nível de acesso {}: id={}, nome={}", isNovo ? "criado" : "atualizado", salvo.getIdNivel(),
+                salvo.getNomeNivel());
+
+        String textoLog = String.format(
+                "Nível de acesso %s: ID='%s', Nome='%s'",
+                isNovo ? "criado" : "atualizado",
+                salvo.getIdNivel(), salvo.getNomeNivel());
+        logJetonService.registrarLog("nivel_acesso", idUsuarioLogado, textoLog);
+
         return salvo;
     }
 
@@ -66,7 +78,7 @@ public class NivelAcessoService {
     // EXCLUSÃO
     // =========================================================================
     @Transactional
-    public void excluir(String id) {
+    public void excluir(String id, Integer idUsuarioLogado) {
         // Verifica se existem usuários com este nível de acesso
         boolean emUso = usuarioAcessoRepository.existsByIdIdNivel(id);
         if (emUso) {
@@ -74,7 +86,17 @@ public class NivelAcessoService {
                     "Não é possível excluir o nível de acesso '" + id
                             + "' pois ele está associado a um ou mais usuários.");
         }
+
+        // Busca o nível para obter nome antes de excluir
+        Optional<NivelAcesso> nivelOpt = repository.findById(id);
+        String nome = nivelOpt.map(NivelAcesso::getNomeNivel).orElse("desconhecido");
+
         repository.deleteById(id);
-        log.info("Nível de acesso excluído: id={}", id);
+        log.info("Nível de acesso excluído: id={}, nome={}", id, nome);
+
+        String textoLog = String.format(
+                "Nível de acesso excluído: ID='%s', Nome='%s'",
+                id, nome);
+        logJetonService.registrarLog("nivel_acesso", idUsuarioLogado, textoLog);
     }
 }

@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.TipoAnexo;
+import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.TipoAnexoService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,8 +43,7 @@ public class TipoAnexoController {
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
         if (naoAutenticado(session))
             return "redirect:/login";
-        TipoAnexo tipoAnexo = tipoAnexoService.buscarPorId(id)
-                .orElseThrow(() -> new IllegalArgumentException("Tipo de anexo não encontrado"));
+        TipoAnexo tipoAnexo = tipoAnexoService.buscarOuFalhar(id);
         model.addAttribute("tipoAnexo", tipoAnexo);
         return "tipoanexo/formulario";
     }
@@ -52,9 +52,12 @@ public class TipoAnexoController {
     // SALVAR (CRIAR / ATUALIZAR)
     // =========================================================================
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute("tipoAnexo") TipoAnexo tipoAnexo, RedirectAttributes ra) {
+    public String salvar(@ModelAttribute("tipoAnexo") TipoAnexo tipoAnexo,
+            HttpSession session,
+            RedirectAttributes ra) {
         try {
-            tipoAnexoService.salvar(tipoAnexo);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            tipoAnexoService.salvar(tipoAnexo, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Tipo de Anexo salvo com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -68,9 +71,10 @@ public class TipoAnexoController {
     // EXCLUSÃO
     // =========================================================================
     @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
+    public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
-            tipoAnexoService.excluir(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            tipoAnexoService.excluir(id, idUsuarioLogado);
             ra.addFlashAttribute("sucesso", "Tipo de Anexo removido com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -85,5 +89,10 @@ public class TipoAnexoController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private Integer getIdUsuarioLogado(HttpSession session) {
+        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }

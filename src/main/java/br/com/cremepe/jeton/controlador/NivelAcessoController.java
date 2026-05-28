@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.NivelAcesso;
+import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.NivelAcessoService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -58,9 +59,11 @@ public class NivelAcessoController {
     // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@Valid @ModelAttribute("nivelAcesso") NivelAcesso nivelAcesso,
+            HttpSession session,
             RedirectAttributes redirectAttributes) {
         try {
-            nivelAcessoService.salvar(nivelAcesso);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            nivelAcessoService.salvar(nivelAcesso, idUsuarioLogado);
             redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso salvo com sucesso!");
         } catch (Exception e) {
             log.error("Erro ao salvar nível de acesso: {}", e.getMessage());
@@ -73,9 +76,12 @@ public class NivelAcessoController {
     // EXCLUSÃO
     // =========================================================================
     @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") String id, RedirectAttributes redirectAttributes) {
+    public String excluir(@PathVariable("id") String id,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
         try {
-            nivelAcessoService.excluir(id);
+            Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            nivelAcessoService.excluir(id, idUsuarioLogado);
             redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso removido!");
         } catch (DataIntegrityViolationException e) {
             log.error("Erro de integridade ao excluir nível {}: {}", id, e.getMessage());
@@ -93,5 +99,10 @@ public class NivelAcessoController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
+    }
+
+    private Integer getIdUsuarioLogado(HttpSession session) {
+        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }
