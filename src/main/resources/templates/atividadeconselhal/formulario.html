@@ -162,165 +162,48 @@
             </div>
         </div>
         <script>
-            let originalResolucoes = "";
-            let originalPortarias = "";
-            let regrasCache = [];
-
-            window.onload = function () {
-                const selectRes = document.getElementById('selectResolucao');
-                const selectPort = document.getElementById('selectPortaria');
-                if (selectRes) originalResolucoes = selectRes.innerHTML;
-                if (selectPort) originalPortarias = selectPort.innerHTML;
-
-                try {
-                    // 1. Tratamento para a edição do Conselheiro
-                    const selectGestao = document.getElementById('selectGestao');
-                    if (selectGestao && selectGestao.value) {
-                        const idAtualConselheiro = document.getElementById('selectConselheiro').value;
-                        atualizarConselheiros(idAtualConselheiro);
-                    }
-                } catch (e) { console.error("Erro ao carregar conselheiro na edição:", e); }
-
-                try {
-                    // 2. Tratamento para a edição das Regras (Baseadas na data)
-                    const dataAtividade = document.getElementById('dataAtividade');
-                    const selectRegra = document.getElementById('selectRegra');
-
-                    if (dataAtividade && dataAtividade.value && selectRegra) {
-                        // Captura o valor que o Thymeleaf colocou nativamente no select antes de ser limpo
-                        const idAtualRegra = selectRegra.value;
-                        if (idAtualRegra) {
-                            atualizarRegrasPorData(idAtualRegra);
-                        }
-                    }
-                } catch (e) { console.error("Erro ao carregar regras na edição:", e); }
-            };
-
-            function resetarFiltros() {
-                const selectRes = document.getElementById('selectResolucao');
-                const selectPort = document.getElementById('selectPortaria');
-                if (selectRes) { selectRes.innerHTML = originalResolucoes; selectRes.value = ""; }
-                if (selectPort) { selectPort.innerHTML = originalPortarias; selectPort.value = ""; }
-
-                document.getElementById('selectRegra').innerHTML = '<option value="">-- Escolha a documentação acima para desbloquear as regras --</option>';
-                document.getElementById('selectRegra').disabled = true;
-                document.getElementById('boxGuia').style.display = 'none';
-            }
-
-            function atualizarConselheiros(idParaSelecionar = null) {
-                const gestaoId = document.getElementById('selectGestao').value;
+            document.addEventListener('DOMContentLoaded', function () {
+                // Se estiver em modo de edição (atividade já possui ID)
+                const selectGestao = document.getElementById('selectGestao');
                 const selectConselheiro = document.getElementById('selectConselheiro');
+                const dataAtividade = document.getElementById('dataAtividade');
 
-                if (!gestaoId) {
-                    selectConselheiro.innerHTML = '<option value="">-- Aguardando Gestão --</option>';
-                    selectConselheiro.disabled = true;
-                    return;
-                }
-
-                fetch(`/atividades/api/conselheiros-por-gestao?gestaoId=${gestaoId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        selectConselheiro.innerHTML = '<option value="">-- Selecione o Médico --</option>';
-                        if (data && data.length > 0) {
-                            data.forEach(c => {
-                                const isSelected = (idParaSelecionar && idParaSelecionar == c.id) ? 'selected' : '';
-                                selectConselheiro.innerHTML += `<option value="${c.id}" ${isSelected}>${c.nome}</option>`;
-                            });
-                            selectConselheiro.disabled = false;
-                        } else {
-                            selectConselheiro.innerHTML = '<option value="">-- Nenhum médico vinculado a esta gestão --</option>';
-                            selectConselheiro.disabled = true;
-                        }
-                    })
-                    .catch(err => console.error("Erro no fetch de conselheiros:", err));
-            }
-
-            function atualizarRegrasPorData(idRegraParaSelecionar = null) {
-                const dataValue = document.getElementById('dataAtividade').value;
-                const selectRegra = document.getElementById('selectRegra');
-
-                if (!dataValue) return;
-
-                selectRegra.innerHTML = '<option value="">Carregando regras da época...</option>';
-
-                fetch(`/atividades/api/regras-por-data?data=${dataValue}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        document.getElementById('nomeResolucaoVisual').value = data.nomeResolucao || "Nenhuma encontrada";
-                        document.getElementById('idResolucaoHidden').value = data.idResolucao || "";
-                        document.getElementById('nomePortariaVisual').value = data.nomePortaria || "Nenhuma encontrada";
-                        document.getElementById('idPortariaHidden').value = data.idPortaria || "";
-
-                        selectRegra.innerHTML = '<option value="">-- Selecione a Regra Enquadrada --</option>';
-
-                        if (data.regras && data.regras.length > 0) {
-                            regrasCache = data.regras;
-
-                            data.regras.forEach(r => {
-                                const isSelected = (idRegraParaSelecionar && idRegraParaSelecionar == r.id) ? 'selected' : '';
-                                selectRegra.innerHTML += `<option value="${r.id}" ${isSelected}>${r.nome} (${r.pontos} pts)</option>`;
-                            });
-                            selectRegra.disabled = false;
-
-                            if (idRegraParaSelecionar) {
-                                // Timeout seguro para garantir que a árvore DOM renderizou a alteração do selectRegra.value
-                                setTimeout(exibirGuiaRegra, 100);
-                            }
-                        } else {
-                            selectRegra.innerHTML = '<option value="">Nenhuma regra cadastrada para as normativas deste período</option>';
-                            selectRegra.disabled = true;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Erro ao buscar regras por data:', error);
-                        selectRegra.innerHTML = '<option value="">Erro ao carregar regras</option>';
-                    });
-            }
-
-            function exibirGuiaRegra() {
-                const id = document.getElementById('selectRegra').value;
-                const box = document.getElementById('boxGuia');
-                const regra = regrasCache.find(r => r.id == id);
-
-                if (regra) {
-                    document.getElementById('guiaDescricao').innerText = regra.descricao;
-                    document.getElementById('guiaPontos').innerText = regra.pontos;
-                    box.style.display = 'block';
-                } else {
-                    box.style.display = 'none';
-                }
-            }
-
-            // Dispara a alteração visual do turno instantaneamente quando o horário é selecionado
-            const dataAtividadeInput = document.getElementById('dataAtividade');
-            if (dataAtividadeInput) {
-                dataAtividadeInput.addEventListener('change', function () {
-                    const dataHora = this.value;
-                    const turnoVisual = document.getElementById('turnoVisual');
-
-                    if (dataHora && turnoVisual) {
-                        const hora = new Date(dataHora).getHours();
-                        let turnoTexto = "Automático";
-
-                        if (hora >= 6 && hora < 12) {
-                            turnoTexto = "Manhã (M)";
-                            turnoVisual.style.color = "#0d6efd"; // Azul para Manhã
-                        } else if (hora >= 12 && hora < 18) {
-                            turnoTexto = "Tarde (T)";
-                            turnoVisual.style.color = "#fd7e14"; // Laranja para Tarde
-                        } else {
-                            turnoTexto = "Noite (N)";
-                            turnoVisual.style.color = "#6c757d"; // Cinza/Escuro para Noite
-                        }
-
-                        turnoVisual.value = turnoTexto;
-                        turnoVisual.style.fontWeight = "bold";
-                    } else if (turnoVisual) {
-                        turnoVisual.value = "Automático (via Horário)";
-                        turnoVisual.style.color = "initial";
-                        turnoVisual.style.fontWeight = "normal";
+                if (selectGestao && selectGestao.value) {
+                    const idConselheiroAtual = selectConselheiro.value;
+                    // Chama a função global do app.js
+                    if (typeof atualizarConselheiros === 'function') {
+                        atualizarConselheiros(idConselheiroAtual);
                     }
-                });
+                }
+
+                if (dataAtividade && dataAtividade.value) {
+                    const selectRegra = document.getElementById('selectRegra');
+                    const idRegraAtual = selectRegra ? selectRegra.value : null;
+                    if (typeof atualizarRegrasPorData === 'function') {
+                        atualizarRegrasPorData(idRegraAtual);
+                    }
+                }
+
+                // Configurar o evento de mudança do campo data para atualizar o turno visual
+                if (dataAtividade && typeof atualizarTurnoVisual === 'function') {
+                    dataAtividade.addEventListener('change', atualizarTurnoVisual);
+                    // Força a atualização inicial se já houver valor
+                    if (dataAtividade.value) atualizarTurnoVisual();
+                }
+            });
+
+            // Função resetarFiltros (específica deste formulário)
+            function resetarFiltros() {
+                document.getElementById('nomeResolucaoVisual').value = '';
+                document.getElementById('idResolucaoHidden').value = '';
+                document.getElementById('nomePortariaVisual').value = '';
+                document.getElementById('idPortariaHidden').value = '';
+                const selectRegra = document.getElementById('selectRegra');
+                if (selectRegra) {
+                    selectRegra.innerHTML = '<option value="">-- Escolha a documentação acima para desbloquear as regras --</option>';
+                    selectRegra.disabled = true;
+                }
+                document.getElementById('boxGuia').style.display = 'none';
             }
         </script>
     </div>

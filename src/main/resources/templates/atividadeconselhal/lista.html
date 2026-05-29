@@ -232,7 +232,7 @@
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </a>
                                             <button type="button" class="btn btn-outline-danger"
-                                                th:onclick="|prepararExclusao(${a.idAtividade})|" title="Excluir">
+                                                th:onclick="|confirmarAcao('/atividades/excluir/${a.idAtividade}', 'Deseja excluir permanentemente esta atividade?', false, 'btn-danger')|">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
                                         </th:block>
@@ -374,125 +374,6 @@
             </div>
         </div>
 
-        <script th:inline="javascript">
-            function prepararExclusao(id) {
-                var url = /*[[@{/atividades/excluir/}]]*/ '/atividades/excluir/';
-                document.getElementById('btnConfirmarExclusao').setAttribute('href', url + id);
-                new bootstrap.Modal(document.getElementById('modalExclusao')).show();
-            }
-
-            function verDetalhes(btn) {
-                // Extrai os dados do botão de forma segura
-                const id = btn.getAttribute('data-id');
-                const turnoVal = btn.getAttribute('data-turno');
-                const regraNome = btn.getAttribute('data-regranome');
-                const regraDesc = btn.getAttribute('data-regradesc');
-                const regraPontos = btn.getAttribute('data-regrapontos');
-                const dataAtv = btn.getAttribute('data-dataatv');
-                const dataReg = btn.getAttribute('data-datareg');
-
-                // Formata o turno
-                const turnoTexto = turnoVal === 'M' ? 'Manhã' : (turnoVal === 'T' ? 'Tarde' : 'Noite');
-
-                const html = `
-            <div class="row g-3">
-                <div class="col-md-12"><strong>Atividade Enquadrada:</strong><br>${regraNome} - ${regraDesc}</div>
-                <div class="col-md-4"><strong>Data da Atividade:</strong><br>${dataAtv}</div>
-                <div class="col-md-4"><strong>Turno:</strong><br>${turnoTexto}</div>
-                <div class="col-md-4"><strong>Pontuação da Regra:</strong><br><span class="badge bg-primary">${regraPontos} pontos</span></div>
-                <hr>
-                <div class="col-md-6"><small class="text-muted"><strong>Registrado em:</strong> ${dataReg}</small></div>
-                <div class="col-md-6 text-end"><small class="text-muted"><strong>ID Atividade:</strong> #${id}</small></div>
-            </div>
-        `;
-                document.getElementById('detalhesConteudo').innerHTML = html;
-                new bootstrap.Modal(document.getElementById('modalDetalhes')).show();
-            }
-
-            async function verComprovante(btn) {
-                const id = btn.getAttribute('data-id');
-                const nome = btn.getAttribute('data-nome');
-                document.getElementById('nomeComprovanteTitulo').innerText = nome;
-
-                const modalBody = document.getElementById('modalComprovanteBody');
-                // Limpa o conteúdo anterior e mostra loading
-                modalBody.innerHTML = `
-        <div class="text-center text-white">
-            <i class="fa-solid fa-spinner fa-spin fa-3x"></i>
-            <p class="mt-2">Carregando comprovante...</p>
-        </div>
-    `;
-
-                const modal = new bootstrap.Modal(document.getElementById('modalComprovante'));
-                modal.show();
-
-                try {
-                    const response = await fetch(`/comprovantes/download/${id}`);
-                    if (!response.ok) throw new Error('Erro ao carregar arquivo');
-
-                    const contentType = response.headers.get('content-type');
-                    const blob = await response.blob();
-                    const url = URL.createObjectURL(blob);
-
-                    // Decide como exibir baseado no content-type
-                    if (contentType.startsWith('image/')) {
-                        // Exibir imagem centralizada e com escala máxima
-                        const img = document.createElement('img');
-                        img.src = url;
-                        img.style.maxWidth = '100%';
-                        img.style.maxHeight = '100%';
-                        img.style.objectFit = 'contain';
-                        img.style.borderRadius = '8px';
-                        modalBody.innerHTML = '';
-                        modalBody.appendChild(img);
-                    } else if (contentType === 'application/pdf') {
-                        // Exibir PDF em iframe
-                        const iframe = document.createElement('iframe');
-                        iframe.src = url;
-                        iframe.width = '100%';
-                        iframe.height = '100%';
-                        iframe.style.border = 'none';
-                        modalBody.innerHTML = '';
-                        modalBody.appendChild(iframe);
-                    } else {
-                        // Fallback: mostrar link para download
-                        modalBody.innerHTML = `
-                <div class="alert alert-warning m-3">
-                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
-                    Tipo de arquivo não suportado para visualização direta.
-                    <a href="${url}" download target="_blank" class="alert-link">Clique aqui para baixar</a>.
-                </div>
-            `;
-                    }
-                } catch (error) {
-                    console.error('Erro ao carregar comprovante:', error);
-                    modalBody.innerHTML = `
-            <div class="alert alert-danger m-3">
-                <i class="fa-solid fa-circle-exclamation me-2"></i>
-                Não foi possível carregar o comprovante. Tente novamente mais tarde.
-            </div>
-        `;
-                }
-            }
-
-            function confirmarAcao(url, mensagem, isDesvalidar) {
-                document.getElementById('textoConfirmacao').innerText = mensagem;
-
-                const link = document.getElementById('linkConfirmacao');
-                link.setAttribute('href', url);
-
-                const modalHeader = document.getElementById('modalConfirmacaoHeader');
-
-                if (isDesvalidar) {
-                    link.className = "btn btn-warning px-4 text-white";
-                    modalHeader.className = "modal-header bg-warning text-white";
-                } else {
-                    link.className = "btn btn-success px-4";
-                }
-
-                new bootstrap.Modal(document.getElementById('modalConfirmacao')).show();
-            }
-        </script>
     </div>
 </body>
 
