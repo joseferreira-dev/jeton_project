@@ -32,11 +32,15 @@
 
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Data de Início da Vigência</label>
-                            <input type="date" class="form-control" th:field="*{dtInicioVigencia}" required>
+                            <input type="date" class="form-control"
+                                th:value="${#temporals.format(portaria.dtInicioVigencia, 'yyyy-MM-dd')}"
+                                name="dtInicioVigencia" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Data de Fim da Vigência</label>
-                            <input type="date" class="form-control" th:field="*{dtFimVigencia}">
+                            <input type="date" class="form-control"
+                                th:value="${#temporals.format(portaria.dtFimVigencia, 'yyyy-MM-dd')}"
+                                name="dtFimVigencia">
                             <div class="form-text">Deixe em branco se a portaria for por tempo indeterminado.</div>
                         </div>
 
