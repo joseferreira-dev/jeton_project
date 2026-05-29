@@ -56,7 +56,7 @@
                             <div class="col-md-12 mt-4 pt-3 border-top">
                                 <div class="form-check form-switch fs-5 mb-2">
                                     <input class="form-check-input" type="checkbox" id="checkConselheiro"
-                                        th:field="*{eConselheiro}" onchange="toggleCrm()">
+                                        th:field="*{eConselheiro}" onclick="toggleCrm()">
                                     <label class="form-check-label fw-bold text-primary" for="checkConselheiro">Este
                                         utilizador é um Médico Conselheiro?</label>
                                 </div>
@@ -103,24 +103,6 @@
                     Utilizador</button>
             </div>
         </form>
-
-        <script>
-            function toggleCrm() {
-                const checkbox = document.getElementById('checkConselheiro');
-                const divCrm = document.getElementById('divCrm');
-                const inputCrm = document.getElementById('inputCrm');
-
-                if (checkbox.checked) {
-                    divCrm.style.display = 'block';
-                    inputCrm.required = true;
-                } else {
-                    divCrm.style.display = 'none';
-                    inputCrm.required = false;
-                    inputCrm.value = '';
-                }
-            }
-            window.onload = toggleCrm;
-        </script>
     </div>
 </body>
 

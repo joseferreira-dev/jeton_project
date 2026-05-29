@@ -36,13 +36,11 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-
                         <div class="col-md-5">
                             <label class="form-label fw-bold small text-muted">Pesquisar (Nome ou CPF)</label>
                             <input type="text" name="termo" th:value="${termo}" class="form-control"
                                 placeholder="Buscar por Nome ou CPF...">
                         </div>
-
                         <div class="col-md-4">
                             <label class="form-label fw-bold small text-muted">Status</label>
                             <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
@@ -51,7 +49,6 @@
                                 <option value="I" th:selected="${situacao == 'I'}">Inativos</option>
                             </select>
                         </div>
-
                         <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Exibir</label>
                             <select name="size" id="size" class="form-select" onchange="this.form.submit()">
@@ -119,9 +116,9 @@
                                         class="btn btn-sm btn-outline-primary me-1" title="Editar">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                        th:onclick="prepararExclusao([[${u.idUsuarioPessoa}]], [[${u.pessoa.nome}]], [[${u.pessoa.cpf}]])"
-                                        title="Excluir">
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-excluir"
+                                        data-url="/usuarios/excluir/" th:data-id="${u.idUsuarioPessoa}"
+                                        th:data-nome="${u.pessoa.nome}" th:data-extra="${u.pessoa.cpf}" title="Excluir">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                 </td>
@@ -143,20 +140,17 @@
                             <a class="page-link"
                                 th:href="@{/usuarios(page=${paginaUsuarios.number - 1}, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Anterior</a>
                         </li>
-
                         <li class="page-item" th:if="${start > 0}">
                             <a class="page-link"
                                 th:href="@{/usuarios(page=0, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">1</a>
                         </li>
                         <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
-
                         <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
                             th:classappend="${paginaUsuarios.number == i} ? 'active'">
                             <a class="page-link"
                                 th:href="@{/usuarios(page=${i}, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}"
                                 th:text="${i + 1}">1</a>
                         </li>
-
                         <li class="page-item disabled" th:if="${end < paginaUsuarios.totalPages - 2}"><a
                                 class="page-link" href="#">...</a></li>
                         <li class="page-item" th:if="${end < paginaUsuarios.totalPages - 1}">
@@ -164,7 +158,6 @@
                                 th:href="@{/usuarios(page=${paginaUsuarios.totalPages - 1}, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}"
                                 th:text="${paginaUsuarios.totalPages}">Última</a>
                         </li>
-
                         <li class="page-item" th:classappend="${paginaUsuarios.last} ? 'disabled'">
                             <a class="page-link"
                                 th:href="@{/usuarios(page=${paginaUsuarios.number + 1}, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Próxima</a>
@@ -174,6 +167,7 @@
             </div>
         </div>
 
+        <!-- Modal de exclusão ajustado para compatibilidade com a função global prepararExclusao -->
         <div class="modal fade" id="modalExclusao" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content border-0 shadow">
@@ -189,7 +183,7 @@
                             <div class="card-body py-2">
                                 <div class="mb-1"><strong>Nome:</strong> <span id="excluirNome"
                                         class="text-dark"></span></div>
-                                <div><strong>CPF:</strong> <span id="excluirCPF" class="text-dark"></span></div>
+                                <div><strong>CPF:</strong> <span id="excluirExtra" class="text-dark"></span></div>
                             </div>
                         </div>
                         <p class="text-danger small mt-3 mb-0">
@@ -206,18 +200,7 @@
             </div>
         </div>
 
-        <script th:inline="javascript">
-            function prepararExclusao(id, nome, cpf) {
-                document.getElementById('excluirNome').innerText = nome;
-                document.getElementById('excluirCPF').innerText = cpf;
-                var urlExclusao = /*[[@{/usuarios/excluir/}]]*/ '/usuarios/excluir/';
-                document.getElementById('btnConfirmarExclusao').setAttribute('href', urlExclusao + id);
-                var modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
-                modal.show();
-            }
-        </script>
     </div>
-
 </body>
 
 </html>

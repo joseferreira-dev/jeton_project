@@ -45,6 +45,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     inicializarHomologacao();
     inicializarFiltroRegrasConjuntas();
+
+    // Inicializa o toggle de CRM no formulário de usuário (se o checkbox existir)
+    if (document.getElementById('checkConselheiro')) {
+        toggleCrm();
+    }
 });
 
 /**
