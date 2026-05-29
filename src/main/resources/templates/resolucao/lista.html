@@ -31,13 +31,11 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-
                         <div class="col-md-5">
                             <label class="form-label fw-bold small text-muted">Pesquisar (Número, Ano ou Ementa)</label>
                             <input type="text" name="termo" th:value="${termo}" class="form-control"
                                 placeholder="Número, Ano ou Ementa...">
                         </div>
-
                         <div class="col-md-4">
                             <label class="form-label fw-bold small text-muted">Estado</label>
                             <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
@@ -46,7 +44,6 @@
                                 <option value="S" th:selected="${situacao == 'S'}">Revogada</option>
                             </select>
                         </div>
-
                         <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Exibir</label>
                             <select name="size" id="size" class="form-select" onchange="this.form.submit()">
@@ -55,7 +52,6 @@
                                 <option value="0" th:selected="${size == 0}">Todos</option>
                             </select>
                         </div>
-
                     </div>
 
                     <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
@@ -122,29 +118,25 @@
                                 </td>
                                 <td class="text-center pe-4">
                                     <a th:href="@{'/resolucoes/editar/' + ${r.idResolucao}}"
-                                        class="btn btn-sm btn-outline-primary me-1" title="Editar"><i
-                                            class="fa-solid fa-pen-to-square"></i></a>
+                                        class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
 
-                                    <a th:href="@{'/resolucoes/deletar/' + ${r.idResolucao}}"
-                                        class="btn btn-sm btn-outline-danger btn-confirm me-1"
-                                        title="Excluir Definitivamente"
-                                        data-mensagem="Deseja <b>EXCLUIR</b> permanentemente este registro?<br><small class='text-danger'>Apenas possível se não houver regras vinculadas.</small>"
-                                        data-cor="btn-danger" data-icone="fa-solid fa-trash-can"><i
-                                            class="fa-solid fa-trash-can"></i></a>
+                                    <a href="#" class="btn btn-sm btn-outline-danger me-1"
+                                        th:onclick="'confirmarAcao(\'/resolucoes/deletar/' + ${r.idResolucao} + '\', \'Deseja EXCLUIR permanentemente esta Resolução? Apenas possível se não houver regras vinculadas.\', false, \'btn-danger\')'">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </a>
 
-                                    <a th:if="${r.inRevogado == 'N'}"
-                                        th:href="@{'/resolucoes/revogar/' + ${r.idResolucao}}"
-                                        class="btn btn-sm btn-outline-danger btn-confirm" title="Revogar"
-                                        data-mensagem="Tem certeza que deseja <b>REVOGAR</b> esta Resolução?<br><small class='text-muted'>Isso impedirá que ela seja usada em novos registos.</small>"
-                                        data-cor="btn-danger" data-icone="fa-solid fa-ban"><i
-                                            class="fa-solid fa-ban"></i></a>
+                                    <a th:if="${r.inRevogado == 'N'}" href="#"
+                                        class="btn btn-sm btn-outline-danger me-1"
+                                        th:onclick="'confirmarAcao(\'/resolucoes/revogar/' + ${r.idResolucao} + '\', \'Tem certeza que deseja REVOGAR esta Resolução? Isso impedirá que ela seja usada em novos registos.\', false, \'btn-danger\')'">
+                                        <i class="fa-solid fa-ban"></i>
+                                    </a>
 
-                                    <a th:if="${r.inRevogado == 'S'}"
-                                        th:href="@{'/resolucoes/restaurar/' + ${r.idResolucao}}"
-                                        class="btn btn-sm btn-outline-success btn-confirm" title="Restaurar"
-                                        data-mensagem="Tem certeza que deseja <b>RESTAURAR</b> esta Resolução para o estado Em Vigor?"
-                                        data-cor="btn-success" data-icone="fa-solid fa-rotate-left"><i
-                                            class="fa-solid fa-rotate-left"></i></a>
+                                    <a th:if="${r.inRevogado == 'S'}" href="#" class="btn btn-sm btn-outline-success"
+                                        th:onclick="'confirmarAcao(\'/resolucoes/restaurar/' + ${r.idResolucao} + '\', \'Tem certeza que deseja RESTAURAR esta Resolução para o estado Em Vigor?\', false, \'btn-success\')'">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </a>
                                 </td>
                             </tr>
                             <tr th:if="${paginaResolucoes.empty}">
@@ -192,6 +184,26 @@
                 </nav>
             </div>
         </div>
+
+        <div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow">
+                    <div id="modalConfirmacaoHeader" class="modal-header bg-success text-white">
+                        <h5 class="modal-title"><i class="fa-solid fa-circle-question me-2"></i> Confirmar Ação</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p id="textoConfirmacao" class="mb-0">Tem certeza que deseja realizar esta operação?</p>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <a id="linkConfirmacao" href="#" class="btn btn-primary px-4">Confirmar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </body>
 

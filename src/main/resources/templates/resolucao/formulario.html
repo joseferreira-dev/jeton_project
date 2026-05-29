@@ -38,11 +38,15 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Início da Vigência</label>
-                                    <input type="date" class="form-control" th:field="*{dtInicioVigencia}" required>
+                                    <input type="date" class="form-control"
+                                        th:value="${#temporals.format(resolucao.dtInicioVigencia, 'yyyy-MM-dd')}"
+                                        name="dtInicioVigencia" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Fim da Vigência</label>
-                                    <input type="date" class="form-control" th:field="*{dtFimVigencia}">
+                                    <input type="date" class="form-control"
+                                        th:value="${#temporals.format(resolucao.dtFimVigencia, 'yyyy-MM-dd')}"
+                                        name="dtFimVigencia">
                                     <div class="form-text" style="font-size: 0.75rem;">Deixe vazio se for indeterminado.
                                     </div>
                                 </div>
