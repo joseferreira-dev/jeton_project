@@ -15,6 +15,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Configura o modal de confirmação global (já existe no layout.html)
     configurarModalConfirmacaoGlobal();
+
+    // Delegação de eventos para botões de exclusão (classe .btn-excluir)
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-excluir');
+        if (!btn) return;
+        e.preventDefault();
+        const baseUrl = btn.getAttribute('data-url');
+        const id = btn.getAttribute('data-id');
+        const nome = btn.getAttribute('data-nome');
+        const extra = btn.getAttribute('data-extra');
+        if (baseUrl && id) {
+            prepararExclusao(baseUrl, id, nome, extra);
+        }
+    });
 });
 
 /**

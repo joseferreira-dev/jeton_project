@@ -105,9 +105,11 @@
                                         class="btn btn-sm btn-outline-primary me-1"><i
                                             class="fa-solid fa-pen-to-square"></i></a>
 
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                        th:onclick="prepararExclusao([[${c.idPessoa}]], [[${c.pessoa?.nome}]], [[${c.crm}]])"><i
-                                            class="fa-solid fa-trash"></i></button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-excluir"
+                                        data-url="/conselheiros/excluir/" th:data-id="${c.idPessoa}"
+                                        th:data-nome="${c.pessoa?.nome}" th:data-extra="${c.crm}">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(paginaConselheiros.content)}">
@@ -169,7 +171,7 @@
                         <div class="card bg-light border-start border-danger border-4">
                             <div class="card-body py-2">
                                 <div><strong>Nome:</strong> <span id="excluirNome"></span></div>
-                                <div><strong>CRM-PE:</strong> <span id="excluirCRM"></span></div>
+                                <div><strong>CRM-PE:</strong> <span id="excluirExtra"></span></div>
                             </div>
                         </div>
                     </div>
@@ -182,15 +184,6 @@
             </div>
         </div>
 
-        <script th:inline="javascript">
-            function prepararExclusao(id, nome, crm) {
-                document.getElementById('excluirNome').innerText = nome;
-                document.getElementById('excluirCRM').innerText = crm;
-                var url = /*[[@{/conselheiros/excluir/}]]*/ '/conselheiros/excluir/';
-                document.getElementById('btnConfirmarExclusao').setAttribute('href', url + id);
-                new bootstrap.Modal(document.getElementById('modalExclusao')).show();
-            }
-        </script>
     </div>
 </body>
 
