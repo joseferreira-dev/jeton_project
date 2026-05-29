@@ -29,6 +29,19 @@ document.addEventListener('DOMContentLoaded', function () {
             prepararExclusao(baseUrl, id, nome, extra);
         }
     });
+
+    // Alternar status (ativar/inativar)
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-alternar-status');
+        if (!btn) return;
+        e.preventDefault();
+        const url = btn.getAttribute('data-url');
+        const mensagem = btn.getAttribute('data-mensagem');
+        const isDesvalidar = btn.getAttribute('data-desvalidar') === 'true';
+        if (url) {
+            confirmarAcao(url, mensagem, isDesvalidar);
+        }
+    });
 });
 
 /**

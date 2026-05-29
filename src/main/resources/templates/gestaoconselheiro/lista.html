@@ -32,13 +32,11 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-
                         <div class="col-md-5">
                             <label class="form-label fw-bold small text-muted">Pesquisar (Médico ou Gestão)</label>
                             <input type="text" name="termo" th:value="${termo}" class="form-control"
                                 placeholder="Buscar por Médico ou Gestão...">
                         </div>
-
                         <div class="col-md-4">
                             <label class="form-label fw-bold small text-muted">Status</label>
                             <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
@@ -47,7 +45,6 @@
                                 <option value="I" th:selected="${situacao == 'I'}">Inativos</option>
                             </select>
                         </div>
-
                         <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Exibir</label>
                             <select name="size" id="size" class="form-select" onchange="this.form.submit()">
@@ -56,7 +53,6 @@
                                 <option value="50" th:selected="${size == 0}">Todos</option>
                             </select>
                         </div>
-
                     </div>
 
                     <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
@@ -105,17 +101,20 @@
                                     <span th:if="${gc.inSituacao == 'I'}" class="badge bg-secondary">Inativo</span>
                                 </td>
                                 <td class="text-center pe-4">
-                                    <a th:href="@{'/gestao-conselheiros/alternar-status/' + ${gc.gestao.idGestao} + '/' + ${gc.conselheiro.idPessoa}}"
-                                        class="btn btn-sm me-1 btn-confirm"
+                                    <button type="button" class="btn btn-sm me-1 btn-alternar-status"
                                         th:classappend="${gc.inSituacao == 'A'} ? 'btn-outline-warning' : 'btn-outline-success'"
-                                        th:attr="data-mensagem=${gc.inSituacao == 'A' ? 'Deseja <b>INATIVAR</b> o conselheiro nesta gestão?' : 'Deseja <b>ATIVAR</b> o conselheiro nesta gestão?<br><small class=''text-muted''>Ele será inativado em quaisquer outras gestões ativas.</small>'}, data-cor=${gc.inSituacao == 'A' ? 'btn-warning' : 'btn-success'}, data-icone='fa-solid fa-power-off'"
+                                        th:data-url="@{'/gestao-conselheiros/alternar-status/' + ${gc.gestao.idGestao} + '/' + ${gc.conselheiro.idPessoa}}"
+                                        th:data-mensagem="${gc.inSituacao == 'A' ? 'Deseja INATIVAR o conselheiro nesta gestão?' : 'Deseja ATIVAR o conselheiro nesta gestão? Ele será inativado em quaisquer outras gestões ativas.'}"
+                                        th:data-desvalidar="${gc.inSituacao == 'A' ? 'true' : 'false'}"
                                         th:title="${gc.inSituacao == 'A' ? 'Inativar Vínculo' : 'Ativar Vínculo'}">
                                         <i class="fa-solid fa-power-off"></i>
-                                    </a>
+                                    </button>
 
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                        th:onclick="prepararExclusao([[${gc.gestao.idGestao}]], [[${gc.conselheiro.idPessoa}]], [[${gc.conselheiro.pessoa.nome}]], [[${gc.gestao.nomeGestao}]])"
-                                        title="Excluir Permanentemente">
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-excluir"
+                                        data-url="/gestao-conselheiros/excluir/"
+                                        th:data-id="${gc.gestao.idGestao + '/' + gc.conselheiro.idPessoa}"
+                                        th:data-nome="${gc.conselheiro.pessoa.nome}"
+                                        th:data-extra="${gc.gestao.nomeGestao}" title="Excluir Permanentemente">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                 </td>
@@ -136,25 +135,21 @@
                         <li class="page-item" th:classappend="${paginaVinculos.first} ? 'disabled'"><a class="page-link"
                                 th:href="@{/gestao-conselheiros(page=${paginaVinculos.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Anterior</a>
                         </li>
-
                         <li class="page-item" th:if="${start > 0}"><a class="page-link"
                                 th:href="@{/gestao-conselheiros(page=0, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">1</a>
                         </li>
                         <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
-
                         <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
                             th:classappend="${paginaVinculos.number == i} ? 'active'">
                             <a class="page-link"
                                 th:href="@{/gestao-conselheiros(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}"
                                 th:text="${i + 1}">1</a>
                         </li>
-
                         <li class="page-item disabled" th:if="${end < paginaVinculos.totalPages - 2}"><a
                                 class="page-link" href="#">...</a></li>
                         <li class="page-item" th:if="${end < paginaVinculos.totalPages - 1}"><a class="page-link"
                                 th:href="@{/gestao-conselheiros(page=${paginaVinculos.totalPages - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}"
                                 th:text="${paginaVinculos.totalPages}">10</a></li>
-
                         <li class="page-item" th:classappend="${paginaVinculos.last} ? 'disabled'"><a class="page-link"
                                 th:href="@{/gestao-conselheiros(page=${paginaVinculos.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Próxima</a>
                         </li>
@@ -176,7 +171,7 @@
                         <div class="card bg-light border-start border-danger border-4">
                             <div class="card-body py-2">
                                 <div><strong>Conselheiro:</strong> <span id="excluirNome"></span></div>
-                                <div><strong>Gestão:</strong> <span id="excluirGestao"></span></div>
+                                <div><strong>Gestão:</strong> <span id="excluirExtra"></span></div>
                             </div>
                         </div>
                     </div>
@@ -189,15 +184,28 @@
             </div>
         </div>
 
-        <script th:inline="javascript">
-            function prepararExclusao(idGestao, idPessoa, nome, gestao) {
-                document.getElementById('excluirNome').innerText = nome;
-                document.getElementById('excluirGestao').innerText = gestao;
-                var url = /*[[@{/gestao-conselheiros/excluir/}]]*/ '/gestao-conselheiros/excluir/';
-                document.getElementById('btnConfirmarExclusao').setAttribute('href', url + idGestao + '/' + idPessoa);
-                new bootstrap.Modal(document.getElementById('modalExclusao')).show();
-            }
-        </script>
+        <div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow">
+                    <div id="modalConfirmacaoHeader" class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="modalConfirmacaoLabel">
+                            <i class="fa-solid fa-circle-question me-2"></i> Confirmar Ação
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p id="textoConfirmacao" class="mb-0">Tem certeza que deseja realizar esta operação?</p>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <a id="linkConfirmacao" href="#" class="btn btn-primary px-4">Confirmar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </body>
 
