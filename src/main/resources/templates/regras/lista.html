@@ -30,13 +30,11 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-
                         <div class="col-md-4">
                             <label class="form-label fw-bold small text-muted">Pesquisar (Nome ou Descrição)</label>
                             <input type="text" name="termo" th:value="${termo}" class="form-control"
                                 placeholder="Nome ou Descrição da regra...">
                         </div>
-
                         <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Estado</label>
                             <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
@@ -45,7 +43,6 @@
                                 <option value="S" th:selected="${situacao == 'S'}">Revogadas (Inativas)</option>
                             </select>
                         </div>
-
                         <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Atividade Judicante</label>
                             <select name="judicante" id="judicante" class="form-select" onchange="this.form.submit()">
@@ -54,7 +51,6 @@
                                 <option value="N" th:selected="${judicante == 'N'}">Apenas Não Judicantes</option>
                             </select>
                         </div>
-
                         <div class="col-md-2">
                             <label class="form-label fw-bold small text-muted">Exibir</label>
                             <select name="size" id="size" class="form-select" onchange="this.form.submit()">
@@ -63,7 +59,6 @@
                                 <option value="0" th:selected="${size == 0}">Todos</option>
                             </select>
                         </div>
-
                     </div>
 
                     <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
@@ -125,33 +120,30 @@
                                 </td>
                                 <td class="text-center pe-4">
                                     <a th:href="@{'/regras/editar/' + ${r.idRegra}}"
-                                        class="btn btn-sm btn-outline-primary me-1" title="Editar"><i
-                                            class="fa-solid fa-pen-to-square"></i></a>
+                                        class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
 
-                                    <a th:href="@{'/regras/deletar/' + ${r.idRegra}}"
-                                        class="btn btn-sm btn-outline-danger btn-confirm me-1"
-                                        title="Excluir Permanentemente"
-                                        data-mensagem="Deseja <b>EXCLUIR</b> permanentemente esta regra?<br><small class='text-danger'>Essa ação só será permitida se não houver nenhuma atividade lançada utilizando esta regra.</small>"
-                                        data-cor="btn-danger" data-icone="fa-solid fa-trash-can"><i
-                                            class="fa-solid fa-trash-can"></i></a>
+                                    <a href="#" class="btn btn-sm btn-outline-danger me-1"
+                                        th:onclick="'confirmarAcao(\'/regras/deletar/' + ${r.idRegra} + '\', \'Deseja EXCLUIR permanentemente esta regra? Essa ação só será permitida se não houver nenhuma atividade lançada utilizando esta regra.\', false, \'btn-danger\')'">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </a>
 
-                                    <a th:if="${r.inRevogado == 'N'}" th:href="@{'/regras/revogar/' + ${r.idRegra}}"
-                                        class="btn btn-sm btn-outline-danger btn-confirm" title="Revogar Regra"
-                                        data-mensagem="Tem certeza que deseja <b>REVOGAR</b> esta regra?<br><small class='text-muted'>Ela deixará de aparecer para novos lançamentos de atividades conselhais.</small>"
-                                        data-cor="btn-danger" data-icone="fa-solid fa-ban"><i
-                                            class="fa-solid fa-ban"></i></a>
+                                    <a th:if="${r.inRevogado == 'N'}" href="#"
+                                        class="btn btn-sm btn-outline-danger me-1"
+                                        th:onclick="'confirmarAcao(\'/regras/revogar/' + ${r.idRegra} + '\', \'Tem certeza que deseja REVOGAR esta regra? Ela deixará de aparecer para novos lançamentos de atividades conselhais.\', false, \'btn-danger\')'">
+                                        <i class="fa-solid fa-ban"></i>
+                                    </a>
 
-                                    <a th:if="${r.inRevogado == 'S'}" th:href="@{'/regras/restaurar/' + ${r.idRegra}}"
-                                        class="btn btn-sm btn-outline-success btn-confirm" title="Restaurar Regra"
-                                        data-mensagem="Tem certeza que deseja <b>RESTAURAR</b> esta regra para o estado Vigente?"
-                                        data-cor="btn-success" data-icone="fa-solid fa-rotate-left"><i
-                                            class="fa-solid fa-rotate-left"></i></a>
+                                    <a th:if="${r.inRevogado == 'S'}" href="#" class="btn btn-sm btn-outline-success"
+                                        th:onclick="'confirmarAcao(\'/regras/restaurar/' + ${r.idRegra} + '\', \'Tem certeza que deseja RESTAURAR esta regra para o estado Vigente?\', false, \'btn-success\')'">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </a>
                                 </td>
                             </tr>
                             <tr th:if="${paginaRegras.empty}">
                                 <td colspan="6" class="text-center py-4 text-muted">Nenhuma regra de pontuação
-                                    cadastrada
-                                    para os filtros atuais.</td>
+                                    cadastrada para os filtros atuais.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -166,33 +158,48 @@
                         <li class="page-item" th:classappend="${paginaRegras.first} ? 'disabled'"><a class="page-link"
                                 th:href="@{/regras(page=${paginaRegras.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}">Anterior</a>
                         </li>
-
                         <li class="page-item" th:if="${start > 0}"><a class="page-link"
                                 th:href="@{/regras(page=0, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}">1</a>
                         </li>
                         <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
-
                         <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
                             th:classappend="${paginaRegras.number == i} ? 'active'">
                             <a class="page-link"
                                 th:href="@{/regras(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}"
                                 th:text="${i + 1}">1</a>
                         </li>
-
                         <li class="page-item disabled" th:if="${end < paginaRegras.totalPages - 2}"><a class="page-link"
                                 href="#">...</a></li>
                         <li class="page-item" th:if="${end < paginaRegras.totalPages - 1}"><a class="page-link"
                                 th:href="@{/regras(page=${paginaRegras.totalPages - 1}, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}"
                                 th:text="${paginaRegras.totalPages}">10</a></li>
-
                         <li class="page-item" th:classappend="${paginaRegras.last} ? 'disabled'"><a class="page-link"
                                 th:href="@{/regras(page=${paginaRegras.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}">Próxima</a>
-                        </li>
                     </ul>
                 </nav>
             </div>
-            </form>
         </div>
+
+        <div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow">
+                    <div id="modalConfirmacaoHeader" class="modal-header bg-success text-white">
+                        <h5 class="modal-title"><i class="fa-solid fa-circle-question me-2"></i> Confirmar Ação</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p id="textoConfirmacao" class="mb-0">Tem certeza que deseja realizar esta operação?</p>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <a id="linkConfirmacao" href="#" class="btn btn-primary px-4">Confirmar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </body>
 
 </html>
