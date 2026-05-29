@@ -18,7 +18,7 @@
         <div class="card shadow-sm">
             <div class="card-body p-4">
                 <form th:action="@{/atividades/salvar}" th:object="${atividade}" method="post"
-                    enctype="multipart/form-data">
+                    enctype="multipart/form-data" id="formAtividade">
                     <input type="hidden" th:field="*{idAtividade}">
                     <input type="hidden" th:field="*{dataHoraRegistro}">
                     <input type="hidden" th:field="*{inSituacao}">

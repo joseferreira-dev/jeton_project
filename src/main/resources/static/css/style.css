@@ -210,6 +210,12 @@ body.login-body {
     color: var(--cremepe-muted-dark) !important;
 }
 
+/* Para o Spinner */
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
 /* Responsividade */
 @media (max-width: 991.98px) {
     .navbar-cremepe .nav-item {

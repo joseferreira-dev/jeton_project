@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
     inicializarHomologacao();
     inicializarFiltroRegrasConjuntas();
     inicializarFormularioAtividade();
+    inicializarSpinnerFormularioAtividade();
 
     // Inicializa o toggle de CRM no formulário de usuário (se o checkbox existir)
     if (document.getElementById('checkConselheiro')) {
@@ -307,18 +308,27 @@ async function verComprovante(btn) {
 
 function inicializarHomologacao() {
     const form = document.getElementById('formProcessamento');
-    const btnHomologar = document.getElementById('btnHomologar');
-    if (!btnHomologar || !form) return;
+    if (!form) return;
 
+    // Botão "Calcular" (submit normal)
+    const btnCalcular = form.querySelector('button[type="submit"]:not([formaction])');
+    if (btnCalcular) {
+        form.addEventListener('submit', function (e) {
+            const clickedButton = document.activeElement;
+            if (clickedButton && clickedButton.type === 'submit' && clickedButton === btnCalcular) {
+                setButtonLoading(btnCalcular, true);
+            }
+        });
+    }
+
+    // Botão "Homologar" (formaction)
+    const btnHomologar = document.getElementById('btnHomologar');
+    if (!btnHomologar) return;
+
+    // Remove qualquer onclick nativo
     btnHomologar.removeAttribute('onclick');
 
-    let confirmado = false;
-
-    const handleClick = function (e) {
-        if (confirmado) {
-            confirmado = false;
-            return;
-        }
+    btnHomologar.addEventListener('click', function (e) {
         e.preventDefault();
 
         const selectGestao = form.querySelector('select[name="idGestao"]');
@@ -333,19 +343,25 @@ function inicializarHomologacao() {
 
         const modalHomologacao = new bootstrap.Modal(document.getElementById('modalHomologacao'));
         modalHomologacao.show();
-    };
-
-    btnHomologar.addEventListener('click', handleClick);
+    });
 
     const btnConfirmar = document.getElementById('btnConfirmarHomologacao');
     if (btnConfirmar) {
         btnConfirmar.addEventListener('click', function () {
+            // Fecha o modal
             const modalEl = document.getElementById('modalHomologacao');
             const modal = bootstrap.Modal.getInstance(modalEl);
             if (modal) modal.hide();
 
-            confirmado = true;
-            btnHomologar.click();
+            // Exibe spinner no botão de homologar
+            setButtonLoading(btnHomologar, true);
+
+            // Submete o formulário para a URL do fechamento definitivo
+            const action = form.getAttribute('action');
+            const method = form.getAttribute('method') || 'post';
+            form.action = '/jeton/fechar-definitivo';
+            form.method = 'post';
+            form.submit();
         });
     }
 }
@@ -713,6 +729,42 @@ function inicializarFiltroRegrasConjuntas() {
     carregarRegras(null, idsIniciais);
 }
 
+/**
+ * Exibe spinner no botão e o desabilita para evitar múltiplos cliques
+ * @param {HTMLElement} button - Botão que será desabilitado
+ * @param {boolean} loading - true para exibir spinner, false para restaurar
+ * @param {string} originalText - Texto original do botão (opcional, será armazenado em data)
+ */
+function setButtonLoading(button, loading, originalText) {
+    if (!button) return;
+    if (loading) {
+        // Salva o texto original se ainda não estiver salvo
+        if (!button.hasAttribute('data-original-text')) {
+            button.setAttribute('data-original-text', button.innerHTML);
+        }
+        button.disabled = true;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Processando...';
+    } else {
+        button.disabled = false;
+        const original = button.getAttribute('data-original-text');
+        if (original) {
+            button.innerHTML = original;
+            button.removeAttribute('data-original-text');
+        }
+    }
+}
+
+function inicializarSpinnerFormularioAtividade() {
+    const form = document.getElementById('formAtividade');
+    if (!form) return;
+    const btnSubmit = form.querySelector('button[type="submit"]');
+    if (btnSubmit) {
+        form.addEventListener('submit', function () {
+            setButtonLoading(btnSubmit, true);
+        });
+    }
+}
+
 // =========================================================================
 // EXPORTA FUNÇÕES PARA O ESCOPO GLOBAL (para uso em onclick, etc.)
 // =========================================================================
@@ -731,3 +783,4 @@ window.toggleCrm = toggleCrm;
 window.atualizarTurnoVisual = atualizarTurnoVisual;
 window.inicializarFiltroRegrasConjuntas = inicializarFiltroRegrasConjuntas;
 window.inicializarFormularioAtividade = inicializarFormularioAtividade;
+window.setButtonLoading;
