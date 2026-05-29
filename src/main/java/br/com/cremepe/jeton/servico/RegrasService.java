@@ -253,4 +253,14 @@ public class RegrasService {
         List<Portaria> lista = repository.findPortariaPorData(data);
         return lista.isEmpty() ? Optional.empty() : Optional.of(lista.get(0));
     }
+
+    @Transactional(readOnly = true)
+    public List<Regras> listarRegrasPorResolucao(Integer resolucaoId) {
+        if (resolucaoId == null) {
+            // Retorna todas as regras (independente do status)
+            return repository.findAll();
+        }
+        // Retorna todas as regras da resolução específica (revogadas ou não)
+        return repository.findByResolucaoIdResolucao(resolucaoId);
+    }
 }

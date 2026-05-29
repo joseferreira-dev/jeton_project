@@ -21,6 +21,8 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
     // CONSULTAS BÁSICAS E FILTROS
     // =========================================================================
 
+    List<Regras> findByResolucaoIdResolucao(Integer resolucaoId);
+
     List<Regras> findByResolucaoIdResolucaoAndInRevogado(Integer idResolucao, String inRevogado);
 
     List<Regras> findByInJudicante(String inJudicante);

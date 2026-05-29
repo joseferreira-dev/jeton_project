@@ -1,10 +1,16 @@
 package br.com.cremepe.jeton.controlador;
 
+import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.dominio.RegrasConjuntas;
 import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.RegrasConjuntasService;
 import br.com.cremepe.jeton.servico.RegrasService;
+import br.com.cremepe.jeton.servico.ResolucaoService;
 import jakarta.servlet.http.HttpSession;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
@@ -20,6 +26,8 @@ public class RegrasConjuntasController {
     private RegrasConjuntasService regrasConjuntasService;
     @Autowired
     private RegrasService regrasService;
+    @Autowired
+    private ResolucaoService resolucaoService;
 
     // =========================================================================
     // LISTAGEM
@@ -56,7 +64,8 @@ public class RegrasConjuntasController {
         if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("regrasConjuntas", new RegrasConjuntas());
-        carregarListasApoio(model);
+        model.addAttribute("listaRegras", regrasService.listarTodos());
+        model.addAttribute("listaResolucoes", resolucaoService.listarTodos()); // <-- adicionar
         return "regrasconjuntas/formulario";
     }
 
@@ -66,12 +75,19 @@ public class RegrasConjuntasController {
             return "redirect:/login";
         RegrasConjuntas regra = regrasConjuntasService.buscarOuFalhar(id);
         model.addAttribute("regrasConjuntas", regra);
-        carregarListasApoio(model);
-        return "regrasconjuntas/formulario";
-    }
-
-    private void carregarListasApoio(Model model) {
         model.addAttribute("listaRegras", regrasService.listarTodos());
+        model.addAttribute("listaResolucoes", resolucaoService.listarTodos());
+
+        // IDs das regras já selecionadas – converte para string separada por vírgulas
+        List<Integer> idsSelecionados = regra.getRegrasAgrupadas().stream()
+                .map(Regras::getIdRegra)
+                .collect(Collectors.toList());
+        String idsSelecionadosStr = idsSelecionados.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
+        model.addAttribute("regrasSelecionadasIds", idsSelecionadosStr);
+
+        return "regrasconjuntas/formulario";
     }
 
     // =========================================================================

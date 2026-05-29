@@ -13,6 +13,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
@@ -85,6 +88,22 @@ public class RegrasController {
         model.addAttribute("listaResolucoes", resolucaoService.listarTodos().stream()
                 .filter(r -> r.isEmVigor())
                 .collect(Collectors.toList()));
+    }
+
+    @GetMapping("/api/regras-por-resolucao")
+    @ResponseBody
+    public List<Map<String, Object>> getRegrasPorResolucao(@RequestParam(required = false) Integer resolucaoId) {
+        List<Regras> regras = regrasService.listarRegrasPorResolucao(resolucaoId);
+        return regras.stream()
+                .map(r -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", r.getIdRegra());
+                    map.put("nome", r.getNomeRegra());
+                    map.put("pontos", r.getPontos());
+                    map.put("revogado", r.getInRevogado());
+                    return map;
+                })
+                .collect(Collectors.toList());
     }
 
     // =========================================================================
