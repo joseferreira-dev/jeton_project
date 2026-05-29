@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     inicializarHomologacao();
+    inicializarFiltroRegrasConjuntas();
 });
 
 /**
@@ -443,7 +444,7 @@ function abrirRelatorioJeton(btn) {
 }
 
 // =========================================================================
-// FUNÇÕES AUXILIARES PARA FORMULÁRIOS (atividade conselhal)
+// FUNÇÕES AUXILIARES PARA FORMULÁRIOS
 // =========================================================================
 
 /**
@@ -602,6 +603,76 @@ function toggleCrm() {
     }
 }
 
+/**
+ * Inicializa o filtro de Regras por Resolução no formulário de Regras Conjuntas
+ */
+function inicializarFiltroRegrasConjuntas() {
+    const selectResolucao = document.getElementById('selectResolucaoFiltro');
+    const selectRegras = document.getElementById('selectRegras');
+    const hiddenIds = document.getElementById('regrasSelecionadasIds');
+
+    if (!selectResolucao || !selectRegras) return; // não está na página atual
+
+    // Converte string de IDs (ex: "1,2,3") em array de números
+    function parseIdsString(str) {
+        if (!str || str.trim() === '') return [];
+        return str.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+    }
+
+    // Carrega regras com base na resolução selecionada
+    function carregarRegras(resolucaoId, idsParaSelecionar) {
+        const url = resolucaoId ? `/regras/api/regras-por-resolucao?resolucaoId=${resolucaoId}` : '/regras/api/regras-por-resolucao';
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                // Guarda valores atualmente selecionados
+                const selectedValues = Array.from(selectRegras.selectedOptions).map(opt => opt.value);
+
+                // Recria as opções
+                selectRegras.innerHTML = '';
+                if (data.length === 0) {
+                    const option = document.createElement('option');
+                    option.text = 'Nenhuma regra encontrada';
+                    option.disabled = true;
+                    selectRegras.appendChild(option);
+                } else {
+                    data.forEach(regra => {
+                        const option = document.createElement('option');
+                        option.value = regra.id;
+                        option.text = `${regra.nome} (${regra.pontos} pts) ${regra.revogado === 'S' ? '[REVOGADA]' : ''}`;
+                        selectRegras.appendChild(option);
+                    });
+                }
+
+                // Restaura seleção
+                if (idsParaSelecionar && idsParaSelecionar.length > 0) {
+                    idsParaSelecionar.forEach(id => {
+                        const option = Array.from(selectRegras.options).find(opt => opt.value == id);
+                        if (option) option.selected = true;
+                    });
+                } else if (selectedValues.length > 0) {
+                    selectedValues.forEach(val => {
+                        const option = Array.from(selectRegras.options).find(opt => opt.value == val);
+                        if (option) option.selected = true;
+                    });
+                }
+            })
+            .catch(err => console.error('Erro ao carregar regras:', err));
+    }
+
+    // Evento de mudança do filtro de resolução
+    selectResolucao.addEventListener('change', function () {
+        carregarRegras(this.value);
+    });
+
+    // Carregamento inicial
+    let idsIniciais = [];
+    if (hiddenIds && hiddenIds.value) {
+        idsIniciais = parseIdsString(hiddenIds.value);
+    }
+    carregarRegras(null, idsIniciais);
+}
+
 // =========================================================================
 // EXPORTA FUNÇÕES PARA O ESCOPO GLOBAL (para uso em onclick, etc.)
 // =========================================================================
@@ -618,3 +689,4 @@ window.atualizarRegrasPorData = atualizarRegrasPorData;
 window.exibirGuiaRegra = exibirGuiaRegra;
 window.toggleCrm = toggleCrm;
 window.atualizarTurnoVisual = atualizarTurnoVisual;
+window.inicializarFiltroRegrasConjuntas = inicializarFiltroRegrasConjuntas;

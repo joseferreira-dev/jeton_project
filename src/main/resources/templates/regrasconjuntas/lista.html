@@ -31,13 +31,11 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-
                         <div class="col-md-5">
                             <label class="form-label fw-bold small text-muted">Pesquisar (Nome)</label>
                             <input type="text" name="termo" th:value="${termo}" class="form-control"
                                 placeholder="Buscar por nome...">
                         </div>
-
                         <div class="col-md-4">
                             <label class="form-label fw-bold small text-muted">Tipo de Limite</label>
                             <select name="tipoLimite" id="tipoLimite" class="form-select" onchange="this.form.submit()">
@@ -47,7 +45,6 @@
                                 <option value="M" th:selected="${tipoLimite == 'M'}">Mensal</option>
                             </select>
                         </div>
-
                         <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Exibir</label>
                             <select name="size" id="size" class="form-select" onchange="this.form.submit()">
@@ -56,7 +53,6 @@
                                 <option value="0" th:selected="${size == 0}">Todos</option>
                             </select>
                         </div>
-
                     </div>
 
                     <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
@@ -101,15 +97,17 @@
                                 </td>
                                 <td class="text-center fw-bold" th:text="${rc.pontosLimite}">0</td>
                                 <td class="text-center pe-4">
+                                    <!-- Editar -->
                                     <a th:href="@{'/regras-conjuntas/editar/' + ${rc.idRegraConjunta}}"
-                                        class="btn btn-sm btn-outline-primary me-1" title="Editar"><i
-                                            class="fa-solid fa-pen-to-square"></i></a>
+                                        class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
 
-                                    <a th:href="@{'/regras-conjuntas/excluir/' + ${rc.idRegraConjunta}}"
-                                        class="btn btn-sm btn-outline-danger btn-confirm" title="Excluir"
-                                        data-mensagem="Deseja <b>EXCLUIR</b> esta regra conjunta?<br><small class='text-danger'>Apenas possível se não houver regras vinculadas.</small>"
-                                        data-cor="btn-danger" data-icone="fa-solid fa-trash-can"><i
-                                            class="fa-solid fa-trash-can"></i></a>
+                                    <!-- Excluir -->
+                                    <a href="#" class="btn btn-sm btn-outline-danger"
+                                        th:onclick="'confirmarAcao(\'/regras-conjuntas/excluir/' + ${rc.idRegraConjunta} + '\', \'Deseja EXCLUIR esta regra conjunta? Apenas possível se não houver regras vinculadas.\', false, \'btn-danger\')'">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </a>
                                 </td>
                             </tr>
                             <tr th:if="${paginaRegrasConjuntas.empty}">
@@ -131,33 +129,49 @@
                                 class="page-link"
                                 th:href="@{/regras-conjuntas(page=${paginaRegrasConjuntas.number - 1}, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}">Anterior</a>
                         </li>
-
                         <li class="page-item" th:if="${start > 0}"><a class="page-link"
                                 th:href="@{/regras-conjuntas(page=0, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}">1</a>
                         </li>
                         <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
-
                         <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
                             th:classappend="${paginaRegrasConjuntas.number == i} ? 'active'">
                             <a class="page-link"
                                 th:href="@{/regras-conjuntas(page=${i}, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}"
                                 th:text="${i + 1}">1</a>
                         </li>
-
                         <li class="page-item disabled" th:if="${end < paginaRegrasConjuntas.totalPages - 2}"><a
                                 class="page-link" href="#">...</a></li>
                         <li class="page-item" th:if="${end < paginaRegrasConjuntas.totalPages - 1}"><a class="page-link"
                                 th:href="@{/regras-conjuntas(page=${paginaRegrasConjuntas.totalPages - 1}, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}"
                                 th:text="${paginaRegrasConjuntas.totalPages}">10</a></li>
-
                         <li class="page-item" th:classappend="${paginaRegrasConjuntas.last} ? 'disabled'"><a
                                 class="page-link"
                                 th:href="@{/regras-conjuntas(page=${paginaRegrasConjuntas.number + 1}, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}">Próxima</a>
-                        </li>
                     </ul>
                 </nav>
             </div>
         </div>
+
+        <!-- Modal de confirmação colorido (mesmo estilo das atividades) -->
+        <div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow">
+                    <div id="modalConfirmacaoHeader" class="modal-header bg-success text-white">
+                        <h5 class="modal-title"><i class="fa-solid fa-circle-question me-2"></i> Confirmar Ação</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p id="textoConfirmacao" class="mb-0">Tem certeza que deseja realizar esta operação?</p>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <a id="linkConfirmacao" href="#" class="btn btn-primary px-4">Confirmar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </body>
 
