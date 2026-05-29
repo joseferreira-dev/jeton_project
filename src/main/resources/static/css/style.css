@@ -2,15 +2,21 @@
 
 :root {
     --cremepe-green: #009965;
-    /* Cor Principal */
     --cremepe-green-dark: #007a51;
-    /* Cor Hover / Escura */
     --cremepe-green-light: #e6f5f0;
     --cremepe-gold: #d4af37;
-    /* Dourado institucional */
     --cremepe-gray-bg: #f8f9fa;
     --cremepe-dark-text: #212529;
     --border-radius: 8px;
+    --cremepe-blue: #004b84;
+    --cremepe-warning: #f59e0b;
+    --cremepe-info: #3b82f6;
+    --cremepe-purple: #8b5cf6;
+    --cremepe-danger: #dc3545;
+    --cremepe-success: #28a745;
+    --cremepe-secondary: #6c757d;
+    --cremepe-muted: #6c757d;
+    --cremepe-muted-dark: #495057;
 }
 
 /* Configurações Globais */
@@ -33,7 +39,7 @@ a {
 }
 
 /* =========================================================================
-   ESTILOS EXCLUSIVOS: TELA DE LOGIN (Mantida Premium & Clean)
+   ESTILOS EXCLUSIVOS: TELA DE LOGIN
    ========================================================================= */
 body.login-body {
     background: linear-gradient(135deg, #005438 0%, var(--cremepe-green) 100%);
@@ -96,7 +102,7 @@ body.login-body {
 }
 
 /* =========================================================================
-   ESTILOS DO NOVO MENU RESPONSIVO (Desktop Dropdown / Mobile Hamburger)
+   ESTILOS DO MENU RESPONSIVO
    ========================================================================= */
 .navbar-cremepe {
     background-color: var(--cremepe-green-dark) !important;
@@ -149,7 +155,6 @@ body.login-body {
     color: var(--cremepe-green);
 }
 
-/* Customização do botão sanduíche no mobile */
 .navbar-cremepe .navbar-toggler {
     border-color: rgba(255, 255, 255, 0.2) !important;
     padding: 0.4rem 0.6rem;
@@ -159,7 +164,7 @@ body.login-body {
     filter: brightness(0) invert(1);
 }
 
-/* Topbar Secundária (Identificação e Contexto) */
+/* Topbar Secundária */
 .sub-header {
     background-color: #ffffff;
     border-bottom: 1px solid #e5e7eb;
@@ -182,7 +187,7 @@ body.login-body {
     margin: 0 auto;
 }
 
-/* Componentes Globais Padronizados */
+/* Componentes Globais */
 .text-cremepe {
     color: var(--cremepe-green-dark);
 }
@@ -201,7 +206,11 @@ body.login-body {
     border-color: var(--cremepe-green-dark);
 }
 
-/* Responsividade de tabelas e cartões */
+.text-muted {
+    color: var(--cremepe-muted-dark) !important;
+}
+
+/* Responsividade */
 @media (max-width: 991.98px) {
     .navbar-cremepe .nav-item {
         margin-top: 0.25rem;

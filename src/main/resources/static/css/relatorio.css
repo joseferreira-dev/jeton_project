@@ -10,7 +10,6 @@
     width: 100%;
 }
 
-/* Força o empilhamento vertical uniforme dos gráficos */
 .chart-wrapper {
     width: 100%;
     display: block;
@@ -28,7 +27,7 @@
 }
 
 /* ==========================================================================
-   REGRAS E TRAVAS DE INTERCESSÃO PARA IMPRESSÃO EM FORMATO PAISAGEM (LANDSCAPE)
+   REGRAS PARA IMPRESSÃO (LANDSCAPE)
    ========================================================================== */
 @media print {
     @page {
@@ -100,7 +99,7 @@
 
     thead {
         display: table-header-group !important;
-        background-color: #004b84 !important;
+        background-color: var(--cremepe-blue) !important;
         color: #ffffff !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
