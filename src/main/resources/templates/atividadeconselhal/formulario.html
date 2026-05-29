@@ -162,37 +162,7 @@
             </div>
         </div>
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                // Se estiver em modo de edição (atividade já possui ID)
-                const selectGestao = document.getElementById('selectGestao');
-                const selectConselheiro = document.getElementById('selectConselheiro');
-                const dataAtividade = document.getElementById('dataAtividade');
-
-                if (selectGestao && selectGestao.value) {
-                    const idConselheiroAtual = selectConselheiro.value;
-                    // Chama a função global do app.js
-                    if (typeof atualizarConselheiros === 'function') {
-                        atualizarConselheiros(idConselheiroAtual);
-                    }
-                }
-
-                if (dataAtividade && dataAtividade.value) {
-                    const selectRegra = document.getElementById('selectRegra');
-                    const idRegraAtual = selectRegra ? selectRegra.value : null;
-                    if (typeof atualizarRegrasPorData === 'function') {
-                        atualizarRegrasPorData(idRegraAtual);
-                    }
-                }
-
-                // Configurar o evento de mudança do campo data para atualizar o turno visual
-                if (dataAtividade && typeof atualizarTurnoVisual === 'function') {
-                    dataAtividade.addEventListener('change', atualizarTurnoVisual);
-                    // Força a atualização inicial se já houver valor
-                    if (dataAtividade.value) atualizarTurnoVisual();
-                }
-            });
-
-            // Função resetarFiltros (específica deste formulário)
+            // Função específica deste formulário (limpar filtros)
             function resetarFiltros() {
                 document.getElementById('nomeResolucaoVisual').value = '';
                 document.getElementById('idResolucaoHidden').value = '';

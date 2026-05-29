@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     inicializarHomologacao();
     inicializarFiltroRegrasConjuntas();
+    inicializarFormularioAtividade();
 
     // Inicializa o toggle de CRM no formulário de usuário (se o checkbox existir)
     if (document.getElementById('checkConselheiro')) {
@@ -453,6 +454,40 @@ function abrirRelatorioJeton(btn) {
 // =========================================================================
 
 /**
+ * Inicializa o formulário de atividades (carrega conselheiros, regras e turno)
+ */
+function inicializarFormularioAtividade() {
+    const selectGestao = document.getElementById('selectGestao');
+    const selectConselheiro = document.getElementById('selectConselheiro');
+    const dataAtividade = document.getElementById('dataAtividade');
+
+    if (!selectGestao) return; // não está na página de formulário de atividade
+
+    // Carrega conselheiros se já houver gestão selecionada (edição)
+    if (selectGestao.value) {
+        const idConselheiroAtual = selectConselheiro ? selectConselheiro.value : null;
+        if (typeof atualizarConselheiros === 'function') {
+            atualizarConselheiros(idConselheiroAtual);
+        }
+    }
+
+    // Carrega regras se já houver data preenchida (edição)
+    if (dataAtividade && dataAtividade.value) {
+        const selectRegra = document.getElementById('selectRegra');
+        const idRegraAtual = selectRegra ? selectRegra.value : null;
+        if (typeof atualizarRegrasPorData === 'function') {
+            atualizarRegrasPorData(idRegraAtual);
+        }
+    }
+
+    // Atualiza turno visual ao mudar a data
+    if (dataAtividade && typeof atualizarTurnoVisual === 'function') {
+        dataAtividade.addEventListener('change', atualizarTurnoVisual);
+        if (dataAtividade.value) atualizarTurnoVisual();
+    }
+}
+
+/**
  * Atualiza a lista de conselheiros com base na gestão selecionada
  * @param {string|null} idParaSelecionar - ID do conselheiro a ser pré-selecionado (opcional)
  */
@@ -695,3 +730,4 @@ window.exibirGuiaRegra = exibirGuiaRegra;
 window.toggleCrm = toggleCrm;
 window.atualizarTurnoVisual = atualizarTurnoVisual;
 window.inicializarFiltroRegrasConjuntas = inicializarFiltroRegrasConjuntas;
+window.inicializarFormularioAtividade = inicializarFormularioAtividade;
