@@ -29,12 +29,14 @@
 
                         <div class="col-md-4">
                             <label class="form-label fw-bold">Data de Início</label>
-                            <input type="date" class="form-control" th:field="*{dtInicio}" required>
+                            <input type="date" class="form-control"
+                                th:value="${#temporals.format(gestao.dtInicio, 'yyyy-MM-dd')}" name="dtInicio" required>
                         </div>
 
                         <div class="col-md-4">
                             <label class="form-label fw-bold">Data de Fim</label>
-                            <input type="date" class="form-control" th:field="*{dtFim}" required>
+                            <input type="date" class="form-control"
+                                th:value="${#temporals.format(gestao.dtFim, 'yyyy-MM-dd')}" name="dtFim" required>
                         </div>
                     </div>
 

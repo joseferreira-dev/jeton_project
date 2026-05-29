@@ -31,13 +31,11 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-
                         <div class="col-md-8">
                             <label class="form-label fw-bold small text-muted">Pesquisar (Nome da Gestão)</label>
                             <input type="text" name="termo" th:value="${termo}" class="form-control"
                                 placeholder="Buscar pelo nome da gestão...">
                         </div>
-
                         <div class="col-md-4">
                             <label class="form-label fw-bold small text-muted">Exibir</label>
                             <select name="size" id="size" class="form-select" onchange="this.form.submit()">
@@ -46,7 +44,6 @@
                                 <option value="0" th:selected="${size == 0}">Todos</option>
                             </select>
                         </div>
-
                     </div>
 
                     <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
@@ -86,17 +83,17 @@
                         <tbody>
                             <tr th:each="g : ${paginaGestoes.content}">
                                 <td class="ps-4 fw-bold text-cremepe" th:text="${g.nomeGestao}">Nome</td>
-
                                 <td th:text="${#temporals.format(g.dtInicio, 'dd/MM/yyyy')}">01/01/2023</td>
                                 <td th:text="${#temporals.format(g.dtFim, 'dd/MM/yyyy')}">31/12/2025</td>
-
                                 <td class="text-center pe-4">
                                     <a th:href="@{'/gestoes/editar/' + ${g.idGestao}}"
                                         class="btn btn-sm btn-outline-primary me-1"><i
                                             class="fa-solid fa-pen-to-square"></i></a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger me-1"
-                                        th:onclick="prepararExclusao([[${g.idGestao}]], [[${g.nomeGestao}]])"><i
-                                            class="fa-solid fa-trash"></i></button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-excluir me-1"
+                                        data-url="/gestoes/excluir/" th:data-id="${g.idGestao}"
+                                        th:data-nome="${g.nomeGestao}">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
                                     <a th:href="@{'/gestao-conselheiros/vincular/' + ${g.idGestao}}"
                                         class="btn btn-sm btn-outline-success" title="Composição da Gestão">
                                         <i class="fa-solid fa-user-plus"></i>
@@ -119,25 +116,21 @@
                         <li class="page-item" th:classappend="${paginaGestoes.first} ? 'disabled'"><a class="page-link"
                                 th:href="@{/gestoes(page=${paginaGestoes.number - 1}, size=${size}, termo=${termo}, sort=${sort}, dir=${dir})}">Anterior</a>
                         </li>
-
                         <li class="page-item" th:if="${start > 0}"><a class="page-link"
                                 th:href="@{/gestoes(page=0, size=${size}, termo=${termo}, sort=${sort}, dir=${dir})}">1</a>
                         </li>
                         <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
-
                         <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
                             th:classappend="${paginaGestoes.number == i} ? 'active'">
                             <a class="page-link"
                                 th:href="@{/gestoes(page=${i}, size=${size}, termo=${termo}, sort=${sort}, dir=${dir})}"
                                 th:text="${i + 1}">1</a>
                         </li>
-
                         <li class="page-item disabled" th:if="${end < paginaGestoes.totalPages - 2}"><a
                                 class="page-link" href="#">...</a></li>
                         <li class="page-item" th:if="${end < paginaGestoes.totalPages - 1}"><a class="page-link"
                                 th:href="@{/gestoes(page=${paginaGestoes.totalPages - 1}, size=${size}, termo=${termo}, sort=${sort}, dir=${dir})}"
                                 th:text="${paginaGestoes.totalPages}">10</a></li>
-
                         <li class="page-item" th:classappend="${paginaGestoes.last} ? 'disabled'"><a class="page-link"
                                 th:href="@{/gestoes(page=${paginaGestoes.number + 1}, size=${size}, termo=${termo}, sort=${sort}, dir=${dir})}">Próxima</a>
                         </li>
@@ -171,14 +164,6 @@
             </div>
         </div>
 
-        <script th:inline="javascript">
-            function prepararExclusao(id, nome) {
-                document.getElementById('excluirNome').innerText = nome;
-                var url = /*[[@{/gestoes/excluir/}]]*/ '/gestoes/excluir/';
-                document.getElementById('btnConfirmarExclusao').setAttribute('href', url + id);
-                new bootstrap.Modal(document.getElementById('modalExclusao')).show();
-            }
-        </script>
     </div>
 </body>
 
