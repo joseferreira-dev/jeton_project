@@ -42,6 +42,8 @@ document.addEventListener('DOMContentLoaded', function () {
             confirmarAcao(url, mensagem, isDesvalidar);
         }
     });
+
+    inicializarHomologacao();
 });
 
 /**
@@ -293,8 +295,53 @@ async function verComprovante(btn) {
 }
 
 // =========================================================================
-// FUNÇÕES ESPECÍFICAS PARA JETON (histórico e relatório)
+// FUNÇÕES ESPECÍFICAS PARA JETON
 // =========================================================================
+
+function inicializarHomologacao() {
+    const form = document.getElementById('formProcessamento');
+    const btnHomologar = document.getElementById('btnHomologar');
+    if (!btnHomologar || !form) return;
+
+    btnHomologar.removeAttribute('onclick');
+
+    let confirmado = false;
+
+    const handleClick = function (e) {
+        if (confirmado) {
+            confirmado = false;
+            return;
+        }
+        e.preventDefault();
+
+        const selectGestao = form.querySelector('select[name="idGestao"]');
+        const selectMes = form.querySelector('select[name="mes"]');
+        const inputAno = form.querySelector('input[name="ano"]');
+
+        if (!selectGestao.value || !selectMes.value || !inputAno.value) {
+            const modalAlerta = new bootstrap.Modal(document.getElementById('modalAlertaValidacao'));
+            modalAlerta.show();
+            return;
+        }
+
+        const modalHomologacao = new bootstrap.Modal(document.getElementById('modalHomologacao'));
+        modalHomologacao.show();
+    };
+
+    btnHomologar.addEventListener('click', handleClick);
+
+    const btnConfirmar = document.getElementById('btnConfirmarHomologacao');
+    if (btnConfirmar) {
+        btnConfirmar.addEventListener('click', function () {
+            const modalEl = document.getElementById('modalHomologacao');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+
+            confirmado = true;
+            btnHomologar.click();
+        });
+    }
+}
 
 /**
  * Abre modal com atividades que compõem um jeton (histórico)
@@ -563,6 +610,7 @@ window.confirmarAcao = confirmarAcao;
 window.prepararExclusao = prepararExclusao;
 window.verDetalhes = verDetalhes;
 window.verComprovante = verComprovante;
+window.inicializarHomologacao = inicializarHomologacao;
 window.abrirModalAtividades = abrirModalAtividades;
 window.abrirRelatorioJeton = abrirRelatorioJeton;
 window.atualizarConselheiros = atualizarConselheiros;

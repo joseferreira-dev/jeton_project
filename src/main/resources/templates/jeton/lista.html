@@ -24,14 +24,14 @@
                 <i class="fa-solid fa-gears me-2"></i> Executar Fecho de Folha Mensal
             </div>
             <div class="card-body p-4">
-                <form th:action="@{/jeton/processar}" method="post">
+                <form th:action="@{/jeton/processar}" method="post" id="formProcessamento">
                     <div class="row g-3 align-items-end">
                         <div class="col-md-5">
                             <label class="form-label fw-bold">Gestão Ativa</label>
                             <select class="form-select" name="idGestao" required>
-                                <option value="">-- Selecione a Gestão --</option>
-                                <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}"
-                                    th:text="${g.nomeGestao}"></option>
+                                <option value="">Selecione a Gestão</option>
+                                <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}" th:text="${g.nomeGestao}"
+                                    th:selected="${g.idGestao == idGestaoSelecionada}"></option>
                             </select>
                         </div>
 
@@ -79,8 +79,7 @@
 
                         <div class="d-flex gap-2">
                             <button type="submit" th:formaction="@{/jeton/fechar-definitivo}"
-                                class="btn btn-danger fw-bold px-4"
-                                onclick="return confirm('ATENÇÃO: Deseja realmente homologar e encerrar esta folha? Todas as atividades computadas serão convertidas em registros permanentes e trancadas. Confirmar?');">
+                                class="btn btn-danger fw-bold px-4" id="btnHomologar">
                                 <i class="fa-solid fa-lock me-1"></i> Homologar e Fechar Folha
                             </button>
                         </div>
@@ -231,7 +230,7 @@
         <div class="modal fade" id="modalRelatorio" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content shadow">
-                    <div class="modal-header bg-info text-white">
+                    <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title fw-bold">
                             <i class="fa-solid fa-file-invoice me-2"></i> Composição do Jeton
                         </h5>
@@ -299,117 +298,6 @@
             </div>
         </div>
 
-        <script th:inline="javascript">
-            // Aguarda o DOM estar pronto
-            document.addEventListener('DOMContentLoaded', function () {
-                // Seleciona o formulário principal (action já renderizada)
-                const formProcessamento = document.querySelector('form[action="/jeton/processar"]');
-
-                // Seleciona o botão de homologar usando o atributo formaction renderizado
-                const btnHomologar = document.querySelector('button[formaction="/jeton/fechar-definitivo"]');
-
-                if (!btnHomologar || !formProcessamento) return;
-
-                // Remove o confirm() nativo
-                btnHomologar.removeAttribute('onclick');
-
-                // Flag para permitir a submissão real após confirmação no modal
-                let confirmado = false;
-
-                // Evento de clique no botão "Homologar e Fechar Folha"
-                btnHomologar.addEventListener('click', function (e) {
-                    if (confirmado) {
-                        // Submissão já confirmada, permite o comportamento padrão (submit)
-                        confirmado = false; // reseta para próximos usos
-                        return;
-                    }
-                    // Impede o envio imediato e abre o modal
-                    e.preventDefault();
-                    abrirModalHomologacao();
-                });
-
-                // Botão de confirmação dentro do modal
-                const btnConfirmar = document.getElementById('btnConfirmarHomologacao');
-                if (btnConfirmar) {
-                    btnConfirmar.addEventListener('click', function () {
-                        // Fecha o modal
-                        const modalEl = document.getElementById('modalHomologacao');
-                        const modal = bootstrap.Modal.getInstance(modalEl);
-                        if (modal) modal.hide();
-
-                        // Seta a flag e dispara o clique no botão original
-                        confirmado = true;
-                        btnHomologar.click();
-                    });
-                }
-
-                // Função que valida e abre o modal
-                function abrirModalHomologacao() {
-                    const selectGestao = formProcessamento.querySelector('select[name="idGestao"]');
-                    const selectMes = formProcessamento.querySelector('select[name="mes"]');
-                    const inputAno = formProcessamento.querySelector('input[name="ano"]');
-
-                    if (!selectGestao.value || !selectMes.value || !inputAno.value) {
-                        // Exibe o modal de alerta em vez do alert() nativo
-                        const modalAlerta = new bootstrap.Modal(document.getElementById('modalAlertaValidacao'));
-                        modalAlerta.show();
-                        return;
-                    }
-
-                    // Abre o modal de confirmação de homologação
-                    const modalHomologacao = new bootstrap.Modal(document.getElementById('modalHomologacao'));
-                    modalHomologacao.show();
-                }
-            });
-
-            function abrirRelatorioJeton(botao) {
-                const idPessoa = botao.getAttribute('data-pessoa');
-                const idGestao = botao.getAttribute('data-gestao');
-                const mes = botao.getAttribute('data-mes');
-                const ano = botao.getAttribute('data-ano');
-                const nome = botao.getAttribute('data-nome');
-
-                document.getElementById('nomeConselheiroRelatorio').innerText = nome || 'Conselheiro';
-                document.getElementById('competenciaRelatorio').innerText = `Competência: ${mes}/${ano}`;
-
-                const tbody = document.getElementById('corpoTabelaRelatorio');
-                tbody.innerHTML = `
-        <tr>
-            <td colspan="3" class="text-center py-3">
-                <i class="fa-solid fa-spinner fa-spin me-2"></i>Carregando dados...
-            </td>
-        </tr>`;
-
-                new bootstrap.Modal(document.getElementById('modalRelatorio')).show();
-
-                fetch(`/jeton/relatorio-conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
-                    .then(response => response.json())
-                    .then(dados => {
-                        // Atualiza os totais
-                        document.getElementById('saldoAnterior').innerText = dados.saldoAnterior || 0;
-                        document.getElementById('pontosAcumulados').innerText = dados.pontosAcumuladosMes || 0;
-                        document.getElementById('saldoFuturo').innerText = dados.saldoFuturo || 0;
-
-                        // Preenche a tabela de atividades
-                        tbody.innerHTML = '';
-                        if (dados.atividades && dados.atividades.length > 0) {
-                            dados.atividades.forEach(at => {
-                                tbody.innerHTML += `
-                        <tr>
-                            <td class="fw-semibold text-dark">${at.regra}</td>
-                            <td class="text-center"><span class="badge bg-secondary">${at.data.split('-').reverse().join('/')}</span></td>
-                            <td class="text-center fw-bold text-primary">${at.qtd}</td>
-                        </tr>`;
-                            });
-                        } else {
-                            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-muted">Nenhuma atividade registrada no mês.</td></tr>';
-                        }
-                    })
-                    .catch(error => {
-                        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-danger">Erro ao carregar os dados do relatório.</td></tr>';
-                    });
-            }
-        </script>
     </div>
 </body>
 
