@@ -38,6 +38,9 @@ public class ViewUserLogin implements Serializable {
     @Column(name = "senha")
     private String senha;
 
+    @Column(name = "inTipoPessoa", length = 1)
+    private String inTipoPessoa;
+
     @Column(name = "permissoes", columnDefinition = "text")
     private String permissoes;
 
@@ -84,6 +87,10 @@ public class ViewUserLogin implements Serializable {
 
     public String getSenha() {
         return senha;
+    }
+
+    public String getInTipoPessoa() {
+        return inTipoPessoa;
     }
 
     public String getPermissoes() {

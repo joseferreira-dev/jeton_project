@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
+
+<head>
+    <title>Meu Perfil - Jeton</title>
+</head>
+
+<body>
+    <div layout:fragment="conteudo">
+        <div class="mb-4">
+            <h2 class="h4 text-cremepe fw-bold">
+                <i class="fa-solid fa-user-pen me-2"></i> Meu Perfil
+            </h2>
+        </div>
+
+        <!-- Mensagens Flash -->
+        <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form th:action="@{/usuarios/perfil/salvar}" th:object="${usuario}" method="post">
+                    <!-- campos ocultos -->
+                    <input type="hidden" th:field="*{idUsuarioPessoa}">
+                    <input type="hidden" th:field="*{pessoa.idPessoa}">
+                    <input type="hidden" th:field="*{inSituacao}">
+                    <input type="hidden" th:field="*{pessoa.cpf}">
+                    <input type="hidden" th:field="*{pessoa.inTipoPessoa}">
+
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Nome Completo</label>
+                            <input type="text" class="form-control" th:field="*{pessoa.nome}" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">E-mail</label>
+                            <input type="email" class="form-control" th:field="*{pessoa.email}" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">CPF</label>
+                            <input type="text" class="form-control" th:field="*{pessoa.cpf}" readonly disabled>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Nova Senha</label>
+                            <input type="password" class="form-control" th:field="*{senha}"
+                                placeholder="Deixe em branco para manter a atual">
+                            <small class="text-muted">Preencha apenas se desejar alterar a senha.</small>
+                        </div>
+
+                        <!-- Exibe o CRM apenas se for conselheiro (somente leitura) -->
+                        <div th:if="${usuario.eConselheiro}" class="col-md-6">
+                            <label class="form-label fw-bold">CRM-PE</label>
+                            <input type="text" class="form-control" th:value="${usuario.crm}" readonly disabled>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 border-top pt-4 d-flex justify-content-end">
+                        <a th:href="@{/index}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                        <button type="submit" class="btn btn-cremepe px-4">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

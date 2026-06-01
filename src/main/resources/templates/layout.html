@@ -134,8 +134,12 @@
                 <div class="d-flex align-items-center text-white gap-3 ms-lg-3 mt-3 mt-lg-0 pt-3 pt-lg-0">
                     <span class="small">Olá, <strong
                             th:text="${session.usuarioLogado?.nome ?: 'Visitante'}">Usuário</strong></span>
-                    <a th:href="@{/sair}" class="btn btn-sm btn-outline-light text-nowrap"><i
-                            class="fa-solid fa-right-from-bracket me-1"></i> Sair</a>
+                    <a th:href="@{/usuarios/perfil}" class="btn btn-sm btn-outline-light">
+                        <i class="fa-solid fa-user-circle me-1"></i> Meu Perfil
+                    </a>
+                    <a th:href="@{/sair}" class="btn btn-sm btn-outline-light">
+                        <i class="fa-solid fa-right-from-bracket me-1"></i> Sair
+                    </a>
                 </div>
             </div>
         </div>

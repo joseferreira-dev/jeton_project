@@ -22,6 +22,8 @@ public interface PessoaRepository extends JpaRepository<Pessoa, Integer> {
 
     boolean existsByCpfAndIdPessoaNot(String cpf, Integer idPessoa);
 
+    boolean existsByEmailAndIdPessoaNot(String email, Integer idPessoa);
+
     default List<Pessoa> findAllConselheiros() {
         return findByInTipoPessoa(Pessoa.TIPO_CONSELHEIRO);
     }

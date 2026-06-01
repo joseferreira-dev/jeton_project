@@ -23,7 +23,7 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/usuarios")
-public class UsuarioController {
+public class UsuarioController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(UsuarioController.class);
 
@@ -177,5 +177,67 @@ public class UsuarioController {
                     .toList();
         }
         model.addAttribute("niveisAtuais", niveisAtuais);
+    }
+
+    // =========================================================================
+    // PERFIL DO USUÁRIO LOGADO
+    // =========================================================================
+
+    @GetMapping("/perfil")
+    public String perfil(HttpSession session, Model model) {
+        ViewUserLogin usuarioLogado = getUsuarioLogado(session);
+        if (usuarioLogado == null) {
+            return "redirect:/login";
+        }
+        Usuario usuario = usuarioService.buscarPorId(usuarioLogado.getIdPessoa())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        model.addAttribute("usuario", usuario);
+
+        // Se for conselheiro, carrega o CRM para exibição
+        if (isConselheiro(session)) {
+            usuario.seteConselheiro(true);
+            conselheiroService.buscarPorId(usuarioLogado.getIdPessoa())
+                    .ifPresent(c -> usuario.setCrm(c.getCrm()));
+        }
+        return "usuario/perfil";
+    }
+
+    @PostMapping("/perfil/salvar")
+    public String salvarPerfil(@Valid @ModelAttribute("usuario") Usuario usuario,
+            HttpSession session,
+            RedirectAttributes ra) {
+        ViewUserLogin usuarioLogado = getUsuarioLogado(session);
+        if (usuarioLogado == null) {
+            return "redirect:/login";
+        }
+        Integer idLogado = usuarioLogado.getIdPessoa();
+        usuario.setIdUsuarioPessoa(idLogado);
+
+        // Busca o usuário original para preservar dados não editáveis
+        Usuario existente = usuarioService.buscarPorId(idLogado)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        // Mantém a situação e o tipo de pessoa originais
+        usuario.setInSituacao(existente.getInSituacao());
+        if (usuario.getPessoa() != null) {
+            usuario.getPessoa().setInTipoPessoa(existente.getPessoa().getInTipoPessoa());
+            usuario.getPessoa().setIdPessoa(idLogado);
+            // Mantém o CPF (não deve ser alterado pelo perfil)
+            usuario.getPessoa().setCpf(existente.getPessoa().getCpf());
+        }
+
+        // Impede que conselheiros alterem o CRM (não deve ser enviado no formulário)
+        if (isConselheiro(session)) {
+            usuario.setCrm(null); // será ignorado
+            usuario.seteConselheiro(true);
+        }
+
+        try {
+            usuarioService.atualizarPerfil(usuario, idLogado);
+            ra.addFlashAttribute("sucesso", "Perfil atualizado com sucesso!");
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro ao atualizar perfil: " + e.getMessage());
+        }
+        return "redirect:/usuarios/perfil";
     }
 }

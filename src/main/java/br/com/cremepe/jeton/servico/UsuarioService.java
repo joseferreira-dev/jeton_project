@@ -69,7 +69,10 @@ public class UsuarioService {
         // 3. Verifica duplicidade de CPF
         validarCpfUnico(cpfLimpo, usuario.getIdUsuarioPessoa());
 
-        // 4. Valida CRM se for conselheiro
+        // 4. Verifica duplicidade de e-mail
+        validarEmailUnico(pessoa.getEmail(), isNovo ? null : usuario.getIdUsuarioPessoa());
+
+        // 5. Valida CRM se for conselheiro
         if (usuario.iseConselheiro()) {
             if (usuario.getCrm() == null) {
                 throw new RuntimeException("O número do CRM é obrigatório para médicos conselheiros.");
@@ -77,7 +80,7 @@ public class UsuarioService {
             validarCrmUnico(usuario.getCrm(), usuario.getIdUsuarioPessoa());
         }
 
-        // 5. Tratamento de senha
+        // 6. Tratamento de senha
         if (usuario.getIdUsuarioPessoa() != null && usuario.getIdUsuarioPessoa() > 0) {
             Usuario existente = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
                     .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
@@ -97,16 +100,16 @@ public class UsuarioService {
             usuario.setSenha(gerarSHA256(usuario.getSenha()));
         }
 
-        // 6. Define tipo de pessoa
+        // 7. Define tipo de pessoa
         pessoa.setInTipoPessoa(usuario.iseConselheiro() ? Pessoa.TIPO_CONSELHEIRO : Pessoa.TIPO_FUNCIONARIO);
 
-        // 7. Salva usuário (cascade salva pessoa)
+        // 8. Salva usuário (cascade salva pessoa)
         Usuario usuarioSalvo = usuarioRepository.save(usuario);
         log.info("Usuário {}: ID={}, nome='{}', tipo={}, situação={}",
                 isNovo ? "criado" : "atualizado",
                 usuarioSalvo.getIdUsuarioPessoa(), nome, tipoPessoa, situacao);
 
-        // 8. Gerencia tabela conselheiro (se necessário)
+        // 9. Gerencia tabela conselheiro (se necessário)
         if (usuario.iseConselheiro()) {
             Conselheiro c = conselheiroRepository.findById(usuarioSalvo.getIdUsuarioPessoa())
                     .orElse(new Conselheiro());
@@ -147,6 +150,15 @@ public class UsuarioService {
         }
     }
 
+    private void validarEmailUnico(String email, Integer idAtual) {
+        if (email == null || email.trim().isEmpty())
+            return;
+
+        if (pessoaRepository.existsByEmailAndIdPessoaNot(email, idAtual != null ? idAtual : 0)) {
+            throw new RuntimeException("Já existe um cadastro no sistema com o e-mail '" + email + "'.");
+        }
+    }
+
     private String gerarSHA256(String senha) {
         try {
             MessageDigest algoritmo = MessageDigest.getInstance("SHA-256");
@@ -159,6 +171,40 @@ public class UsuarioService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Erro ao processar segurança da senha", e);
         }
+    }
+
+    @Transactional
+    public void atualizarPerfil(Usuario usuario, Integer idUsuarioLogado) {
+        Usuario existente = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado para atualização de perfil"));
+
+        // Valida se o e-mail já não está em uso por outro usuário
+        String novoEmail = usuario.getPessoa().getEmail();
+        if (novoEmail != null && !novoEmail.equals(existente.getPessoa().getEmail())) {
+            validarEmailUnico(novoEmail, existente.getIdUsuarioPessoa());
+        }
+
+        // Atualiza apenas os campos permitidos
+        Pessoa pessoa = existente.getPessoa();
+        pessoa.setNome(usuario.getPessoa().getNome());
+        pessoa.setEmail(usuario.getPessoa().getEmail());
+        // CPF não é alterado
+
+        // Se uma nova senha foi fornecida, atualiza
+        if (usuario.getSenha() != null && !usuario.getSenha().trim().isEmpty()) {
+            existente.setSenha(gerarSHA256(usuario.getSenha()));
+        }
+
+        // Salva (cascade salva a pessoa também)
+        usuarioRepository.save(existente);
+
+        // Log da alteração de perfil
+        String textoLog = String.format(
+                "Perfil atualizado: ID=%d, Nome='%s', Email='%s'",
+                existente.getIdUsuarioPessoa(), pessoa.getNome(), pessoa.getEmail());
+        logJetonService.registrarLog("usuario", idUsuarioLogado, textoLog);
+        log.info("Perfil do usuário ID={} ({}) atualizado", existente.getIdUsuarioPessoa(),
+                existente.getPessoa().getNome());
     }
 
     // =========================================================================

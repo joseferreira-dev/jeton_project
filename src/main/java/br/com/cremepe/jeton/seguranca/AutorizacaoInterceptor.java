@@ -49,6 +49,15 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
         String permissaoFaltante = null;
 
         // Mapeamento de rotas vs permissões
+        if (uri.startsWith("/usuarios")) {
+            if (uri.equals("/usuarios/perfil") || uri.equals("/usuarios/perfil/salvar")) {
+                return true;
+            }
+            if (!(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_USUARIOS))) {
+                permissaoFaltante = NivelAcesso.NIVEL_USUARIOS;
+                log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão U", usuarioLogado.getNome(), uri);
+            }
+        }
         if (uri.startsWith("/atividades")
                 && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL))) {
             permissaoFaltante = NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL;
