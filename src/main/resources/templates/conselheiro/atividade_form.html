@@ -41,8 +41,6 @@
                             <label class="form-label fw-bold">Regra Enquadrada</label>
                             <select class="form-select" th:field="*{regra.idRegra}" id="selectRegra" required>
                                 <option value="">-- Selecione a data para carregar as regras --</option>
-                                <option th:each="r : ${listaRegras}" th:value="${r.idRegra}"
-                                    th:text="${r.nomeRegra + ' (' + r.pontos + ' pts)'}"></option>
                             </select>
                             <small class="text-muted">As regras disponíveis dependem da data escolhida.</small>
                         </div>

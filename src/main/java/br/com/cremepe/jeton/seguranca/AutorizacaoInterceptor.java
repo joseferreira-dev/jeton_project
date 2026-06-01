@@ -68,10 +68,17 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
                 log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão U", usuarioLogado.getNome(), uri);
             }
         }
-        if (uri.startsWith("/atividades")
-                && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL))) {
-            permissaoFaltante = NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL;
-            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão A", usuarioLogado.getNome(), uri);
+        if (uri.startsWith("/atividades")) {
+            // Conselheiros não podem acessar a área administrativa de atividades
+            if ("C".equals(usuarioLogado.getInTipoPessoa())) {
+                permissaoFaltante = "ACESSO_RESTRITO_CONSELHEIRO";
+                response.sendRedirect("/index?erro=acesso_negado");
+                return false;
+            }
+            if (!(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL))) {
+                permissaoFaltante = NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL;
+                log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão A", usuarioLogado.getNome(), uri);
+            }
         } else if (uri.startsWith("/comprovantes")
                 && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_COMPROVANTES))) {
             permissaoFaltante = NivelAcesso.NIVEL_COMPROVANTES;

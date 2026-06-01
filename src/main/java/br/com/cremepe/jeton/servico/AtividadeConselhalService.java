@@ -375,9 +375,4 @@ public class AtividadeConselhalService {
     public Page<AtividadeConselhal> listarPorConselheiro(Integer idPessoa, Pageable pageable) {
         return atividadeRepository.findByConselheiroIdPessoa(idPessoa, pageable);
     }
-
-    public Page<AtividadeConselhal> listarPorConselheiroEGestao(Integer idPessoa, Integer idGestao, Pageable pageable) {
-        return atividadeRepository.findByConselheiroIdPessoaAndGestaoIdGestao(idPessoa, idGestao, pageable);
-    }
-
 }
