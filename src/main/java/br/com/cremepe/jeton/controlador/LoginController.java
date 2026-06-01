@@ -73,7 +73,13 @@ public class LoginController {
                     usuarioLogado.getIdPessoa(), usuarioLogado.getNome(), cpfMascarado);
             logJetonService.registrarLog("login", usuarioLogado.getIdPessoa(), textoLog);
 
-            return "redirect:/index";
+            // Redireciona conselheiros para o portal, outros para o dashboard
+            // administrativo
+            if ("C".equals(usuarioLogado.getInTipoPessoa())) {
+                return "redirect:/conselheiro";
+            } else {
+                return "redirect:/index";
+            }
         } else {
             log.warn("Falha de autenticação para CPF: {}", cpfMascarado);
 
@@ -109,7 +115,12 @@ public class LoginController {
             return "redirect:/login";
         }
 
-        // Métricas do dashboard
+        // Conselheiros não devem ver o dashboard administrativo
+        if ("C".equals(usuarioLogado.getInTipoPessoa())) {
+            return "redirect:/conselheiro";
+        }
+
+        // Métricas do dashboard (apenas para funcionários e super admin)
         long totalPendentes = atividadeRepository.countByInSituacao("P");
         long totalConselheiros = conselheiroRepository.countByInSituacao("A");
         LocalDate hoje = LocalDate.now();

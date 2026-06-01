@@ -38,6 +38,10 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
     @Query("SELECT COUNT(a) FROM AtividadeConselhal a WHERE MONTH(a.dataHoraAtividade) = :mes AND YEAR(a.dataHoraAtividade) = :ano")
     long countAtividadesDoMes(@Param("mes") Integer mes, @Param("ano") Integer ano);
 
+    long countByConselheiroIdPessoaAndInSituacao(Integer idPessoa, String inSituacao);
+
+    long countByConselheiroIdPessoa(Integer idPessoa);
+
     // =========================================================================
     // CONSULTAS COM PAGINAÇÃO E PESQUISA DINÂMICA
     // =========================================================================
@@ -60,6 +64,11 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("comprovanteFiltro") String comprovanteFiltro,
             @Param("dataInicio") LocalDate dataInicio,
             @Param("dataFim") LocalDate dataFim,
+            Pageable pageable);
+
+    Page<AtividadeConselhal> findByConselheiroIdPessoa(Integer idPessoa, Pageable pageable);
+
+    Page<AtividadeConselhal> findByConselheiroIdPessoaAndGestaoIdGestao(Integer idPessoa, Integer idGestao,
             Pageable pageable);
 
     // =========================================================================
@@ -130,4 +139,9 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("idGestao") Integer idGestao,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
+
+    @Query("SELECT SUM(a.qtdAtividade * a.regra.pontos) FROM AtividadeConselhal a " +
+            "WHERE a.conselheiro.idPessoa = :idPessoa " +
+            "AND a.inSituacao = 'C' AND a.inComputada = 'N'")
+    Integer sumPontosAtividadesValidadasNaoComputadas(@Param("idPessoa") Integer idPessoa);
 }

@@ -52,4 +52,8 @@ public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Intege
     Integer sumPontosUtilizadosPorConselheiroDataTurno(@Param("idPessoa") Integer idPessoa,
             @Param("data") LocalDate data,
             @Param("turno") String turno);
+
+    @Query("SELECT COALESCE(SUM(ps.pontosSobrando), 0) FROM PontosSaldo ps " +
+            "WHERE ps.conselheiro.idPessoa = :idPessoa AND ps.inSituacao = 'A'")
+    Integer somarPontosSobrandoTotal(@Param("idPessoa") Integer idPessoa);
 }

@@ -131,10 +131,6 @@ public class ConselheiroService {
                     idUsuarioLogado);
             acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_COMPROVANTES,
                     idUsuarioLogado);
-            acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_JETONS,
-                    idUsuarioLogado);
-            acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_PONTOS_REMANESCENTES,
-                    idUsuarioLogado);
             log.info("Permissões padrão concedidas para o novo conselheiro ID={}", conselheiroSalvo.getIdPessoa());
         }
 

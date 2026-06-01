@@ -6,6 +6,10 @@ import br.com.cremepe.jeton.repositorio.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -484,4 +488,15 @@ public class JetonService {
                 .map(Pessoa::getNome)
                 .orElse("Usuário ID " + idUsuario);
     }
+
+    public List<Jeton> listarPorConselheiro(Integer idPessoa) {
+        return jetonRepository.findByConselheiroIdPessoaOrderByAnoDescMesDesc(idPessoa);
+    }
+
+    public List<Jeton> listarPorConselheiro(Integer idPessoa, int limit) {
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "ano", "mes"));
+        Page<Jeton> page = jetonRepository.findByConselheiroIdPessoa(idPessoa, pageable);
+        return page.getContent();
+    }
+
 }

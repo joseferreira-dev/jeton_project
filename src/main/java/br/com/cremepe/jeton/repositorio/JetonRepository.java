@@ -1,11 +1,15 @@
 package br.com.cremepe.jeton.repositorio;
 
 import br.com.cremepe.jeton.dominio.Jeton;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,10 +22,17 @@ public interface JetonRepository extends JpaRepository<Jeton, Integer> {
 
     List<Jeton> findByGestaoIdGestao(Integer idGestao);
 
+    List<Jeton> findByConselheiroIdPessoaOrderByAnoDescMesDesc(Integer idPessoa);
+
+    Page<Jeton> findByConselheiroIdPessoa(Integer idPessoa, Pageable pageable);
+
     @Query("SELECT j FROM Jeton j WHERE j.gestao.idGestao = :idGestao AND j.mes = :mes AND j.ano = :ano")
     List<Jeton> findByGestaoIdGestaoAndMesAndAno(@Param("idGestao") Integer idGestao,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
+
+    @Query("SELECT COALESCE(SUM(j.valor), 0) FROM Jeton j WHERE j.conselheiro.idPessoa = :idPessoa AND j.inSituacao = 'E'")
+    BigDecimal sumValorRecebidoPorConselheiro(@Param("idPessoa") Integer idPessoa);
 
     @Query("SELECT j FROM Jeton j WHERE j.inSituacao = 'E' " +
             "AND (:idGestao IS NULL OR j.gestao.idGestao = :idGestao) " +

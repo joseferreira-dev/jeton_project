@@ -27,6 +27,8 @@ public interface GestaoConselheiroRepository extends JpaRepository<GestaoConselh
 
     List<GestaoConselheiro> findByConselheiroIdPessoaAndInSituacao(Integer idPessoa, String inSituacao);
 
+    boolean existsByConselheiroIdPessoa(Integer idPessoa);
+
     @Query("SELECT gc FROM GestaoConselheiro gc WHERE " +
             "(LOWER(gc.gestao.nomeGestao) LIKE LOWER(CONCAT('%', :termo, '%')) OR " +
             "LOWER(gc.conselheiro.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +

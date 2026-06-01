@@ -49,6 +49,16 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
         String permissaoFaltante = null;
 
         // Mapeamento de rotas vs permissões
+        if (uri.startsWith("/conselheiro")) {
+            boolean isConselheiro = "C".equals(usuarioLogado.getInTipoPessoa());
+            if (!isConselheiro && !isSuperAdmin) {
+                log.warn("Acesso negado ao portal do conselheiro: usuário {} (tipo {})",
+                        usuarioLogado.getNome(), usuarioLogado.getInTipoPessoa());
+                response.sendRedirect("/index?erro=acesso_negado");
+                return false;
+            }
+            return true; // libera acesso
+        }
         if (uri.startsWith("/usuarios")) {
             if (uri.equals("/usuarios/perfil") || uri.equals("/usuarios/perfil/salvar")) {
                 return true;

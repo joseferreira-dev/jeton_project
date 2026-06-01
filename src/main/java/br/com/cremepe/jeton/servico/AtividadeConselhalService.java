@@ -371,4 +371,13 @@ public class AtividadeConselhalService {
         return atividadeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Atividade não encontrada."));
     }
+
+    public Page<AtividadeConselhal> listarPorConselheiro(Integer idPessoa, Pageable pageable) {
+        return atividadeRepository.findByConselheiroIdPessoa(idPessoa, pageable);
+    }
+
+    public Page<AtividadeConselhal> listarPorConselheiroEGestao(Integer idPessoa, Integer idGestao, Pageable pageable) {
+        return atividadeRepository.findByConselheiroIdPessoaAndGestaoIdGestao(idPessoa, idGestao, pageable);
+    }
+
 }

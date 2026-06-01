@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
+
+<head>
+    <title>Nova Atividade - Jeton</title>
+</head>
+
+<body>
+    <div layout:fragment="conteudo">
+        <div class="mb-4">
+            <h2 class="h4 text-cremepe fw-bold">
+                <i class="fa-solid fa-clipboard-check me-2"></i>
+                <span
+                    th:text="${atividade.idAtividade == null ? 'Registrar Nova Atividade' : 'Editar Atividade'}"></span>
+            </h2>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form th:action="@{/conselheiro/atividades/salvar}" th:object="${atividade}" method="post"
+                    enctype="multipart/form-data" id="formAtividade">
+                    <input type="hidden" th:field="*{idAtividade}">
+                    <input type="hidden" th:field="*{dataHoraRegistro}">
+                    <input type="hidden" th:field="*{inSituacao}">
+                    <input type="hidden" th:field="*{gestao.idGestao}">
+                    <input type="hidden" th:field="*{conselheiro.idPessoa}">
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Data e Horário da Atividade</label>
+                            <input type="datetime-local" class="form-control" name="dataAtividadePura"
+                                id="dataAtividade"
+                                th:value="${atividade.dataHoraAtividade != null ? #temporals.format(atividade.dataHoraAtividade, 'yyyy-MM-dd') + 'T' + #temporals.format(atividade.dataHoraAtividade, 'HH:mm') : ''}"
+                                required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Turno</label>
+                            <input type="text" class="form-control" id="turnoVisual" value="Automático" disabled>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Regra Enquadrada</label>
+                            <select class="form-select" th:field="*{regra.idRegra}" id="selectRegra" required>
+                                <option value="">-- Selecione a data para carregar as regras --</option>
+                                <option th:each="r : ${listaRegras}" th:value="${r.idRegra}"
+                                    th:text="${r.nomeRegra + ' (' + r.pontos + ' pts)'}"></option>
+                            </select>
+                            <small class="text-muted">As regras disponíveis dependem da data escolhida.</small>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mt-2">
+                        <div class="col-md-12">
+                            <div class="card bg-light border-dashed">
+                                <div class="card-body">
+                                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-paperclip me-2"></i>Anexar
+                                        Comprovante</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label small fw-bold">Nome do Comprovante</label>
+                                            <input type="text" class="form-control form-control-sm"
+                                                name="nomeComprovanteUsuario"
+                                                th:value="${atividade.comprovante != null ? atividade.comprovante.nomeComprovante : ''}"
+                                                placeholder="Ex: Certidão de comparecimento - Reunião X">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Tipo de Documento</label>
+                                            <select class="form-select form-select-sm" name="idTipoAnexo">
+                                                <option value="">-- Selecione --</option>
+                                                <option th:each="t : ${listaTiposAnexo}" th:value="${t.idTipo}"
+                                                    th:text="${t.nome}"
+                                                    th:selected="${atividade.comprovante != null && atividade.comprovante.tipoAnexo != null ? atividade.comprovante.tipoAnexo.idTipo == t.idTipo : false}">
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <label class="form-label small fw-bold">Ficheiro (PDF ou Imagem)</label>
+                                            <input type="file" class="form-control form-select-sm" name="file"
+                                                accept=".pdf,image/*">
+                                        </div>
+                                    </div>
+                                    <div th:if="${atividade.comprovante != null}" class="mt-3">
+                                        <span class="badge bg-success">
+                                            <i class="fa-solid fa-file-circle-check me-1"></i>
+                                            Anexo atual: <span th:text="${atividade.comprovante.nomeArquivo}"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 border-top pt-4 d-flex justify-content-between">
+                        <a th:href="@{/conselheiro/atividades}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-cremepe px-4">Salvar Atividade</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            // Carrega as regras conforme a data selecionada
+            const dataInput = document.getElementById('dataAtividade');
+            const selectRegra = document.getElementById('selectRegra');
+            const turnoVisual = document.getElementById('turnoVisual');
+
+            function carregarRegrasPorData() {
+                const data = dataInput.value;
+                if (!data) return;
+                fetch(`/atividades/api/regras-por-data?data=${data}`)
+                    .then(resp => resp.json())
+                    .then(data => {
+                        selectRegra.innerHTML = '<option value="">-- Selecione a Regra --</option>';
+                        if (data.regras && data.regras.length > 0) {
+                            data.regras.forEach(r => {
+                                const option = document.createElement('option');
+                                option.value = r.id;
+                                option.text = `${r.nome} (${r.pontos} pts)`;
+                                selectRegra.appendChild(option);
+                            });
+                            selectRegra.disabled = false;
+                        } else {
+                            selectRegra.innerHTML = '<option value="">Nenhuma regra disponível para esta data</option>';
+                            selectRegra.disabled = true;
+                        }
+                    })
+                    .catch(err => console.error('Erro ao carregar regras:', err));
+            }
+
+            function atualizarTurno() {
+                const dataHora = dataInput.value;
+                if (dataHora) {
+                    const hora = new Date(dataHora).getHours();
+                    let turno = '';
+                    if (hora >= 6 && hora < 12) turno = 'Manhã (M)';
+                    else if (hora >= 12 && hora < 18) turno = 'Tarde (T)';
+                    else turno = 'Noite (N)';
+                    turnoVisual.value = turno;
+                } else {
+                    turnoVisual.value = 'Automático';
+                }
+            }
+
+            dataInput.addEventListener('change', () => {
+                carregarRegrasPorData();
+                atualizarTurno();
+            });
+            if (dataInput.value) {
+                carregarRegrasPorData();
+                atualizarTurno();
+            }
+        </script>
+    </div>
+</body>
+
+</html>

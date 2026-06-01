@@ -282,11 +282,21 @@ public class GestaoConselheiroService {
     }
 
     // =========================================================================
-    // MÉTODOS PRIVADOS AUXILIARES
+    // MÉTODOS AUXILIARES
     // =========================================================================
     private void validarVinculoDuplicado(Integer idGestao, Integer idPessoa) {
         if (repository.existsByGestaoAndConselheiro(idGestao, idPessoa)) {
             throw new RuntimeException("Já existe um vínculo entre a gestão informada e este conselheiro.");
         }
+    }
+
+    public Optional<GestaoConselheiro> buscarPorConselheiroEStatus(Integer idPessoa, String situacao) {
+        List<GestaoConselheiro> lista = repository.findByConselheiroIdPessoaAndInSituacao(idPessoa, situacao);
+        return lista.isEmpty() ? Optional.empty() : Optional.of(lista.get(0));
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existeVinculoParaConselheiro(Integer idPessoa) {
+        return repository.existsByConselheiroIdPessoa(idPessoa);
     }
 }
