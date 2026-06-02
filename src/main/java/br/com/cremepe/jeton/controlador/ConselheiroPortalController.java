@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -111,6 +112,7 @@ public class ConselheiroPortalController {
         // Últimas atividades (lista)
         Pageable top5 = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "dataHoraAtividade"));
         Page<AtividadeConselhal> paginaAtividades = atividadeService.listarPorConselheiro(idConselheiro, top5);
+        List<Jeton> ultimosPagamentos = jetonService.listarPorConselheiro(idConselheiro, 5);
 
         model.addAttribute("nuncaVinculado", false);
         model.addAttribute("temGestaoAtiva", gestaoAtivaOpt.isPresent());
@@ -120,6 +122,7 @@ public class ConselheiroPortalController {
         model.addAttribute("atividadesTotais", atividadesTotais);
         model.addAttribute("totalRecebido", totalRecebido);
         model.addAttribute("ultimasAtividades", paginaAtividades.getContent());
+        model.addAttribute("ultimosPagamentos", ultimosPagamentos);
 
         return "conselheiro/dashboard";
     }
@@ -132,6 +135,9 @@ public class ConselheiroPortalController {
     public String listarAtividades(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) LocalDate dataInicio,
+            @RequestParam(required = false) LocalDate dataFim,
+            @RequestParam(required = false) String situacao,
             Model model,
             HttpSession session) {
 
@@ -140,7 +146,8 @@ public class ConselheiroPortalController {
 
         Integer idConselheiro = getIdConselheiroLogado(session);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "dataHoraAtividade"));
-        Page<AtividadeConselhal> pagina = atividadeService.listarPorConselheiro(idConselheiro, pageable);
+        Page<AtividadeConselhal> pagina = atividadeService.listarPorConselheiroComFiltros(
+                idConselheiro, dataInicio, dataFim, situacao, pageable);
 
         model.addAttribute("paginaAtividades", pagina);
         return "conselheiro/atividades";
@@ -298,7 +305,7 @@ public class ConselheiroPortalController {
     }
 
     // =========================================================================
-    // MÉTODOS AUXILIARES (cópia dos existentes em AtividadeConselhalController)
+    // MÉTODOS AUXILIARES
     // =========================================================================
 
     private LocalDateTime parseDataHora(String dataAtividadePura, RedirectAttributes ra) {

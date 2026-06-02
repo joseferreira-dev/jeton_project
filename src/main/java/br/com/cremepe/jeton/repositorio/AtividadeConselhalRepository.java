@@ -144,4 +144,14 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             "WHERE a.conselheiro.idPessoa = :idPessoa " +
             "AND a.inSituacao = 'C' AND a.inComputada = 'N'")
     Integer sumPontosAtividadesValidadasNaoComputadas(@Param("idPessoa") Integer idPessoa);
+
+    @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa " +
+            "AND (:dataInicio IS NULL OR a.dataHoraAtividade >= :dataInicio) " +
+            "AND (:dataFim IS NULL OR a.dataHoraAtividade <= :dataFim) " +
+            "AND (:situacao IS NULL OR :situacao = '' OR a.inSituacao = :situacao)")
+    Page<AtividadeConselhal> findByConselheiroAndFiltros(@Param("idPessoa") Integer idPessoa,
+            @Param("dataInicio") LocalDate dataInicio,
+            @Param("dataFim") LocalDate dataFim,
+            @Param("situacao") String situacao,
+            Pageable pageable);
 }

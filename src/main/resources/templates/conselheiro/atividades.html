@@ -14,6 +14,7 @@
             </a>
         </div>
 
+        <!-- Mensagens flash -->
         <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show">
             <i class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -23,6 +24,35 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
+        <!-- Filtros (data e situação) -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <form method="get" th:action="@{/conselheiro/atividades}" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">Data Inicial</label>
+                        <input type="date" name="dataInicio" th:value="${param.dataInicio}" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">Data Final</label>
+                        <input type="date" name="dataFim" th:value="${param.dataFim}" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small">Situação</label>
+                        <select name="situacao" class="form-select">
+                            <option value="">Todas</option>
+                            <option value="P" th:selected="${param.situacao == 'P'}">Pendente</option>
+                            <option value="C" th:selected="${param.situacao == 'C'}">Validada</option>
+                            <option value="F" th:selected="${param.situacao == 'F'}">Fechada</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabela de atividades -->
         <div class="card shadow-sm">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -75,20 +105,23 @@
                     </table>
                 </div>
             </div>
+            <!-- Paginação -->
             <div class="card-footer bg-white border-top-0 py-3" th:if="${paginaAtividades.totalPages > 1}">
                 <nav>
                     <ul class="pagination justify-content-center mb-0">
                         <li class="page-item" th:classappend="${paginaAtividades.first} ? 'disabled'">
                             <a class="page-link"
-                                th:href="@{/conselheiro/atividades(page=${paginaAtividades.number - 1})}">Anterior</a>
+                                th:href="@{/conselheiro/atividades(page=${paginaAtividades.number - 1}, dataInicio=${param.dataInicio}, dataFim=${param.dataFim}, situacao=${param.situacao})}">Anterior</a>
                         </li>
                         <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaAtividades.totalPages - 1)}"
                             th:classappend="${paginaAtividades.number == i} ? 'active'">
-                            <a class="page-link" th:href="@{/conselheiro/atividades(page=${i})}" th:text="${i+1}"></a>
+                            <a class="page-link"
+                                th:href="@{/conselheiro/atividades(page=${i}, dataInicio=${param.dataInicio}, dataFim=${param.dataFim}, situacao=${param.situacao})}"
+                                th:text="${i+1}"></a>
                         </li>
                         <li class="page-item" th:classappend="${paginaAtividades.last} ? 'disabled'">
                             <a class="page-link"
-                                th:href="@{/conselheiro/atividades(page=${paginaAtividades.number + 1})}">Próxima</a>
+                                th:href="@{/conselheiro/atividades(page=${paginaAtividades.number + 1}, dataInicio=${param.dataInicio}, dataFim=${param.dataFim}, situacao=${param.situacao})}">Próxima</a>
                         </li>
                     </ul>
                 </nav>

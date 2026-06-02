@@ -37,18 +37,22 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
         HttpSession session = request.getSession();
         ViewUserLogin usuarioLogado = (ViewUserLogin) session.getAttribute("usuarioLogado");
 
-        // 1. Autenticação
+        // Autenticação
         if (usuarioLogado == null) {
             log.warn("Acesso não autenticado à URI: {} {}", method, uri);
             response.sendRedirect("/login");
             return false;
         }
 
-        // 2. Autorização
+        if (uri.startsWith("/atividades/api/")) {
+            return true;
+        }
+
+        // Autorização
         boolean isSuperAdmin = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_SUPER_ADMIN);
         String permissaoFaltante = null;
 
-        // Mapeamento de rotas vs permissões
+        // Portal do Conselheiro
         if (uri.startsWith("/conselheiro")) {
             boolean isConselheiro = "C".equals(usuarioLogado.getInTipoPessoa());
             if (!isConselheiro && !isSuperAdmin) {
@@ -57,17 +61,10 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
                 response.sendRedirect("/index?erro=acesso_negado");
                 return false;
             }
-            return true; // libera acesso
+            return true;
         }
-        if (uri.startsWith("/usuarios")) {
-            if (uri.equals("/usuarios/perfil") || uri.equals("/usuarios/perfil/salvar")) {
-                return true;
-            }
-            if (!(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_USUARIOS))) {
-                permissaoFaltante = NivelAcesso.NIVEL_USUARIOS;
-                log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão U", usuarioLogado.getNome(), uri);
-            }
-        }
+
+        // Demais rotas (incluindo /atividades, /comprovantes, etc.)
         if (uri.startsWith("/atividades")) {
             // Conselheiros não podem acessar a área administrativa de atividades
             if ("C".equals(usuarioLogado.getInTipoPessoa())) {
@@ -107,7 +104,6 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        // Se houve bloqueio por falta de permissão, registra auditoria e redireciona
         if (permissaoFaltante != null) {
             String textoLog = String.format(
                     "Acesso negado: Usuário ID=%d (%s) tentou acessar %s %s - Nível necessário: '%s'",
