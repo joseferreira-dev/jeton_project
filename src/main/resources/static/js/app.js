@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     inicializarHomologacao();
+    inicializarBotaoRelatorio();
     inicializarFiltroRegrasConjuntas();
     inicializarFormularioAtividade();
     inicializarSpinnerFormularioAtividade();
@@ -364,6 +365,97 @@ function inicializarHomologacao() {
             form.method = 'post';
             form.submit();
         });
+    }
+}
+
+/**
+ * Inicializa o botão "Baixar Detalhamento" na tela de processamento (jeton/lista)
+ */
+function inicializarBotaoRelatorio() {
+    const btnBaixar = document.getElementById('btnBaixarRelatorio');
+    if (!btnBaixar) {
+        console.log("Botão 'Baixar Detalhamento' não encontrado nesta página.");
+        return;
+    }
+
+    // Remove event listeners antigos para evitar duplicidade (simples)
+    btnBaixar.removeEventListener('click', window._baixarHandler);
+    const handler = function () {
+        const selectGestao = document.querySelector('select[name="idGestao"]');
+        const selectMes = document.querySelector('select[name="mes"]');
+        const inputAno = document.querySelector('input[name="ano"]');
+        const idGestao = selectGestao ? selectGestao.value : '';
+        const mes = selectMes ? selectMes.value : '';
+        const ano = inputAno ? inputAno.value : '';
+
+        console.log("Campos:", { idGestao, mes, ano });
+
+        if (!idGestao || !mes || !ano) {
+            const modalAlerta = document.getElementById('modalAlertaValidacao');
+            if (modalAlerta) {
+                const modal = new bootstrap.Modal(modalAlerta);
+                modal.show();
+            } else {
+                alert('Preencha todos os campos (Gestão, Mês e Ano).');
+            }
+            return;
+        }
+
+        const modalFormatos = document.getElementById('modalFormatosRelatorio');
+        if (modalFormatos) {
+            const modal = new bootstrap.Modal(modalFormatos);
+            modal.show();
+        } else {
+            console.error("Modal 'modalFormatosRelatorio' não encontrado.");
+        }
+    };
+    btnBaixar.addEventListener('click', handler);
+    window._baixarHandler = handler; // guarda referência para possível remoção
+
+    // Configura os botões dentro do modal
+    const btnExcel = document.getElementById('btnExcelRelatorio');
+    const btnPdf = document.getElementById('btnPdfRelatorio');
+
+    if (btnExcel) {
+        btnExcel.removeEventListener('click', window._excelHandler);
+        const excelHandler = function () {
+            const selectGestao = document.querySelector('select[name="idGestao"]');
+            const selectMes = document.querySelector('select[name="mes"]');
+            const inputAno = document.querySelector('input[name="ano"]');
+            const idGestao = selectGestao ? selectGestao.value : '';
+            const mes = selectMes ? selectMes.value : '';
+            const ano = inputAno ? inputAno.value : '';
+
+            if (idGestao && mes && ano) {
+                window.location.href = `/jeton/relatorio?idGestao=${idGestao}&mes=${mes}&ano=${ano}&formato=excel`;
+            }
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormatosRelatorio'));
+            if (modal) modal.hide();
+        };
+        btnExcel.addEventListener('click', excelHandler);
+        window._excelHandler = excelHandler;
+    }
+
+    if (btnPdf) {
+        btnPdf.removeEventListener('click', window._pdfHandler);
+        // Remove o atributo disabled que estava no HTML original
+        btnPdf.disabled = false;
+        const pdfHandler = function () {
+            const selectGestao = document.querySelector('select[name="idGestao"]');
+            const selectMes = document.querySelector('select[name="mes"]');
+            const inputAno = document.querySelector('input[name="ano"]');
+            const idGestao = selectGestao ? selectGestao.value : '';
+            const mes = selectMes ? selectMes.value : '';
+            const ano = inputAno ? inputAno.value : '';
+
+            if (idGestao && mes && ano) {
+                window.location.href = `/jeton/relatorio?idGestao=${idGestao}&mes=${mes}&ano=${ano}&formato=pdf`;
+            }
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormatosRelatorio'));
+            if (modal) modal.hide();
+        };
+        btnPdf.addEventListener('click', pdfHandler);
+        window._pdfHandler = pdfHandler;
     }
 }
 
@@ -853,6 +945,7 @@ window.prepararExclusao = prepararExclusao;
 window.verDetalhes = verDetalhes;
 window.verComprovante = verComprovante;
 window.inicializarHomologacao = inicializarHomologacao;
+window.inicializarBotaoRelatorio = inicializarBotaoRelatorio;
 window.abrirModalAtividades = abrirModalAtividades;
 window.abrirRelatorioJeton = abrirRelatorioJeton;
 window.atualizarConselheiros = atualizarConselheiros;

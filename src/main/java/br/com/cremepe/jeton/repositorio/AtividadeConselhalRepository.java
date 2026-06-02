@@ -71,6 +71,10 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
     Page<AtividadeConselhal> findByConselheiroIdPessoaAndGestaoIdGestao(Integer idPessoa, Integer idGestao,
             Pageable pageable);
 
+    @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa AND a.inComputada = 'S' AND MONTH(a.dataHoraRegistro) = :mes AND YEAR(a.dataHoraRegistro) = :ano")
+    List<AtividadeConselhal> findComputadasPorConselheiroEMes(@Param("idPessoa") Integer idPessoa,
+            @Param("mes") Integer mes, @Param("ano") Integer ano);
+
     // =========================================================================
     // OPERAÇÕES DE MODIFICAÇÃO (ATUALIZAÇÃO EM MASSA)
     // =========================================================================

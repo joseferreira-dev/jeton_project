@@ -1,7 +1,10 @@
 package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.dominio.*;
+import br.com.cremepe.jeton.dto.AtividadeRelatorioDTO;
+import br.com.cremepe.jeton.dto.ConselheiroRelatorioDTO;
 import br.com.cremepe.jeton.dto.PontosRemanescentesDTO;
+import br.com.cremepe.jeton.dto.RelatorioGeralDTO;
 import br.com.cremepe.jeton.repositorio.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class JetonService {
@@ -41,6 +45,8 @@ public class JetonService {
     private ConselheiroRepository conselheiroRepository;
     @Autowired
     private PessoaRepository pessoaRepository;
+    @Autowired
+    private GestaoRepository gestaoRepository;
 
     // =========================================================================
     // LEITURA
@@ -499,4 +505,100 @@ public class JetonService {
         return page.getContent();
     }
 
+    // =========================================================================
+    // RELATÓRIO
+    // =========================================================================
+    public RelatorioGeralDTO gerarRelatorioGeral(Integer idGestao, Integer mes, Integer ano) {
+        Gestao gestao = gestaoRepository.findById(idGestao)
+                .orElseThrow(() -> new RuntimeException("Gestão não encontrada"));
+
+        List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano);
+        Map<Integer, ConselheiroRelatorioDTO> mapa = new LinkedHashMap<>();
+
+        // Agrupa por conselheiro e soma totais de jetons e valores
+        for (Jeton j : jetons) {
+            ConselheiroRelatorioDTO dto = mapa.computeIfAbsent(j.getConselheiro().getIdPessoa(), k -> {
+                ConselheiroRelatorioDTO novo = new ConselheiroRelatorioDTO();
+                novo.setIdPessoa(k);
+                novo.setNome(j.getConselheiro().getPessoa().getNome());
+                novo.setTotalJetons(0);
+                novo.setValor(BigDecimal.ZERO);
+                novo.setSaldoAnterior(0);
+                novo.setPontosAcumuladosMes(0);
+                novo.setSaldoFuturo(0);
+                novo.setAtividades(new ArrayList<>());
+                return novo;
+            });
+            dto.setTotalJetons(dto.getTotalJetons() + j.getTotalJeton());
+            dto.setValor(dto.getValor().add(j.getValor()));
+        }
+
+        // Preenche os detalhes de cada conselheiro (saldos e atividades)
+        for (Map.Entry<Integer, ConselheiroRelatorioDTO> entry : mapa.entrySet()) {
+            Integer idPessoa = entry.getKey();
+            ConselheiroRelatorioDTO dto = entry.getValue();
+
+            // Busca todos os saldos associados aos jetons deste conselheiro no mês
+            List<Jeton> jetonsCons = jetons.stream()
+                    .filter(j -> j.getConselheiro().getIdPessoa().equals(idPessoa))
+                    .collect(Collectors.toList());
+            List<PontosSaldo> todosSaldos = new ArrayList<>();
+            for (Jeton j : jetonsCons) {
+                todosSaldos.addAll(pontosSaldoRepository.findByJetonIdJeton(j.getIdJeton()));
+            }
+
+            int saldoAnterior = 0;
+            int pontosAcumuladosMes = 0;
+            for (PontosSaldo ps : todosSaldos) {
+                boolean doMesAtual = false;
+                if (ps.getAtividade() != null) {
+                    LocalDate dataAtv = ps.getAtividade().getDataHoraAtividade().toLocalDate();
+                    if (dataAtv.getYear() == ano && dataAtv.getMonthValue() == mes) {
+                        doMesAtual = true;
+                    }
+                }
+                if (doMesAtual) {
+                    pontosAcumuladosMes += ps.getPontosUtilizados();
+                } else {
+                    saldoAnterior += ps.getPontosUtilizados();
+                }
+            }
+            dto.setSaldoAnterior(saldoAnterior);
+            dto.setPontosAcumuladosMes(pontosAcumuladosMes);
+
+            // Saldo futuro: pontos que sobraram após o processamento (ativos)
+            Integer saldoFuturo = pontosSaldoRepository.somarPontosSobrandoAtivos(idPessoa, idGestao);
+            dto.setSaldoFuturo(saldoFuturo != null ? saldoFuturo : 0);
+
+            // Atividades do mês que foram computadas
+            List<AtividadeConselhal> atividadesMes = atividadeRepository.findComputadasPorConselheiroEMes(idPessoa, mes,
+                    ano);
+            List<AtividadeRelatorioDTO> atividadesDTO = new ArrayList<>();
+            for (AtividadeConselhal at : atividadesMes) {
+                AtividadeRelatorioDTO atDTO = new AtividadeRelatorioDTO();
+                atDTO.setRegra(at.getRegra().getNomeRegra());
+                atDTO.setData(at.getDataHoraAtividade().toLocalDate());
+                atDTO.setQuantidade(at.getQtdAtividade());
+                atividadesDTO.add(atDTO);
+            }
+            dto.setAtividades(atividadesDTO);
+        }
+
+        // Monta o DTO geral
+        RelatorioGeralDTO geral = new RelatorioGeralDTO();
+        geral.setIdGestao(idGestao);
+        geral.setNomeGestao(gestao.getNomeGestao());
+        geral.setMes(mes);
+        geral.setAno(ano);
+        geral.setConselheiros(new ArrayList<>(mapa.values()));
+
+        int totalJetons = geral.getConselheiros().stream().mapToInt(ConselheiroRelatorioDTO::getTotalJetons).sum();
+        BigDecimal totalValor = geral.getConselheiros().stream()
+                .map(ConselheiroRelatorioDTO::getValor)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        geral.setTotalGeralJetons(totalJetons);
+        geral.setTotalGeralValor(totalValor);
+
+        return geral;
+    }
 }
