@@ -6,20 +6,27 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 
-/**
- * Entidade para configurações globais do sistema.
- */
 @Entity
 @Table(name = "parametros")
 public class Parametros implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Id // Transformamos o próprio status no ID para satisfazer o JPA
+    @Id
+    private Integer id = 1; // único registro
+
     @Column(name = "bloqueaSistema", length = 1, nullable = false)
     private String bloqueaSistema;
 
     public Parametros() {
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getBloqueaSistema() {

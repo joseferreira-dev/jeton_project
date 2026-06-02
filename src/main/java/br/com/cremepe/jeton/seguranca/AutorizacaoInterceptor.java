@@ -3,6 +3,7 @@ package br.com.cremepe.jeton.seguranca;
 import br.com.cremepe.jeton.dominio.NivelAcesso;
 import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.LogJetonService;
+import br.com.cremepe.jeton.servico.ParametrosService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -19,6 +20,8 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
 
     @Autowired
     private LogJetonService logJetonService;
+    @Autowired
+    private ParametrosService parametrosService;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
@@ -30,7 +33,7 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
         // Rotas públicas
         if (uri.startsWith("/login") || uri.startsWith("/autenticar") ||
                 uri.startsWith("/css") || uri.startsWith("/js") || uri.startsWith("/images") ||
-                uri.startsWith("/error")) {
+                uri.startsWith("/error") || uri.startsWith("/erro")) {
             return true;
         }
 
@@ -42,6 +45,23 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
             log.warn("Acesso não autenticado à URI: {} {}", method, uri);
             response.sendRedirect("/login");
             return false;
+        }
+
+        // Verificação de bloqueio do sistema
+        boolean sistemaBloqueado = parametrosService.isSistemaBloqueado();
+        if (sistemaBloqueado && !uri.startsWith("/bloqueio") && !uri.startsWith("/login")
+                && !uri.startsWith("/autenticar") &&
+                !uri.startsWith("/css") && !uri.startsWith("/js") && !uri.startsWith("/images")
+                && !uri.startsWith("/error")) {
+            boolean isSuperAdmin = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_SUPER_ADMIN);
+            boolean isBloqueio = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_BLOQUEIO_SISTEMA);
+            if (!isSuperAdmin && !isBloqueio) {
+                log.warn("Acesso negado: sistema bloqueado. Usuário {} (ID={}) tentou acessar {}",
+                        usuarioLogado.getNome(), usuarioLogado.getIdPessoa(), uri);
+                System.out.println(">>> Redirecionando para erro, sistema bloqueado. URI: " + uri);
+                response.sendRedirect("/erro?tipo=sistema_bloqueado");
+                return false;
+            }
         }
 
         if (uri.startsWith("/atividades/api/")) {

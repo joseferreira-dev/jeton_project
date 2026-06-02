@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erro - Jeton</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #005438 0%, #009965 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .error-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            padding: 40px 30px;
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #dc3545;
+            margin-bottom: 15px;
+        }
+
+        p {
+            color: #6c757d;
+            margin-bottom: 25px;
+        }
+
+        .btn-primary {
+            background-color: #009965;
+            border-color: #009965;
+        }
+
+        .btn-primary:hover {
+            background-color: #007a51;
+            border-color: #007a51;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="error-card">
+        <div class="error-icon text-danger">
+            <i class="fa-solid fa-lock"></i>
+        </div>
+        <h1 th:text="${titulo}">Erro</h1>
+        <p th:text="${mensagem}">Ocorreu um erro inesperado.</p>
+        <a th:href="@{/login}" class="btn btn-primary">Ir para o Login</a>
+    </div>
+</body>
+
+</html>

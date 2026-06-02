@@ -159,6 +159,14 @@
                     <a th:href="@{/sair}" class="btn btn-sm btn-outline-light">
                         <i class="fa-solid fa-right-from-bracket me-1"></i> Sair
                     </a>
+                    <!-- Botão de bloqueio do sistema -->
+                    <form th:action="@{/bloqueio/alternar}" method="post" style="display: inline;" id="formBloqueio"
+                        th:if="${session.usuarioLogado != null and (session.usuarioLogado.hasPermissao('S') or session.usuarioLogado.hasPermissao('B'))}">
+                        <button type="submit" id="btnBloqueio" class="btn btn-sm btn-outline-light"
+                            onclick="return confirmarBloqueio()">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -198,6 +206,32 @@
                     <button type="button" class="btn btn-outline-secondary px-4"
                         data-bs-dismiss="modal">Cancelar</button>
                     <a href="#" id="btnConfirmarAcaoGen" class="btn btn-danger px-4">Sim, Confirmar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Bloqueio (estilo homologação) -->
+    <div class="modal fade" id="modalConfirmacaoBloqueio" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow border-danger">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Ação
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p id="textoConfirmacaoBloqueio" class="mb-0">Deseja realmente alterar o bloqueio do sistema?</p>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark me-1"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger px-4" id="btnConfirmarBloqueio">
+                        <i class="fa-solid fa-lock me-1"></i> Confirmar
+                    </button>
                 </div>
             </div>
         </div>

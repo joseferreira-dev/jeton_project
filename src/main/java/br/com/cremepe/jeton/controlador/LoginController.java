@@ -6,6 +6,7 @@ import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repositorio.ComprovanteRepository;
 import br.com.cremepe.jeton.repositorio.ConselheiroRepository;
 import br.com.cremepe.jeton.servico.LogJetonService;
+import br.com.cremepe.jeton.servico.ParametrosService;
 import br.com.cremepe.jeton.servico.UsuarioService;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
@@ -32,6 +33,8 @@ public class LoginController {
     private UsuarioService usuarioService;
     @Autowired
     private LogJetonService logJetonService;
+    @Autowired
+    private ParametrosService parametrosService;
 
     // Dashboard
     @Autowired
@@ -52,10 +55,8 @@ public class LoginController {
             HttpSession session,
             RedirectAttributes redirectAttributes) {
 
-        // Validação simples antes de consultar o banco
         if (cpf == null || cpf.isBlank() || senha == null || senha.isBlank()) {
             log.warn("Tentativa de login com CPF ou senha vazios");
-            // Não registra em log_jeton pois não há usuário identificado
             return redirectToLoginWithError(redirectAttributes);
         }
 
@@ -67,14 +68,11 @@ public class LoginController {
             session.setAttribute("usuarioLogado", usuarioLogado);
             log.info("Login bem-sucedido: usuário {} (ID {})", usuarioLogado.getNome(), usuarioLogado.getIdPessoa());
 
-            // Log de auditoria para login bem-sucedido
             String textoLog = String.format(
                     "Login bem-sucedido: Usuário ID=%d, Nome='%s', CPF=%s",
                     usuarioLogado.getIdPessoa(), usuarioLogado.getNome(), cpfMascarado);
             logJetonService.registrarLog("login", usuarioLogado.getIdPessoa(), textoLog);
 
-            // Redireciona conselheiros para o portal, outros para o dashboard
-            // administrativo
             if ("C".equals(usuarioLogado.getInTipoPessoa())) {
                 return "redirect:/conselheiro";
             } else {
@@ -82,7 +80,6 @@ public class LoginController {
             }
         } else {
             log.warn("Falha de autenticação para CPF: {}", cpfMascarado);
-
             return redirectToLoginWithError(redirectAttributes);
         }
     }
@@ -97,8 +94,6 @@ public class LoginController {
         ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
         if (usuario != null) {
             log.info("Logout do usuário: {} (ID {})", usuario.getNome(), usuario.getIdPessoa());
-
-            // Log de auditoria para logout
             String textoLog = String.format(
                     "Logout realizado: Usuário ID=%d, Nome='%s'",
                     usuario.getIdPessoa(), usuario.getNome());
@@ -115,12 +110,10 @@ public class LoginController {
             return "redirect:/login";
         }
 
-        // Conselheiros não devem ver o dashboard administrativo
         if ("C".equals(usuarioLogado.getInTipoPessoa())) {
             return "redirect:/conselheiro";
         }
 
-        // Métricas do dashboard (apenas para funcionários e super admin)
         long totalPendentes = atividadeRepository.countByInSituacao("P");
         long totalConselheiros = conselheiroRepository.countByInSituacao("A");
         LocalDate hoje = LocalDate.now();
@@ -133,6 +126,7 @@ public class LoginController {
         model.addAttribute("totalAtividadesMes", totalAtividadesMes);
         model.addAttribute("totalComprovantes", totalComprovantes);
         model.addAttribute("atividadesRecentes", atividadesRecentes);
+        model.addAttribute("sistemaBloqueado", parametrosService.isSistemaBloqueado());
 
         return "index";
     }

@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
     inicializarFiltroRegrasConjuntas();
     inicializarFormularioAtividade();
     inicializarSpinnerFormularioAtividade();
+    atualizarBotaoBloqueio();
 
     // Inicializa o toggle de CRM no formulário de usuário (se o checkbox existir)
     if (document.getElementById('checkConselheiro')) {
@@ -766,6 +767,84 @@ function inicializarSpinnerFormularioAtividade() {
 }
 
 // =========================================================================
+// BOTÃO DE BLOQUEIO DO SISTEMA
+// =========================================================================
+
+/**
+ * Atualiza o texto, ícone e cor do botão de bloqueio com base no status atual.
+ */
+function atualizarBotaoBloqueio() {
+    const btn = document.getElementById('btnBloqueio');
+    if (!btn) return;
+
+    fetch('/bloqueio/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.bloqueado) {
+                btn.innerHTML = '<i class="fa-solid fa-unlock-alt me-1"></i> Liberar Sistema';
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-outline-light');
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-lock me-1"></i> Bloquear Sistema';
+                btn.classList.remove('btn-outline-light');
+                btn.classList.add('btn-danger', 'text-white');
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao obter status do bloqueio:', error);
+            btn.innerHTML = '<i class="fa-solid fa-lock me-1"></i> Bloquear/Desbloquear';
+            btn.classList.remove('btn-outline-light', 'btn-outline-danger', 'btn-outline-success');
+            btn.classList.add('btn-outline-warning');
+        });
+}
+
+/**
+ * Exibe modal de confirmação (estilo homologação) antes de alternar o bloqueio.
+ * @returns {boolean} false (para evitar envio direto do formulário)
+ */
+function confirmarBloqueio() {
+    const btn = document.getElementById('btnBloqueio');
+    const isBloqueando = btn.innerHTML.includes('Bloquear');
+    const modalElement = document.getElementById('modalConfirmacaoBloqueio');
+    const modalBody = document.getElementById('textoConfirmacaoBloqueio');
+    const confirmBtn = document.getElementById('btnConfirmarBloqueio');
+
+    if (!modalElement || !modalBody || !confirmBtn) {
+        // Fallback para navegadores sem modal
+        const mensagem = isBloqueando
+            ? 'Deseja BLOQUEAR o sistema? Os demais usuários ficarão impedidos de executar ações.'
+            : 'Deseja LIBERAR o sistema? Todos os usuários voltarão a ter acesso normal.';
+        return confirm(mensagem);
+    }
+
+    // Define a mensagem e o estilo do botão de confirmação
+    if (isBloqueando) {
+        modalBody.innerHTML = 'Deseja <strong>BLOQUEAR</strong> o sistema?<br>Os demais usuários ficarão impedidos de executar ações.';
+        confirmBtn.innerHTML = '<i class="fa-solid fa-lock me-1"></i> Bloquear';
+        confirmBtn.className = 'btn btn-danger px-4';
+    } else {
+        modalBody.innerHTML = 'Deseja <strong>LIBERAR</strong> o sistema?<br>Todos os usuários voltarão a ter acesso normal.';
+        confirmBtn.innerHTML = '<i class="fa-solid fa-unlock-alt me-1"></i> Liberar';
+        confirmBtn.className = 'btn btn-success px-4';
+    }
+
+    // Remove eventos anteriores para evitar duplicação
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    newConfirmBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) modal.hide();
+        document.getElementById('formBloqueio').submit();
+    });
+
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+    return false;
+}
+
+// =========================================================================
 // EXPORTA FUNÇÕES PARA O ESCOPO GLOBAL (para uso em onclick, etc.)
 // =========================================================================
 
@@ -784,3 +863,5 @@ window.atualizarTurnoVisual = atualizarTurnoVisual;
 window.inicializarFiltroRegrasConjuntas = inicializarFiltroRegrasConjuntas;
 window.inicializarFormularioAtividade = inicializarFormularioAtividade;
 window.setButtonLoading;
+window.atualizarBotaoBloqueio = atualizarBotaoBloqueio;
+window.confirmarBloqueio = confirmarBloqueio;

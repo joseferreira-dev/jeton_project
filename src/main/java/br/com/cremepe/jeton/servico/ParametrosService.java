@@ -6,9 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-
 @Service
 public class ParametrosService {
 
@@ -16,17 +13,30 @@ public class ParametrosService {
     private ParametrosRepository repository;
 
     @Transactional(readOnly = true)
-    public List<Parametros> listarTodos() {
-        return repository.findAll();
+    public boolean isSistemaBloqueado() {
+        Parametros params = repository.findById(1).orElseGet(() -> {
+            Parametros novo = new Parametros();
+            novo.setBloqueaSistema("N");
+            return repository.save(novo);
+        });
+        return "S".equals(params.getBloqueaSistema());
     }
 
     @Transactional(readOnly = true)
-    public Optional<Parametros> buscarPorId(String id) {
-        return repository.findById(id);
+    public String obterStatus() {
+        Parametros params = repository.findById(1).orElseGet(() -> {
+            Parametros novo = new Parametros();
+            novo.setBloqueaSistema("N");
+            return repository.save(novo);
+        });
+        return params.getBloqueaSistema();
     }
 
     @Transactional
-    public Parametros salvar(Parametros parametro) {
-        return repository.save(parametro);
+    public void alternarBloqueio() {
+        Parametros params = repository.findById(1).orElseGet(Parametros::new);
+        String novoStatus = "S".equals(params.getBloqueaSistema()) ? "N" : "S";
+        params.setBloqueaSistema(novoStatus);
+        repository.save(params);
     }
 }
