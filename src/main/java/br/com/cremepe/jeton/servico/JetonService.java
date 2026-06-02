@@ -100,6 +100,12 @@ public class JetonService {
         log.info("Iniciando processamento mensal: gestão '{}' (ID={}), competência {}/{}",
                 nomeGestao, gestao.getIdGestao(), mes, ano);
 
+        // Trava 1: Impede recálculo de mês já homologado
+        if (isFolhaHomologada(gestao.getIdGestao(), mes, ano)) {
+            throw new RuntimeException("A folha do período " + mes + "/" + ano +
+                    " já foi homologada e não pode ser recalculada.");
+        }
+
         // Trava 1: Nenhuma atividade pendente
         long pendentesNoMes = atividadeRepository.contarAtividadesPendentesNoMes(gestao.getIdGestao(), mes, ano);
         if (pendentesNoMes > 0) {
@@ -503,6 +509,21 @@ public class JetonService {
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "ano", "mes"));
         Page<Jeton> page = jetonRepository.findByConselheiroIdPessoa(idPessoa, pageable);
         return page.getContent();
+    }
+
+    // Verifica se já existe processamento homologado para a competência
+    private boolean isFolhaHomologada(Integer idGestao, Integer mes, Integer ano) {
+        // Jetons com status 'E' (Excluído/Homologado)
+        List<Jeton> jetonsHomologados = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano)
+                .stream().filter(j -> Jeton.SITUACAO_EXCLUIDO.equals(j.getInSituacao()))
+                .toList();
+        if (!jetonsHomologados.isEmpty())
+            return true;
+
+        // Atividades com situação 'F' (Fechada) na competência
+        // (consideramos a data de registro, pois é o mês de processamento)
+        long atividadesFechadas = atividadeRepository.countAtividadesFechadasNoPeriodo(idGestao, mes, ano);
+        return atividadesFechadas > 0;
     }
 
     // =========================================================================

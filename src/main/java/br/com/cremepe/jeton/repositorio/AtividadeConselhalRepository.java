@@ -42,6 +42,13 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
 
     long countByConselheiroIdPessoa(Integer idPessoa);
 
+    @Query("SELECT COUNT(a) FROM AtividadeConselhal a WHERE a.gestao.idGestao = :idGestao " +
+            "AND MONTH(a.dataHoraRegistro) = :mes AND YEAR(a.dataHoraRegistro) = :ano " +
+            "AND a.inSituacao = 'F'")
+    long countAtividadesFechadasNoPeriodo(@Param("idGestao") Integer idGestao,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
+
     // =========================================================================
     // CONSULTAS COM PAGINAÇÃO E PESQUISA DINÂMICA
     // =========================================================================
