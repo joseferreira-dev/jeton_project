@@ -15,12 +15,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,6 +37,8 @@ public class ConselheiroService {
     private AcessoService acessoService;
     @Autowired
     private LogJetonService logJetonService;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
@@ -119,7 +119,7 @@ public class ConselheiroService {
         usuario.setInSituacao(conselheiroSalvo.getInSituacao());
 
         if (conselheiro.getSenhaAcesso() != null && !conselheiro.getSenhaAcesso().trim().isEmpty()) {
-            usuario.setSenha(gerarSHA256(conselheiro.getSenhaAcesso()));
+            usuario.setSenha(passwordEncoder.encode(conselheiro.getSenhaAcesso()));
         } else if (usuario.getSenha() == null && isNovo) {
             throw new RuntimeException("A senha é obrigatória para criar o acesso no sistema.");
         }
@@ -162,20 +162,6 @@ public class ConselheiroService {
         Optional<Conselheiro> existente = conselheiroRepository.findByCrm(crm);
         if (existente.isPresent() && (idAtual == null || !idAtual.equals(existente.get().getIdPessoa()))) {
             throw new RuntimeException("Já existe um conselheiro registrado com o CRM-PE " + crm);
-        }
-    }
-
-    private String gerarSHA256(String senha) {
-        try {
-            MessageDigest algoritmo = MessageDigest.getInstance("SHA-256");
-            byte[] messageDigest = algoritmo.digest(senha.getBytes(StandardCharsets.UTF_8));
-            StringBuilder stringHexa = new StringBuilder();
-            for (byte b : messageDigest) {
-                stringHexa.append(String.format("%02X", 0xFF & b));
-            }
-            return stringHexa.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Erro na criptografia da senha", e);
         }
     }
 

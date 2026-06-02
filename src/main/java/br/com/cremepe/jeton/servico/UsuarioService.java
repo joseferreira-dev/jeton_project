@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -40,6 +41,8 @@ public class UsuarioService {
     private ConselheiroRepository conselheiroRepository;
     @Autowired
     private LogJetonService logJetonService;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
@@ -87,7 +90,7 @@ public class UsuarioService {
             if (usuario.getSenha() == null || usuario.getSenha().trim().isEmpty()) {
                 usuario.setSenha(existente.getSenha());
             } else {
-                usuario.setSenha(gerarSHA256(usuario.getSenha()));
+                usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
             }
             usuario.getPessoa().setIdPessoa(usuario.getIdUsuarioPessoa());
         } else {
@@ -97,7 +100,7 @@ public class UsuarioService {
             if (usuario.getSenha() == null || usuario.getSenha().trim().isEmpty()) {
                 throw new RuntimeException("A senha é obrigatória para novos usuários.");
             }
-            usuario.setSenha(gerarSHA256(usuario.getSenha()));
+            usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
         }
 
         // 7. Define tipo de pessoa
@@ -192,7 +195,7 @@ public class UsuarioService {
 
         // Se uma nova senha foi fornecida, atualiza
         if (usuario.getSenha() != null && !usuario.getSenha().trim().isEmpty()) {
-            existente.setSenha(gerarSHA256(usuario.getSenha()));
+            existente.setSenha(passwordEncoder.encode(usuario.getSenha()));
         }
 
         // Salva (cascade salva a pessoa também)
@@ -236,12 +239,41 @@ public class UsuarioService {
         return usuarioRepository.findById(id);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public Optional<ViewUserLogin> autenticar(String cpf, String senha) {
         String cpfLimpo = cpf.replaceAll("[^0-9]", "");
-        String senhaHash = gerarSHA256(senha);
-        return viewUserLoginRepository.findByCpf(cpfLimpo)
-                .filter(u -> u.getSenha().equals(senhaHash));
+        Optional<ViewUserLogin> userOpt = viewUserLoginRepository.findByCpf(cpfLimpo);
+        if (userOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        ViewUserLogin usuario = userOpt.get();
+        String senhaStored = usuario.getSenha();
+
+        // Verifica se a senha armazenada é SHA-256 (64 caracteres hexadecimais)
+        if (senhaStored != null && senhaStored.matches("^[A-F0-9]{64}$")) {
+            // Senha antiga em SHA-256
+            String hashInput = gerarSHA256(senha);
+            if (hashInput.equalsIgnoreCase(senhaStored)) {
+                // Migra para BCrypt
+                String newBcryptHash = passwordEncoder.encode(senha);
+                // Atualiza no banco
+                usuarioRepository.findByPessoaCpf(cpfLimpo).ifPresent(u -> {
+                    u.setSenha(newBcryptHash);
+                    usuarioRepository.save(u);
+                });
+                // Retorna o usuário (já que a autenticação foi bem‑sucedida)
+                return userOpt;
+            } else {
+                return Optional.empty();
+            }
+        } else {
+            // Senha já em BCrypt (ou nula)
+            if (passwordEncoder.matches(senha, senhaStored)) {
+                return userOpt;
+            } else {
+                return Optional.empty();
+            }
+        }
     }
 
     // =========================================================================
