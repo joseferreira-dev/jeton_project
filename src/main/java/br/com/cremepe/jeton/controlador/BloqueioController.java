@@ -61,4 +61,9 @@ public class BloqueioController {
                 "Sistema " + ("S".equals(statusDepois) ? "bloqueado" : "liberado") + " com sucesso.");
         return "redirect:/index";
     }
+
+    @GetMapping
+    public String paginaBloqueio() {
+        return "bloqueio";
+    }
 }

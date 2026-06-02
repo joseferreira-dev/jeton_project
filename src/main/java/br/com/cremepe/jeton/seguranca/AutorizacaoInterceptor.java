@@ -33,7 +33,7 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
         // Rotas públicas
         if (uri.startsWith("/login") || uri.startsWith("/autenticar") ||
                 uri.startsWith("/css") || uri.startsWith("/js") || uri.startsWith("/images") ||
-                uri.startsWith("/error") || uri.startsWith("/erro")) {
+                uri.startsWith("/error")) {
             return true;
         }
 
@@ -49,17 +49,16 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
 
         // Verificação de bloqueio do sistema
         boolean sistemaBloqueado = parametrosService.isSistemaBloqueado();
-        if (sistemaBloqueado && !uri.startsWith("/bloqueio") && !uri.startsWith("/login")
-                && !uri.startsWith("/autenticar") &&
-                !uri.startsWith("/css") && !uri.startsWith("/js") && !uri.startsWith("/images")
+        if (sistemaBloqueado && !uri.startsWith("/bloqueio") && !uri.startsWith("/sair")
+                && !uri.startsWith("/login") && !uri.startsWith("/autenticar")
+                && !uri.startsWith("/css") && !uri.startsWith("/js") && !uri.startsWith("/images")
                 && !uri.startsWith("/error")) {
             boolean isSuperAdmin = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_SUPER_ADMIN);
             boolean isBloqueio = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_BLOQUEIO_SISTEMA);
             if (!isSuperAdmin && !isBloqueio) {
                 log.warn("Acesso negado: sistema bloqueado. Usuário {} (ID={}) tentou acessar {}",
                         usuarioLogado.getNome(), usuarioLogado.getIdPessoa(), uri);
-                System.out.println(">>> Redirecionando para erro, sistema bloqueado. URI: " + uri);
-                response.sendRedirect("/erro?tipo=sistema_bloqueado");
+                response.sendRedirect("/bloqueio");
                 return false;
             }
         }
