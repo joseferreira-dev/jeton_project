@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.Gestao;
 import br.com.cremepe.jeton.repositorio.GestaoRepository;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ public class GestaoService {
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
+    @Auditar(tabela = "gestao", acao = "SALVAR", isUpdate = true, descricao = "Cadastro de gestão")
     @Transactional
     public Gestao salvar(Gestao gestao, Integer idUsuarioLogado) {
         boolean isNovo = gestao.getIdGestao() == null;
@@ -43,12 +45,6 @@ public class GestaoService {
         log.info("Gestão {}: ID={}, nome='{}', período={} até {}",
                 isNovo ? "criada" : "atualizada",
                 salva.getIdGestao(), salva.getNomeGestao(), salva.getDtInicio(), salva.getDtFim());
-
-        String textoLog = String.format(
-                "Gestão %s: ID=%d, Nome='%s', Início=%s, Fim=%s",
-                isNovo ? "criada" : "atualizada",
-                salva.getIdGestao(), salva.getNomeGestao(), salva.getDtInicio(), salva.getDtFim());
-        logJetonService.registrarLog("gestao", idUsuarioLogado, textoLog);
 
         return salva;
     }
