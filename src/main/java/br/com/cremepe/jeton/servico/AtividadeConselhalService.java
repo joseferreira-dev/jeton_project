@@ -138,7 +138,7 @@ public class AtividadeConselhalService {
             long outrasAtividades = atividadeRepository.countByComprovanteIdComprovante(idComprovanteAntigo);
             if (outrasAtividades == 0) {
                 comprovanteRepository.findById(idComprovanteAntigo).ifPresent(comp -> {
-                    fileStorageService.deleteFile(comp.getNomeArquivo(), comp.getAno(), comp.getMes(), idUsuarioLogado);
+                    fileStorageService.excluirArquivo(comp.getNomeArquivo(), comp.getAno(), comp.getMes());
                     comprovanteRepository.delete(comp);
                     logJetonService.registrarLog("comprovante", idUsuarioLogado,
                             "Comprovante antigo excluído (ID " + idComprovanteAntigo + ") - sem vínculos");
@@ -247,10 +247,9 @@ public class AtividadeConselhalService {
             if (outrasAtividades == 0) {
                 try {
                     comprovanteRepository.deleteById(idComprovante);
-                    fileStorageService.deleteFile(comprovanteBackup.getNomeArquivo(),
+                    fileStorageService.excluirArquivo(comprovanteBackup.getNomeArquivo(),
                             comprovanteBackup.getAno(),
-                            comprovanteBackup.getMes(),
-                            idUsuarioLogado);
+                            comprovanteBackup.getMes());
                     logJetonService.registrarLog("comprovante", idUsuarioLogado,
                             "Comprovante ID " + idComprovante + " excluído (sem outras atividades vinculadas)");
                 } catch (Exception e) {

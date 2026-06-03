@@ -34,7 +34,7 @@ public class ComprovanteController {
             Comprovante comprovante = comprovanteService.buscarPorId(id)
                     .orElseThrow(() -> new RuntimeException("Comprovante não encontrado na base de dados."));
 
-            Resource resource = fileStorageService.loadFileAsResource(
+            Resource resource = fileStorageService.carregarArquivo(
                     comprovante.getNomeArquivo(),
                     comprovante.getAno(),
                     comprovante.getMes());

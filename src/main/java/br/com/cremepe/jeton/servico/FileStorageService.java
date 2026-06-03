@@ -1,11 +1,11 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -35,13 +35,11 @@ public class FileStorageService {
     @Value("${ftp.locaweb.pass}")
     private String ftpPass;
 
-    @Autowired
-    private LogJetonService logJetonService;
-
     // =========================================================================
     // UPLOAD
     // =========================================================================
-    public String storeFileToFtp(MultipartFile file, Integer ano, Integer mes, Integer idUsuarioLogado) {
+    @Auditar(tabela = "file_storage", acao = "UPLOAD", descricao = "Upload de arquivo para o servidor FTP", dadosParametros = "{ 'nomeOriginal': #file.originalFilename, 'tamanho': #file.size, 'ano': #ano, 'mes': #mes }", auditarExcecao = true)
+    public String salvarArquivoNoFtp(MultipartFile file, Integer ano, Integer mes) {
         String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
         String extension = "";
         int i = originalFileName.lastIndexOf('.');
@@ -49,7 +47,6 @@ public class FileStorageService {
             extension = originalFileName.substring(i);
         }
         String fileName = UUID.randomUUID().toString() + extension;
-        long fileSize = file.getSize();
 
         Session session = null;
         ChannelSftp channelSftp = null;
@@ -76,13 +73,6 @@ public class FileStorageService {
             }
 
             log.info("Upload concluído: {} -> {}/{}", fileName, ano, mes);
-
-            // Auditoria
-            String textoLog = String.format(
-                    "Arquivo enviado para FTP: nome original='%s', nome gerado='%s', tamanho=%d bytes, destino=%s/%d/%d",
-                    originalFileName, fileName, fileSize, BASE_FTP_PATH, ano, mes);
-            logJetonService.registrarLog("file_storage", idUsuarioLogado, textoLog);
-
             return fileName;
 
         } catch (Exception ex) {
@@ -115,7 +105,7 @@ public class FileStorageService {
     // =========================================================================
     // DOWNLOAD
     // =========================================================================
-    public Resource loadFileAsResource(String fileName, Integer ano, Integer mes) {
+    public Resource carregarArquivo(String fileName, Integer ano, Integer mes) {
         Session session = null;
         ChannelSftp channelSftp = null;
         try {
@@ -130,13 +120,10 @@ public class FileStorageService {
             channelSftp.connect(10000);
 
             String remoteFilePath = BASE_FTP_PATH + "/" + ano + "/" + mes + "/" + fileName;
-
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             channelSftp.get(remoteFilePath, outputStream);
 
             log.info("Download concluído: {}/{}", ano, mes, fileName);
-            // Opcional: registrar auditoria de download (pode ser desejável, mas não
-            // obrigatório)
             return new ByteArrayResource(outputStream.toByteArray());
 
         } catch (Exception e) {
@@ -148,9 +135,10 @@ public class FileStorageService {
     }
 
     // =========================================================================
-    // DELETE
+    // EXCLUIR
     // =========================================================================
-    public void deleteFile(String fileName, Integer ano, Integer mes, Integer idUsuarioLogado) {
+    @Auditar(tabela = "file_storage", acao = "EXCLUIR", descricao = "Remoção de arquivo do servidor FTP", dadosParametros = "{ 'fileName': #fileName, 'ano': #ano, 'mes': #mes }", auditarExcecao = true)
+    public void excluirArquivo(String fileName, Integer ano, Integer mes) {
         Session session = null;
         ChannelSftp channelSftp = null;
         try {
@@ -167,12 +155,6 @@ public class FileStorageService {
             channelSftp.rm(remoteFilePath);
             log.info("Arquivo removido do FTP: {}", remoteFilePath);
 
-            // Auditoria
-            String textoLog = String.format(
-                    "Arquivo removido do FTP: nome='%s', caminho=%s",
-                    fileName, remoteFilePath);
-            logJetonService.registrarLog("file_storage", idUsuarioLogado, textoLog);
-
         } catch (Exception e) {
             log.warn("Falha ao remover arquivo do FTP (pode já ter sido excluído): {}", e.getMessage());
             // Não lança exceção, apenas log
@@ -182,20 +164,18 @@ public class FileStorageService {
     }
 
     // =========================================================================
-    // MÉTODO AUXILIAR PARA FECHAR CONEXÕES
+    // AUXILIAR
     // =========================================================================
     private void fecharConexao(ChannelSftp channelSftp, Session session) {
         try {
             if (channelSftp != null && channelSftp.isConnected()) {
                 channelSftp.disconnect();
-                log.debug("Canal SFTP desconectado");
             }
         } catch (Exception ignored) {
         }
         try {
             if (session != null && session.isConnected()) {
                 session.disconnect();
-                log.debug("Sessão SFTP desconectada");
             }
         } catch (Exception ignored) {
         }
