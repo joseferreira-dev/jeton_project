@@ -31,7 +31,7 @@ public class GestaoService {
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
-    @Auditar(tabela = "gestao", acao = "SALVAR", isUpdate = true, descricao = "Cadastro de gestão")
+    @Auditar(tabela = "gestao", acao = "SALVAR", isUpdate = false, descricao = "Cadastro de gestão")
     @Transactional
     public Gestao salvar(Gestao gestao, Integer idUsuarioLogado) {
         boolean isNovo = gestao.getIdGestao() == null;

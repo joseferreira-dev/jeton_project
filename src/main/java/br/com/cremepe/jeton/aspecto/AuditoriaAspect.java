@@ -2,6 +2,7 @@ package br.com.cremepe.jeton.aspecto;
 
 import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.anotacao.AuditoriaContext;
+import br.com.cremepe.jeton.anotacao.AuditoriaUser;
 import br.com.cremepe.jeton.servico.LogJetonService;
 import br.com.cremepe.jeton.servico.UsuarioLogadoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,22 +47,16 @@ public class AuditoriaAspect {
         this.mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
-    // =========================================================================
-    // BEFORE: configura o usuário no contexto
-    // =========================================================================
     @Before("@annotation(auditar)")
     public void beforeAudit(JoinPoint joinPoint, Auditar auditar) {
-        Integer idUsuario = usuarioLogadoService.getIdUsuarioLogado();
-        if (idUsuario == null) {
+        AuditoriaUser usuario = usuarioLogadoService.getUsuarioLogado();
+        if (usuario == null) {
             log.warn("Tentativa de auditar ação sem usuário logado: {}", auditar.acao());
             return;
         }
-        AuditoriaContext.setUsuario(idUsuario);
+        AuditoriaContext.setUsuario(usuario);
     }
 
-    // =========================================================================
-    // AFTER RETURNING: registra auditoria com sucesso
-    // =========================================================================
     @AfterReturning(pointcut = "@annotation(auditar)", returning = "retorno")
     public void afterReturning(JoinPoint joinPoint, Auditar auditar, Object retorno) {
         try {
@@ -73,9 +68,6 @@ public class AuditoriaAspect {
         }
     }
 
-    // =========================================================================
-    // AFTER THROWING: registra auditoria com erro (se configurado)
-    // =========================================================================
     @AfterThrowing(pointcut = "@annotation(auditar)", throwing = "ex")
     public void afterThrowing(JoinPoint joinPoint, Auditar auditar, Exception ex) {
         if (auditar.auditarExcecao()) {
@@ -91,12 +83,9 @@ public class AuditoriaAspect {
         }
     }
 
-    // =========================================================================
-    // REGISTRO CENTRAL
-    // =========================================================================
     private void registrarAuditoria(JoinPoint joinPoint, Auditar auditar, Object retorno, Exception ex) {
-        Integer idUsuario = AuditoriaContext.getUsuario();
-        if (idUsuario == null)
+        AuditoriaUser usuario = AuditoriaContext.getUsuario();
+        if (usuario == null)
             return;
 
         HttpServletRequest request = obterRequest();
@@ -105,7 +94,8 @@ public class AuditoriaAspect {
         Map<String, Object> dados = new HashMap<>();
         dados.put("idUnico", UUID.randomUUID().toString());
         dados.put("timestamp", LocalDateTime.now().toString());
-        dados.put("usuarioId", idUsuario);
+        dados.put("usuarioId", usuario.id());
+        dados.put("usuarioNome", usuario.nome());
         dados.put("acao", auditar.acao());
         dados.put("tabela", auditar.tabela());
         dados.put("descricao", auditar.descricao());
@@ -156,12 +146,12 @@ public class AuditoriaAspect {
         }
 
         String json = toJson(dados);
-        logJetonService.registrarLog(auditar.tabela(), idUsuario, json);
-        log.debug("Auditoria registrada com sucesso para ação: {}", auditar.acao());
+        logJetonService.registrarLog(auditar.tabela(), usuario.id(), json);
+        log.debug("Auditoria registrada com sucesso para ação: {} - usuário: {}", auditar.acao(), usuario.nome());
     }
 
     // =========================================================================
-    // MÉTODOS AUXILIARES
+    // Métodos auxiliares (idênticos aos anteriores)
     // =========================================================================
     private HttpServletRequest obterRequest() {
         try {

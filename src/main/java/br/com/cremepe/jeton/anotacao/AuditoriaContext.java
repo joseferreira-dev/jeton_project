@@ -2,16 +2,16 @@ package br.com.cremepe.jeton.anotacao;
 
 public final class AuditoriaContext {
 
-    private static final ThreadLocal<Integer> USUARIO = new ThreadLocal<>();
+    private static final ThreadLocal<AuditoriaUser> USUARIO = new ThreadLocal<>();
 
     private AuditoriaContext() {
     }
 
-    public static void setUsuario(Integer id) {
-        USUARIO.set(id);
+    public static void setUsuario(AuditoriaUser usuario) {
+        USUARIO.set(usuario);
     }
 
-    public static Integer getUsuario() {
+    public static AuditoriaUser getUsuario() {
         return USUARIO.get();
     }
 

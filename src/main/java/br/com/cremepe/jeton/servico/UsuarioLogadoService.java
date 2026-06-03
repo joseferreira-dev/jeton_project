@@ -1,6 +1,7 @@
 package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.dominio.ViewUserLogin;
+import br.com.cremepe.jeton.anotacao.AuditoriaUser;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -9,12 +10,20 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Service
 public class UsuarioLogadoService {
 
-    public Integer getIdUsuarioLogado() {
+    public AuditoriaUser getUsuarioLogado() {
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attrs == null)
             return null;
         HttpServletRequest request = attrs.getRequest();
         ViewUserLogin usuario = (ViewUserLogin) request.getSession().getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
+        if (usuario == null)
+            return null;
+        return new AuditoriaUser(usuario.getIdPessoa(), usuario.getNome());
+    }
+
+    // Método auxiliar para compatibilidade com código antigo (se necessário)
+    public Integer getIdUsuarioLogado() {
+        AuditoriaUser u = getUsuarioLogado();
+        return u != null ? u.id() : null;
     }
 }
