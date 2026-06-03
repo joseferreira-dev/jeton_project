@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -26,7 +27,7 @@ public class LogJetonService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registrarLog(String nomeTabela, Integer idUsuario, String textoLog) {
         if (idUsuario == null) {
             log.warn("Tentativa de registrar log sem usuário associado. Tabela: {}, Texto: {}", nomeTabela, textoLog);

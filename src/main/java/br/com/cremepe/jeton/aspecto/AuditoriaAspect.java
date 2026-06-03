@@ -8,6 +8,8 @@ import br.com.cremepe.jeton.servico.UsuarioLogadoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.*;
@@ -35,11 +37,16 @@ public class AuditoriaAspect {
     private final ExpressionParser spelParser = new SpelExpressionParser();
     private final ObjectMapper mapper;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Autowired
     private UsuarioLogadoService usuarioLogadoService;
 
     @Autowired
     private LogJetonService logJetonService;
+
+    private final ThreadLocal<Map<String, Object>> estadoAnteriorThreadLocal = new ThreadLocal<>();
 
     public AuditoriaAspect() {
         this.mapper = new ObjectMapper();
@@ -47,6 +54,9 @@ public class AuditoriaAspect {
         this.mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
+    // =========================================================================
+    // BEFORE: captura o estado anterior (se necessário) e configura o usuário
+    // =========================================================================
     @Before("@annotation(auditar)")
     public void beforeAudit(JoinPoint joinPoint, Auditar auditar) {
         AuditoriaUser usuario = usuarioLogadoService.getUsuarioLogado();
@@ -55,8 +65,115 @@ public class AuditoriaAspect {
             return;
         }
         AuditoriaContext.setUsuario(usuario);
+
+        if (auditar.capturarEstadoAnterior() || auditar.acao().equals("EXCLUIR")) {
+            capturarEstadoAnterior(joinPoint, auditar);
+        }
     }
 
+    /**
+     * Captura o estado atual da entidade no banco de dados antes da
+     * modificação/exclusão.
+     * O primeiro parâmetro do método pode ser a entidade (com ID) ou o próprio ID.
+     */
+    private void capturarEstadoAnterior(JoinPoint joinPoint, Auditar auditar) {
+        try {
+            Object[] args = joinPoint.getArgs();
+            if (args == null || args.length == 0)
+                return;
+
+            Object primeiroParam = args[0];
+            Object id = extrairId(primeiroParam);
+            Class<?> entityType = determinarTipoEntidade(joinPoint, primeiroParam, auditar.tabela());
+
+            if (id != null && entityType != null) {
+                Object estadoAtual = entityManager.find(entityType, id);
+                if (estadoAtual != null) {
+                    // Cria uma cópia imutável (Map) em vez de guardar a referência
+                    Map<String, Object> copia = converterParaMap(estadoAtual);
+                    estadoAnteriorThreadLocal.set(copia);
+                    log.debug("Estado anterior capturado (cópia) para auditoria: {} ID={}",
+                            entityType.getSimpleName(), id);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Erro ao capturar estado anterior para auditoria", e);
+        }
+    }
+
+    /**
+     * Extrai o ID do objeto (entidade) ou do próprio ID numérico.
+     * Suporta métodos getter como getIdGestao(), getIdPessoa(), etc.
+     */
+    private Object extrairId(Object obj) {
+        if (obj == null)
+            return null;
+        if (obj instanceof Number)
+            return obj;
+
+        // Tenta encontrar qualquer método público que comece com "getId" e não tenha
+        // parâmetros
+        try {
+            java.lang.reflect.Method[] methods = obj.getClass().getMethods();
+            for (java.lang.reflect.Method method : methods) {
+                String name = method.getName();
+                if (name.startsWith("getId") && method.getParameterCount() == 0 &&
+                        method.getReturnType() != Void.class) {
+                    return method.invoke(obj);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Erro ao extrair ID via getter: {}", e.getMessage());
+        }
+
+        // Fallback: campos públicos 'id' ou 'idGestao', etc.
+        try {
+            java.lang.reflect.Field field = obj.getClass().getDeclaredField("id");
+            field.setAccessible(true);
+            return field.get(obj);
+        } catch (NoSuchFieldException e) {
+            try {
+                java.lang.reflect.Field field = obj.getClass().getDeclaredField("idGestao");
+                field.setAccessible(true);
+                return field.get(obj);
+            } catch (NoSuchFieldException ex) {
+                // ignora
+            } catch (Exception ex) {
+                log.debug("Erro ao acessar campo id: {}", ex.getMessage());
+            }
+        } catch (Exception e) {
+            log.debug("Erro ao acessar campo id: {}", e.getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Determina o tipo da entidade a partir do primeiro parâmetro (se for entidade)
+     * ou do nome da tabela.
+     */
+    private Class<?> determinarTipoEntidade(JoinPoint joinPoint, Object primeiroParam, String nomeTabela) {
+        if (primeiroParam != null && !(primeiroParam instanceof Number)) {
+            return primeiroParam.getClass();
+        }
+
+        // Se o primeiro parâmetro é um ID numérico, tenta obter a classe pelo nome da
+        // tabela.
+        // Converte "gestao" -> "Gestao", "portaria" -> "Portaria", etc.
+        String className = "br.com.cremepe.jeton.dominio." +
+                Character.toUpperCase(nomeTabela.charAt(0)) +
+                nomeTabela.substring(1).toLowerCase();
+        try {
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            log.error("Não foi possível determinar a classe da entidade para tabela: {}", nomeTabela);
+            return null;
+        }
+    }
+
+    // =========================================================================
+    // AFTER RETURNING: registra auditoria com sucesso
+    // =========================================================================
     @AfterReturning(pointcut = "@annotation(auditar)", returning = "retorno")
     public void afterReturning(JoinPoint joinPoint, Auditar auditar, Object retorno) {
         try {
@@ -64,10 +181,13 @@ public class AuditoriaAspect {
         } catch (Exception e) {
             log.error("Erro ao registrar auditoria (afterReturning)", e);
         } finally {
-            AuditoriaContext.clear();
+            limparContexto();
         }
     }
 
+    // =========================================================================
+    // AFTER THROWING: registra auditoria com erro (se configurado)
+    // =========================================================================
     @AfterThrowing(pointcut = "@annotation(auditar)", throwing = "ex")
     public void afterThrowing(JoinPoint joinPoint, Auditar auditar, Exception ex) {
         if (auditar.auditarExcecao()) {
@@ -76,13 +196,21 @@ public class AuditoriaAspect {
             } catch (Exception e) {
                 log.error("Erro ao registrar auditoria (afterThrowing)", e);
             } finally {
-                AuditoriaContext.clear();
+                limparContexto();
             }
         } else {
-            AuditoriaContext.clear();
+            limparContexto();
         }
     }
 
+    private void limparContexto() {
+        AuditoriaContext.clear();
+        estadoAnteriorThreadLocal.remove();
+    }
+
+    // =========================================================================
+    // REGISTRO CENTRAL
+    // =========================================================================
     private void registrarAuditoria(JoinPoint joinPoint, Auditar auditar, Object retorno, Exception ex) {
         AuditoriaUser usuario = AuditoriaContext.getUsuario();
         if (usuario == null)
@@ -109,7 +237,12 @@ public class AuditoriaAspect {
 
         if (ex != null) {
             dados.put("erro", ex.getMessage());
-            dados.put("stackTrace", obterStackTrace(ex));
+        }
+
+        // Estado anterior (capturado no @Before)
+        Map<String, Object> estadoAnterior = estadoAnteriorThreadLocal.get();
+        if (estadoAnterior != null) {
+            dados.put("valoresAnteriores", estadoAnterior);
         }
 
         // --- Parâmetros (SpEL ou automático) ---
@@ -119,39 +252,45 @@ public class AuditoriaAspect {
         } else {
             Object[] args = joinPoint.getArgs();
             if (args != null && args.length > 0) {
-                try {
-                    Map<String, Object> params = converterParaMap(args[0]);
-                    dados.put("parametros", params);
-                } catch (Exception e) {
-                    log.debug("Não foi possível serializar automaticamente o primeiro parâmetro", e);
-                    dados.put("parametros", "Não foi possível extrair os parâmetros");
+                Object primeiroParam = args[0];
+                if (primeiroParam != null && !(primeiroParam instanceof Number)) {
+                    try {
+                        Map<String, Object> params = converterParaMap(primeiroParam);
+                        dados.put("parametros", params);
+                    } catch (Exception e) {
+                        dados.put("parametros", primeiroParam.toString());
+                    }
+                } else {
+                    dados.put("parametros", primeiroParam);
                 }
             }
         }
 
-        // --- Retorno (SpEL ou automático) ---
-        if (retorno != null) {
+        // --- Retorno (apenas se existir e não for void) ---
+        Class<?> returnType = signature.getReturnType();
+        if (retorno != null && returnType != void.class && returnType != Void.class) {
             if (!auditar.dadosRetorno().isEmpty()) {
                 Object retValue = avaliarSpel(joinPoint, auditar.dadosRetorno(), retorno);
                 dados.put("retorno", retValue);
-            } else {
+            } else if (isEntidade(retorno)) {
                 try {
                     Map<String, Object> retMap = converterParaMap(retorno);
-                    dados.put("retorno", retMap);
+                    dados.put("valoresAtuais", retMap);
                 } catch (Exception e) {
-                    log.debug("Não foi possível serializar automaticamente o retorno", e);
-                    dados.put("retorno", "Não foi possível extrair o retorno");
+                    dados.put("retorno", retorno.toString());
                 }
+            } else {
+                dados.put("retorno", retorno);
             }
         }
 
         String json = toJson(dados);
         logJetonService.registrarLog(auditar.tabela(), usuario.id(), json);
-        log.debug("Auditoria registrada com sucesso para ação: {} - usuário: {}", auditar.acao(), usuario.nome());
+        log.debug("Auditoria registrada: {} - {}", auditar.acao(), usuario.nome());
     }
 
     // =========================================================================
-    // Métodos auxiliares (idênticos aos anteriores)
+    // MÉTODOS AUXILIARES (já existentes, mantidos)
     // =========================================================================
     private HttpServletRequest obterRequest() {
         try {
@@ -178,14 +317,6 @@ public class AuditoriaAspect {
         return ip;
     }
 
-    private String obterStackTrace(Exception ex) {
-        StringBuilder sb = new StringBuilder();
-        for (StackTraceElement element : ex.getStackTrace()) {
-            sb.append(element.toString()).append("\n");
-        }
-        return sb.toString();
-    }
-
     private Object avaliarSpel(JoinPoint joinPoint, String expressao, Object retorno) {
         try {
             StandardEvaluationContext context = new StandardEvaluationContext();
@@ -204,6 +335,13 @@ public class AuditoriaAspect {
             log.error("Erro ao avaliar expressão SpEL: '{}' - {}", expressao, e.getMessage());
             return "ERRO: " + e.getMessage();
         }
+    }
+
+    private boolean isEntidade(Object obj) {
+        if (obj == null)
+            return false;
+        String packageName = obj.getClass().getPackageName();
+        return packageName.startsWith("br.com.cremepe.jeton.dominio");
     }
 
     private Map<String, Object> converterParaMap(Object obj) {

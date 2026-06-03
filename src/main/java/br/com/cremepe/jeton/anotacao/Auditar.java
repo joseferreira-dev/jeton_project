@@ -16,7 +16,7 @@ public @interface Auditar {
 
     String dadosParametros() default "";
 
-    boolean isUpdate() default false;
+    boolean capturarEstadoAnterior() default false;
 
     boolean auditarExcecao() default false;
 }

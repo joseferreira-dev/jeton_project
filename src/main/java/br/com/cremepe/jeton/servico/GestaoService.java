@@ -13,7 +13,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,30 +23,58 @@ public class GestaoService {
 
     @Autowired
     private GestaoRepository gestaoRepository;
-    @Autowired
-    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
-    @Auditar(tabela = "gestao", acao = "SALVAR", isUpdate = false, descricao = "Cadastro de gestão")
+    @Auditar(tabela = "gestao", acao = "SALVAR", capturarEstadoAnterior = false, descricao = "Cadastro de nova gestão", auditarExcecao = true)
     @Transactional
-    public Gestao salvar(Gestao gestao, Integer idUsuarioLogado) {
-        boolean isNovo = gestao.getIdGestao() == null;
-
+    public Gestao salvar(Gestao gestao) {
         validarDatas(gestao);
         validarNomeUnico(gestao);
         validarSobreposicao(gestao);
 
         Gestao salva = gestaoRepository.save(gestao);
-
-        log.info("Gestão {}: ID={}, nome='{}', período={} até {}",
-                isNovo ? "criada" : "atualizada",
-                salva.getIdGestao(), salva.getNomeGestao(), salva.getDtInicio(), salva.getDtFim());
-
+        log.info("Gestão criada: ID={}, nome='{}', período={} até {}",
+                salva.getIdGestao(), salva.getNomeGestao(),
+                salva.getDtInicio(), salva.getDtFim());
         return salva;
     }
+
+    @Auditar(tabela = "gestao", acao = "ATUALIZAR", capturarEstadoAnterior = true, descricao = "Edição de gestão", auditarExcecao = true)
+    @Transactional
+    public Gestao atualizar(Gestao gestao) {
+        Gestao existente = buscarGestaoOuFalhar(gestao.getIdGestao());
+
+        validarDatas(gestao);
+        validarNomeUnico(gestao);
+        validarSobreposicao(gestao);
+
+        existente.setNomeGestao(gestao.getNomeGestao());
+        existente.setDtInicio(gestao.getDtInicio());
+        existente.setDtFim(gestao.getDtFim());
+
+        Gestao atualizada = gestaoRepository.save(existente);
+        log.info("Gestão atualizada: ID={}, nome='{}', período={} até {}",
+                atualizada.getIdGestao(), atualizada.getNomeGestao(),
+                atualizada.getDtInicio(), atualizada.getDtFim());
+        return atualizada;
+    }
+
+    @Auditar(tabela = "gestao", acao = "EXCLUIR", capturarEstadoAnterior = true, descricao = "Exclusão de gestão", auditarExcecao = true)
+    @Transactional
+    public void excluir(Gestao gestao) {
+        Gestao existente = buscarGestaoOuFalhar(gestao.getIdGestao());
+        gestaoRepository.deleteById(existente.getIdGestao());
+        log.info("Gestão excluída: ID={}, nome='{}', período={} até {}",
+                existente.getIdGestao(), existente.getNomeGestao(),
+                existente.getDtInicio(), existente.getDtFim());
+    }
+
+    // =========================================================================
+    // MÉTODOS DE VALIDAÇÃO E LEITURA
+    // =========================================================================
 
     private void validarDatas(Gestao gestao) {
         if (gestao.getDtInicio() == null || gestao.getDtFim() == null) {
@@ -77,10 +104,6 @@ public class GestaoService {
         }
     }
 
-    // =========================================================================
-    // OPERAÇÕES DE LEITURA
-    // =========================================================================
-
     @Transactional(readOnly = true)
     public Page<Gestao> listarComPaginacaoEPesquisa(String termo, int page, int size,
             String sortField, String sortDir) {
@@ -103,32 +126,5 @@ public class GestaoService {
     public Gestao buscarGestaoOuFalhar(Integer id) {
         return gestaoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Gestão não encontrada com ID: " + id));
-    }
-
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
-
-    @Transactional
-    public void excluir(Integer id, Integer idUsuarioLogado) {
-        // Busca a gestão antes de excluir para obter dados para o log
-        Optional<Gestao> gestaoOpt = gestaoRepository.findById(id);
-        if (gestaoOpt.isEmpty()) {
-            log.warn("Tentativa de excluir gestão inexistente ID={}", id);
-            throw new RuntimeException("Gestão não encontrada para exclusão.");
-        }
-        Gestao gestao = gestaoOpt.get();
-        String nome = gestao.getNomeGestao();
-        LocalDate dtInicio = gestao.getDtInicio();
-        LocalDate dtFim = gestao.getDtFim();
-
-        gestaoRepository.deleteById(id);
-
-        log.info("Gestão excluída: ID={}, nome='{}', período={} até {}", id, nome, dtInicio, dtFim);
-
-        String textoLog = String.format(
-                "Gestão excluída: ID=%d, Nome='%s', Início=%s, Fim=%s",
-                id, nome, dtInicio, dtFim);
-        logJetonService.registrarLog("gestao", idUsuarioLogado, textoLog);
     }
 }

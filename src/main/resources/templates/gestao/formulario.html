@@ -17,7 +17,7 @@
 
         <div class="card shadow-sm">
             <div class="card-body p-4">
-                <form th:action="@{/gestoes/salvar}" th:object="${gestao}" method="post">
+                <form th:action="@{${urlAcao}}" th:object="${gestao}" method="post">
                     <input type="hidden" th:field="*{idGestao}">
 
                     <div class="row g-3">

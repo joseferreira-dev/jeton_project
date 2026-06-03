@@ -1,7 +1,6 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Gestao;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.GestaoService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -53,6 +52,7 @@ public class GestaoController {
         if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("gestao", new Gestao());
+        model.addAttribute("urlAcao", "/gestoes/salvar");
         return "gestao/formulario";
     }
 
@@ -63,22 +63,34 @@ public class GestaoController {
         Gestao gestao = gestaoService.buscarPorId(id)
                 .orElseThrow(() -> new IllegalArgumentException("Gestão não encontrada para o ID: " + id));
         model.addAttribute("gestao", gestao);
+        model.addAttribute("urlAcao", "/gestoes/atualizar");
         return "gestao/formulario";
     }
 
     // =========================================================================
     // SALVAR (CRIAR / ATUALIZAR)
     // =========================================================================
+
     @PostMapping("/salvar")
     public String salvar(@Valid @ModelAttribute("gestao") Gestao gestao,
-            HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            gestaoService.salvar(gestao, idUsuarioLogado);
-            ra.addFlashAttribute("sucesso", "Gestão salva com sucesso!");
+            gestaoService.salvar(gestao);
+            ra.addFlashAttribute("sucesso", "Gestão criada com sucesso!");
         } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao salvar: " + e.getMessage());
+            ra.addFlashAttribute("erro", "Erro ao criar: " + e.getMessage());
+        }
+        return "redirect:/gestoes";
+    }
+
+    @PostMapping("/atualizar")
+    public String atualizar(@Valid @ModelAttribute("gestao") Gestao gestao,
+            RedirectAttributes ra) {
+        try {
+            gestaoService.atualizar(gestao);
+            ra.addFlashAttribute("sucesso", "Gestão atualizada com sucesso!");
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro ao atualizar: " + e.getMessage());
         }
         return "redirect:/gestoes";
     }
@@ -87,16 +99,14 @@ public class GestaoController {
     // EXCLUSÃO
     // =========================================================================
     @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id,
-            HttpSession session,
-            RedirectAttributes ra) {
+    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            gestaoService.excluir(id, idUsuarioLogado);
+            Gestao gestao = new Gestao();
+            gestao.setIdGestao(id);
+            gestaoService.excluir(gestao);
             ra.addFlashAttribute("sucesso", "Gestão removida com sucesso!");
         } catch (Exception e) {
-            ra.addFlashAttribute("erro",
-                    "Não foi possível remover. Verifique se existem conselheiros ou atividades vinculadas a esta gestão.");
+            ra.addFlashAttribute("erro", "Não foi possível remover: " + e.getMessage());
         }
         return "redirect:/gestoes";
     }
@@ -106,10 +116,5 @@ public class GestaoController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }
