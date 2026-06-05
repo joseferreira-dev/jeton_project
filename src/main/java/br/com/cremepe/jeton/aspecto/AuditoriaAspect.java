@@ -262,9 +262,14 @@ public class AuditoriaAspect {
         }
 
         // Estado anterior
-        Map<String, Object> estadoAnterior = estadoAnteriorThreadLocal.get();
-        if (estadoAnterior != null) {
-            dados.put("valoresAnteriores", estadoAnterior);
+        // Estado anterior – apenas se o método atual solicitou captura
+        if (auditar.capturarEstadoAnterior()) {
+            Map<String, Object> estadoAnterior = estadoAnteriorThreadLocal.get();
+            if (estadoAnterior != null) {
+                dados.put("valoresAnteriores", estadoAnterior);
+                // Remove imediatamente para não vazar para outros métodos aninhados
+                estadoAnteriorThreadLocal.remove();
+            }
         }
 
         // Parâmetros (SpEL)
