@@ -47,10 +47,28 @@ public class UsuarioService {
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
-    @Auditar(tabela = "usuario", acao = "SALVAR", descricao = "Criação ou atualização de usuário", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
+    @Auditar(tabela = "usuario", acao = "CRIAR", descricao = "Criação de novo usuário", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
-    public Usuario salvar(Usuario usuario, Integer idUsuarioLogado) {
-        boolean isNovo = usuario.getIdUsuarioPessoa() == null;
+    public Usuario criar(Usuario usuario, Integer idUsuarioLogado) {
+        usuario.setIdUsuarioPessoa(null); // força criação
+        return salvarUsuario(usuario, idUsuarioLogado, true);
+    }
+
+    @Auditar(tabela = "usuario", acao = "ATUALIZAR", descricao = "Atualização de usuário existente", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
+    @Transactional
+    public Usuario atualizar(Usuario usuario, Integer idUsuarioLogado) {
+        if (usuario.getIdUsuarioPessoa() == null) {
+            throw new RuntimeException("ID do usuário não informado para atualização.");
+        }
+        return salvarUsuario(usuario, idUsuarioLogado, false);
+    }
+
+    /**
+     * Método privado que contém a lógica comum de persistência.
+     * 
+     * @param isNovo indica se é criação (true) ou atualização (false)
+     */
+    private Usuario salvarUsuario(Usuario usuario, Integer idUsuarioLogado, boolean isNovo) {
         String nome = usuario.getPessoa().getNome();
         String tipoPessoa = usuario.iseConselheiro() ? "Conselheiro" : "Funcionário";
         String situacao = usuario.getInSituacao();
@@ -83,7 +101,7 @@ public class UsuarioService {
         }
 
         // 6. Tratamento de senha
-        if (usuario.getIdUsuarioPessoa() != null && usuario.getIdUsuarioPessoa() > 0) {
+        if (!isNovo) {
             Usuario existente = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
                     .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
             if (usuario.getSenha() == null || usuario.getSenha().trim().isEmpty()) {
@@ -119,7 +137,6 @@ public class UsuarioService {
             Conselheiro conselheiro = conselheiroRepository.findById(idPessoa)
                     .orElse(new Conselheiro());
 
-            // O @MapsId copiará o id da pessoa automaticamente
             conselheiro.setPessoa(usuarioSalvo.getPessoa());
             conselheiro.setCrm(usuario.getCrm());
             conselheiro.setInSituacao(usuarioSalvo.getInSituacao());
@@ -127,7 +144,6 @@ public class UsuarioService {
             conselheiroRepository.save(conselheiro);
             log.debug("Conselheiro salvo/atualizado para ID={}", idPessoa);
         } else {
-            // Remove se não for conselheiro
             conselheiroRepository.findById(usuarioSalvo.getIdUsuarioPessoa())
                     .ifPresent(conselheiroRepository::delete);
         }

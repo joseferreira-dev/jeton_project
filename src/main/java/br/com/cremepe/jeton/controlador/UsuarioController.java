@@ -103,9 +103,14 @@ public class UsuarioController extends BaseController {
             RedirectAttributes ra) {
         try {
             Integer idUsuarioLogado = getIdUsuarioLogado(session);
+            Usuario userSalvo;
 
-            // Grava o usuário
-            Usuario userSalvo = usuarioService.salvar(usuario, idUsuarioLogado);
+            // Decide se é criação ou atualização
+            if (usuario.getIdUsuarioPessoa() == null) {
+                userSalvo = usuarioService.criar(usuario, idUsuarioLogado);
+            } else {
+                userSalvo = usuarioService.atualizar(usuario, idUsuarioLogado);
+            }
 
             // Sincroniza permissões (níveis de acesso)
             Integer id = userSalvo.getIdUsuarioPessoa();
@@ -116,13 +121,11 @@ public class UsuarioController extends BaseController {
 
             List<String> selecionados = niveisAcessoSelecionados != null ? niveisAcessoSelecionados : new ArrayList<>();
 
-            // Concede novos níveis
             for (String nivel : selecionados) {
                 if (!niveisAtuais.contains(nivel)) {
                     acessoService.concederPermissao(id, nivel, idUsuarioLogado);
                 }
             }
-            // Revoga níveis desmarcados
             for (String nivelAtual : niveisAtuais) {
                 if (!selecionados.contains(nivelAtual)) {
                     acessoService.revogarPermissao(id, nivelAtual, idUsuarioLogado);
