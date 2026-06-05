@@ -4,7 +4,6 @@ import br.com.cremepe.jeton.dominio.AtividadeConselhal;
 import br.com.cremepe.jeton.dominio.Portaria;
 import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.dominio.Resolucao;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
 import br.com.cremepe.jeton.servico.AtividadeConselhalService;
 import br.com.cremepe.jeton.servico.ConselheiroService;
@@ -103,17 +102,14 @@ public class AtividadeConselhalController {
     }
 
     @PostMapping("/salvar")
-    public String salvar(
-            @ModelAttribute("atividade") AtividadeConselhal atividade,
+    public String salvar(@ModelAttribute("atividade") AtividadeConselhal atividade,
             @RequestParam("dataAtividadePura") String dataAtividadePura,
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "idTipoAnexo", required = false) Integer idTipoAnexo,
             @RequestParam(value = "nomeComprovanteUsuario", required = false) String nomeComprovanteUsuario,
             HttpSession session,
             RedirectAttributes ra) {
-
         try {
-            // 1. Validação e normalização da data/hora e turno
             LocalDateTime dataHora = parseDataHora(dataAtividadePura, ra);
             if (dataHora == null)
                 return "redirect:/atividades/novo";
@@ -121,37 +117,24 @@ public class AtividadeConselhalController {
             atividade.setDataHoraAtividade(dataHora);
             atividade.setInTurno(calcularTurno(dataHora.getHour()));
 
-            // 2. Configuração de flags iniciais (a entidade já normaliza e tem valores
-            // padrão)
             if (atividade.getIdAtividade() == null) {
                 atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
+                atividadeService.criarAtividadeComComprovante(atividade, file, idTipoAnexo, nomeComprovanteUsuario);
+                ra.addFlashAttribute("sucesso", "Atividade criada com sucesso!");
             } else {
-                // Apenas define como pendente se não houver situação (caso raro em edição).
                 if (atividade.getInSituacao() == null || atividade.getInSituacao().trim().isEmpty()) {
                     atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
                 }
-            }
-
-            // 3. Obtém o ID do comprovante antigo (se houver)
-            Integer idComprovanteAntigo = null;
-            if (atividade.getIdAtividade() != null) {
+                Integer idComprovanteAntigo = null;
                 AtividadeConselhal atividadeBanco = atividadeService.buscarPorId(atividade.getIdAtividade())
                         .orElse(null);
                 if (atividadeBanco != null && atividadeBanco.getComprovante() != null) {
                     idComprovanteAntigo = atividadeBanco.getComprovante().getIdComprovante();
                 }
+                atividadeService.atualizarAtividadeComComprovante(atividade, file, idTipoAnexo, nomeComprovanteUsuario,
+                        idComprovanteAntigo);
+                ra.addFlashAttribute("sucesso", "Atividade atualizada com sucesso!");
             }
-
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-
-            // 4. Delega toda a operação (criação do novo comprovante, desvinculação,
-            // salvamento da atividade e exclusão do antigo) para o serviço, em uma única
-            // transação
-            atividadeService.salvarAtividadeComComprovante(
-                    atividade, file, idTipoAnexo, nomeComprovanteUsuario, idComprovanteAntigo, idUsuarioLogado);
-
-            ra.addFlashAttribute("sucesso", "Atividade guardada com sucesso!");
-
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
@@ -160,25 +143,10 @@ public class AtividadeConselhalController {
         return "redirect:/atividades";
     }
 
-    @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
-        try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            atividadeService.excluirAtividade(id, idUsuarioLogado);
-            ra.addFlashAttribute("sucesso", "Atividade removida com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro interno ao remover atividade: " + e.getMessage());
-        }
-        return "redirect:/atividades";
-    }
-
     @GetMapping("/validar/{id}")
-    public String validar(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
+    public String validar(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            atividadeService.validarAtividade(id, idUsuarioLogado);
+            atividadeService.validarAtividade(id);
             ra.addFlashAttribute("sucesso",
                     "Atividade validada com sucesso! Ela agora está apta a receber processamento financeiro.");
         } catch (RuntimeException e) {
@@ -190,13 +158,25 @@ public class AtividadeConselhalController {
     }
 
     @GetMapping("/desvalidar/{id}")
-    public String desvalidar(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
+    public String desvalidar(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            atividadeService.desvalidarAtividade(id, idUsuarioLogado);
+            atividadeService.desvalidarAtividade(id);
             ra.addFlashAttribute("sucesso", "Atividade retornada ao status Pendente.");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
+        }
+        return "redirect:/atividades";
+    }
+
+    @GetMapping("/excluir/{id}")
+    public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
+        try {
+            atividadeService.excluirAtividade(id);
+            ra.addFlashAttribute("sucesso", "Atividade removida com sucesso!");
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro interno ao remover atividade: " + e.getMessage());
         }
         return "redirect:/atividades";
     }
@@ -207,11 +187,6 @@ public class AtividadeConselhalController {
 
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 
     private LocalDateTime parseDataHora(String dataAtividadePura, RedirectAttributes ra) {

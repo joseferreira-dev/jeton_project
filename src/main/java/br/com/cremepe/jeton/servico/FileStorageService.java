@@ -38,7 +38,7 @@ public class FileStorageService {
     // =========================================================================
     // UPLOAD
     // =========================================================================
-    @Auditar(tabela = "file_storage", acao = "UPLOAD", descricao = "Upload de arquivo para o servidor FTP", dadosParametros = "{ 'nomeOriginal': #file.originalFilename, 'tamanho': #file.size, 'ano': #ano, 'mes': #mes }", auditarExcecao = true)
+    @Auditar(tabela = "file_storage", acao = "UPLOAD", descricao = "Upload de arquivo para o servidor FTP", capturarEstadoAnterior = false, dadosParametros = "{ 'nomeOriginal': #file.originalFilename, 'tamanho': #file.size, 'ano': #ano, 'mes': #mes }", auditarExcecao = true)
     public String salvarArquivoNoFtp(MultipartFile file, Integer ano, Integer mes) {
         String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
         String extension = "";
@@ -137,7 +137,7 @@ public class FileStorageService {
     // =========================================================================
     // EXCLUIR
     // =========================================================================
-    @Auditar(tabela = "file_storage", acao = "EXCLUIR", descricao = "Remoção de arquivo do servidor FTP", dadosParametros = "{ 'fileName': #fileName, 'ano': #ano, 'mes': #mes }", auditarExcecao = true)
+    @Auditar(tabela = "file_storage", acao = "EXCLUIR", descricao = "Remoção de arquivo do servidor FTP", capturarEstadoAnterior = false, dadosParametros = "{ 'fileName': #fileName, 'ano': #ano, 'mes': #mes }", auditarExcecao = true)
     public void excluirArquivo(String fileName, Integer ano, Integer mes) {
         Session session = null;
         ChannelSftp channelSftp = null;

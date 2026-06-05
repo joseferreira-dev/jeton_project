@@ -5,9 +5,13 @@ import br.com.cremepe.jeton.anotacao.AuditoriaContext;
 import br.com.cremepe.jeton.anotacao.AuditoriaUser;
 import br.com.cremepe.jeton.servico.LogJetonService;
 import br.com.cremepe.jeton.servico.UsuarioLogadoService;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.hibernate.proxy.HibernateProxy;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,9 +29,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Aspect
 @Component
@@ -36,6 +38,8 @@ public class AuditoriaAspect {
     private static final Logger log = LoggerFactory.getLogger(AuditoriaAspect.class);
     private final ExpressionParser spelParser = new SpelExpressionParser();
     private final ObjectMapper mapper;
+    private final ThreadLocal<Map<String, Object>> estadoAnteriorThreadLocal = new ThreadLocal<>();
+    private final ThreadLocal<Integer> profundidade = ThreadLocal.withInitial(() -> 0);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -46,19 +50,23 @@ public class AuditoriaAspect {
     @Autowired
     private LogJetonService logJetonService;
 
-    private final ThreadLocal<Map<String, Object>> estadoAnteriorThreadLocal = new ThreadLocal<>();
-
     public AuditoriaAspect() {
         this.mapper = new ObjectMapper();
         this.mapper.registerModule(new JavaTimeModule());
         this.mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        this.mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        this.mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
+        SimpleFilterProvider filterProvider = new SimpleFilterProvider();
+        filterProvider.addFilter("hibernateLazyFilter", SimpleBeanPropertyFilter.serializeAllExcept(
+                "hibernateLazyInitializer", "handler", "fieldHandler"));
+        this.mapper.setFilterProvider(filterProvider);
     }
 
-    // =========================================================================
-    // BEFORE: captura o estado anterior (se necessário) e configura o usuário
-    // =========================================================================
     @Before("@annotation(auditar)")
     public void beforeAudit(JoinPoint joinPoint, Auditar auditar) {
+        profundidade.set(profundidade.get() + 1);
+        System.out.println(
+                ">>> BeforeAudit chamado para: " + auditar.acao() + " (profundidade=" + profundidade.get() + ")");
         AuditoriaUser usuario = usuarioLogadoService.getUsuarioLogado();
         if (usuario == null) {
             log.warn("Tentativa de auditar ação sem usuário logado: {}", auditar.acao());
@@ -71,11 +79,6 @@ public class AuditoriaAspect {
         }
     }
 
-    /**
-     * Captura o estado atual da entidade no banco de dados antes da
-     * modificação/exclusão.
-     * O primeiro parâmetro do método pode ser a entidade (com ID) ou o próprio ID.
-     */
     private void capturarEstadoAnterior(JoinPoint joinPoint, Auditar auditar) {
         try {
             Object[] args = joinPoint.getArgs();
@@ -83,37 +86,40 @@ public class AuditoriaAspect {
                 return;
 
             Object primeiroParam = args[0];
+            // Desfaz proxy se necessário
+            if (primeiroParam instanceof HibernateProxy) {
+                primeiroParam = ((HibernateProxy) primeiroParam).getHibernateLazyInitializer().getImplementation();
+            }
+
             Object id = extrairId(primeiroParam);
             Class<?> entityType = determinarTipoEntidade(joinPoint, primeiroParam, auditar.tabela());
 
             if (id != null && entityType != null) {
                 Object estadoAtual = entityManager.find(entityType, id);
                 if (estadoAtual != null) {
-                    // Cria uma cópia imutável (Map) em vez de guardar a referência
                     Map<String, Object> copia = converterParaMap(estadoAtual);
                     estadoAnteriorThreadLocal.set(copia);
                     log.debug("Estado anterior capturado (cópia) para auditoria: {} ID={}",
                             entityType.getSimpleName(), id);
+                } else {
+                    log.warn("Estado anterior não encontrado para entidade {} ID={}", entityType.getSimpleName(), id);
                 }
+            } else {
+                log.debug("Não foi possível extrair ID ou tipo de entidade para auditoria anterior");
             }
         } catch (Exception e) {
             log.error("Erro ao capturar estado anterior para auditoria", e);
         }
     }
 
-    /**
-     * Extrai o ID do objeto (entidade) ou do próprio ID numérico.
-     * Suporta métodos getter como getIdGestao(), getIdPessoa(), etc.
-     */
     private Object extrairId(Object obj) {
         if (obj == null)
             return null;
         if (obj instanceof Number)
             return obj;
 
-        // Tenta encontrar qualquer método público que comece com "getId" e não tenha
-        // parâmetros
         try {
+            // Tenta qualquer método público que comece com "getId" e não tenha parâmetros
             java.lang.reflect.Method[] methods = obj.getClass().getMethods();
             for (java.lang.reflect.Method method : methods) {
                 String name = method.getName();
@@ -126,14 +132,14 @@ public class AuditoriaAspect {
             log.debug("Erro ao extrair ID via getter: {}", e.getMessage());
         }
 
-        // Fallback: campos públicos 'id' ou 'idGestao', etc.
+        // Fallback para campos públicos
         try {
             java.lang.reflect.Field field = obj.getClass().getDeclaredField("id");
             field.setAccessible(true);
             return field.get(obj);
         } catch (NoSuchFieldException e) {
             try {
-                java.lang.reflect.Field field = obj.getClass().getDeclaredField("idGestao");
+                java.lang.reflect.Field field = obj.getClass().getDeclaredField("idAtividade");
                 field.setAccessible(true);
                 return field.get(obj);
             } catch (NoSuchFieldException ex) {
@@ -144,25 +150,32 @@ public class AuditoriaAspect {
         } catch (Exception e) {
             log.debug("Erro ao acessar campo id: {}", e.getMessage());
         }
-
         return null;
     }
 
-    /**
-     * Determina o tipo da entidade a partir do primeiro parâmetro (se for entidade)
-     * ou do nome da tabela.
-     */
     private Class<?> determinarTipoEntidade(JoinPoint joinPoint, Object primeiroParam, String nomeTabela) {
         if (primeiroParam != null && !(primeiroParam instanceof Number)) {
             return primeiroParam.getClass();
         }
 
-        // Se o primeiro parâmetro é um ID numérico, tenta obter a classe pelo nome da
-        // tabela.
-        // Converte "gestao" -> "Gestao", "portaria" -> "Portaria", etc.
-        String className = "br.com.cremepe.jeton.dominio." +
-                Character.toUpperCase(nomeTabela.charAt(0)) +
-                nomeTabela.substring(1).toLowerCase();
+        String className = switch (nomeTabela) {
+            case "atividade_conselhal" -> "br.com.cremepe.jeton.dominio.AtividadeConselhal";
+            case "gestao_conselheiro" -> "br.com.cremepe.jeton.dominio.GestaoConselheiro";
+            case "pontos_saldo" -> "br.com.cremepe.jeton.dominio.PontosSaldo";
+            case "usuario_acesso" -> "br.com.cremepe.jeton.dominio.UsuarioAcesso";
+            default -> {
+                String[] parts = nomeTabela.split("_");
+                StringBuilder camel = new StringBuilder();
+                for (String part : parts) {
+                    if (camel.length() == 0) {
+                        camel.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1).toLowerCase());
+                    } else {
+                        camel.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1).toLowerCase());
+                    }
+                }
+                yield "br.com.cremepe.jeton.dominio." + camel.toString();
+            }
+        };
         try {
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
@@ -171,23 +184,19 @@ public class AuditoriaAspect {
         }
     }
 
-    // =========================================================================
-    // AFTER RETURNING: registra auditoria com sucesso
-    // =========================================================================
     @AfterReturning(pointcut = "@annotation(auditar)", returning = "retorno")
     public void afterReturning(JoinPoint joinPoint, Auditar auditar, Object retorno) {
         try {
+            System.out.println(">>> AfterReturning chamado para: " + auditar.acao() + " (profundidade="
+                    + profundidade.get() + ")");
             registrarAuditoria(joinPoint, auditar, retorno, null);
         } catch (Exception e) {
             log.error("Erro ao registrar auditoria (afterReturning)", e);
         } finally {
-            limparContexto();
+            decrementarProfundidade();
         }
     }
 
-    // =========================================================================
-    // AFTER THROWING: registra auditoria com erro (se configurado)
-    // =========================================================================
     @AfterThrowing(pointcut = "@annotation(auditar)", throwing = "ex")
     public void afterThrowing(JoinPoint joinPoint, Auditar auditar, Exception ex) {
         if (auditar.auditarExcecao()) {
@@ -196,16 +205,27 @@ public class AuditoriaAspect {
             } catch (Exception e) {
                 log.error("Erro ao registrar auditoria (afterThrowing)", e);
             } finally {
-                limparContexto();
+                decrementarProfundidade();
             }
         } else {
+            decrementarProfundidade();
+        }
+    }
+
+    private void decrementarProfundidade() {
+        int atual = profundidade.get() - 1;
+        if (atual <= 0) {
             limparContexto();
+            profundidade.remove();
+        } else {
+            profundidade.set(atual);
         }
     }
 
     private void limparContexto() {
-        AuditoriaContext.clear();
         estadoAnteriorThreadLocal.remove();
+        AuditoriaContext.clear();
+        log.debug("Contexto de auditoria limpo (profundidade=0)");
     }
 
     // =========================================================================
@@ -213,13 +233,15 @@ public class AuditoriaAspect {
     // =========================================================================
     private void registrarAuditoria(JoinPoint joinPoint, Auditar auditar, Object retorno, Exception ex) {
         AuditoriaUser usuario = AuditoriaContext.getUsuario();
-        if (usuario == null)
+        if (usuario == null) {
+            log.warn("Usuário não encontrado no contexto para auditoria. Ação: {}", auditar.acao());
             return;
+        }
 
         HttpServletRequest request = obterRequest();
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
 
-        Map<String, Object> dados = new HashMap<>();
+        Map<String, Object> dados = new LinkedHashMap<>();
         dados.put("idUnico", UUID.randomUUID().toString());
         dados.put("timestamp", LocalDateTime.now().toString());
         dados.put("usuarioId", usuario.id());
@@ -239,15 +261,16 @@ public class AuditoriaAspect {
             dados.put("erro", ex.getMessage());
         }
 
-        // Estado anterior (capturado no @Before)
+        // Estado anterior
         Map<String, Object> estadoAnterior = estadoAnteriorThreadLocal.get();
         if (estadoAnterior != null) {
             dados.put("valoresAnteriores", estadoAnterior);
         }
 
-        // --- Parâmetros (SpEL ou automático) ---
+        // Parâmetros (SpEL)
+        Object paramValue = null;
         if (!auditar.dadosParametros().isEmpty()) {
-            Object paramValue = avaliarSpel(joinPoint, auditar.dadosParametros(), null);
+            paramValue = avaliarSpel(joinPoint, auditar.dadosParametros(), null);
             dados.put("parametros", paramValue);
         } else {
             Object[] args = joinPoint.getArgs();
@@ -266,7 +289,7 @@ public class AuditoriaAspect {
             }
         }
 
-        // --- Retorno (apenas se existir e não for void) ---
+        // Retorno
         Class<?> returnType = signature.getReturnType();
         if (retorno != null && returnType != void.class && returnType != Void.class) {
             if (!auditar.dadosRetorno().isEmpty()) {
@@ -290,7 +313,7 @@ public class AuditoriaAspect {
     }
 
     // =========================================================================
-    // MÉTODOS AUXILIARES (já existentes, mantidos)
+    // MÉTODOS AUXILIARES
     // =========================================================================
     private HttpServletRequest obterRequest() {
         try {
@@ -345,12 +368,35 @@ public class AuditoriaAspect {
     }
 
     private Map<String, Object> converterParaMap(Object obj) {
+        if (obj == null)
+            return Map.of();
         try {
+            if (obj instanceof HibernateProxy) {
+                obj = ((HibernateProxy) obj).getHibernateLazyInitializer().getImplementation();
+            }
+            // Usa o mapper já configurado com filtro lazy
             return mapper.convertValue(obj, Map.class);
         } catch (Exception e) {
-            log.error("Erro ao converter objeto para Map (auditoria)", e);
-            return Map.of("erro", "Não foi possível serializar o objeto");
+            log.error("Erro ao converter objeto para Map (auditoria). Usando fallback.", e);
+            return extractBasicFields(obj);
         }
+    }
+
+    private Map<String, Object> extractBasicFields(Object obj) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("_class", obj.getClass().getSimpleName());
+        try {
+            java.lang.reflect.Field idField = obj.getClass().getDeclaredField("id");
+            idField.setAccessible(true);
+            map.put("id", idField.get(obj));
+        } catch (Exception e) {
+            try {
+                java.lang.reflect.Method m = obj.getClass().getMethod("getId");
+                map.put("id", m.invoke(obj));
+            } catch (Exception ignored) {
+            }
+        }
+        return map;
     }
 
     private String toJson(Object obj) {

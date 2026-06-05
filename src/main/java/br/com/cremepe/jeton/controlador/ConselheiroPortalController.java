@@ -206,22 +206,20 @@ public class ConselheiroPortalController {
     }
 
     @PostMapping("/atividades/salvar")
-    public String salvarAtividade(
-            @ModelAttribute("atividade") AtividadeConselhal atividade,
+    public String salvarAtividade(@ModelAttribute("atividade") AtividadeConselhal atividade,
             @RequestParam("dataAtividadePura") String dataAtividadePura,
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "idTipoAnexo", required = false) Integer idTipoAnexo,
             @RequestParam(value = "nomeComprovanteUsuario", required = false) String nomeComprovanteUsuario,
             HttpSession session,
             RedirectAttributes ra) {
-
         if (!isConselheiro(session))
             return "redirect:/login";
 
-        Integer idConselheiro = getIdConselheiroLogado(session);
         try {
             // Validação: garantir que o conselheiro não está tentando associar outra pessoa
-            if (atividade.getConselheiro() == null || !atividade.getConselheiro().getIdPessoa().equals(idConselheiro)) {
+            if (atividade.getConselheiro() == null
+                    || !atividade.getConselheiro().getIdPessoa().equals(getIdConselheiroLogado(session))) {
                 throw new RuntimeException("Conselheiro inválido para esta atividade.");
             }
 
@@ -237,17 +235,19 @@ public class ConselheiroPortalController {
                 atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
             }
 
-            Integer idComprovanteAntigo = null;
-            if (atividade.getIdAtividade() != null) {
+            if (atividade.getIdAtividade() == null) {
+                // Criação
+                atividadeService.criarAtividadeComComprovante(atividade, file, idTipoAnexo, nomeComprovanteUsuario);
+            } else {
+                // Edição
+                Integer idComprovanteAntigo = null;
                 AtividadeConselhal existente = atividadeService.buscarPorId(atividade.getIdAtividade()).orElse(null);
                 if (existente != null && existente.getComprovante() != null) {
                     idComprovanteAntigo = existente.getComprovante().getIdComprovante();
                 }
+                atividadeService.atualizarAtividadeComComprovante(atividade, file, idTipoAnexo, nomeComprovanteUsuario,
+                        idComprovanteAntigo);
             }
-
-            atividadeService.salvarAtividadeComComprovante(
-                    atividade, file, idTipoAnexo, nomeComprovanteUsuario, idComprovanteAntigo, idConselheiro);
-
             ra.addFlashAttribute("sucesso", "Atividade salva com sucesso!");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro ao salvar atividade: " + e.getMessage());
@@ -260,19 +260,18 @@ public class ConselheiroPortalController {
         if (!isConselheiro(session))
             return "redirect:/login";
 
-        Integer idConselheiro = getIdConselheiroLogado(session);
         try {
             AtividadeConselhal atividade = atividadeService.buscarPorId(id)
                     .orElseThrow(() -> new RuntimeException("Atividade não encontrada"));
 
-            if (!atividade.getConselheiro().getIdPessoa().equals(idConselheiro)) {
+            if (!atividade.getConselheiro().getIdPessoa().equals(getIdConselheiroLogado(session))) {
                 throw new RuntimeException("Você só pode excluir suas próprias atividades.");
             }
             if (!atividade.isPendente()) {
                 throw new RuntimeException("Apenas atividades pendentes podem ser excluídas.");
             }
 
-            atividadeService.excluirAtividade(id, idConselheiro);
+            atividadeService.excluirAtividade(id);
             ra.addFlashAttribute("sucesso", "Atividade excluída com sucesso.");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", e.getMessage());
