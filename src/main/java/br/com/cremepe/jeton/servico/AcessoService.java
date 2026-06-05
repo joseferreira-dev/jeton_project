@@ -32,7 +32,7 @@ public class AcessoService {
     private LogJetonService logJetonService;
 
     @Transactional
-    public UsuarioAcesso concederPermissao(Integer idUsuario, String idNivel, Integer idUsuarioLogado) {
+    public UsuarioAcesso concederPermissao(Integer idUsuario, String idNivel) {
         UsuarioAcessoId idComposto = new UsuarioAcessoId(idUsuario, idNivel);
 
         return usuarioAcessoRepository.findById(idComposto).orElseGet(() -> {
@@ -49,17 +49,18 @@ public class AcessoService {
             UsuarioAcesso salvo = usuarioAcessoRepository.save(novaPermissao);
             log.info("Permissão concedida: usuário {} -> nível {}", idUsuario, idNivel);
 
-            String textoLog = String.format(
-                    "Permissão concedida: Usuário ID=%d (%s) recebeu nível '%s' (%s)",
-                    idUsuario, usuario.getPessoa().getNome(), idNivel, nivelAcesso.getNomeNivel());
-            logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
+            // String textoLog = String.format(
+            // "Permissão concedida: Usuário ID=%d (%s) recebeu nível '%s' (%s)",
+            // idUsuario, usuario.getPessoa().getNome(), idNivel,
+            // nivelAcesso.getNomeNivel());
+            // logJetonService.registrarLog("usuario_acesso", textoLog);
 
             return salvo;
         });
     }
 
     @Transactional
-    public void revogarPermissao(Integer idUsuario, String idNivel, Integer idUsuarioLogado) {
+    public void revogarPermissao(Integer idUsuario, String idNivel) {
         // Buscar dados antes de revogar para o log
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(idUsuario);
         Optional<NivelAcesso> nivelOpt = nivelAcessoRepository.findById(idNivel);
@@ -68,15 +69,16 @@ public class AcessoService {
         log.info("Permissão revogada: usuário {} -> nível {}", idUsuario, idNivel);
 
         if (usuarioOpt.isPresent() && nivelOpt.isPresent()) {
-            String textoLog = String.format(
-                    "Permissão revogada: Usuário ID=%d (%s) perdeu nível '%s' (%s)",
-                    idUsuario, usuarioOpt.get().getPessoa().getNome(), idNivel, nivelOpt.get().getNomeNivel());
-            logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
+            // String textoLog = String.format(
+            // "Permissão revogada: Usuário ID=%d (%s) perdeu nível '%s' (%s)",
+            // idUsuario, usuarioOpt.get().getPessoa().getNome(), idNivel,
+            // nivelOpt.get().getNomeNivel());
+            // logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
         } else {
-            String textoLog = String.format(
-                    "Permissão revogada: Usuário ID=%d, Nível='%s' (detalhes não encontrados)",
-                    idUsuario, idNivel);
-            logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
+            // String textoLog = String.format(
+            // "Permissão revogada: Usuário ID=%d, Nível='%s' (detalhes não encontrados)",
+            // idUsuario, idNivel);
+            // logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
         }
     }
 

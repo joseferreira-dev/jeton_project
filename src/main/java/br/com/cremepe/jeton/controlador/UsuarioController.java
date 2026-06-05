@@ -3,7 +3,6 @@ package br.com.cremepe.jeton.controlador;
 import br.com.cremepe.jeton.dominio.Usuario;
 import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.repositorio.UsuarioAcessoRepository;
-import br.com.cremepe.jeton.servico.AcessoService;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.NivelAcessoService;
 import br.com.cremepe.jeton.servico.UsuarioService;
@@ -33,8 +32,6 @@ public class UsuarioController extends BaseController {
     private ConselheiroService conselheiroService;
     @Autowired
     private NivelAcessoService nivelAcessoService;
-    @Autowired
-    private AcessoService acessoService;
     @Autowired
     private UsuarioAcessoRepository usuarioAcessoRepository;
 
@@ -102,35 +99,15 @@ public class UsuarioController extends BaseController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-
-            // Grava o usuário
-            Usuario userSalvo = usuarioService.salvar(usuario, idUsuarioLogado);
-
-            // Sincroniza permissões (níveis de acesso)
-            Integer id = userSalvo.getIdUsuarioPessoa();
-            List<String> niveisAtuais = usuarioAcessoRepository.findAll().stream()
-                    .filter(ua -> ua.getId().getIdUsuarioPessoa().equals(id))
-                    .map(ua -> ua.getId().getIdNivel())
-                    .toList();
-
-            List<String> selecionados = niveisAcessoSelecionados != null ? niveisAcessoSelecionados : new ArrayList<>();
-
-            // Concede novos níveis
-            for (String nivel : selecionados) {
-                if (!niveisAtuais.contains(nivel)) {
-                    acessoService.concederPermissao(id, nivel, idUsuarioLogado);
-                }
+            if (usuario.getIdUsuarioPessoa() == null) {
+                // Criação
+                usuarioService.criarUsuario(usuario, niveisAcessoSelecionados);
+                ra.addFlashAttribute("sucesso", "Usuário criado com sucesso!");
+            } else {
+                // Atualização
+                usuarioService.atualizarUsuario(usuario, niveisAcessoSelecionados);
+                ra.addFlashAttribute("sucesso", "Usuário atualizado com sucesso!");
             }
-            // Revoga níveis desmarcados
-            for (String nivelAtual : niveisAtuais) {
-                if (!selecionados.contains(nivelAtual)) {
-                    acessoService.revogarPermissao(id, nivelAtual, idUsuarioLogado);
-                }
-            }
-
-            log.info("Usuário salvo e permissões atualizadas: ID={}", id);
-            ra.addFlashAttribute("sucesso", "Utilizador e permissões atualizados com sucesso!");
         } catch (Exception e) {
             log.error("Erro ao salvar usuário: {}", e.getMessage());
             ra.addFlashAttribute("erro", "Erro ao salvar: " + e.getMessage());
@@ -144,12 +121,11 @@ public class UsuarioController extends BaseController {
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            usuarioService.excluir(id, idUsuarioLogado);
-            ra.addFlashAttribute("sucesso", "Utilizador removido com sucesso!");
+            usuarioService.excluirUsuario(id);
+            ra.addFlashAttribute("sucesso", "Usuário removido com sucesso!");
         } catch (Exception e) {
             log.error("Erro ao excluir usuário ID={}: {}", id, e.getMessage());
-            ra.addFlashAttribute("erro", "Erro: O utilizador possui registos financeiros ou atividades vinculadas.");
+            ra.addFlashAttribute("erro", "Erro: O usuário possui registros financeiros ou atividades vinculadas.");
         }
         return "redirect:/usuarios";
     }
@@ -159,11 +135,6 @@ public class UsuarioController extends BaseController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 
     private void carregarListasApoio(Model model, Integer idUsuario) {
@@ -233,7 +204,7 @@ public class UsuarioController extends BaseController {
         }
 
         try {
-            usuarioService.atualizarPerfil(usuario, idLogado);
+            usuarioService.atualizarPerfil(usuario);
             ra.addFlashAttribute("sucesso", "Perfil atualizado com sucesso!");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro ao atualizar perfil: " + e.getMessage());

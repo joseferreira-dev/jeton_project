@@ -14,11 +14,11 @@ import java.util.List;
 @Repository
 public interface LogJetonRepository extends JpaRepository<LogJeton, Integer> {
 
-    List<LogJeton> findByUsuarioIdUsuarioPessoaOrderByDataHoraLogDesc(Integer idUsuario);
+    List<LogJeton> findByIdUsuarioOrderByDataHoraLogDesc(Integer idUsuario);
 
     List<LogJeton> findByNomeTabelaAndDataHoraLogBetween(String nomeTabela, LocalDateTime inicio, LocalDateTime fim);
 
-    @Query("SELECT l FROM LogJeton l JOIN FETCH l.usuario u JOIN FETCH u.pessoa WHERE " +
+    @Query("SELECT l FROM LogJeton l WHERE " +
             "(:nomeTabela IS NULL OR l.nomeTabela = :nomeTabela) AND " +
             "(:dataInicio IS NULL OR l.dataHoraLog >= :dataInicio) AND " +
             "(:dataFim IS NULL OR l.dataHoraLog <= :dataFim)")

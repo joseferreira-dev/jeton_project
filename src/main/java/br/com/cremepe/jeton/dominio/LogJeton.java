@@ -6,7 +6,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -31,13 +30,8 @@ public class LogJeton implements Serializable {
     @Column(name = "nomeTabela", length = 45, nullable = false)
     private String nomeTabela;
 
-    /**
-     * Relacionamento com o utilizador que efetuou a ação.
-     * Na base de dados, a chave estrangeira chama-se 'idUsuario'.
-     */
-    @ManyToOne
     @JoinColumn(name = "idUsuario", nullable = false)
-    private Usuario usuario;
+    private Integer idUsuario;
 
     // Espelha o tipo 'datetime' do MySQL para garantir a ordem cronológica exata
     @Column(name = "dataHoraLog", nullable = false)
@@ -73,12 +67,12 @@ public class LogJeton implements Serializable {
         this.nomeTabela = nomeTabela;
     }
 
-    public Usuario getUsuario() {
-        return usuario;
+    public Integer getIdUsuario() {
+        return idUsuario;
     }
 
-    public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
+    public void setIdUsuario(Integer idUsuario) {
+        this.idUsuario = idUsuario;
     }
 
     public LocalDateTime getDataHoraLog() {
