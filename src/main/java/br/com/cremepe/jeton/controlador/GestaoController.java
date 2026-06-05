@@ -75,7 +75,7 @@ public class GestaoController {
     public String salvar(@Valid @ModelAttribute("gestao") Gestao gestao,
             RedirectAttributes ra) {
         try {
-            gestaoService.salvar(gestao);
+            gestaoService.criarGestao(gestao);
             ra.addFlashAttribute("sucesso", "Gestão criada com sucesso!");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro ao criar: " + e.getMessage());
@@ -87,7 +87,7 @@ public class GestaoController {
     public String atualizar(@Valid @ModelAttribute("gestao") Gestao gestao,
             RedirectAttributes ra) {
         try {
-            gestaoService.atualizar(gestao);
+            gestaoService.atualizarGestao(gestao);
             ra.addFlashAttribute("sucesso", "Gestão atualizada com sucesso!");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro ao atualizar: " + e.getMessage());
@@ -103,7 +103,7 @@ public class GestaoController {
         try {
             Gestao gestao = new Gestao();
             gestao.setIdGestao(id);
-            gestaoService.excluir(gestao);
+            gestaoService.excluirGestao(gestao);
             ra.addFlashAttribute("sucesso", "Gestão removida com sucesso!");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Não foi possível remover: " + e.getMessage());

@@ -28,9 +28,9 @@ public class GestaoService {
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
-    @Auditar(tabela = "gestao", acao = "SALVAR", capturarEstadoAnterior = false, descricao = "Cadastro de nova gestão", auditarExcecao = true)
+    @Auditar(tabela = "gestao", acao = "CRIAR", capturarEstadoAnterior = false, descricao = "Criação de nova gestão", auditarExcecao = true)
     @Transactional
-    public Gestao salvar(Gestao gestao) {
+    public Gestao criarGestao(Gestao gestao) {
         validarDatas(gestao);
         validarNomeUnico(gestao);
         validarSobreposicao(gestao);
@@ -44,7 +44,7 @@ public class GestaoService {
 
     @Auditar(tabela = "gestao", acao = "ATUALIZAR", capturarEstadoAnterior = true, descricao = "Edição de gestão", auditarExcecao = true)
     @Transactional
-    public Gestao atualizar(Gestao gestao) {
+    public Gestao atualizarGestao(Gestao gestao) {
         Gestao existente = buscarGestaoOuFalhar(gestao.getIdGestao());
 
         validarDatas(gestao);
@@ -64,7 +64,7 @@ public class GestaoService {
 
     @Auditar(tabela = "gestao", acao = "EXCLUIR", capturarEstadoAnterior = true, descricao = "Exclusão de gestão", auditarExcecao = true)
     @Transactional
-    public void excluir(Gestao gestao) {
+    public void excluirGestao(Gestao gestao) {
         Gestao existente = buscarGestaoOuFalhar(gestao.getIdGestao());
         gestaoRepository.deleteById(existente.getIdGestao());
         log.info("Gestão excluída: ID={}, nome='{}', período={} até {}",

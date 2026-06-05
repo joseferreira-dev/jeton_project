@@ -119,7 +119,7 @@ public class AtividadeConselhalController {
 
             if (atividade.getIdAtividade() == null) {
                 atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
-                atividadeService.criarAtividadeComComprovante(atividade, file, idTipoAnexo, nomeComprovanteUsuario);
+                atividadeService.criar(atividade, file, idTipoAnexo, nomeComprovanteUsuario);
                 ra.addFlashAttribute("sucesso", "Atividade criada com sucesso!");
             } else {
                 if (atividade.getInSituacao() == null || atividade.getInSituacao().trim().isEmpty()) {
@@ -131,7 +131,7 @@ public class AtividadeConselhalController {
                 if (atividadeBanco != null && atividadeBanco.getComprovante() != null) {
                     idComprovanteAntigo = atividadeBanco.getComprovante().getIdComprovante();
                 }
-                atividadeService.atualizarAtividadeComComprovante(atividade, file, idTipoAnexo, nomeComprovanteUsuario,
+                atividadeService.atualizar(atividade, file, idTipoAnexo, nomeComprovanteUsuario,
                         idComprovanteAntigo);
                 ra.addFlashAttribute("sucesso", "Atividade atualizada com sucesso!");
             }
@@ -146,7 +146,7 @@ public class AtividadeConselhalController {
     @GetMapping("/validar/{id}")
     public String validar(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
-            atividadeService.validarAtividade(id);
+            atividadeService.validar(id);
             ra.addFlashAttribute("sucesso",
                     "Atividade validada com sucesso! Ela agora está apta a receber processamento financeiro.");
         } catch (RuntimeException e) {
@@ -160,7 +160,7 @@ public class AtividadeConselhalController {
     @GetMapping("/desvalidar/{id}")
     public String desvalidar(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
-            atividadeService.desvalidarAtividade(id);
+            atividadeService.desvalidar(id);
             ra.addFlashAttribute("sucesso", "Atividade retornada ao status Pendente.");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -171,7 +171,7 @@ public class AtividadeConselhalController {
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
-            atividadeService.excluirAtividade(id);
+            atividadeService.excluir(id);
             ra.addFlashAttribute("sucesso", "Atividade removida com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());

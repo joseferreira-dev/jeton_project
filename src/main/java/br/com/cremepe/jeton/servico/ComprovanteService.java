@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.Comprovante;
 import br.com.cremepe.jeton.dominio.TipoAnexo;
 import br.com.cremepe.jeton.repositorio.ComprovanteRepository;
@@ -25,19 +26,15 @@ public class ComprovanteService {
     private TipoAnexoRepository tipoAnexoRepository;
     @Autowired
     private FileStorageService fileStorageService;
-    @Autowired
-    private LogJetonService logJetonService;
 
-    /**
-     * Cria um novo comprovante a partir do arquivo enviado.
-     * O arquivo é armazenado no FTP e os metadados salvos no banco.
-     * A data utilizada para a organização das pastas é a data atual do servidor.
-     */
+    // =========================================================================
+    // CRIAÇÃO
+    // =========================================================================
+    @Auditar(tabela = "comprovante", acao = "CRIAR", descricao = "Criação de novo comprovante", dadosParametros = "{ 'nomeOriginal': #file.originalFilename, 'tamanho': #file.size, 'ano': #ano, 'mes': #mes, 'idTipoAnexo': #idTipoAnexo, 'descricaoUsuario': #descricaoUsuario }", dadosRetorno = "#result", auditarExcecao = true)
     @Transactional
-    public Comprovante guardarComprovante(MultipartFile file, Integer idTipoAnexo,
-            String descricaoUsuario, Integer idUsuarioLogado) {
+    public Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo,
+            String descricaoUsuario) {
         validarArquivo(file);
-
         YearMonth dataAtual = obterDataAtual();
         int ano = dataAtual.getYear();
         int mes = dataAtual.getMonthValue();
@@ -64,78 +61,54 @@ public class ComprovanteService {
         log.info("Novo comprovante criado: ID={}, nome='{}', arquivo={}, tipo={}, ano/mês={}/{}",
                 salvo.getIdComprovante(), salvo.getNomeComprovante(), salvo.getNomeArquivo(),
                 tipo.getNome(), salvo.getAno(), salvo.getMes());
-
-        // Auditoria
-        String textoLog = String.format(
-                "Comprovante criado: ID=%d, Nome='%s', Tipo='%s', Ano=%d, Mês=%d, Arquivo=%s",
-                salvo.getIdComprovante(), salvo.getNomeComprovante(), tipo.getNome(),
-                salvo.getAno(), salvo.getMes(), salvo.getNomeArquivo());
-        logJetonService.registrarLog("comprovante", idUsuarioLogado, textoLog);
-
         return salvo;
     }
 
+    // =========================================================================
+    // LEITURA
+    // =========================================================================
     @Transactional(readOnly = true)
     public Optional<Comprovante> buscarPorId(Integer id) {
         return comprovanteRepository.findById(id);
     }
 
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
+    @Auditar(tabela = "comprovante", acao = "EXCLUIR", descricao = "Exclusão de comprovante", dadosParametros = "{ 'idComprovante': #id }", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
-    public void excluirComprovante(Integer id, Integer idUsuarioLogado) {
+    public void excluirComprovante(Integer id) {
         comprovanteRepository.findById(id).ifPresent(comp -> {
-            // Coleta informações para o log antes de excluir
-            String nomeComprovante = comp.getNomeComprovante();
-            String nomeArquivo = comp.getNomeArquivo();
-            String tipoAnexo = comp.getTipoAnexo().getNome();
-            int ano = comp.getAno();
-            int mes = comp.getMes();
-
             // Remove o arquivo físico do FTP
             fileStorageService.excluirArquivo(comp.getNomeArquivo(), comp.getAno(), comp.getMes());
             // Remove o registro do banco
             comprovanteRepository.delete(comp);
-
-            log.info("Comprovante excluído: ID={}, nome='{}', arquivo={}", id, nomeComprovante, nomeArquivo);
-
-            String textoLog = String.format(
-                    "Comprovante excluído: ID=%d, Nome='%s', Tipo='%s', Ano=%d, Mês=%d, Arquivo=%s",
-                    id, nomeComprovante, tipoAnexo, ano, mes, nomeArquivo);
-            logJetonService.registrarLog("comprovante", idUsuarioLogado, textoLog);
+            log.info("Comprovante excluído: ID={}, nome='{}', arquivo={}", id, comp.getNomeComprovante(),
+                    comp.getNomeArquivo());
         });
     }
 
+    // =========================================================================
+    // ATUALIZAÇÃO
+    // =========================================================================
+    @Auditar(tabela = "comprovante", acao = "ATUALIZAR", descricao = "Atualização de comprovante (ex: nome)", dadosParametros = "{ 'idComprovante': #comprovante.idComprovante, 'nomeComprovante': #comprovante.nomeComprovante }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
-    public Comprovante atualizar(Comprovante comprovante, Integer idUsuarioLogado) {
+    public Comprovante atualizarComprovante(Comprovante comprovante) {
         Comprovante existente = comprovanteRepository.findById(comprovante.getIdComprovante())
                 .orElseThrow(() -> new RuntimeException("Comprovante não encontrado para atualização"));
 
-        // Registra alterações relevantes (exemplo: nome do comprovante)
-        String nomeAntigo = existente.getNomeComprovante();
-        String nomeNovo = comprovante.getNomeComprovante();
+        // Atualiza apenas campos permitidos (ex: nomeComprovante)
+        existente.setNomeComprovante(comprovante.getNomeComprovante());
+        // Se outros campos forem permitidos, atualize aqui
 
-        Comprovante atualizado = comprovanteRepository.save(comprovante);
-
-        if (!nomeAntigo.equals(nomeNovo)) {
-            log.info("Comprovante ID {} teve nome alterado de '{}' para '{}'",
-                    atualizado.getIdComprovante(), nomeAntigo, nomeNovo);
-            String textoLog = String.format(
-                    "Comprovante ID %d atualizado: nome alterado de '%s' para '%s'",
-                    atualizado.getIdComprovante(), nomeAntigo, nomeNovo);
-            logJetonService.registrarLog("comprovante", idUsuarioLogado, textoLog);
-        } else {
-            // Log genérico se outras propriedades forem alteradas (ex: tipo, etc.)
-            log.debug("Comprovante ID {} atualizado (possíveis alterações não mapeadas)",
-                    atualizado.getIdComprovante());
-            String textoLog = String.format("Comprovante ID %d atualizado (detalhes não especificados)",
-                    atualizado.getIdComprovante());
-            logJetonService.registrarLog("comprovante", idUsuarioLogado, textoLog);
-        }
-
+        Comprovante atualizado = comprovanteRepository.save(existente);
+        log.info("Comprovante atualizado: ID={}, novo nome='{}'", atualizado.getIdComprovante(),
+                atualizado.getNomeComprovante());
         return atualizado;
     }
 
     // =========================================================================
-    // MÉTODOS PRIVADOS AUXILIARES
+    // MÉTODOS PRIVADOS AUXILIARES (sem alterações)
     // =========================================================================
     private YearMonth obterDataAtual() {
         return YearMonth.now();
@@ -149,11 +122,9 @@ public class ComprovanteService {
         if (originalName == null || originalName.isBlank()) {
             throw new RuntimeException("Nome do arquivo inválido.");
         }
-        // Tamanho máximo (ex: 10 MB) – ajuste conforme necessidade
         if (file.getSize() > 10 * 1024 * 1024) {
             throw new RuntimeException("Arquivo excede o tamanho máximo permitido (10 MB).");
         }
-        // Extensão permitida
         String extension = originalName.substring(originalName.lastIndexOf('.') + 1).toLowerCase();
         if (!extension.matches("pdf|jpg|jpeg|png")) {
             throw new RuntimeException("Formato de arquivo não permitido. Use PDF, JPG ou PNG.");

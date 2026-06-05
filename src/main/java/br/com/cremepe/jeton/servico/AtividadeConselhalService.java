@@ -36,15 +36,13 @@ public class AtividadeConselhalService {
     private FileStorageService fileStorageService;
     @Autowired
     private ComprovanteService comprovanteService;
-    @Autowired
-    private UsuarioLogadoService usuarioLogadoService;
 
     // =========================================================================
-    // CRIAÇÃO – retorna a atividade salva (dados completos)
+    // CRIAÇÃO
     // =========================================================================
-    @Auditar(tabela = "atividade_conselhal", acao = "CRIAR", descricao = "Criação de nova atividade com comprovante", dadosParametros = "{ 'idAtividade': #atividade.idAtividade }", dadosRetorno = "#result", auditarExcecao = true)
+    @Auditar(tabela = "atividade_conselhal", acao = "CRIAR", descricao = "Criação de nova atividade", dadosParametros = "{ 'idAtividade': #atividade.idAtividade }", dadosRetorno = "#result", auditarExcecao = true)
     @Transactional
-    public AtividadeConselhal criarAtividadeComComprovante(AtividadeConselhal atividade,
+    public AtividadeConselhal criar(AtividadeConselhal atividade,
             MultipartFile file,
             Integer idTipoAnexo,
             String nomeComprovanteUsuario) {
@@ -61,8 +59,7 @@ public class AtividadeConselhalService {
         }
 
         if (file != null && !file.isEmpty()) {
-            Integer idUsuario = usuarioLogadoService.getIdUsuarioLogado();
-            Comprovante novoComprovante = criarComprovante(file, idTipoAnexo, nomeComprovanteUsuario, idUsuario);
+            Comprovante novoComprovante = criarComprovante(file, idTipoAnexo, nomeComprovanteUsuario);
             atividade.setComprovante(novoComprovante);
         }
 
@@ -72,11 +69,11 @@ public class AtividadeConselhalService {
     }
 
     // =========================================================================
-    // EDIÇÃO – retorna a atividade atualizada (dados completos)
+    // EDIÇÃO
     // =========================================================================
-    @Auditar(tabela = "atividade_conselhal", acao = "EDITAR", descricao = "Edição de atividade existente com comprovante", capturarEstadoAnterior = true, dadosParametros = "{ 'idAtividade': #atividade.idAtividade }", dadosRetorno = "#result", auditarExcecao = true)
+    @Auditar(tabela = "atividade_conselhal", acao = "EDITAR", descricao = "Edição de atividade existente", capturarEstadoAnterior = true, dadosParametros = "{ 'idAtividade': #atividade.idAtividade }", dadosRetorno = "#result", auditarExcecao = true)
     @Transactional
-    public AtividadeConselhal atualizarAtividadeComComprovante(AtividadeConselhal atividade,
+    public AtividadeConselhal atualizar(AtividadeConselhal atividade,
             MultipartFile file,
             Integer idTipoAnexo,
             String nomeComprovanteUsuario,
@@ -94,8 +91,7 @@ public class AtividadeConselhalService {
 
         Comprovante novoComprovante = null;
         if (file != null && !file.isEmpty()) {
-            Integer idUsuario = usuarioLogadoService.getIdUsuarioLogado();
-            novoComprovante = criarComprovante(file, idTipoAnexo, nomeComprovanteUsuario, idUsuario);
+            novoComprovante = criarComprovante(file, idTipoAnexo, nomeComprovanteUsuario);
             atividade.setComprovante(novoComprovante);
         } else if (idComprovanteAntigo != null) {
             Comprovante antigo = comprovanteRepository.findById(idComprovanteAntigo).orElse(null);
@@ -124,7 +120,7 @@ public class AtividadeConselhalService {
             if (outrasAtividades == 0) {
                 comprovanteRepository.findById(idComprovanteAntigo).ifPresent(comp -> {
                     fileStorageService.excluirArquivo(comp.getNomeArquivo(), comp.getAno(), comp.getMes());
-                    comprovanteRepository.delete(comp);
+                    comprovanteService.excluirComprovante(comp.getIdComprovante());
                 });
             }
         }
@@ -138,7 +134,7 @@ public class AtividadeConselhalService {
     // =========================================================================
     @Auditar(tabela = "atividade_conselhal", acao = "VALIDAR", descricao = "Validar atividade pendente", dadosParametros = "{ 'idAtividade': #id }", auditarExcecao = true)
     @Transactional
-    public void validarAtividade(Integer id) {
+    public void validar(Integer id) {
         AtividadeConselhal atividade = buscarAtividadeOuLancarExcecao(id);
         if (AtividadeConselhal.SITUACAO_FECHADA.equals(atividade.getInSituacao())) {
             throw new RuntimeException("Operação negada: Esta atividade está fechada em folha.");
@@ -153,7 +149,7 @@ public class AtividadeConselhalService {
     // =========================================================================
     @Auditar(tabela = "atividade_conselhal", acao = "DESVALIDAR", descricao = "Desvalidar atividade", dadosParametros = "{ 'idAtividade': #id }", auditarExcecao = true)
     @Transactional
-    public void desvalidarAtividade(Integer id) {
+    public void desvalidar(Integer id) {
         AtividadeConselhal atividade = buscarAtividadeOuLancarExcecao(id);
         if (AtividadeConselhal.SITUACAO_FECHADA.equals(atividade.getInSituacao())) {
             throw new RuntimeException("Operação negada: Esta atividade está fechada em folha.");
@@ -172,7 +168,7 @@ public class AtividadeConselhalService {
     // =========================================================================
     @Auditar(tabela = "atividade_conselhal", acao = "EXCLUIR", capturarEstadoAnterior = true, descricao = "Excluir atividade", dadosParametros = "{ 'idAtividade': #id }", auditarExcecao = true)
     @Transactional
-    public void excluirAtividade(Integer id) {
+    public void excluir(Integer id) {
         AtividadeConselhal atividade = buscarAtividadeOuLancarExcecao(id);
 
         if (AtividadeConselhal.SITUACAO_FECHADA.equals(atividade.getInSituacao())
@@ -247,8 +243,8 @@ public class AtividadeConselhalService {
     // MÉTODOS PRIVADOS (sem alterações)
     // =========================================================================
     private Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo,
-            String nomeComprovanteUsuario, Integer idUsuarioLogado) {
-        return comprovanteService.guardarComprovante(file, idTipoAnexo, nomeComprovanteUsuario, idUsuarioLogado);
+            String nomeComprovanteUsuario) {
+        return comprovanteService.criarComprovante(file, idTipoAnexo, nomeComprovanteUsuario);
     }
 
     private void validarAtividadeNaoFechada(Integer idAtividade) {

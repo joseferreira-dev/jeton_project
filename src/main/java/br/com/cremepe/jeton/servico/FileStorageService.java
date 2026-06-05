@@ -164,7 +164,7 @@ public class FileStorageService {
     }
 
     // =========================================================================
-    // AUXILIAR
+    // MÉTODOS AUXILIARES
     // =========================================================================
     private void fecharConexao(ChannelSftp channelSftp, Session session) {
         try {

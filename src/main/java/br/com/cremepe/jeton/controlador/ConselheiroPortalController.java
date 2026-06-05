@@ -237,7 +237,7 @@ public class ConselheiroPortalController {
 
             if (atividade.getIdAtividade() == null) {
                 // Criação
-                atividadeService.criarAtividadeComComprovante(atividade, file, idTipoAnexo, nomeComprovanteUsuario);
+                atividadeService.criar(atividade, file, idTipoAnexo, nomeComprovanteUsuario);
             } else {
                 // Edição
                 Integer idComprovanteAntigo = null;
@@ -245,7 +245,7 @@ public class ConselheiroPortalController {
                 if (existente != null && existente.getComprovante() != null) {
                     idComprovanteAntigo = existente.getComprovante().getIdComprovante();
                 }
-                atividadeService.atualizarAtividadeComComprovante(atividade, file, idTipoAnexo, nomeComprovanteUsuario,
+                atividadeService.atualizar(atividade, file, idTipoAnexo, nomeComprovanteUsuario,
                         idComprovanteAntigo);
             }
             ra.addFlashAttribute("sucesso", "Atividade salva com sucesso!");
@@ -271,7 +271,7 @@ public class ConselheiroPortalController {
                 throw new RuntimeException("Apenas atividades pendentes podem ser excluídas.");
             }
 
-            atividadeService.excluirAtividade(id);
+            atividadeService.excluir(id);
             ra.addFlashAttribute("sucesso", "Atividade excluída com sucesso.");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", e.getMessage());
