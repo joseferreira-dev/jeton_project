@@ -29,7 +29,7 @@ public class Conselheiro implements Serializable {
     private Integer idPessoa;
 
     @NotNull
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "idPessoa")
     private Pessoa pessoa;
@@ -92,9 +92,6 @@ public class Conselheiro implements Serializable {
 
     public void setPessoa(Pessoa pessoa) {
         this.pessoa = pessoa;
-        if (pessoa != null && pessoa.getIdPessoa() != null) {
-            this.idPessoa = pessoa.getIdPessoa();
-        }
     }
 
     public Integer getCrm() {

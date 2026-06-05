@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Pessoa;
 import br.com.cremepe.jeton.dominio.Usuario;
@@ -40,21 +41,19 @@ public class UsuarioService {
     @Autowired
     private ConselheiroRepository conselheiroRepository;
     @Autowired
-    private LogJetonService logJetonService;
-    @Autowired
     private PasswordEncoder passwordEncoder;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
+    @Auditar(tabela = "usuario", acao = "SALVAR", descricao = "Criação ou atualização de usuário", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public Usuario salvar(Usuario usuario, Integer idUsuarioLogado) {
         boolean isNovo = usuario.getIdUsuarioPessoa() == null;
         String nome = usuario.getPessoa().getNome();
         String tipoPessoa = usuario.iseConselheiro() ? "Conselheiro" : "Funcionário";
         String situacao = usuario.getInSituacao();
-        Integer crm = usuario.getCrm();
 
         // 1. Prepara CPF
         Pessoa pessoa = usuario.getPessoa();
@@ -114,25 +113,24 @@ public class UsuarioService {
 
         // 9. Gerencia tabela conselheiro (se necessário)
         if (usuario.iseConselheiro()) {
-            Conselheiro c = conselheiroRepository.findById(usuarioSalvo.getIdUsuarioPessoa())
-                    .orElse(new Conselheiro());
-            c.setIdPessoa(usuarioSalvo.getIdUsuarioPessoa());
-            c.setPessoa(usuarioSalvo.getPessoa());
-            c.setCrm(usuario.getCrm());
-            c.setInSituacao(usuarioSalvo.getInSituacao());
-            conselheiroRepository.save(c);
-            log.debug("Registro de conselheiro sincronizado para ID={}", usuarioSalvo.getIdUsuarioPessoa());
-        } else {
-            usuarioRepository.deletarConselheiroNativo(usuarioSalvo.getIdUsuarioPessoa());
-        }
+            usuarioRepository.flush();
+            Integer idPessoa = usuarioSalvo.getIdUsuarioPessoa();
 
-        // Log de auditoria
-        String textoLog = String.format(
-                "Usuário %s: ID=%d, Nome='%s', CPF=%s, Tipo='%s', Situação='%s'%s",
-                isNovo ? "criado" : "atualizado",
-                usuarioSalvo.getIdUsuarioPessoa(), nome, cpfLimpo, tipoPessoa, situacao,
-                crm != null ? ", CRM=" + crm : "");
-        logJetonService.registrarLog("usuario", idUsuarioLogado, textoLog);
+            Conselheiro conselheiro = conselheiroRepository.findById(idPessoa)
+                    .orElse(new Conselheiro());
+
+            // O @MapsId copiará o id da pessoa automaticamente
+            conselheiro.setPessoa(usuarioSalvo.getPessoa());
+            conselheiro.setCrm(usuario.getCrm());
+            conselheiro.setInSituacao(usuarioSalvo.getInSituacao());
+
+            conselheiroRepository.save(conselheiro);
+            log.debug("Conselheiro salvo/atualizado para ID={}", idPessoa);
+        } else {
+            // Remove se não for conselheiro
+            conselheiroRepository.findById(usuarioSalvo.getIdUsuarioPessoa())
+                    .ifPresent(conselheiroRepository::delete);
+        }
 
         return usuarioSalvo;
     }
@@ -162,20 +160,7 @@ public class UsuarioService {
         }
     }
 
-    private String gerarSHA256(String senha) {
-        try {
-            MessageDigest algoritmo = MessageDigest.getInstance("SHA-256");
-            byte[] messageDigest = algoritmo.digest(senha.getBytes(StandardCharsets.UTF_8));
-            StringBuilder stringHexa = new StringBuilder();
-            for (byte b : messageDigest) {
-                stringHexa.append(String.format("%02X", 0xFF & b));
-            }
-            return stringHexa.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Erro ao processar segurança da senha", e);
-        }
-    }
-
+    @Auditar(tabela = "usuario", acao = "ATUALIZAR_PERFIL", descricao = "Atualização do próprio perfil pelo usuário logado", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public void atualizarPerfil(Usuario usuario, Integer idUsuarioLogado) {
         Usuario existente = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
@@ -201,11 +186,7 @@ public class UsuarioService {
         // Salva (cascade salva a pessoa também)
         usuarioRepository.save(existente);
 
-        // Log da alteração de perfil
-        String textoLog = String.format(
-                "Perfil atualizado: ID=%d, Nome='%s', Email='%s'",
-                existente.getIdUsuarioPessoa(), pessoa.getNome(), pessoa.getEmail());
-        logJetonService.registrarLog("usuario", idUsuarioLogado, textoLog);
+        // Log de auditoria é gerado automaticamente pelo aspecto
         log.info("Perfil do usuário ID={} ({}) atualizado", existente.getIdUsuarioPessoa(),
                 existente.getPessoa().getNome());
     }
@@ -279,9 +260,13 @@ public class UsuarioService {
     // =========================================================================
     // EXCLUSÃO
     // =========================================================================
+
+    @Auditar(tabela = "usuario", acao = "EXCLUIR", descricao = "Exclusão física de usuário", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public void excluir(Integer id, Integer idUsuarioLogado) {
-        // Busca o usuário antes de excluir para obter dados para o log
+        // Busca o usuário antes de excluir para obter dados para o log (o aspecto
+        // também
+        // captura estado anterior, mas mantemos para compatibilidade com logs antigos)
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
         if (usuarioOpt.isEmpty()) {
             log.warn("Tentativa de excluir usuário inexistente ID={}", id);
@@ -308,9 +293,25 @@ public class UsuarioService {
         log.info("Usuário excluído: ID={}, nome='{}', CPF={}, tipo={}, situação={}",
                 id, nome, cpf, tipoPessoa, situacao);
 
-        String textoLog = String.format(
-                "Usuário excluído: ID=%d, Nome='%s', CPF=%s, Tipo='%s', Situação='%s'",
-                id, nome, cpf, tipoPessoa, situacao);
-        logJetonService.registrarLog("usuario", idUsuarioLogado, textoLog);
+        // O aspecto @Auditar já registra o log. Não é mais necessário chamar
+        // logJetonService.registrarLog aqui.
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES PRIVADOS
+    // =========================================================================
+
+    private String gerarSHA256(String senha) {
+        try {
+            MessageDigest algoritmo = MessageDigest.getInstance("SHA-256");
+            byte[] messageDigest = algoritmo.digest(senha.getBytes(StandardCharsets.UTF_8));
+            StringBuilder stringHexa = new StringBuilder();
+            for (byte b : messageDigest) {
+                stringHexa.append(String.format("%02X", 0xFF & b));
+            }
+            return stringHexa.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Erro ao processar segurança da senha", e);
+        }
     }
 }
