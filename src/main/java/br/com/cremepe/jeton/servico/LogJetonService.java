@@ -1,7 +1,9 @@
 package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.dominio.LogJeton;
+import br.com.cremepe.jeton.dominio.Usuario;
 import br.com.cremepe.jeton.repositorio.LogJetonRepository;
+import br.com.cremepe.jeton.repositorio.UsuarioRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,9 @@ public class LogJetonService {
     @Autowired
     private LogJetonRepository logRepository;
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registrarLog(String nomeTabela, Integer idUsuario, String textoLog) {
         if (idUsuario == null) {
@@ -29,9 +34,12 @@ public class LogJetonService {
             return;
         }
 
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado para log: " + idUsuario));
+
         LogJeton logJeton = new LogJeton();
         logJeton.setNomeTabela(nomeTabela);
-        logJeton.setIdUsuario(idUsuario);
+        logJeton.setUsuario(usuario);
         logJeton.setDataHoraLog(LocalDateTime.now());
         logJeton.setTextoLog(textoLog);
 
@@ -41,7 +49,7 @@ public class LogJetonService {
 
     @Transactional(readOnly = true)
     public List<LogJeton> listarLogsPorUsuario(Integer idUsuario) {
-        return logRepository.findByIdUsuarioOrderByDataHoraLogDesc(idUsuario);
+        return logRepository.findByUsuarioIdUsuarioPessoaOrderByDataHoraLogDesc(idUsuario);
     }
 
     @Transactional(readOnly = true)

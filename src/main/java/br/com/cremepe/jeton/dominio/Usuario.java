@@ -6,8 +6,6 @@ import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 /**
  * Entidade JPA que representa a tabela 'usuario'.
  * Possui relacionamento 1:1 com a entidade Pessoa (compartilha a mesma PK).
@@ -32,14 +30,14 @@ public class Usuario implements Serializable {
     private Integer idUsuarioPessoa;
 
     @NotNull
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY) // ANTES: padrão EAGER; DEPOIS:
+                                                                                       // LAZY
     @MapsId
     @JoinColumn(name = "idUsuarioPessoa")
     private Pessoa pessoa;
 
     @Size(max = 64)
     @Column(name = "senha", length = 64)
-    @JsonIgnore
     private String senha;
 
     @NotNull
