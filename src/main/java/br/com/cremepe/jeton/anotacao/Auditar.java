@@ -19,4 +19,6 @@ public @interface Auditar {
     boolean capturarEstadoAnterior() default false;
 
     boolean auditarExcecao() default false;
+
+    boolean incluirRetorno() default true;
 }

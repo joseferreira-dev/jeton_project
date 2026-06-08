@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.NivelAcesso;
 import br.com.cremepe.jeton.dominio.Usuario;
 import br.com.cremepe.jeton.dominio.UsuarioAcesso;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,13 +28,17 @@ public class AcessoService {
     private UsuarioRepository usuarioRepository;
     @Autowired
     private NivelAcessoRepository nivelAcessoRepository;
-    @Autowired
-    private LogJetonService logJetonService;
 
+    // =========================================================================
+    // OPERAÇÕES DE ESCRITA
+    // =========================================================================
+
+    @Auditar(tabela = "usuario_acesso", acao = "CONCEDER", descricao = "Concessão de permissão (nível de acesso) a um usuário", dadosParametros = "{ 'usuarioId': #idUsuario, 'nivelId': #idNivel }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public UsuarioAcesso concederPermissao(Integer idUsuario, String idNivel, Integer idUsuarioLogado) {
         UsuarioAcessoId idComposto = new UsuarioAcessoId(idUsuario, idNivel);
 
+        // Se o vínculo já existir, retorna-o (evita duplicidade)
         return usuarioAcessoRepository.findById(idComposto).orElseGet(() -> {
             Usuario usuario = usuarioRepository.findById(idUsuario)
                     .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + idUsuario));
@@ -49,47 +53,46 @@ public class AcessoService {
             UsuarioAcesso salvo = usuarioAcessoRepository.save(novaPermissao);
             log.info("Permissão concedida: usuário {} -> nível {}", idUsuario, idNivel);
 
-            String textoLog = String.format(
-                    "Permissão concedida: Usuário ID=%d (%s) recebeu nível '%s' (%s)",
-                    idUsuario, usuario.getPessoa().getNome(), idNivel, nivelAcesso.getNomeNivel());
-            logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
-
             return salvo;
         });
     }
 
+    @Auditar(tabela = "usuario_acesso", acao = "REVOGAR", descricao = "Revogação de permissão (nível de acesso) de um usuário", dadosParametros = "{ 'usuarioId': #idUsuario, 'nivelId': #idNivel }", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public void revogarPermissao(Integer idUsuario, String idNivel, Integer idUsuarioLogado) {
-        // Buscar dados antes de revogar para o log
-        Optional<Usuario> usuarioOpt = usuarioRepository.findById(idUsuario);
-        Optional<NivelAcesso> nivelOpt = nivelAcessoRepository.findById(idNivel);
-
-        usuarioAcessoRepository.deleteById(new UsuarioAcessoId(idUsuario, idNivel));
-        log.info("Permissão revogada: usuário {} -> nível {}", idUsuario, idNivel);
-
-        if (usuarioOpt.isPresent() && nivelOpt.isPresent()) {
-            String textoLog = String.format(
-                    "Permissão revogada: Usuário ID=%d (%s) perdeu nível '%s' (%s)",
-                    idUsuario, usuarioOpt.get().getPessoa().getNome(), idNivel, nivelOpt.get().getNomeNivel());
-            logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
-        } else {
-            String textoLog = String.format(
-                    "Permissão revogada: Usuário ID=%d, Nível='%s' (detalhes não encontrados)",
-                    idUsuario, idNivel);
-            logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
+        // Busca os dados antes de excluir para que o aspecto possa
+        // capturá-los (estado anterior). O aspecto já fará isso via
+        // entityManager.find(UsuarioAcesso.class, idComposto), mas
+        // garantimos que a entidade existe antes de deletar
+        UsuarioAcessoId idComposto = new UsuarioAcessoId(idUsuario, idNivel);
+        if (!usuarioAcessoRepository.existsById(idComposto)) {
+            log.warn("Tentativa de revogar permissão inexistente: usuário {}, nível {}", idUsuario, idNivel);
+            return;
         }
+
+        usuarioAcessoRepository.deleteById(idComposto);
+        log.info("Permissão revogada: usuário {} -> nível {}", idUsuario, idNivel);
     }
 
+    @Auditar(tabela = "usuario_acesso", acao = "REVOGAR_TODAS", descricao = "Revogação de todas as permissões de um usuário", dadosParametros = "{ 'usuarioId': #idUsuario }", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public void revogarTodasPermissoes(Integer idUsuario, Integer idUsuarioLogado) {
+        // Busca todas as permissões do usuário para que o aspecto possa
+        // registrar o estado anterior. O aspecto não captura automaticamente
+        // coleções, então usamos dadosParametros para registrar
+        List<UsuarioAcesso> permissoes = usuarioAcessoRepository.findByIdIdUsuarioPessoa(idUsuario);
+        if (permissoes.isEmpty()) {
+            log.info("Nenhuma permissão para revogar do usuário {}", idUsuario);
+            return;
+        }
+
         usuarioAcessoRepository.deleteByUsuarioId(idUsuario);
         log.info("Todas as permissões do usuário {} foram revogadas", idUsuario);
-
-        String textoLog = String.format(
-                "Todas as permissões do usuário ID=%d foram revogadas",
-                idUsuario);
-        logJetonService.registrarLog("usuario_acesso", idUsuarioLogado, textoLog);
     }
+
+    // =========================================================================
+    // OPERAÇÕES DE LEITURA
+    // =========================================================================
 
     @Transactional(readOnly = true)
     public boolean hasPermissao(Integer idUsuario, String idNivel) {

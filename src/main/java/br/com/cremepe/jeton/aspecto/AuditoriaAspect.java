@@ -296,7 +296,7 @@ public class AuditoriaAspect {
 
         // Retorno
         Class<?> returnType = signature.getReturnType();
-        if (retorno != null && returnType != void.class && returnType != Void.class) {
+        if (retorno != null && returnType != void.class && returnType != Void.class && auditar.incluirRetorno()) {
             if (!auditar.dadosRetorno().isEmpty()) {
                 Object retValue = avaliarSpel(joinPoint, auditar.dadosRetorno(), retorno);
                 dados.put("retorno", retValue);
