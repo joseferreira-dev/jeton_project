@@ -2,7 +2,6 @@ package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.NivelAcesso;
 import br.com.cremepe.jeton.dominio.ViewUserLogin;
-import br.com.cremepe.jeton.servico.LogJetonService;
 import br.com.cremepe.jeton.servico.ParametrosService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +20,6 @@ public class BloqueioController {
 
     @Autowired
     private ParametrosService parametrosService;
-    @Autowired
-    private LogJetonService logJetonService;
 
     private boolean temPermissaoBloqueio(HttpSession session) {
         ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
@@ -47,16 +44,9 @@ public class BloqueioController {
             return "redirect:/index";
         }
 
-        String statusAntes = parametrosService.obterStatus();
         parametrosService.alternarBloqueio();
+
         String statusDepois = parametrosService.obterStatus();
-
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        String textoLog = String.format("Sistema %s por %s (ID=%d). Status anterior: %s",
-                "S".equals(statusDepois) ? "BLOQUEADO" : "LIBERADO",
-                usuario.getNome(), usuario.getIdPessoa(), statusAntes);
-        logJetonService.registrarLog("parametros", usuario.getIdPessoa(), textoLog);
-
         ra.addFlashAttribute("sucesso",
                 "Sistema " + ("S".equals(statusDepois) ? "bloqueado" : "liberado") + " com sucesso.");
         return "redirect:/index";

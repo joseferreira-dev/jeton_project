@@ -1,13 +1,18 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.Parametros;
 import br.com.cremepe.jeton.repositorio.ParametrosRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ParametrosService {
+
+    private static final Logger log = LoggerFactory.getLogger(ParametrosService.class);
 
     @Autowired
     private ParametrosRepository repository;
@@ -32,11 +37,14 @@ public class ParametrosService {
         return params.getBloqueaSistema();
     }
 
+    @Auditar(tabela = "parametros", acao = "ALTERAR_BLOQUEIO", descricao = "Alterna o bloqueio do sistema", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = true)
     @Transactional
-    public void alternarBloqueio() {
+    public String alternarBloqueio() {
         Parametros params = repository.findById(1).orElseGet(Parametros::new);
         String novoStatus = "S".equals(params.getBloqueaSistema()) ? "N" : "S";
         params.setBloqueaSistema(novoStatus);
         repository.save(params);
+        log.info("Status do bloqueio alterado para: {}", "S".equals(novoStatus) ? "BLOQUEADO" : "LIBERADO");
+        return novoStatus == "S" ? "BLOQUEADO" : "LIBERADO";
     }
 }
