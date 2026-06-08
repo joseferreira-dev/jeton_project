@@ -1,7 +1,6 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.NivelAcesso;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.NivelAcessoService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -58,13 +57,20 @@ public class NivelAcessoController {
     // SALVAR (CRIAR / ATUALIZAR)
     // =========================================================================
     @PostMapping("/salvar")
-    public String salvar(@Valid @ModelAttribute("nivelAcesso") NivelAcesso nivelAcesso,
+    public String salvar(@Valid @ModelAttribute("nivelAcesso") NivelAcesso nivel,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            nivelAcessoService.salvar(nivelAcesso, idUsuarioLogado);
-            redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso salvo com sucesso!");
+            boolean isNovo = (nivel.getIdNivel() == null || nivel.getIdNivel().trim().isEmpty())
+                    || !nivelAcessoService.buscarPorId(nivel.getIdNivel()).isPresent();
+
+            if (isNovo) {
+                nivelAcessoService.criar(nivel);
+                redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso criado com sucesso!");
+            } else {
+                nivelAcessoService.atualizar(nivel);
+                redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso atualizado com sucesso!");
+            }
         } catch (Exception e) {
             log.error("Erro ao salvar nível de acesso: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("erro", "Erro ao salvar: " + e.getMessage());
@@ -80,8 +86,7 @@ public class NivelAcessoController {
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            nivelAcessoService.excluir(id, idUsuarioLogado);
+            nivelAcessoService.excluir(id);
             redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso removido!");
         } catch (DataIntegrityViolationException e) {
             log.error("Erro de integridade ao excluir nível {}: {}", id, e.getMessage());
@@ -99,10 +104,5 @@ public class NivelAcessoController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }
