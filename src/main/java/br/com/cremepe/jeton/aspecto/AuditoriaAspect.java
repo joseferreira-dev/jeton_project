@@ -74,7 +74,7 @@ public class AuditoriaAspect {
         }
         AuditoriaContext.setUsuario(usuario);
 
-        if (auditar.capturarEstadoAnterior() || auditar.acao().equals("EXCLUIR")) {
+        if (auditar.capturarEstadoAnterior()) {
             capturarEstadoAnterior(joinPoint, auditar);
         }
     }

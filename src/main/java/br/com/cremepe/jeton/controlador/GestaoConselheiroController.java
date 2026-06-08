@@ -3,7 +3,6 @@ package br.com.cremepe.jeton.controlador;
 import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Gestao;
 import br.com.cremepe.jeton.dominio.GestaoConselheiro;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
@@ -86,13 +85,12 @@ public class GestaoConselheiroController {
             return "redirect:/login";
 
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
             GestaoConselheiro vinculo = gestaoConselheiroService.buscarOuFalhar(idGestao, idPessoa);
             if (vinculo.isAtivo()) {
-                gestaoConselheiroService.inativarVinculo(idGestao, idPessoa, idUsuarioLogado);
+                gestaoConselheiroService.inativarVinculo(idGestao, idPessoa);
                 ra.addFlashAttribute("sucesso", "O vínculo foi INATIVADO com sucesso.");
             } else {
-                gestaoConselheiroService.ativarVinculo(idGestao, idPessoa, idUsuarioLogado);
+                gestaoConselheiroService.ativarVinculo(idGestao, idPessoa);
                 ra.addFlashAttribute("sucesso",
                         "O vínculo foi ATIVADO com sucesso. (Outras gestões foram inativadas automaticamente)");
             }
@@ -108,9 +106,19 @@ public class GestaoConselheiroController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            gestaoConselheiroService.salvar(vinculo, idUsuarioLogado);
-            ra.addFlashAttribute("sucesso", "Vínculo de conselheiro guardado com sucesso!");
+            Integer idGestao = vinculo.getGestao().getIdGestao();
+            Integer idPessoa = vinculo.getConselheiro().getIdPessoa();
+
+            // Verifica se o vínculo já existe
+            boolean exists = gestaoConselheiroService.buscarPorId(idGestao, idPessoa).isPresent();
+
+            if (!exists) {
+                gestaoConselheiroService.criar(vinculo);
+                ra.addFlashAttribute("sucesso", "Vínculo de conselheiro criado com sucesso!");
+            } else {
+                gestaoConselheiroService.atualizar(vinculo);
+                ra.addFlashAttribute("sucesso", "Vínculo de conselheiro atualizado com sucesso!");
+            }
         } catch (Exception e) {
             log.error("Erro ao salvar vínculo: {}", e.getMessage());
             ra.addFlashAttribute("erro", "Erro ao guardar o vínculo: " + e.getMessage());
@@ -124,8 +132,7 @@ public class GestaoConselheiroController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            gestaoConselheiroService.excluir(idGestao, idPessoa, idUsuarioLogado);
+            gestaoConselheiroService.excluir(idGestao, idPessoa);
             ra.addFlashAttribute("sucesso", "Vínculo removido com sucesso!");
         } catch (Exception e) {
             log.error("Erro ao excluir vínculo {}/{}: {}", idGestao, idPessoa, e.getMessage());
@@ -173,8 +180,7 @@ public class GestaoConselheiroController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            gestaoConselheiroService.atualizarVinculosEmMassa(idGestao, conselheirosIds, idUsuarioLogado);
+            gestaoConselheiroService.atualizarVinculosEmMassa(idGestao, conselheirosIds);
             ra.addFlashAttribute("sucesso", "Vínculos atualizados com sucesso!");
         } catch (Exception e) {
             log.error("Erro ao atualizar vínculos em massa para gestão {}: {}", idGestao, e.getMessage());
@@ -188,11 +194,6 @@ public class GestaoConselheiroController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 
     private void carregarListasDeApoio(Model model) {
