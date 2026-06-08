@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.Portaria;
 import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.dominio.Resolucao;
@@ -34,23 +35,37 @@ public class RegrasService {
     private PortariaRepository portariaRepository;
     @Autowired
     private AtividadeConselhalRepository atividadeRepository;
-    @Autowired
-    private LogJetonService logJetonService;
 
     // =========================================================================
-    // OPERAÇÕES DE ESCRITA (CRUD)
+    // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
+    @Auditar(tabela = "regras", acao = "CRIAR", descricao = "Criação de nova regra de pontuação", dadosParametros = "{ 'nomeRegra': #regra.nomeRegra, 'pontos': #regra.pontos, 'pontosLimitesTurno': #regra.pontosLimitesTurno, 'inJudicante': #regra.inJudicante, 'idResolucao': #regra.resolucao?.idResolucao, 'idPortaria': #regra.portaria?.idPortaria }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
-    public Regras salvar(Regras regra, Integer idUsuarioLogado) {
-        boolean isNovo = regra.getIdRegra() == null;
-        String nomeRegra = regra.getNomeRegra();
-        Integer pontos = regra.getPontos();
-        Integer limiteTurno = regra.getPontosLimitesTurno();
-        String judicante = regra.getInJudicante();
-        String revogado = regra.getInRevogado();
+    public Regras criar(Regras regra) {
+        regra.setIdRegra(null); // força criação
+        return salvarRegra(regra, true);
+    }
 
-        // Carrega a Resolução gerenciada do banco
+    @Auditar(tabela = "regras", acao = "ATUALIZAR", descricao = "Atualização de regra de pontuação existente", dadosParametros = "{ 'id': #regra.idRegra, 'nomeRegra': #regra.nomeRegra, 'pontos': #regra.pontos, 'pontosLimitesTurno': #regra.pontosLimitesTurno, 'inJudicante': #regra.inJudicante, 'idResolucao': #regra.resolucao?.idResolucao, 'idPortaria': #regra.portaria?.idPortaria }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
+    @Transactional
+    public Regras atualizar(Regras regra) {
+        if (regra.getIdRegra() == null) {
+            throw new RuntimeException("ID da regra não informado para atualização.");
+        }
+        if (!repository.existsById(regra.getIdRegra())) {
+            throw new RuntimeException("Regra não encontrada para atualização.");
+        }
+        return salvarRegra(regra, false);
+    }
+
+    /**
+     * Método privado com a lógica comum de persistência.
+     * 
+     * @param isNovo true para criação, false para atualização
+     */
+    private Regras salvarRegra(Regras regra, boolean isNovo) {
+        // Carrega a Resolução gerenciada
         Resolucao resolucaoManaged = carregarResolucaoGerenciada(regra.getResolucao());
         regra.setResolucao(resolucaoManaged);
 
@@ -62,29 +77,15 @@ public class RegrasService {
             regra.setPortaria(null);
         }
 
-        // Validações
         validarPortaria(regra);
         validarDuplicidade(regra);
         normalizarFlags(regra);
 
-        // Salva a regra
         Regras salva = repository.save(regra);
         log.info("Regra {}: id={}, nome='{}', pontos={}, limiteTurno={}, judicante={}, revogado={}",
                 isNovo ? "criada" : "atualizada",
-                salva.getIdRegra(), nomeRegra, pontos, limiteTurno, judicante, revogado);
-
-        // Log de auditoria
-        String textoLog = String.format(
-                "Regra %s: ID=%d, Nome='%s', Pontos=%d, LimiteTurno=%d, Judicante='%s', Revogado='%s', Resolução='%s' (ID=%d)%s",
-                isNovo ? "criada" : "atualizada",
-                salva.getIdRegra(), nomeRegra, pontos, limiteTurno, judicante, revogado,
-                resolucaoManaged.getNumero() + "/" + resolucaoManaged.getAno(), resolucaoManaged.getIdResolucao(),
-                regra.getPortaria() != null
-                        ? String.format(", Portaria='%d/%d' (ID=%d)", regra.getPortaria().getNumero(),
-                                regra.getPortaria().getAno(), regra.getPortaria().getIdPortaria())
-                        : "");
-        logJetonService.registrarLog("regras", idUsuarioLogado, textoLog);
-
+                salva.getIdRegra(), salva.getNomeRegra(), salva.getPontos(),
+                salva.getPontosLimitesTurno(), salva.getInJudicante(), salva.getInRevogado());
         return salva;
     }
 
@@ -121,48 +122,61 @@ public class RegrasService {
     private void normalizarFlags(Regras regra) {
         if (regra.getInRevogado() == null || regra.getInRevogado().trim().isEmpty()) {
             regra.setInRevogado(Regras.REVOGADO_NAO);
+        } else {
+            regra.setInRevogado(regra.getInRevogado().toUpperCase());
         }
         if (regra.getInJudicante() == null || regra.getInJudicante().trim().isEmpty()) {
             regra.setInJudicante(Regras.JUDICANTE_NAO);
+        } else {
+            regra.setInJudicante(regra.getInJudicante().toUpperCase());
         }
         if (regra.getPontos() == null)
             regra.setPontos(0);
         if (regra.getPontosLimitesTurno() == null)
             regra.setPontosLimitesTurno(0);
+        if (regra.getNomeRegra() != null)
+            regra.setNomeRegra(regra.getNomeRegra().trim());
     }
 
+    // =========================================================================
+    // REVOGAÇÃO
+    // =========================================================================
+
+    @Auditar(tabela = "regras", acao = "REVOGAR", descricao = "Revogação de regra de pontuação", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void revogar(Integer id, Integer idUsuarioLogado) {
+    public void revogar(Integer id) {
         Regras regra = buscarOuFalhar(id);
         if (regra.isRevogado()) {
             throw new RuntimeException("A regra já está revogada.");
         }
-        String nome = regra.getNomeRegra();
         regra.setInRevogado(Regras.REVOGADO_SIM);
         repository.save(regra);
-        log.info("Regra revogada: id={}, nome={}", id, nome);
-
-        String textoLog = String.format("Regra revogada: ID=%d, Nome='%s'", id, nome);
-        logJetonService.registrarLog("regras", idUsuarioLogado, textoLog);
+        log.info("Regra revogada: id={}, nome={}", id, regra.getNomeRegra());
     }
 
+    // =========================================================================
+    // RESTAURAÇÃO
+    // =========================================================================
+
+    @Auditar(tabela = "regras", acao = "RESTAURAR", descricao = "Restauração de regra revogada (volta a ficar em vigor)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void restaurar(Integer id, Integer idUsuarioLogado) {
+    public void restaurar(Integer id) {
         Regras regra = buscarOuFalhar(id);
         if (!regra.isRevogado()) {
             throw new RuntimeException("A regra já está em vigor.");
         }
-        String nome = regra.getNomeRegra();
         regra.setInRevogado(Regras.REVOGADO_NAO);
         repository.save(regra);
-        log.info("Regra restaurada: id={}, nome={}", id, nome);
-
-        String textoLog = String.format("Regra restaurada: ID=%d, Nome='%s'", id, nome);
-        logJetonService.registrarLog("regras", idUsuarioLogado, textoLog);
+        log.info("Regra restaurada: id={}, nome={}", id, regra.getNomeRegra());
     }
 
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
+
+    @Auditar(tabela = "regras", acao = "EXCLUIR", descricao = "Exclusão permanente de regra", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void excluirFisicamente(Integer id, Integer idUsuarioLogado) {
+    public void excluir(Integer id) {
         Regras regra = buscarOuFalhar(id);
         if (!regra.isRevogado()) {
             throw new RuntimeException("Para excluir, a regra deve estar revogada primeiro.");
@@ -172,16 +186,12 @@ public class RegrasService {
             throw new RuntimeException("Não é possível excluir a regra pois existem " + countAtividades +
                     " atividade(s) vinculada(s) a ela. Revogue-a ou use 'Revogar' em vez disso.");
         }
-        String nome = regra.getNomeRegra();
         repository.deleteById(id);
-        log.info("Regra excluída: id={}, nome={}", id, nome);
-
-        String textoLog = String.format("Regra excluída: ID=%d, Nome='%s'", id, nome);
-        logJetonService.registrarLog("regras", idUsuarioLogado, textoLog);
+        log.info("Regra excluída: id={}, nome={}", id, regra.getNomeRegra());
     }
 
     // =========================================================================
-    // OPERAÇÕES DE LEITURA (CONSULTAS)
+    // OPERAÇÕES DE LEITURA
     // =========================================================================
 
     @Transactional(readOnly = true)
@@ -257,10 +267,8 @@ public class RegrasService {
     @Transactional(readOnly = true)
     public List<Regras> listarRegrasPorResolucao(Integer resolucaoId) {
         if (resolucaoId == null) {
-            // Retorna todas as regras (independente do status)
             return repository.findAll();
         }
-        // Retorna todas as regras da resolução específica (revogadas ou não)
         return repository.findByResolucaoIdResolucao(resolucaoId);
     }
 }

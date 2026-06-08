@@ -1,7 +1,6 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Regras;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.RegrasService;
 import br.com.cremepe.jeton.servico.PortariaService;
 import br.com.cremepe.jeton.servico.ResolucaoService;
@@ -114,9 +113,15 @@ public class RegrasController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            regrasService.salvar(regra, idUsuarioLogado);
-            ra.addFlashAttribute("sucesso", "Regra salva com sucesso!");
+            boolean isNovo = regra.getIdRegra() == null;
+
+            if (isNovo) {
+                regrasService.criar(regra);
+                ra.addFlashAttribute("sucesso", "Regra criada com sucesso!");
+            } else {
+                regrasService.atualizar(regra);
+                ra.addFlashAttribute("sucesso", "Regra atualizada com sucesso!");
+            }
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
@@ -133,8 +138,7 @@ public class RegrasController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            regrasService.revogar(id, idUsuarioLogado);
+            regrasService.revogar(id);
             ra.addFlashAttribute("sucesso", "Regra revogada com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -152,8 +156,7 @@ public class RegrasController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            regrasService.restaurar(id, idUsuarioLogado);
+            regrasService.restaurar(id);
             ra.addFlashAttribute("sucesso", "Regra restaurada (em vigor) com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -167,12 +170,11 @@ public class RegrasController {
     // EXCLUSÃO PERMANENTE
     // =========================================================================
     @GetMapping("/deletar/{id}")
-    public String deletarFisicamente(@PathVariable("id") Integer id,
+    public String deletar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            regrasService.excluirFisicamente(id, idUsuarioLogado);
+            regrasService.excluir(id);
             ra.addFlashAttribute("sucesso", "Regra excluída definitivamente.");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -187,10 +189,5 @@ public class RegrasController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }
