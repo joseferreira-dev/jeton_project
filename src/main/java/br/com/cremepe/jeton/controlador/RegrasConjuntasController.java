@@ -2,7 +2,6 @@ package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.dominio.RegrasConjuntas;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.RegrasConjuntasService;
 import br.com.cremepe.jeton.servico.RegrasService;
 import br.com.cremepe.jeton.servico.ResolucaoService;
@@ -98,9 +97,15 @@ public class RegrasConjuntasController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            regrasConjuntasService.salvar(regrasConjuntas, idUsuarioLogado);
-            ra.addFlashAttribute("sucesso", "Regras Conjuntas salvas com sucesso!");
+            boolean isNovo = regrasConjuntas.getIdRegraConjunta() == null;
+
+            if (isNovo) {
+                regrasConjuntasService.criar(regrasConjuntas);
+                ra.addFlashAttribute("sucesso", "Regras Conjuntas criadas com sucesso!");
+            } else {
+                regrasConjuntasService.atualizar(regrasConjuntas);
+                ra.addFlashAttribute("sucesso", "Regras Conjuntas atualizadas com sucesso!");
+            }
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
@@ -117,8 +122,7 @@ public class RegrasConjuntasController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            regrasConjuntasService.excluir(id, idUsuarioLogado);
+            regrasConjuntasService.excluir(id);
             ra.addFlashAttribute("sucesso", "Regra Conjunta removida com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -133,10 +137,5 @@ public class RegrasConjuntasController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }
