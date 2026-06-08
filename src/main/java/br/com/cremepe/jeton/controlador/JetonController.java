@@ -4,7 +4,6 @@ import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Gestao;
 import br.com.cremepe.jeton.dominio.Jeton;
 import br.com.cremepe.jeton.dominio.PontosSaldo;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.dto.AtividadeRelatorioDTO;
 import br.com.cremepe.jeton.dto.ConselheiroRelatorioDTO;
 import br.com.cremepe.jeton.dto.RelatorioGeralDTO;
@@ -143,8 +142,7 @@ public class JetonController {
             if (gestaoOpt.isEmpty()) {
                 throw new RuntimeException("Gestão não encontrada.");
             }
-            Integer idUsuario = getIdUsuarioLogado(session);
-            jetonService.processarFechamentoMensal(gestaoOpt.get(), mes, ano, idUsuario);
+            jetonService.processarFechamentoMensal(gestaoOpt.get(), mes, ano);
             ra.addFlashAttribute("sucesso", "Cálculo da folha mensal executado com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -168,8 +166,7 @@ public class JetonController {
             if (gestaoOpt.isEmpty()) {
                 throw new RuntimeException("Gestão não encontrada.");
             }
-            Integer idUsuario = getIdUsuarioLogado(session);
-            jetonService.realizarFechamentoDefinitivoFolha(gestaoOpt.get(), mes, ano, idUsuario);
+            jetonService.realizarFechamentoDefinitivoFolha(gestaoOpt.get(), mes, ano);
             ra.addFlashAttribute("sucesso", "Folha fechada e homologada definitivamente para " + mes + "/" + ano);
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -187,8 +184,7 @@ public class JetonController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuario = getIdUsuarioLogado(session);
-            jetonService.estornarJetonPontual(idJeton, idUsuario);
+            jetonService.estornarJetonPontual(idJeton);
             ra.addFlashAttribute("sucesso", "Jeton estornado com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -719,10 +715,5 @@ public class JetonController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }

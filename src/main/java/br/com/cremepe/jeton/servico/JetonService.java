@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.*;
 import br.com.cremepe.jeton.dto.AtividadeRelatorioDTO;
 import br.com.cremepe.jeton.dto.ConselheiroRelatorioDTO;
@@ -40,11 +41,7 @@ public class JetonService {
     @Autowired
     private RegrasService regrasService;
     @Autowired
-    private LogJetonService logJetonService;
-    @Autowired
     private ConselheiroRepository conselheiroRepository;
-    @Autowired
-    private PessoaRepository pessoaRepository;
     @Autowired
     private GestaoRepository gestaoRepository;
 
@@ -94,8 +91,9 @@ public class JetonService {
     // PROCESSAMENTO
     // =========================================================================
 
+    @Auditar(tabela = "jeton", acao = "PROCESSAR_FOLHA", descricao = "Processamento mensal de folha de jetons", dadosParametros = "{ 'idGestao': #gestao.idGestao, 'nomeGestao': #gestao.nomeGestao, 'mes': #mes, 'ano': #ano }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void processarFechamentoMensal(Gestao gestao, Integer mes, Integer ano, Integer idUsuarioLogado) {
+    public void processarFechamentoMensal(Gestao gestao, Integer mes, Integer ano) {
         String nomeGestao = gestao.getNomeGestao();
         log.info("Iniciando processamento mensal: gestão '{}' (ID={}), competência {}/{}",
                 nomeGestao, gestao.getIdGestao(), mes, ano);
@@ -106,14 +104,14 @@ public class JetonService {
                     " já foi homologada e não pode ser recalculada.");
         }
 
-        // Trava 1: Nenhuma atividade pendente
+        // Trava 2: Nenhuma atividade pendente
         long pendentesNoMes = atividadeRepository.contarAtividadesPendentesNoMes(gestao.getIdGestao(), mes, ano);
         if (pendentesNoMes > 0) {
             throw new RuntimeException("Cálculo bloqueado: existem " + pendentesNoMes +
                     " atividade(s) pendentes no período. Valide-as ou exclua-as antes de processar.");
         }
 
-        // Trava 2: Meses anteriores devem estar fechados
+        // Trava 3: Meses anteriores devem estar fechados
         LocalDateTime inicioDoMes = LocalDate.of(ano, mes, 1).atStartOfDay();
         long anterioresNaoFechadas = atividadeRepository.contarAtividadesAnterioresNaoFechadas(gestao.getIdGestao(),
                 inicioDoMes);
@@ -242,8 +240,7 @@ public class JetonService {
                     primeiroJetonSalvo = jeton;
 
                 log.debug("   Gerado {} jetons para {} no valor total de {} ({} por jeton)",
-                        entry.getValue(), nomeConselheiro, jeton.getValor().toString(),
-                        valorBase.toString());
+                        entry.getValue(), nomeConselheiro, jeton.getValor().toString(), valorBase.toString());
             }
 
             // Consumo fracionado (splitting)
@@ -297,16 +294,6 @@ public class JetonService {
                     .add(primeiroJetonSalvo != null ? primeiroJetonSalvo.getValor() : BigDecimal.ZERO);
         }
 
-        // Registro de auditoria com detalhes
-        String nomeUsuario = obterNomeUsuario(idUsuarioLogado);
-        String textoLog = String.format(
-                "Processamento mensal concluído para gestão '%s' (ID=%d), competência %d/%d. " +
-                        "Conselheiros processados: %d, Total de Jetons gerados: %d, Valor total: %s. " +
-                        "Executado por: %s (ID=%d)",
-                nomeGestao, gestao.getIdGestao(), mes, ano,
-                totalConselheirosProcessados, totalJetonsGeradosGeral, totalValorPagoGeral.toString(),
-                nomeUsuario, idUsuarioLogado);
-        logJetonService.registrarLog("jeton", idUsuarioLogado, textoLog);
         log.info("Processamento mensal finalizado: gestão '{}', {}/{} - {} conselheiros, {} jetons, valor total {}",
                 nomeGestao, mes, ano, totalConselheirosProcessados, totalJetonsGeradosGeral, totalValorPagoGeral);
     }
@@ -362,8 +349,7 @@ public class JetonService {
         }
     }
 
-    @Transactional
-    public void estornarFolhaDoConselheiro(Integer idPessoa, Integer idGestao, Integer mes, Integer ano) {
+    private void estornarFolhaDoConselheiro(Integer idPessoa, Integer idGestao, Integer mes, Integer ano) {
         String nomeConselheiro = conselheiroRepository.findById(idPessoa)
                 .map(c -> c.getPessoa().getNome())
                 .orElse("ID " + idPessoa);
@@ -395,8 +381,9 @@ public class JetonService {
         log.debug("Folha estornada para {} na competência {}/{}", nomeConselheiro, mes, ano);
     }
 
+    @Auditar(tabela = "jeton", acao = "ESTORNAR_PONTUAL", descricao = "Estorno pontual de um Jeton (exclusão lógica)", dadosParametros = "{ 'idJeton': #idJeton }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void estornarJetonPontual(Integer idJeton, Integer idUsuarioLogado) {
+    public void estornarJetonPontual(Integer idJeton) {
         Jeton jeton = jetonRepository.findById(idJeton)
                 .orElseThrow(() -> new RuntimeException("Registro financeiro não encontrado."));
 
@@ -406,7 +393,6 @@ public class JetonService {
 
         String nomeConselheiro = jeton.getConselheiro().getPessoa().getNome();
         String nomeGestao = jeton.getGestao().getNomeGestao();
-        String nomeUsuario = obterNomeUsuario(idUsuarioLogado);
 
         List<PontosSaldo> saldos = pontosSaldoRepository.findByJetonIdJeton(idJeton);
         for (PontosSaldo saldo : saldos) {
@@ -425,24 +411,14 @@ public class JetonService {
 
         jetonRepository.delete(jeton);
 
-        String textoLog = String.format(
-                "Estorno pontual do Jeton ID %d referente ao conselheiro '%s' (ID=%d), gestão '%s' (ID=%d), competência %d/%d. "
-                        +
-                        "Valor estornado: %s, Total de jetons: %d. Executado por: %s (ID=%d)",
-                idJeton, nomeConselheiro, jeton.getConselheiro().getIdPessoa(),
-                nomeGestao, jeton.getGestao().getIdGestao(),
-                jeton.getMes(), jeton.getAno(),
-                jeton.getValor().toString(), jeton.getTotalJeton(),
-                nomeUsuario, idUsuarioLogado);
-        logJetonService.registrarLog("jeton", idUsuarioLogado, textoLog);
         log.info("Jeton estornado pontualmente: ID {} - conselheiro '{}', gestão '{}', {}/{}",
                 idJeton, nomeConselheiro, nomeGestao, jeton.getMes(), jeton.getAno());
     }
 
+    @Auditar(tabela = "jeton", acao = "HOMOLOGAR_FOLHA", descricao = "Homologação e fechamento definitivo da folha mensal", dadosParametros = "{ 'idGestao': #gestao.idGestao, 'nomeGestao': #gestao.nomeGestao, 'mes': #mes, 'ano': #ano }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void realizarFechamentoDefinitivoFolha(Gestao gestao, Integer mes, Integer ano, Integer idUsuarioLogado) {
+    public void realizarFechamentoDefinitivoFolha(Gestao gestao, Integer mes, Integer ano) {
         String nomeGestao = gestao.getNomeGestao();
-        String nomeUsuario = obterNomeUsuario(idUsuarioLogado);
 
         int totalAtualizado = atividadeRepository.fecharAtividadesEmFolha(gestao.getIdGestao(), mes, ano);
         if (totalAtualizado == 0) {
@@ -455,37 +431,20 @@ public class JetonService {
             jetonRepository.save(j);
         }
 
-        String textoLog = String.format(
-                "Fechamento definitivo da folha para gestão '%s' (ID=%d), competência %d/%d. " +
-                        "%d atividades foram fechadas e %d registros de Jeton foram marcados como ENCERRADOS. " +
-                        "Executado por: %s (ID=%d)",
-                nomeGestao, gestao.getIdGestao(), mes, ano, totalAtualizado, jetonsDoMes.size(),
-                nomeUsuario, idUsuarioLogado);
-        logJetonService.registrarLog("jeton", idUsuarioLogado, textoLog);
         log.info("Folha fechada definitivamente: gestão '{}', {}/{} - {} atividades fechadas, {} jetons afetados",
                 nomeGestao, mes, ano, totalAtualizado, jetonsDoMes.size());
     }
 
+    @Auditar(tabela = "jeton", acao = "EXCLUIR", descricao = "Exclusão física de um registro de Jeton", dadosParametros = "{ 'idJeton': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void excluirJeton(Integer id, Integer idUsuarioLogado) {
+    public void excluirJeton(Integer id) {
         Jeton jeton = jetonRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Jeton não encontrado com ID: " + id));
 
         String nomeConselheiro = jeton.getConselheiro().getPessoa().getNome();
         String nomeGestao = jeton.getGestao().getNomeGestao();
-        String nomeUsuario = obterNomeUsuario(idUsuarioLogado);
 
-        String textoLog = String.format(
-                "Exclusão física do Jeton ID %d referente ao conselheiro '%s' (ID=%d), gestão '%s' (ID=%d), competência %d/%d. "
-                        +
-                        "Valor excluído: %s, Total de jetons: %d. Executado por: %s (ID=%d)",
-                id, nomeConselheiro, jeton.getConselheiro().getIdPessoa(),
-                nomeGestao, jeton.getGestao().getIdGestao(),
-                jeton.getMes(), jeton.getAno(),
-                jeton.getValor().toString(), jeton.getTotalJeton(),
-                nomeUsuario, idUsuarioLogado);
         jetonRepository.deleteById(id);
-        logJetonService.registrarLog("jeton", idUsuarioLogado, textoLog);
         log.info("Jeton excluído fisicamente: ID {} - conselheiro '{}', gestão '{}', {}/{}",
                 id, nomeConselheiro, nomeGestao, jeton.getMes(), jeton.getAno());
     }
@@ -493,12 +452,18 @@ public class JetonService {
     // =========================================================================
     // MÉTODOS AUXILIARES PRIVADOS
     // =========================================================================
-    private String obterNomeUsuario(Integer idUsuario) {
-        if (idUsuario == null)
-            return "SISTEMA (usuário não identificado)";
-        return pessoaRepository.findById(idUsuario)
-                .map(Pessoa::getNome)
-                .orElse("Usuário ID " + idUsuario);
+
+    private boolean isFolhaHomologada(Integer idGestao, Integer mes, Integer ano) {
+        // Jetons com status 'E' (Excluído/Homologado)
+        List<Jeton> jetonsHomologados = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano)
+                .stream().filter(j -> Jeton.SITUACAO_EXCLUIDO.equals(j.getInSituacao()))
+                .toList();
+        if (!jetonsHomologados.isEmpty())
+            return true;
+
+        // Atividades com situação 'F' (Fechada) na competência
+        long atividadesFechadas = atividadeRepository.countAtividadesFechadasNoPeriodo(idGestao, mes, ano);
+        return atividadesFechadas > 0;
     }
 
     public List<Jeton> listarPorConselheiro(Integer idPessoa) {
@@ -511,24 +476,11 @@ public class JetonService {
         return page.getContent();
     }
 
-    // Verifica se já existe processamento homologado para a competência
-    private boolean isFolhaHomologada(Integer idGestao, Integer mes, Integer ano) {
-        // Jetons com status 'E' (Excluído/Homologado)
-        List<Jeton> jetonsHomologados = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano)
-                .stream().filter(j -> Jeton.SITUACAO_EXCLUIDO.equals(j.getInSituacao()))
-                .toList();
-        if (!jetonsHomologados.isEmpty())
-            return true;
-
-        // Atividades com situação 'F' (Fechada) na competência
-        // (consideramos a data de registro, pois é o mês de processamento)
-        long atividadesFechadas = atividadeRepository.countAtividadesFechadasNoPeriodo(idGestao, mes, ano);
-        return atividadesFechadas > 0;
-    }
-
     // =========================================================================
     // RELATÓRIO
     // =========================================================================
+
+    @Transactional(readOnly = true)
     public RelatorioGeralDTO gerarRelatorioGeral(Integer idGestao, Integer mes, Integer ano) {
         Gestao gestao = gestaoRepository.findById(idGestao)
                 .orElseThrow(() -> new RuntimeException("Gestão não encontrada"));
@@ -605,7 +557,6 @@ public class JetonService {
             dto.setAtividades(atividadesDTO);
         }
 
-        // Monta o DTO geral
         RelatorioGeralDTO geral = new RelatorioGeralDTO();
         geral.setIdGestao(idGestao);
         geral.setNomeGestao(gestao.getNomeGestao());
