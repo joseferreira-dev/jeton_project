@@ -1,4 +1,4 @@
-package br.com.cremepe.jeton.seguranca;
+package br.com.cremepe.jeton.security;
 
 import br.com.cremepe.jeton.domain.NivelAcesso;
 import br.com.cremepe.jeton.domain.ViewUserLogin;

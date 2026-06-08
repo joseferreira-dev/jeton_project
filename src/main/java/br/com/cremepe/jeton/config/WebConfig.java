@@ -1,10 +1,11 @@
 package br.com.cremepe.jeton.config;
 
-import br.com.cremepe.jeton.seguranca.AutorizacaoInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import br.com.cremepe.jeton.security.AutorizacaoInterceptor;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
