@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.controller;
 
 import br.com.cremepe.jeton.domain.TipoAnexo;
-import br.com.cremepe.jeton.servico.TipoAnexoService;
+import br.com.cremepe.jeton.service.TipoAnexoService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;

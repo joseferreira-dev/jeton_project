@@ -1,8 +1,8 @@
 package br.com.cremepe.jeton.controller;
 
 import br.com.cremepe.jeton.domain.Comprovante;
-import br.com.cremepe.jeton.servico.ComprovanteService;
-import br.com.cremepe.jeton.servico.FileStorageService;
+import br.com.cremepe.jeton.service.ComprovanteService;
+import br.com.cremepe.jeton.service.FileStorageService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -2,7 +2,7 @@ package br.com.cremepe.jeton.controller;
 
 import br.com.cremepe.jeton.domain.NivelAcesso;
 import br.com.cremepe.jeton.domain.ViewUserLogin;
-import br.com.cremepe.jeton.servico.ParametrosService;
+import br.com.cremepe.jeton.service.ParametrosService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;

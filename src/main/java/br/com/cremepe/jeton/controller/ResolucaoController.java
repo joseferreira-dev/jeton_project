@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.controller;
 
 import br.com.cremepe.jeton.domain.Resolucao;
-import br.com.cremepe.jeton.servico.ResolucaoService;
+import br.com.cremepe.jeton.service.ResolucaoService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;

@@ -3,8 +3,9 @@ package br.com.cremepe.jeton.aspect;
 import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.annotation.AuditoriaContext;
 import br.com.cremepe.jeton.annotation.AuditoriaUser;
-import br.com.cremepe.jeton.servico.LogJetonService;
-import br.com.cremepe.jeton.servico.UsuarioLogadoService;
+import br.com.cremepe.jeton.service.LogJetonService;
+import br.com.cremepe.jeton.service.UsuarioLogadoService;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;

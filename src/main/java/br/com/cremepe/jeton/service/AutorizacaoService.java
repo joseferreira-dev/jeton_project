@@ -1,4 +1,4 @@
-package br.com.cremepe.jeton.servico;
+package br.com.cremepe.jeton.service;
 
 import org.springframework.stereotype.Service;
 

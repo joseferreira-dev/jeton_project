@@ -1,9 +1,9 @@
 package br.com.cremepe.jeton.controller;
 
 import br.com.cremepe.jeton.domain.PontosSaldo;
-import br.com.cremepe.jeton.servico.ConselheiroService;
-import br.com.cremepe.jeton.servico.GestaoService;
-import br.com.cremepe.jeton.servico.PontosSaldoService;
+import br.com.cremepe.jeton.service.ConselheiroService;
+import br.com.cremepe.jeton.service.GestaoService;
+import br.com.cremepe.jeton.service.PontosSaldoService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;

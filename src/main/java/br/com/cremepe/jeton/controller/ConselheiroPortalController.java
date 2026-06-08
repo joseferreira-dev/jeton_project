@@ -4,7 +4,7 @@ import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repository.JetonRepository;
 import br.com.cremepe.jeton.repository.PontosSaldoRepository;
-import br.com.cremepe.jeton.servico.*;
+import br.com.cremepe.jeton.service.*;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;

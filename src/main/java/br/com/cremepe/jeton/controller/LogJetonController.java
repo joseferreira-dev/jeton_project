@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.controller;
 
-import br.com.cremepe.jeton.servico.LogJetonService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -13,6 +12,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import br.com.cremepe.jeton.service.LogJetonService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

@@ -9,9 +9,9 @@ import br.com.cremepe.jeton.dto.ConselheiroRelatorioDTO;
 import br.com.cremepe.jeton.dto.RelatorioGeralDTO;
 import br.com.cremepe.jeton.repository.JetonRepository;
 import br.com.cremepe.jeton.repository.PontosSaldoRepository;
-import br.com.cremepe.jeton.servico.ConselheiroService;
-import br.com.cremepe.jeton.servico.GestaoService;
-import br.com.cremepe.jeton.servico.JetonService;
+import br.com.cremepe.jeton.service.ConselheiroService;
+import br.com.cremepe.jeton.service.GestaoService;
+import br.com.cremepe.jeton.service.JetonService;
 import jakarta.servlet.http.HttpSession;
 
 import org.apache.poi.ss.usermodel.BorderStyle;

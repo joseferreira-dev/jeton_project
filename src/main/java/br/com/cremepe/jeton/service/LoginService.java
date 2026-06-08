@@ -1,4 +1,4 @@
-package br.com.cremepe.jeton.servico;
+package br.com.cremepe.jeton.service;
 
 import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.annotation.AuditoriaContext;

@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.controller;
 
 import br.com.cremepe.jeton.domain.NivelAcesso;
-import br.com.cremepe.jeton.servico.NivelAcessoService;
+import br.com.cremepe.jeton.service.NivelAcessoService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;

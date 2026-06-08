@@ -1,4 +1,4 @@
-package br.com.cremepe.jeton.servico;
+package br.com.cremepe.jeton.service;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;

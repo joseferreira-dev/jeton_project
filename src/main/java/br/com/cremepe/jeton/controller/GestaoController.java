@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.controller;
 
 import br.com.cremepe.jeton.domain.Gestao;
-import br.com.cremepe.jeton.servico.GestaoService;
+import br.com.cremepe.jeton.service.GestaoService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

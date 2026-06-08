@@ -1,4 +1,4 @@
-package br.com.cremepe.jeton.servico;
+package br.com.cremepe.jeton.service;
 
 import br.com.cremepe.jeton.annotation.AuditoriaUser;
 import br.com.cremepe.jeton.domain.ViewUserLogin;

@@ -1,9 +1,5 @@
 package br.com.cremepe.jeton.controller;
 
-import br.com.cremepe.jeton.servico.ConselheiroService;
-import br.com.cremepe.jeton.servico.GestaoService;
-import br.com.cremepe.jeton.servico.RelatorioService;
-
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -12,6 +8,10 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import br.com.cremepe.jeton.service.ConselheiroService;
+import br.com.cremepe.jeton.service.GestaoService;
+import br.com.cremepe.jeton.service.RelatorioService;
 
 import java.time.LocalDate;
 

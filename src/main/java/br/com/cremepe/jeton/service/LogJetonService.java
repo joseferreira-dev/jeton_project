@@ -1,4 +1,4 @@
-package br.com.cremepe.jeton.servico;
+package br.com.cremepe.jeton.service;
 
 import br.com.cremepe.jeton.domain.LogJeton;
 import br.com.cremepe.jeton.domain.Usuario;

@@ -1,9 +1,9 @@
 package br.com.cremepe.jeton.controller;
 
-import br.com.cremepe.jeton.servico.RegrasService;
 import br.com.cremepe.jeton.domain.Regras;
-import br.com.cremepe.jeton.servico.PortariaService;
-import br.com.cremepe.jeton.servico.ResolucaoService;
+import br.com.cremepe.jeton.service.PortariaService;
+import br.com.cremepe.jeton.service.RegrasService;
+import br.com.cremepe.jeton.service.ResolucaoService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
