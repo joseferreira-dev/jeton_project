@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.ViewAtividadeConselhal;
 import br.com.cremepe.jeton.dto.RelatorioAtividadeConselhalAgrupadoDTO;
 import br.com.cremepe.jeton.repositorio.ViewAtividadeConselhalRepository;
@@ -23,6 +24,7 @@ public class RelatorioService {
     @Autowired
     private ViewAtividadeConselhalRepository viewRepository;
 
+    @Auditar(tabela = "relatorio", acao = "GERAR_RELATORIO_ATIVIDADES", descricao = "Geração de relatório agrupado de atividades", dadosParametros = "{ 'idGestao': #idGestao, 'idConselheiro': #idConselheiro, 'dataInicio': #dataInicio, 'dataFim': #dataFim }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional(readOnly = true)
     public List<RelatorioAtividadeConselhalAgrupadoDTO> gerarRelatorioAgrupado(
             Integer idGestao, Integer idConselheiro, Integer idRegra,
@@ -43,7 +45,7 @@ public class RelatorioService {
             return Collections.emptyList();
         }
 
-        // Filtro adicional por regra (se fornecido) – opcional
+        // Filtro adicional por regra (se fornecido)
         if (idRegra != null) {
             dadosRaw = dadosRaw.stream()
                     .filter(at -> idRegra.equals(at.getIdRegra()))
@@ -66,13 +68,10 @@ public class RelatorioService {
         agrupadoPorNome.forEach((nome, atividades) -> {
             RelatorioAtividadeConselhalAgrupadoDTO dto = new RelatorioAtividadeConselhalAgrupadoDTO();
             dto.setConselheiro(nome);
-            // A gestão é a mesma para todas as atividades (pega do primeiro registro)
             dto.setGestao(atividades.get(0).getNomeGestao());
 
-            // Inicializa todas as regras com zero
             todasRegras.forEach(regra -> dto.getRegras().put(regra, 0));
 
-            // Soma as quantidades por regra
             atividades.forEach(at -> {
                 Integer qtd = at.getQtdAtividade() != null ? at.getQtdAtividade() : 0;
                 if (at.getNomeRegra() != null) {
@@ -80,7 +79,6 @@ public class RelatorioService {
                 }
             });
 
-            // Calcula total de pontos (qtd * pontos da regra)
             int totalPontos = atividades.stream()
                     .mapToInt(at -> {
                         int qtd = at.getQtdAtividade() != null ? at.getQtdAtividade() : 0;
