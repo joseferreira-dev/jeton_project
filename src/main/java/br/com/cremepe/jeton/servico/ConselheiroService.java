@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.NivelAcesso;
 import br.com.cremepe.jeton.dominio.Pessoa;
@@ -36,20 +37,36 @@ public class ConselheiroService {
     @Autowired
     private AcessoService acessoService;
     @Autowired
-    private LogJetonService logJetonService;
-    @Autowired
     private PasswordEncoder passwordEncoder;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
+    @Auditar(tabela = "conselheiro", acao = "CRIAR", descricao = "Criação de novo conselheiro", dadosParametros = "{ 'conselheiro': #conselheiro }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
-    public Conselheiro salvar(Conselheiro conselheiro, Integer idUsuarioLogado) {
-        // Se for uma edição (ID informado), carrega a entidade existente
-        boolean isNovo = conselheiro.getIdPessoa() == null;
-        Conselheiro conselheiroExistente = null;
+    public Conselheiro criar(Conselheiro conselheiro, Integer idUsuarioLogado) {
+        conselheiro.setIdPessoa(null);
+        return salvarConselheiro(conselheiro, idUsuarioLogado, true);
+    }
 
+    @Auditar(tabela = "conselheiro", acao = "ATUALIZAR", descricao = "Atualização de conselheiro existente", dadosParametros = "{ 'conselheiro': #conselheiro }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
+    @Transactional
+    public Conselheiro atualizar(Conselheiro conselheiro, Integer idUsuarioLogado) {
+        if (conselheiro.getIdPessoa() == null) {
+            throw new RuntimeException("ID do conselheiro não informado para atualização.");
+        }
+        return salvarConselheiro(conselheiro, idUsuarioLogado, false);
+    }
+
+    /**
+     * Método privado que contém a lógica comum de persistência.
+     * 
+     * @param isNovo indica se é criação (true) ou atualização (false)
+     */
+    private Conselheiro salvarConselheiro(Conselheiro conselheiro, Integer idUsuarioLogado, boolean isNovo) {
+        // Se for uma edição (ID informado), carrega a entidade existente
+        Conselheiro conselheiroExistente = null;
         if (!isNovo) {
             conselheiroExistente = conselheiroRepository.findById(conselheiro.getIdPessoa())
                     .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado para edição."));
@@ -62,15 +79,12 @@ public class ConselheiroService {
             if (pessoa == null) {
                 throw new RuntimeException("Os dados da pessoa são obrigatórios.");
             }
-            // Define o tipo como Conselheiro (CORREÇÃO AQUI)
             pessoa.setInTipoPessoa(Pessoa.TIPO_CONSELHEIRO);
         } else {
             pessoa = conselheiroExistente.getPessoa();
-            // Atualiza os campos da pessoa com os dados vindos do formulário
             pessoa.setNome(conselheiro.getPessoa().getNome());
             pessoa.setCpf(conselheiro.getPessoa().getCpf());
             pessoa.setEmail(conselheiro.getPessoa().getEmail());
-            // O tipo permanece CONSELHEIRO
             pessoa.setInTipoPessoa(Pessoa.TIPO_CONSELHEIRO);
         }
 
@@ -96,7 +110,6 @@ public class ConselheiroService {
             conselheiroFinal = conselheiro;
             conselheiroFinal.setPessoa(pessoa);
             conselheiroFinal.setIdPessoa(null); // será gerado pelo JPA
-            // Garante situação padrão se não informada
             if (conselheiroFinal.getInSituacao() == null || conselheiroFinal.getInSituacao().isEmpty()) {
                 conselheiroFinal.setInSituacao(Conselheiro.SITUACAO_ATIVO);
             }
@@ -134,16 +147,42 @@ public class ConselheiroService {
             log.info("Permissões padrão concedidas para o novo conselheiro ID={}", conselheiroSalvo.getIdPessoa());
         }
 
-        // Log de auditoria
-        String textoLog = String.format(
-                "Conselheiro %s: ID=%d, Nome='%s', CPF=%s, CRM=%d, Situação='%s'",
-                isNovo ? "criado" : "atualizado",
-                conselheiroSalvo.getIdPessoa(), pessoa.getNome(), cpfLimpo, crm != null ? crm : 0,
-                conselheiroSalvo.getInSituacao());
-        logJetonService.registrarLog("conselheiro", idUsuarioLogado, textoLog);
-
         return conselheiroSalvo;
     }
+
+    @Auditar(tabela = "conselheiro", acao = "EXCLUIR", descricao = "Exclusão física de conselheiro", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true)
+    @Transactional
+    public void excluir(Integer id, Integer idUsuarioLogado) {
+        Optional<Conselheiro> conselheiroOpt = conselheiroRepository.findById(id);
+        if (conselheiroOpt.isEmpty()) {
+            log.warn("Tentativa de excluir conselheiro inexistente ID={}", id);
+            throw new RuntimeException("Conselheiro não encontrado para exclusão.");
+        }
+        Conselheiro conselheiro = conselheiroOpt.get();
+        String nome = conselheiro.getPessoa().getNome();
+        String cpf = conselheiro.getPessoa().getCpf();
+        Integer crm = conselheiro.getCrm();
+        String situacao = conselheiro.getInSituacao();
+
+        // 1. Remove as permissões (usuario_acesso) primeiro
+        conselheiroRepository.deletarPermissoesNativo(id);
+
+        // 2. Remove o conselheiro (se existir)
+        conselheiroRepository.deletarConselheiroNativo(id);
+
+        // 3. Remove o usuário
+        conselheiroRepository.deletarUsuarioNativo(id);
+
+        // 4. Remove a pessoa
+        conselheiroRepository.deletarPessoaNativa(id);
+
+        log.info("Conselheiro excluído: ID={}, nome='{}', CPF={}, CRM={}, situação={}",
+                id, nome, cpf, crm, situacao);
+    }
+
+    // =========================================================================
+    // MÉTODOS DE VALIDAÇÃO (privados)
+    // =========================================================================
 
     private void validarCpfUnico(String cpf, Integer idAtual) {
         Optional<Pessoa> existente = pessoaRepository.findByCpf(cpf);
@@ -185,43 +224,5 @@ public class ConselheiroService {
     @Transactional(readOnly = true)
     public Optional<Conselheiro> buscarPorId(Integer id) {
         return conselheiroRepository.findById(id);
-    }
-
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
-    @Transactional
-    public void excluir(Integer id, Integer idUsuarioLogado) {
-        // Busca o conselheiro antes de excluir para obter dados para o log
-        Optional<Conselheiro> conselheiroOpt = conselheiroRepository.findById(id);
-        if (conselheiroOpt.isEmpty()) {
-            log.warn("Tentativa de excluir conselheiro inexistente ID={}", id);
-            throw new RuntimeException("Conselheiro não encontrado para exclusão.");
-        }
-        Conselheiro conselheiro = conselheiroOpt.get();
-        String nome = conselheiro.getPessoa().getNome();
-        String cpf = conselheiro.getPessoa().getCpf();
-        Integer crm = conselheiro.getCrm();
-        String situacao = conselheiro.getInSituacao();
-
-        // 1. Remove as permissões (usuario_acesso) primeiro
-        conselheiroRepository.deletarPermissoesNativo(id);
-
-        // 2. Remove o conselheiro (se existir)
-        conselheiroRepository.deletarConselheiroNativo(id);
-
-        // 3. Remove o usuário
-        conselheiroRepository.deletarUsuarioNativo(id);
-
-        // 4. Remove a pessoa
-        conselheiroRepository.deletarPessoaNativa(id);
-
-        log.info("Conselheiro excluído: ID={}, nome='{}', CPF={}, CRM={}, situação={}",
-                id, nome, cpf, crm, situacao);
-
-        String textoLog = String.format(
-                "Conselheiro excluído: ID=%d, Nome='%s', CPF=%s, CRM=%d, Situação='%s'",
-                id, nome, cpf, crm, situacao);
-        logJetonService.registrarLog("conselheiro", idUsuarioLogado, textoLog);
     }
 }

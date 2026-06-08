@@ -82,7 +82,13 @@ public class ConselheiroController {
             RedirectAttributes ra) {
         try {
             Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            conselheiroService.salvar(conselheiro, idUsuarioLogado);
+
+            if (conselheiro.getIdPessoa() == null) {
+                conselheiroService.criar(conselheiro, idUsuarioLogado);
+            } else {
+                conselheiroService.atualizar(conselheiro, idUsuarioLogado);
+            }
+
             ra.addFlashAttribute("sucesso", "Conselheiro gravado com sucesso!");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro ao gravar: " + e.getMessage());

@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * Entidade JPA que representa a tabela 'conselheiro'.
  * Possui relacionamento 1:1 com a entidade Pessoa (compartilha a mesma PK).
@@ -37,7 +39,8 @@ public class Conselheiro implements Serializable {
     @Column(name = "crm")
     private Integer crm;
 
-    @Transient // Campo usado apenas no formulário, não persistente
+    @Transient
+    @JsonIgnore
     private String senhaAcesso;
 
     @NotNull
