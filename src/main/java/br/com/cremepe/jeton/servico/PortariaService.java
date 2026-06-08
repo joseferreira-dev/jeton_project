@@ -2,8 +2,9 @@ package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.Portaria;
-import br.com.cremepe.jeton.repositorio.PortariaRepository;
-import br.com.cremepe.jeton.repositorio.RegrasRepository;
+import br.com.cremepe.jeton.repository.PortariaRepository;
+import br.com.cremepe.jeton.repository.RegrasRepository;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

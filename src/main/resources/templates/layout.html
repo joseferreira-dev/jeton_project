@@ -137,11 +137,6 @@
                             </li>
                             <li
                                 th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('N')}">
-                                <a class="dropdown-item" th:href="@{/parametros}"><i
-                                        class="fa-solid fa-sliders me-2"></i> Parâmetros</a>
-                            </li>
-                            <li
-                                th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('N')}">
                                 <a class="dropdown-item" th:href="@{/logs}">
                                     <i class="fa-solid fa-history me-2"></i> Logs de Auditoria
                                 </a>

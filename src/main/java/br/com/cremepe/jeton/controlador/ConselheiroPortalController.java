@@ -1,9 +1,9 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.*;
-import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
-import br.com.cremepe.jeton.repositorio.JetonRepository;
-import br.com.cremepe.jeton.repositorio.PontosSaldoRepository;
+import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
+import br.com.cremepe.jeton.repository.JetonRepository;
+import br.com.cremepe.jeton.repository.PontosSaldoRepository;
 import br.com.cremepe.jeton.servico.*;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;

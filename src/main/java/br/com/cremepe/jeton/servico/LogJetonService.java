@@ -2,8 +2,9 @@ package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.dominio.LogJeton;
 import br.com.cremepe.jeton.dominio.Usuario;
-import br.com.cremepe.jeton.repositorio.LogJetonRepository;
-import br.com.cremepe.jeton.repositorio.UsuarioRepository;
+import br.com.cremepe.jeton.repository.LogJetonRepository;
+import br.com.cremepe.jeton.repository.UsuarioRepository;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

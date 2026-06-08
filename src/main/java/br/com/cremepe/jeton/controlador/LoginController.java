@@ -2,9 +2,9 @@ package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.AtividadeConselhal;
 import br.com.cremepe.jeton.dominio.ViewUserLogin;
-import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
-import br.com.cremepe.jeton.repositorio.ComprovanteRepository;
-import br.com.cremepe.jeton.repositorio.ConselheiroRepository;
+import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
+import br.com.cremepe.jeton.repository.ComprovanteRepository;
+import br.com.cremepe.jeton.repository.ConselheiroRepository;
 import br.com.cremepe.jeton.servico.LoginService;
 import br.com.cremepe.jeton.servico.ParametrosService;
 import jakarta.servlet.http.HttpSession;

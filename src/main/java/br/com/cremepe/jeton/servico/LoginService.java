@@ -36,5 +36,4 @@ public class LoginService {
     public void logout(Integer idUsuario, String nomeUsuario) {
         log.info("Logout do usuário: {} (ID {})", nomeUsuario, idUsuario);
     }
-
 }

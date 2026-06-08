@@ -4,10 +4,11 @@ import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.Portaria;
 import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.dominio.Resolucao;
-import br.com.cremepe.jeton.repositorio.AtividadeConselhalRepository;
-import br.com.cremepe.jeton.repositorio.PortariaRepository;
-import br.com.cremepe.jeton.repositorio.RegrasRepository;
-import br.com.cremepe.jeton.repositorio.ResolucaoRepository;
+import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
+import br.com.cremepe.jeton.repository.PortariaRepository;
+import br.com.cremepe.jeton.repository.RegrasRepository;
+import br.com.cremepe.jeton.repository.ResolucaoRepository;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -2,8 +2,9 @@ package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.NivelAcesso;
-import br.com.cremepe.jeton.repositorio.NivelAcessoRepository;
-import br.com.cremepe.jeton.repositorio.UsuarioAcessoRepository;
+import br.com.cremepe.jeton.repository.NivelAcessoRepository;
+import br.com.cremepe.jeton.repository.UsuarioAcessoRepository;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

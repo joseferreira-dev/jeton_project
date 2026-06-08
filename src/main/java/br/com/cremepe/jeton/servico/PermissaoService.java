@@ -5,9 +5,10 @@ import br.com.cremepe.jeton.dominio.NivelAcesso;
 import br.com.cremepe.jeton.dominio.Usuario;
 import br.com.cremepe.jeton.dominio.UsuarioAcesso;
 import br.com.cremepe.jeton.dominio.UsuarioAcessoId;
-import br.com.cremepe.jeton.repositorio.NivelAcessoRepository;
-import br.com.cremepe.jeton.repositorio.UsuarioAcessoRepository;
-import br.com.cremepe.jeton.repositorio.UsuarioRepository;
+import br.com.cremepe.jeton.repository.NivelAcessoRepository;
+import br.com.cremepe.jeton.repository.UsuarioAcessoRepository;
+import br.com.cremepe.jeton.repository.UsuarioRepository;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package br.com.cremepe.jeton.repositorio;
+package br.com.cremepe.jeton.repository;
 
 import br.com.cremepe.jeton.dominio.Portaria;
 import br.com.cremepe.jeton.dominio.Regras;

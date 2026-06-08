@@ -6,7 +6,8 @@ import br.com.cremepe.jeton.dto.AtividadeRelatorioDTO;
 import br.com.cremepe.jeton.dto.ConselheiroRelatorioDTO;
 import br.com.cremepe.jeton.dto.PontosRemanescentesDTO;
 import br.com.cremepe.jeton.dto.RelatorioGeralDTO;
-import br.com.cremepe.jeton.repositorio.*;
+import br.com.cremepe.jeton.repository.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

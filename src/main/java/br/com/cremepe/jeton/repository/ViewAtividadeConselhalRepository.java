@@ -1,4 +1,4 @@
-package br.com.cremepe.jeton.repositorio;
+package br.com.cremepe.jeton.repository;
 
 import br.com.cremepe.jeton.dominio.ViewAtividadeConselhal;
 import org.springframework.data.jpa.repository.JpaRepository;

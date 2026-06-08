@@ -4,7 +4,7 @@ import br.com.cremepe.jeton.dominio.AtividadeConselhal;
 import br.com.cremepe.jeton.dominio.Portaria;
 import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.dominio.Resolucao;
-import br.com.cremepe.jeton.repositorio.GestaoConselheiroRepository;
+import br.com.cremepe.jeton.repository.GestaoConselheiroRepository;
 import br.com.cremepe.jeton.servico.AtividadeConselhalService;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
