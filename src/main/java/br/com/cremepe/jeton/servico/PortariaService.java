@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.Portaria;
 import br.com.cremepe.jeton.repositorio.PortariaRepository;
 import br.com.cremepe.jeton.repositorio.RegrasRepository;
@@ -26,43 +27,45 @@ public class PortariaService {
     private PortariaRepository repository;
     @Autowired
     private RegrasRepository regrasRepository;
-    @Autowired
-    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
+    @Auditar(tabela = "portaria", acao = "CRIAR", descricao = "Criação de nova portaria", dadosParametros = "{ 'numero': #portaria.numero, 'ano': #portaria.ano, 'dtInicioVigencia': #portaria.dtInicioVigencia, 'dtFimVigencia': #portaria.dtFimVigencia, 'linkPublicado': #portaria.linkPublicado }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
-    public Portaria salvar(Portaria portaria, Integer idUsuarioLogado) {
-        boolean isNovo = portaria.getIdPortaria() == null;
-        Integer numero = portaria.getNumero();
-        Integer ano = portaria.getAno();
-        LocalDate dtInicio = portaria.getDtInicioVigencia();
-        LocalDate dtFim = portaria.getDtFimVigencia();
-        String link = portaria.getLinkPublicado();
+    public Portaria criar(Portaria portaria) {
+        portaria.setIdPortaria(null); // força criação
+        return salvarPortaria(portaria, true);
+    }
 
+    @Auditar(tabela = "portaria", acao = "ATUALIZAR", descricao = "Atualização de portaria existente", dadosParametros = "{ 'id': #portaria.idPortaria, 'numero': #portaria.numero, 'ano': #portaria.ano, 'dtInicioVigencia': #portaria.dtInicioVigencia, 'dtFimVigencia': #portaria.dtFimVigencia, 'linkPublicado': #portaria.linkPublicado }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
+    @Transactional
+    public Portaria atualizar(Portaria portaria) {
+        if (portaria.getIdPortaria() == null) {
+            throw new RuntimeException("ID da portaria não informado para atualização.");
+        }
+        if (!repository.existsById(portaria.getIdPortaria())) {
+            throw new RuntimeException("Portaria não encontrada para atualização.");
+        }
+        return salvarPortaria(portaria, false);
+    }
+
+    /**
+     * Método privado com a lógica comum de persistência.
+     * 
+     * @param isNovo true para criação, false para atualização
+     */
+    private Portaria salvarPortaria(Portaria portaria, boolean isNovo) {
         validarUnicidade(portaria);
         validarSobreposicao(portaria);
-        if (portaria.getInRevogado() == null || portaria.getInRevogado().trim().isEmpty()) {
-            portaria.setInRevogado(Portaria.REVOGADO_NAO);
-        }
-        Portaria salva = repository.save(portaria);
+        normalizarFlags(portaria);
 
+        Portaria salva = repository.save(portaria);
         log.info("Portaria {}: id={}, número={}/{}, vigência={} até {}, revogado={}",
                 isNovo ? "criada" : "atualizada",
-                salva.getIdPortaria(), numero, ano, dtInicio, dtFim, salva.getInRevogado());
-
-        String textoLog = String.format(
-                "Portaria %s: ID=%d, Número=%d/%d, Início Vigência=%s, Fim Vigência=%s, Link=%s, Revogado='%s'",
-                isNovo ? "criada" : "atualizada",
-                salva.getIdPortaria(), numero, ano,
-                dtInicio != null ? dtInicio : "null",
-                dtFim != null ? dtFim : "null",
-                link != null ? link : "null",
-                salva.getInRevogado());
-        logJetonService.registrarLog("portaria", idUsuarioLogado, textoLog);
-
+                salva.getIdPortaria(), salva.getNumero(), salva.getAno(),
+                salva.getDtInicioVigencia(), salva.getDtFimVigencia(), salva.getInRevogado());
         return salva;
     }
 
@@ -81,41 +84,53 @@ public class PortariaService {
     private void validarSobreposicao(Portaria portaria) {
         LocalDate inicio = portaria.getDtInicioVigencia();
         LocalDate fim = portaria.getDtFimVigencia();
-        if (inicio == null) {
+        if (inicio == null)
             return;
-        }
-        // Se fim for nulo, considerar uma data muito distante (ex: 31/12/9999)
-        LocalDate fimParaValidacao = (fim != null) ? fim : LocalDate.of(9999, 12, 31);
-
+        LocalDate fimValidacao = (fim != null) ? fim : LocalDate.of(9999, 12, 31);
         Integer idPortaria = (portaria.getIdPortaria() != null) ? portaria.getIdPortaria() : 0;
-        boolean sobrepoe = repository.existePeriodoSobreposto(idPortaria, inicio, fimParaValidacao);
+        boolean sobrepoe = repository.existePeriodoSobreposto(idPortaria, inicio, fimValidacao);
         if (sobrepoe) {
             throw new RuntimeException(
                     "Já existe uma portaria cadastrada cujo período de vigência coincide com o informado. Verifique as datas.");
         }
     }
 
+    private void normalizarFlags(Portaria portaria) {
+        if (portaria.getInRevogado() == null || portaria.getInRevogado().trim().isEmpty()) {
+            portaria.setInRevogado(Portaria.REVOGADO_NAO);
+        } else {
+            portaria.setInRevogado(portaria.getInRevogado().toUpperCase());
+        }
+        if (portaria.getLinkPublicado() != null) {
+            portaria.setLinkPublicado(portaria.getLinkPublicado().trim());
+        }
+    }
+
+    // =========================================================================
+    // REVOGAÇÃO
+    // =========================================================================
+
+    @Auditar(tabela = "portaria", acao = "REVOGAR", descricao = "Revogação de portaria", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void revogar(Integer id, Integer idUsuarioLogado) {
+    public void revogar(Integer id) {
         Portaria portaria = buscarOuFalhar(id);
         if (portaria.isRevogado()) {
             throw new RuntimeException("A portaria já está revogada.");
         }
-        String numeroAno = portaria.getNumero() + "/" + portaria.getAno();
         portaria.setInRevogado(Portaria.REVOGADO_SIM);
         repository.save(portaria);
+        // Revoga todas as regras vinculadas a esta portaria
         regrasRepository.revogarRegrasPorPortaria(id);
-        log.info("Portaria revogada: id={}, número={}", id, numeroAno);
-
-        String textoLog = String.format(
-                "Portaria revogada: ID=%d, Número=%d/%d, Início Vigência=%s, Fim Vigência=%s",
-                id, portaria.getNumero(), portaria.getAno(),
-                portaria.getDtInicioVigencia(), portaria.getDtFimVigencia());
-        logJetonService.registrarLog("portaria", idUsuarioLogado, textoLog);
+        log.info("Portaria revogada: id={}, número={}/{}", id, portaria.getNumero(), portaria.getAno());
     }
 
+    // =========================================================================
+    // RESTAURAÇÃO
+    // =========================================================================
+
+    @Auditar(tabela = "portaria", acao = "RESTAURAR", descricao = "Restauração de portaria revogada (volta a ficar em vigor)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void restaurar(Integer id, Integer idUsuarioLogado) {
+    public void restaurar(Integer id) {
         Portaria portaria = buscarOuFalhar(id);
         if (!portaria.isRevogado()) {
             throw new RuntimeException("A portaria já está em vigor.");
@@ -123,15 +138,15 @@ public class PortariaService {
         portaria.setInRevogado(Portaria.REVOGADO_NAO);
         repository.save(portaria);
         log.info("Portaria restaurada: id={}, número={}/{}", id, portaria.getNumero(), portaria.getAno());
-
-        String textoLog = String.format(
-                "Portaria restaurada: ID=%d, Número=%d/%d",
-                id, portaria.getNumero(), portaria.getAno());
-        logJetonService.registrarLog("portaria", idUsuarioLogado, textoLog);
     }
 
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
+
+    @Auditar(tabela = "portaria", acao = "EXCLUIR", descricao = "Exclusão permanente de portaria", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void excluirFisicamente(Integer id, Integer idUsuarioLogado) {
+    public void excluir(Integer id) {
         Portaria portaria = buscarOuFalhar(id);
         if (!portaria.isRevogado()) {
             throw new RuntimeException("Para excluir, a portaria deve estar revogada primeiro.");
@@ -141,14 +156,8 @@ public class PortariaService {
             throw new RuntimeException("Não é possível excluir a portaria pois existem " + countRegras +
                     " regra(s) vinculada(s). Revogue-as ou exclua-as antes.");
         }
-        String numeroAno = portaria.getNumero() + "/" + portaria.getAno();
         repository.deleteById(id);
-        log.info("Portaria excluída: id={}, número={}", id, numeroAno);
-
-        String textoLog = String.format(
-                "Portaria excluída: ID=%d, Número=%d/%d",
-                id, portaria.getNumero(), portaria.getAno());
-        logJetonService.registrarLog("portaria", idUsuarioLogado, textoLog);
+        log.info("Portaria excluída fisicamente: id={}, número={}/{}", id, portaria.getNumero(), portaria.getAno());
     }
 
     // =========================================================================

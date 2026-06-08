@@ -1,7 +1,6 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Portaria;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.PortariaService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,9 +72,15 @@ public class PortariaController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            portariaService.salvar(portaria, idUsuarioLogado);
-            ra.addFlashAttribute("sucesso", "Portaria salva com sucesso!");
+            boolean isNovo = portaria.getIdPortaria() == null;
+
+            if (isNovo) {
+                portariaService.criar(portaria);
+                ra.addFlashAttribute("sucesso", "Portaria criada com sucesso!");
+            } else {
+                portariaService.atualizar(portaria);
+                ra.addFlashAttribute("sucesso", "Portaria atualizada com sucesso!");
+            }
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
@@ -92,8 +97,7 @@ public class PortariaController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            portariaService.revogar(id, idUsuarioLogado);
+            portariaService.revogar(id);
             ra.addFlashAttribute("sucesso", "Portaria revogada com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -111,8 +115,7 @@ public class PortariaController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            portariaService.restaurar(id, idUsuarioLogado);
+            portariaService.restaurar(id);
             ra.addFlashAttribute("sucesso", "Portaria restaurada (em vigor) com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -130,8 +133,7 @@ public class PortariaController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            portariaService.excluirFisicamente(id, idUsuarioLogado);
+            portariaService.excluir(id);
             ra.addFlashAttribute("sucesso", "Portaria excluída definitivamente.");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -146,10 +148,5 @@ public class PortariaController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }

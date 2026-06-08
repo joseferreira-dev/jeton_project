@@ -1,7 +1,6 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.TipoAnexo;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.TipoAnexoService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
