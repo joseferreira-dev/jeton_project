@@ -1,7 +1,6 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.PontosSaldo;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
 import br.com.cremepe.jeton.servico.PontosRemanescentesService;
@@ -65,9 +64,15 @@ public class PontosRemanescentesController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            pontosService.salvar(pontos, idUsuarioLogado);
-            ra.addFlashAttribute("sucesso", "Registro de pontos salvo com sucesso!");
+            boolean isNovo = pontos.getIdPontosSaldo() == null;
+
+            if (isNovo) {
+                pontosService.criar(pontos);
+                ra.addFlashAttribute("sucesso", "Registro de pontos criado com sucesso!");
+            } else {
+                pontosService.atualizar(pontos);
+                ra.addFlashAttribute("sucesso", "Registro de pontos atualizado com sucesso!");
+            }
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
@@ -84,8 +89,7 @@ public class PontosRemanescentesController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            pontosService.excluir(id, idUsuarioLogado);
+            pontosService.excluir(id);
             ra.addFlashAttribute("sucesso", "Registro de pontos removido com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -100,11 +104,6 @@ public class PontosRemanescentesController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 
     private void carregarListasDeApoio(Model model) {

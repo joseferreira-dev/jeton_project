@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.PontosSaldo;
 import br.com.cremepe.jeton.repositorio.PontosSaldoRepository;
 import org.slf4j.Logger;
@@ -18,40 +19,48 @@ public class PontosRemanescentesService {
 
     @Autowired
     private PontosSaldoRepository repository;
-    @Autowired
-    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
+    @Auditar(tabela = "pontos_saldo", acao = "CRIAR", descricao = "Criação de registro de saldo de pontos", dadosParametros = "{ 'conselheiroId': #pontos.conselheiro?.idPessoa, 'gestaoId': #pontos.gestao?.idGestao, 'pontosTrabalhados': #pontos.pontosTrabalhados, 'pontosUtilizados': #pontos.pontosUtilizados, 'pontosSobrando': #pontos.pontosSobrando, 'situacao': #pontos.inSituacao, 'atividadeId': #pontos.atividade?.idAtividade, 'jetonId': #pontos.jeton?.idJeton, 'resolucaoId': #pontos.resolucao?.idResolucao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
-    public PontosSaldo salvar(PontosSaldo pontos, Integer idUsuarioLogado) {
-        boolean isNovo = pontos.getIdPontosSaldo() == null;
-        Integer idConselheiro = pontos.getConselheiro() != null ? pontos.getConselheiro().getIdPessoa() : null;
-        Integer idGestao = pontos.getGestao() != null ? pontos.getGestao().getIdGestao() : null;
-        Integer pontosTrabalhados = pontos.getPontosTrabalhados();
-        Integer pontosUtilizados = pontos.getPontosUtilizados();
-        Integer pontosSobrando = pontos.getPontosSobrando();
-        String situacao = pontos.getInSituacao();
+    public PontosSaldo criar(PontosSaldo pontos) {
+        pontos.setIdPontosSaldo(null);
+        return salvarPontos(pontos, true);
+    }
 
+    @Auditar(tabela = "pontos_saldo", acao = "ATUALIZAR", descricao = "Atualização de registro de saldo de pontos", dadosParametros = "{ 'id': #pontos.idPontosSaldo, 'conselheiroId': #pontos.conselheiro?.idPessoa, 'gestaoId': #pontos.gestao?.idGestao, 'pontosTrabalhados': #pontos.pontosTrabalhados, 'pontosUtilizados': #pontos.pontosUtilizados, 'pontosSobrando': #pontos.pontosSobrando, 'situacao': #pontos.inSituacao, 'atividadeId': #pontos.atividade?.idAtividade, 'jetonId': #pontos.jeton?.idJeton, 'resolucaoId': #pontos.resolucao?.idResolucao }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
+    @Transactional
+    public PontosSaldo atualizar(PontosSaldo pontos) {
+        if (pontos.getIdPontosSaldo() == null) {
+            throw new RuntimeException("ID do saldo de pontos não informado para atualização.");
+        }
+        if (!repository.existsById(pontos.getIdPontosSaldo())) {
+            throw new RuntimeException("Saldo de pontos não encontrado para atualização.");
+        }
+        return salvarPontos(pontos, false);
+    }
+
+    /**
+     * Método privado com a lógica comum de persistência.
+     * 
+     * @param isNovo true para criação, false para atualização
+     */
+    private PontosSaldo salvarPontos(PontosSaldo pontos, boolean isNovo) {
         validarIntegridade(pontos);
         normalizar(pontos);
-        PontosSaldo salvo = repository.save(pontos);
 
+        PontosSaldo salvo = repository.save(pontos);
         log.info(
                 "Saldo de pontos {}: id={}, conselheiro={}, gestão={}, pontosTrabalhados={}, pontosUtilizados={}, pontosSobrando={}, situação={}",
                 isNovo ? "criado" : "atualizado",
-                salvo.getIdPontosSaldo(), idConselheiro, idGestao,
-                pontosTrabalhados, pontosUtilizados, pontosSobrando, situacao);
-
-        String textoLog = String.format(
-                "Saldo de pontos %s: ID=%d, Conselheiro ID=%d, Gestão ID=%d, Pontos Trabalhados=%d, Pontos Utilizados=%d, Pontos Sobrando=%d, Situação='%s'",
-                isNovo ? "criado" : "atualizado",
-                salvo.getIdPontosSaldo(), idConselheiro, idGestao,
-                pontosTrabalhados, pontosUtilizados, pontosSobrando, situacao);
-        logJetonService.registrarLog("pontos_saldo", idUsuarioLogado, textoLog);
-
+                salvo.getIdPontosSaldo(),
+                salvo.getConselheiro() != null ? salvo.getConselheiro().getIdPessoa() : null,
+                salvo.getGestao() != null ? salvo.getGestao().getIdGestao() : null,
+                salvo.getPontosTrabalhados(), salvo.getPontosUtilizados(),
+                salvo.getPontosSobrando(), salvo.getInSituacao());
         return salvo;
     }
 
@@ -87,8 +96,13 @@ public class PontosRemanescentesService {
             pontos.setPontosSobrando(0);
     }
 
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
+
+    @Auditar(tabela = "pontos_saldo", acao = "EXCLUIR", descricao = "Exclusão de registro de saldo de pontos (apenas se não utilizado)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void excluir(Integer id, Integer idUsuarioLogado) {
+    public void excluir(Integer id) {
         PontosSaldo saldo = buscarOuFalhar(id);
         Integer idConselheiro = saldo.getConselheiro() != null ? saldo.getConselheiro().getIdPessoa() : null;
         Integer idGestao = saldo.getGestao() != null ? saldo.getGestao().getIdGestao() : null;
@@ -106,11 +120,6 @@ public class PontosRemanescentesService {
         log.info(
                 "Saldo de pontos excluído fisicamente: id={}, conselheiro={}, gestão={}, pontosSobrando={}, situação={}",
                 id, idConselheiro, idGestao, pontosSobrando, situacao);
-
-        String textoLog = String.format(
-                "Saldo de pontos excluído: ID=%d, Conselheiro ID=%d, Gestão ID=%d, Pontos Sobrando=%d, Situação='%s'",
-                id, idConselheiro, idGestao, pontosSobrando, situacao);
-        logJetonService.registrarLog("pontos_saldo", idUsuarioLogado, textoLog);
     }
 
     // =========================================================================
