@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class PontosRemanescentesService {
+public class PontosSaldoService {
 
-    private static final Logger log = LoggerFactory.getLogger(PontosRemanescentesService.class);
+    private static final Logger log = LoggerFactory.getLogger(PontosSaldoService.class);
 
     @Autowired
     private PontosSaldoRepository repository;

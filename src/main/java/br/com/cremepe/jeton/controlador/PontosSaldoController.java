@@ -3,7 +3,7 @@ package br.com.cremepe.jeton.controlador;
 import br.com.cremepe.jeton.dominio.PontosSaldo;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
-import br.com.cremepe.jeton.servico.PontosRemanescentesService;
+import br.com.cremepe.jeton.servico.PontosSaldoService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -13,10 +13,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/pontos-remanescentes")
-public class PontosRemanescentesController {
+public class PontosSaldoController {
 
     @Autowired
-    private PontosRemanescentesService pontosService;
+    private PontosSaldoService pontosService;
     @Autowired
     private ConselheiroService conselheiroService;
     @Autowired
