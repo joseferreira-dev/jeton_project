@@ -56,9 +56,15 @@ public class TipoAnexoController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            tipoAnexoService.salvar(tipoAnexo, idUsuarioLogado);
-            ra.addFlashAttribute("sucesso", "Tipo de Anexo salvo com sucesso!");
+            boolean isNovo = tipoAnexo.getIdTipo() == null;
+
+            if (isNovo) {
+                tipoAnexoService.criar(tipoAnexo);
+                ra.addFlashAttribute("sucesso", "Tipo de Anexo criado com sucesso!");
+            } else {
+                tipoAnexoService.atualizar(tipoAnexo);
+                ra.addFlashAttribute("sucesso", "Tipo de Anexo atualizado com sucesso!");
+            }
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
@@ -73,8 +79,7 @@ public class TipoAnexoController {
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            tipoAnexoService.excluir(id, idUsuarioLogado);
+            tipoAnexoService.excluir(id);
             ra.addFlashAttribute("sucesso", "Tipo de Anexo removido com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -89,10 +94,5 @@ public class TipoAnexoController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }

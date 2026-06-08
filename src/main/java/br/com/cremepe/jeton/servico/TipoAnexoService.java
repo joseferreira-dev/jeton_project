@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.TipoAnexo;
 import br.com.cremepe.jeton.repositorio.ComprovanteRepository;
 import br.com.cremepe.jeton.repositorio.TipoAnexoRepository;
@@ -21,22 +22,50 @@ public class TipoAnexoService {
     private TipoAnexoRepository repository;
     @Autowired
     private ComprovanteRepository comprovanteRepository;
-    @Autowired
-    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
+    @Auditar(tabela = "tipo_anexo", acao = "CRIAR", descricao = "Criação de novo tipo de anexo", dadosParametros = "{ 'nome': #tipoAnexo.nome, 'exigePublicacao': #tipoAnexo.exigePublicacao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
-    public TipoAnexo salvar(TipoAnexo tipoAnexo, Integer idUsuarioLogado) {
-        boolean isNovo = tipoAnexo.getIdTipo() == null;
+    public TipoAnexo criar(TipoAnexo tipoAnexo) {
+        tipoAnexo.setIdTipo(null); // força criação
+        return salvarTipoAnexo(tipoAnexo, true);
+    }
 
-        validarNomeUnico(tipoAnexo);
+    @Auditar(tabela = "tipo_anexo", acao = "ATUALIZAR", descricao = "Atualização de tipo de anexo existente", dadosParametros = "{ 'id': #tipoAnexo.idTipo, 'nome': #tipoAnexo.nome, 'exigePublicacao': #tipoAnexo.exigePublicacao }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
+    @Transactional
+    public TipoAnexo atualizar(TipoAnexo tipoAnexo) {
+        if (tipoAnexo.getIdTipo() == null) {
+            throw new RuntimeException("ID do tipo de anexo não informado para atualização.");
+        }
+        // Verifica se existe
+        if (!repository.existsById(tipoAnexo.getIdTipo())) {
+            throw new RuntimeException("Tipo de anexo não encontrado para atualização.");
+        }
+        return salvarTipoAnexo(tipoAnexo, false);
+    }
+
+    /**
+     * Método privado que contém a lógica comum de persistência.
+     * 
+     * @param isNovo true para criação, false para atualização
+     */
+    private TipoAnexo salvarTipoAnexo(TipoAnexo tipoAnexo, boolean isNovo) {
+        // Normaliza nome
+        if (tipoAnexo.getNome() != null) {
+            tipoAnexo.setNome(tipoAnexo.getNome().trim());
+        }
+        // Se for criação, valida nome único; se for atualização, valida ignorando o
+        // próprio ID
+        validarNomeUnico(tipoAnexo, isNovo ? null : tipoAnexo.getIdTipo());
 
         // Garante que exigePublicacao tenha valor padrão se não informado
         if (tipoAnexo.getExigePublicacao() == null || tipoAnexo.getExigePublicacao().trim().isEmpty()) {
             tipoAnexo.setExigePublicacao(TipoAnexo.EXIGE_PUBLICACAO_NAO);
+        } else {
+            tipoAnexo.setExigePublicacao(tipoAnexo.getExigePublicacao().toUpperCase());
         }
 
         TipoAnexo salvo = repository.save(tipoAnexo);
@@ -44,37 +73,34 @@ public class TipoAnexoService {
                 isNovo ? "criado" : "atualizado",
                 salvo.getIdTipo(), salvo.getNome(), salvo.getExigePublicacao());
 
-        String textoLog = String.format(
-                "Tipo de anexo %s: ID=%d, Nome='%s', ExigePublicacao='%s'",
-                isNovo ? "criado" : "atualizado",
-                salvo.getIdTipo(), salvo.getNome(), salvo.getExigePublicacao());
-        logJetonService.registrarLog("tipo_anexo", idUsuarioLogado, textoLog);
-
         return salvo;
     }
 
-    private void validarNomeUnico(TipoAnexo tipoAnexo) {
+    private void validarNomeUnico(TipoAnexo tipoAnexo, Integer idAtual) {
         String nome = tipoAnexo.getNome();
         if (nome == null || nome.trim().isEmpty())
             return;
 
         Optional<TipoAnexo> existente = repository.findByNome(nome.trim());
-        if (existente.isPresent() && !existente.get().getIdTipo().equals(tipoAnexo.getIdTipo())) {
+        if (existente.isPresent() && !existente.get().getIdTipo().equals(idAtual)) {
             throw new RuntimeException("Já existe um tipo de anexo cadastrado com o nome '" + nome + "'.");
         }
     }
 
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
+
+    @Auditar(tabela = "tipo_anexo", acao = "EXCLUIR", descricao = "Exclusão de tipo de anexo (apenas se não houver comprovantes vinculados)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void excluir(Integer id, Integer idUsuarioLogado) {
-        // Busca o tipo antes de excluir para obter dados para o log
+    public void excluir(Integer id) {
+        // Busca o tipo antes de excluir para obter dados (usados no log.info)
         Optional<TipoAnexo> tipoOpt = repository.findById(id);
         if (tipoOpt.isEmpty()) {
             log.warn("Tentativa de excluir tipo de anexo inexistente ID={}", id);
             throw new RuntimeException("Tipo de anexo não encontrado para exclusão.");
         }
         TipoAnexo tipo = tipoOpt.get();
-        String nome = tipo.getNome();
-        String exigePublicacao = tipo.getExigePublicacao();
 
         // Verifica se existem comprovantes usando este tipo
         long count = comprovanteRepository.findByTipoAnexoIdTipo(id).size();
@@ -84,12 +110,7 @@ public class TipoAnexoService {
         }
 
         repository.deleteById(id);
-        log.info("Tipo de anexo excluído: id={}, nome={}", id, nome);
-
-        String textoLog = String.format(
-                "Tipo de anexo excluído: ID=%d, Nome='%s', ExigePublicacao='%s'",
-                id, nome, exigePublicacao);
-        logJetonService.registrarLog("tipo_anexo", idUsuarioLogado, textoLog);
+        log.info("Tipo de anexo excluído: id={}, nome={}", id, tipo.getNome());
     }
 
     // =========================================================================
