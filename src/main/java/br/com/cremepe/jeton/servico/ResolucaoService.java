@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.Resolucao;
 import br.com.cremepe.jeton.repositorio.RegrasRepository;
 import br.com.cremepe.jeton.repositorio.ResolucaoRepository;
@@ -26,50 +27,45 @@ public class ResolucaoService {
     private ResolucaoRepository repository;
     @Autowired
     private RegrasRepository regrasRepository;
-    @Autowired
-    private LogJetonService logJetonService;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
     // =========================================================================
 
+    @Auditar(tabela = "resolucao", acao = "CRIAR", descricao = "Criação de nova resolução", dadosParametros = "{ 'numero': #resolucao.numero, 'ano': #resolucao.ano, 'dtInicioVigencia': #resolucao.dtInicioVigencia, 'dtFimVigencia': #resolucao.dtFimVigencia, 'ementa': #resolucao.ementa, 'pontosPorJeton': #resolucao.pontosPorJeton, 'maxJetonsDia': #resolucao.maxJetonsDia, 'maxJetonsPeriodo': #resolucao.maxJetonsPeriodo, 'maxJetonsMes': #resolucao.maxJetonsMes, 'valorJeton': #resolucao.valorJeton, 'linkPublicado': #resolucao.linkPublicado }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
-    public Resolucao salvar(Resolucao resolucao, Integer idUsuarioLogado) {
-        boolean isNovo = resolucao.getIdResolucao() == null;
-        Integer numero = resolucao.getNumero();
-        Integer ano = resolucao.getAno();
-        LocalDate dtInicio = resolucao.getDtInicioVigencia();
-        LocalDate dtFim = resolucao.getDtFimVigencia();
-        String ementa = resolucao.getEmenta();
-        Integer pontosPorJeton = resolucao.getPontosPorJeton();
-        Integer maxJetonsDia = resolucao.getMaxJetonsDia();
-        Integer maxJetonsPeriodo = resolucao.getMaxJetonsPeriodo();
-        Integer maxJetonsMes = resolucao.getMaxJetonsMes();
-        String valorJeton = resolucao.getValorJeton() != null ? resolucao.getValorJeton().toString() : "null";
+    public Resolucao criar(Resolucao resolucao) {
+        resolucao.setIdResolucao(null);
+        return salvarResolucao(resolucao, true);
+    }
 
+    @Auditar(tabela = "resolucao", acao = "ATUALIZAR", descricao = "Atualização de resolução existente", dadosParametros = "{ 'id': #resolucao.idResolucao, 'numero': #resolucao.numero, 'ano': #resolucao.ano, 'dtInicioVigencia': #resolucao.dtInicioVigencia, 'dtFimVigencia': #resolucao.dtFimVigencia, 'ementa': #resolucao.ementa, 'pontosPorJeton': #resolucao.pontosPorJeton, 'maxJetonsDia': #resolucao.maxJetonsDia, 'maxJetonsPeriodo': #resolucao.maxJetonsPeriodo, 'maxJetonsMes': #resolucao.maxJetonsMes, 'valorJeton': #resolucao.valorJeton, 'linkPublicado': #resolucao.linkPublicado }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
+    @Transactional
+    public Resolucao atualizar(Resolucao resolucao) {
+        if (resolucao.getIdResolucao() == null) {
+            throw new RuntimeException("ID da resolução não informado para atualização.");
+        }
+        if (!repository.existsById(resolucao.getIdResolucao())) {
+            throw new RuntimeException("Resolução não encontrada para atualização.");
+        }
+        return salvarResolucao(resolucao, false);
+    }
+
+    /**
+     * Método privado com a lógica comum de persistência.
+     * 
+     * @param isNovo true para criação, false para atualização
+     */
+    private Resolucao salvarResolucao(Resolucao resolucao, boolean isNovo) {
         validarUnicidade(resolucao);
         validarSobreposicao(resolucao);
-        if (resolucao.getInRevogado() == null || resolucao.getInRevogado().trim().isEmpty()) {
-            resolucao.setInRevogado(Resolucao.REVOGADO_NAO);
-        }
+        normalizarFlags(resolucao);
 
         Resolucao salva = repository.save(resolucao);
-
         log.info("Resolução {}: id={}, número={}/{}, vigência={} até {}, revogado={}",
                 isNovo ? "criada" : "atualizada",
-                salva.getIdResolucao(), numero, ano, dtInicio, dtFim, salva.getInRevogado());
-
-        String textoLog = String.format(
-                "Resolução %s: ID=%d, Número=%d/%d, Início Vigência=%s, Fim Vigência=%s, Ementa=%s, Pontos por Jeton=%d, MaxJetonsDia=%d, MaxJetonsPeriodo=%d, MaxJetonsMes=%d, Valor Jeton=%s, Revogado='%s'",
-                isNovo ? "criada" : "atualizada",
-                salva.getIdResolucao(), numero, ano,
-                dtInicio != null ? dtInicio : "null",
-                dtFim != null ? dtFim : "null",
-                ementa != null ? ementa.substring(0, Math.min(ementa.length(), 100)) : "null",
-                pontosPorJeton, maxJetonsDia, maxJetonsPeriodo, maxJetonsMes, valorJeton,
-                salva.getInRevogado());
-        logJetonService.registrarLog("resolucao", idUsuarioLogado, textoLog);
-
+                salva.getIdResolucao(), salva.getNumero(), salva.getAno(),
+                salva.getDtInicioVigencia(), salva.getDtFimVigencia(), salva.getInRevogado());
         return salva;
     }
 
@@ -88,41 +84,66 @@ public class ResolucaoService {
     private void validarSobreposicao(Resolucao resolucao) {
         LocalDate inicio = resolucao.getDtInicioVigencia();
         LocalDate fim = resolucao.getDtFimVigencia();
-        if (inicio == null) {
+        if (inicio == null)
             return;
-        }
-        // Se fim for nulo, considerar uma data distante (ex: 31/12/9999)
-        LocalDate fimParaValidacao = (fim != null) ? fim : LocalDate.of(9999, 12, 31);
-
+        LocalDate fimValidacao = (fim != null) ? fim : LocalDate.of(9999, 12, 31);
         Integer idResolucao = (resolucao.getIdResolucao() != null) ? resolucao.getIdResolucao() : 0;
-        boolean sobrepoe = repository.existePeriodoSobreposto(idResolucao, inicio, fimParaValidacao);
+        boolean sobrepoe = repository.existePeriodoSobreposto(idResolucao, inicio, fimValidacao);
         if (sobrepoe) {
             throw new RuntimeException(
                     "Já existe uma resolução cadastrada cujo período de vigência coincide com o informado. Verifique as datas.");
         }
     }
 
+    private void normalizarFlags(Resolucao resolucao) {
+        if (resolucao.getInRevogado() == null || resolucao.getInRevogado().trim().isEmpty()) {
+            resolucao.setInRevogado(Resolucao.REVOGADO_NAO);
+        } else {
+            resolucao.setInRevogado(resolucao.getInRevogado().toUpperCase());
+        }
+        if (resolucao.getLinkPublicado() != null) {
+            resolucao.setLinkPublicado(resolucao.getLinkPublicado().trim());
+        }
+        if (resolucao.getEmenta() != null) {
+            resolucao.setEmenta(resolucao.getEmenta().trim());
+        }
+        // Garante que valores numéricos não sejam nulos
+        if (resolucao.getPontosPorJeton() == null)
+            resolucao.setPontosPorJeton(3);
+        if (resolucao.getMaxJetonsDia() == null)
+            resolucao.setMaxJetonsDia(3);
+        if (resolucao.getMaxJetonsPeriodo() == null)
+            resolucao.setMaxJetonsPeriodo(1);
+        if (resolucao.getMaxJetonsMes() == null)
+            resolucao.setMaxJetonsMes(22);
+        if (resolucao.getValorJeton() == null)
+            resolucao.setValorJeton(java.math.BigDecimal.ZERO);
+    }
+
+    // =========================================================================
+    // REVOGAÇÃO
+    // =========================================================================
+
+    @Auditar(tabela = "resolucao", acao = "REVOGAR", descricao = "Revogação de resolução", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void revogar(Integer id, Integer idUsuarioLogado) {
+    public void revogar(Integer id) {
         Resolucao resolucao = buscarOuFalhar(id);
         if (resolucao.isRevogado()) {
             throw new RuntimeException("A resolução já está revogada.");
         }
-        String numeroAno = resolucao.getNumero() + "/" + resolucao.getAno();
         resolucao.setInRevogado(Resolucao.REVOGADO_SIM);
         repository.save(resolucao);
         regrasRepository.revogarRegrasPorResolucao(id);
-        log.info("Resolução revogada: id={}, número={}", id, numeroAno);
-
-        String textoLog = String.format(
-                "Resolução revogada: ID=%d, Número=%d/%d, Início Vigência=%s, Fim Vigência=%s",
-                id, resolucao.getNumero(), resolucao.getAno(),
-                resolucao.getDtInicioVigencia(), resolucao.getDtFimVigencia());
-        logJetonService.registrarLog("resolucao", idUsuarioLogado, textoLog);
+        log.info("Resolução revogada: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
     }
 
+    // =========================================================================
+    // RESTAURAÇÃO
+    // =========================================================================
+
+    @Auditar(tabela = "resolucao", acao = "RESTAURAR", descricao = "Restauração de resolução revogada (volta a ficar em vigor)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void restaurar(Integer id, Integer idUsuarioLogado) {
+    public void restaurar(Integer id) {
         Resolucao resolucao = buscarOuFalhar(id);
         if (!resolucao.isRevogado()) {
             throw new RuntimeException("A resolução já está em vigor.");
@@ -131,15 +152,15 @@ public class ResolucaoService {
         repository.save(resolucao);
         regrasRepository.restaurarRegrasPorResolucao(id);
         log.info("Resolução restaurada: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
-
-        String textoLog = String.format(
-                "Resolução restaurada (e suas regras vinculadas): ID=%d, Número=%d/%d",
-                id, resolucao.getNumero(), resolucao.getAno());
-        logJetonService.registrarLog("resolucao", idUsuarioLogado, textoLog);
     }
 
+    // =========================================================================
+    // EXCLUSÃO
+    // =========================================================================
+
+    @Auditar(tabela = "resolucao", acao = "EXCLUIR", descricao = "Exclusão permanente de resolução", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public void excluirFisicamente(Integer id, Integer idUsuarioLogado) {
+    public void excluir(Integer id) {
         Resolucao resolucao = buscarOuFalhar(id);
         if (!resolucao.isRevogado()) {
             throw new RuntimeException("Para excluir, a resolução deve estar revogada primeiro.");
@@ -149,14 +170,8 @@ public class ResolucaoService {
             throw new RuntimeException("Não é possível excluir a resolução pois existem " + countRegras +
                     " regra(s) vinculada(s). Revogue-as ou exclua-as antes.");
         }
-        String numeroAno = resolucao.getNumero() + "/" + resolucao.getAno();
         repository.deleteById(id);
-        log.info("Resolução excluída: id={}, número={}", id, numeroAno);
-
-        String textoLog = String.format(
-                "Resolução excluída: ID=%d, Número=%d/%d",
-                id, resolucao.getNumero(), resolucao.getAno());
-        logJetonService.registrarLog("resolucao", idUsuarioLogado, textoLog);
+        log.info("Resolução excluída fisicamente: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
     }
 
     // =========================================================================

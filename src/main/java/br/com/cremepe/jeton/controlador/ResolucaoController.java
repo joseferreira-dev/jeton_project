@@ -1,7 +1,6 @@
 package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Resolucao;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.ResolucaoService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,9 +71,15 @@ public class ResolucaoController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            resolucaoService.salvar(resolucao, idUsuarioLogado);
-            ra.addFlashAttribute("sucesso", "Resolução salva com sucesso!");
+            boolean isNovo = resolucao.getIdResolucao() == null;
+
+            if (isNovo) {
+                resolucaoService.criar(resolucao);
+                ra.addFlashAttribute("sucesso", "Resolução criada com sucesso!");
+            } else {
+                resolucaoService.atualizar(resolucao);
+                ra.addFlashAttribute("sucesso", "Resolução atualizada com sucesso!");
+            }
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
         } catch (Exception e) {
@@ -84,15 +89,14 @@ public class ResolucaoController {
     }
 
     // =========================================================================
-    // REVOGAÇÃO (SOFT DELETE)
+    // REVOGAÇÃO
     // =========================================================================
     @GetMapping("/revogar/{id}")
     public String revogar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            resolucaoService.revogar(id, idUsuarioLogado);
+            resolucaoService.revogar(id);
             ra.addFlashAttribute("sucesso", "Resolução revogada com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -110,8 +114,7 @@ public class ResolucaoController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            resolucaoService.restaurar(id, idUsuarioLogado);
+            resolucaoService.restaurar(id);
             ra.addFlashAttribute("sucesso", "Resolução restaurada (em vigor) com sucesso!");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -122,15 +125,14 @@ public class ResolucaoController {
     }
 
     // =========================================================================
-    // EXCLUSÃO FÍSICA (PERMANENTE)
+    // EXCLUSÃO FÍSICA
     // =========================================================================
     @GetMapping("/deletar/{id}")
-    public String deletarFisicamente(@PathVariable("id") Integer id,
+    public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            resolucaoService.excluirFisicamente(id, idUsuarioLogado);
+            resolucaoService.excluir(id);
             ra.addFlashAttribute("sucesso", "Resolução excluída definitivamente.");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
@@ -145,10 +147,5 @@ public class ResolucaoController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }
