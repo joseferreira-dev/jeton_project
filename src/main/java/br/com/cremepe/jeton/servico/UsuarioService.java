@@ -49,18 +49,18 @@ public class UsuarioService {
 
     @Auditar(tabela = "usuario", acao = "CRIAR", descricao = "Criação de novo usuário", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
-    public Usuario criar(Usuario usuario, Integer idUsuarioLogado) {
+    public Usuario criar(Usuario usuario) {
         usuario.setIdUsuarioPessoa(null); // força criação
-        return salvarUsuario(usuario, idUsuarioLogado, true);
+        return salvarUsuario(usuario, true);
     }
 
     @Auditar(tabela = "usuario", acao = "ATUALIZAR", descricao = "Atualização de usuário existente", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
-    public Usuario atualizar(Usuario usuario, Integer idUsuarioLogado) {
+    public Usuario atualizar(Usuario usuario) {
         if (usuario.getIdUsuarioPessoa() == null) {
             throw new RuntimeException("ID do usuário não informado para atualização.");
         }
-        return salvarUsuario(usuario, idUsuarioLogado, false);
+        return salvarUsuario(usuario, false);
     }
 
     /**
@@ -68,7 +68,7 @@ public class UsuarioService {
      * 
      * @param isNovo indica se é criação (true) ou atualização (false)
      */
-    private Usuario salvarUsuario(Usuario usuario, Integer idUsuarioLogado, boolean isNovo) {
+    private Usuario salvarUsuario(Usuario usuario, boolean isNovo) {
         String nome = usuario.getPessoa().getNome();
         String tipoPessoa = usuario.iseConselheiro() ? "Conselheiro" : "Funcionário";
         String situacao = usuario.getInSituacao();
@@ -178,7 +178,7 @@ public class UsuarioService {
 
     @Auditar(tabela = "usuario", acao = "ATUALIZAR_PERFIL", descricao = "Atualização do próprio perfil pelo usuário logado", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
-    public void atualizarPerfil(Usuario usuario, Integer idUsuarioLogado) {
+    public void atualizarPerfil(Usuario usuario) {
         Usuario existente = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado para atualização de perfil"));
 
@@ -279,7 +279,7 @@ public class UsuarioService {
 
     @Auditar(tabela = "usuario", acao = "EXCLUIR", descricao = "Exclusão física de usuário", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
-    public void excluir(Integer id, Integer idUsuarioLogado) {
+    public void excluir(Integer id) {
         // Busca o usuário antes de excluir para obter dados para o log (o aspecto
         // também
         // captura estado anterior, mas mantemos para compatibilidade com logs antigos)

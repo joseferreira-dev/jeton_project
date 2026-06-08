@@ -2,7 +2,6 @@ package br.com.cremepe.jeton.controlador;
 
 import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Pessoa;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -81,12 +80,10 @@ public class ConselheiroController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-
             if (conselheiro.getIdPessoa() == null) {
-                conselheiroService.criar(conselheiro, idUsuarioLogado);
+                conselheiroService.criar(conselheiro);
             } else {
-                conselheiroService.atualizar(conselheiro, idUsuarioLogado);
+                conselheiroService.atualizar(conselheiro);
             }
 
             ra.addFlashAttribute("sucesso", "Conselheiro gravado com sucesso!");
@@ -102,8 +99,7 @@ public class ConselheiroController {
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            conselheiroService.excluir(id, idUsuarioLogado);
+            conselheiroService.excluir(id);
             ra.addFlashAttribute("sucesso", "Conselheiro removido com sucesso!");
         } catch (Exception e) {
             ra.addFlashAttribute("erro",
@@ -117,10 +113,5 @@ public class ConselheiroController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 }

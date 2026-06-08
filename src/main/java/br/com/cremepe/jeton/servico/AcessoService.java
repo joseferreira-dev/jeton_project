@@ -35,7 +35,7 @@ public class AcessoService {
 
     @Auditar(tabela = "usuario_acesso", acao = "CONCEDER", descricao = "Concessão de permissão (nível de acesso) a um usuário", dadosParametros = "{ 'usuarioId': #idUsuario, 'nivelId': #idNivel }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
-    public UsuarioAcesso concederPermissao(Integer idUsuario, String idNivel, Integer idUsuarioLogado) {
+    public UsuarioAcesso concederPermissao(Integer idUsuario, String idNivel) {
         UsuarioAcessoId idComposto = new UsuarioAcessoId(idUsuario, idNivel);
 
         // Se o vínculo já existir, retorna-o (evita duplicidade)
@@ -59,7 +59,7 @@ public class AcessoService {
 
     @Auditar(tabela = "usuario_acesso", acao = "REVOGAR", descricao = "Revogação de permissão (nível de acesso) de um usuário", dadosParametros = "{ 'usuarioId': #idUsuario, 'nivelId': #idNivel }", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
-    public void revogarPermissao(Integer idUsuario, String idNivel, Integer idUsuarioLogado) {
+    public void revogarPermissao(Integer idUsuario, String idNivel) {
         // Busca os dados antes de excluir para que o aspecto possa
         // capturá-los (estado anterior). O aspecto já fará isso via
         // entityManager.find(UsuarioAcesso.class, idComposto), mas
@@ -76,7 +76,7 @@ public class AcessoService {
 
     @Auditar(tabela = "usuario_acesso", acao = "REVOGAR_TODAS", descricao = "Revogação de todas as permissões de um usuário", dadosParametros = "{ 'usuarioId': #idUsuario }", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
-    public void revogarTodasPermissoes(Integer idUsuario, Integer idUsuarioLogado) {
+    public void revogarTodasPermissoes(Integer idUsuario) {
         // Busca todas as permissões do usuário para que o aspecto possa
         // registrar o estado anterior. O aspecto não captura automaticamente
         // coleções, então usamos dadosParametros para registrar

@@ -102,14 +102,13 @@ public class UsuarioController extends BaseController {
             HttpSession session,
             RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
             Usuario userSalvo;
 
             // Decide se é criação ou atualização
             if (usuario.getIdUsuarioPessoa() == null) {
-                userSalvo = usuarioService.criar(usuario, idUsuarioLogado);
+                userSalvo = usuarioService.criar(usuario);
             } else {
-                userSalvo = usuarioService.atualizar(usuario, idUsuarioLogado);
+                userSalvo = usuarioService.atualizar(usuario);
             }
 
             // Sincroniza permissões (níveis de acesso)
@@ -123,12 +122,12 @@ public class UsuarioController extends BaseController {
 
             for (String nivel : selecionados) {
                 if (!niveisAtuais.contains(nivel)) {
-                    acessoService.concederPermissao(id, nivel, idUsuarioLogado);
+                    acessoService.concederPermissao(id, nivel);
                 }
             }
             for (String nivelAtual : niveisAtuais) {
                 if (!selecionados.contains(nivelAtual)) {
-                    acessoService.revogarPermissao(id, nivelAtual, idUsuarioLogado);
+                    acessoService.revogarPermissao(id, nivelAtual);
                 }
             }
 
@@ -147,8 +146,7 @@ public class UsuarioController extends BaseController {
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
-            Integer idUsuarioLogado = getIdUsuarioLogado(session);
-            usuarioService.excluir(id, idUsuarioLogado);
+            usuarioService.excluir(id);
             ra.addFlashAttribute("sucesso", "Utilizador removido com sucesso!");
         } catch (Exception e) {
             log.error("Erro ao excluir usuário ID={}: {}", id, e.getMessage());
@@ -162,11 +160,6 @@ public class UsuarioController extends BaseController {
     // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
-    }
-
-    private Integer getIdUsuarioLogado(HttpSession session) {
-        ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");
-        return usuario != null ? usuario.getIdPessoa() : null;
     }
 
     private void carregarListasApoio(Model model, Integer idUsuario) {
@@ -236,7 +229,7 @@ public class UsuarioController extends BaseController {
         }
 
         try {
-            usuarioService.atualizarPerfil(usuario, idLogado);
+            usuarioService.atualizarPerfil(usuario);
             ra.addFlashAttribute("sucesso", "Perfil atualizado com sucesso!");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro ao atualizar perfil: " + e.getMessage());

@@ -45,18 +45,18 @@ public class ConselheiroService {
 
     @Auditar(tabela = "conselheiro", acao = "CRIAR", descricao = "Criação de novo conselheiro", dadosParametros = "{ 'conselheiro': #conselheiro }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
-    public Conselheiro criar(Conselheiro conselheiro, Integer idUsuarioLogado) {
+    public Conselheiro criar(Conselheiro conselheiro) {
         conselheiro.setIdPessoa(null);
-        return salvarConselheiro(conselheiro, idUsuarioLogado, true);
+        return salvarConselheiro(conselheiro, true);
     }
 
     @Auditar(tabela = "conselheiro", acao = "ATUALIZAR", descricao = "Atualização de conselheiro existente", dadosParametros = "{ 'conselheiro': #conselheiro }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
-    public Conselheiro atualizar(Conselheiro conselheiro, Integer idUsuarioLogado) {
+    public Conselheiro atualizar(Conselheiro conselheiro) {
         if (conselheiro.getIdPessoa() == null) {
             throw new RuntimeException("ID do conselheiro não informado para atualização.");
         }
-        return salvarConselheiro(conselheiro, idUsuarioLogado, false);
+        return salvarConselheiro(conselheiro, false);
     }
 
     /**
@@ -64,7 +64,7 @@ public class ConselheiroService {
      * 
      * @param isNovo indica se é criação (true) ou atualização (false)
      */
-    private Conselheiro salvarConselheiro(Conselheiro conselheiro, Integer idUsuarioLogado, boolean isNovo) {
+    private Conselheiro salvarConselheiro(Conselheiro conselheiro, boolean isNovo) {
         // Se for uma edição (ID informado), carrega a entidade existente
         Conselheiro conselheiroExistente = null;
         if (!isNovo) {
@@ -140,10 +140,8 @@ public class ConselheiroService {
 
         // Concede permissões padrão apenas para novos conselheiros
         if (isNovo) {
-            acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL,
-                    idUsuarioLogado);
-            acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_COMPROVANTES,
-                    idUsuarioLogado);
+            acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL);
+            acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_COMPROVANTES);
             log.info("Permissões padrão concedidas para o novo conselheiro ID={}", conselheiroSalvo.getIdPessoa());
         }
 
@@ -152,7 +150,7 @@ public class ConselheiroService {
 
     @Auditar(tabela = "conselheiro", acao = "EXCLUIR", descricao = "Exclusão física de conselheiro", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
-    public void excluir(Integer id, Integer idUsuarioLogado) {
+    public void excluir(Integer id) {
         Optional<Conselheiro> conselheiroOpt = conselheiroRepository.findById(id);
         if (conselheiroOpt.isEmpty()) {
             log.warn("Tentativa de excluir conselheiro inexistente ID={}", id);
