@@ -2,7 +2,7 @@ package br.com.cremepe.jeton.seguranca;
 
 import br.com.cremepe.jeton.dominio.NivelAcesso;
 import br.com.cremepe.jeton.dominio.ViewUserLogin;
-import br.com.cremepe.jeton.servico.LogJetonService;
+import br.com.cremepe.jeton.servico.AutorizacaoService;
 import br.com.cremepe.jeton.servico.ParametrosService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,7 +19,7 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
     private static final Logger log = LoggerFactory.getLogger(AutorizacaoInterceptor.class);
 
     @Autowired
-    private LogJetonService logJetonService;
+    private AutorizacaoService autorizacaoService;
     @Autowired
     private ParametrosService parametrosService;
 
@@ -83,9 +83,8 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // Demais rotas (incluindo /atividades, /comprovantes, etc.)
+        // Demais rotas
         if (uri.startsWith("/atividades")) {
-            // Conselheiros não podem acessar a área administrativa de atividades
             if ("C".equals(usuarioLogado.getInTipoPessoa())) {
                 permissaoFaltante = "ACESSO_RESTRITO_CONSELHEIRO";
                 response.sendRedirect("/index?erro=acesso_negado");
@@ -118,16 +117,20 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
             log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão U", usuarioLogado.getNome(), uri);
         } else if (uri.startsWith("/logs")
                 && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_NIVEIS_ACESSO))) {
+            permissaoFaltante = NivelAcesso.NIVEL_NIVEIS_ACESSO;
             log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão N", usuarioLogado.getNome(), uri);
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }
 
         if (permissaoFaltante != null) {
-            String textoLog = String.format(
-                    "Acesso negado: Usuário ID=%d (%s) tentou acessar %s %s - Nível necessário: '%s'",
-                    usuarioLogado.getIdPessoa(), usuarioLogado.getNome(), method, uri, permissaoFaltante);
-            logJetonService.registrarLog("acesso_negado", usuarioLogado.getIdPessoa(), textoLog);
+            // Registrar auditoria via serviço
+            autorizacaoService.registrarAcessoNegado(
+                    usuarioLogado.getIdPessoa(),
+                    usuarioLogado.getNome(),
+                    method,
+                    uri,
+                    permissaoFaltante);
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }
