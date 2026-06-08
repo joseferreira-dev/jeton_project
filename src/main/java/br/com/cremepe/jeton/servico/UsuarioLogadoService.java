@@ -21,9 +21,4 @@ public class UsuarioLogadoService {
         return new AuditoriaUser(usuario.getIdPessoa(), usuario.getNome());
     }
 
-    // Método auxiliar para compatibilidade com código antigo (se necessário)
-    public Integer getIdUsuarioLogado() {
-        AuditoriaUser u = getUsuarioLogado();
-        return u != null ? u.id() : null;
-    }
 }

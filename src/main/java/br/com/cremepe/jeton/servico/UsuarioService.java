@@ -308,9 +308,6 @@ public class UsuarioService {
 
         log.info("Usuário excluído: ID={}, nome='{}', CPF={}, tipo={}, situação={}",
                 id, nome, cpf, tipoPessoa, situacao);
-
-        // O aspecto @Auditar já registra o log. Não é mais necessário chamar
-        // logJetonService.registrarLog aqui.
     }
 
     // =========================================================================
