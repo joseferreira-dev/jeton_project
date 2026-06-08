@@ -1,4 +1,4 @@
-package br.com.cremepe.jeton.controlador;
+package br.com.cremepe.jeton.controller;
 
 import br.com.cremepe.jeton.domain.Conselheiro;
 import br.com.cremepe.jeton.domain.Gestao;
