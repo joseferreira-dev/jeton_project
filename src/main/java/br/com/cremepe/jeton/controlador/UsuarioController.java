@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
-import br.com.cremepe.jeton.dominio.Usuario;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
+import br.com.cremepe.jeton.domain.Usuario;
+import br.com.cremepe.jeton.domain.ViewUserLogin;
 import br.com.cremepe.jeton.repository.UsuarioAcessoRepository;
 import br.com.cremepe.jeton.servico.PermissaoService;
 import br.com.cremepe.jeton.servico.ConselheiroService;

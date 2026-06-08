@@ -1,4 +1,4 @@
-package br.com.cremepe.jeton.dominio;
+package br.com.cremepe.jeton.domain;
 
 import jakarta.persistence.*;
 import java.io.Serializable;

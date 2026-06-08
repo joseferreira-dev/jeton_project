@@ -1,6 +1,6 @@
 package br.com.cremepe.jeton.controlador;
 
-import br.com.cremepe.jeton.dominio.Comprovante;
+import br.com.cremepe.jeton.domain.Comprovante;
 import br.com.cremepe.jeton.servico.ComprovanteService;
 import br.com.cremepe.jeton.servico.FileStorageService;
 import jakarta.servlet.http.HttpServletRequest;

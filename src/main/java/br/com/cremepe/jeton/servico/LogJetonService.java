@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.servico;
 
-import br.com.cremepe.jeton.dominio.LogJeton;
-import br.com.cremepe.jeton.dominio.Usuario;
+import br.com.cremepe.jeton.domain.LogJeton;
+import br.com.cremepe.jeton.domain.Usuario;
 import br.com.cremepe.jeton.repository.LogJetonRepository;
 import br.com.cremepe.jeton.repository.UsuarioRepository;
 

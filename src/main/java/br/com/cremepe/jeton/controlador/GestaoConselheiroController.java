@@ -1,8 +1,8 @@
 package br.com.cremepe.jeton.controlador;
 
-import br.com.cremepe.jeton.dominio.Conselheiro;
-import br.com.cremepe.jeton.dominio.Gestao;
-import br.com.cremepe.jeton.dominio.GestaoConselheiro;
+import br.com.cremepe.jeton.domain.Conselheiro;
+import br.com.cremepe.jeton.domain.Gestao;
+import br.com.cremepe.jeton.domain.GestaoConselheiro;
 import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoConselheiroService;

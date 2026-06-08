@@ -1,23 +1,23 @@
-package br.com.cremepe.jeton.dominio;
+package br.com.cremepe.jeton.domain;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * Entidade JPA que representa a tabela 'usuario'.
- * Possui relacionamento 1:1 com a entidade Pessoa (compartilha a mesma PK).
+ * Entidade JPA que representa a tabela associativa 'gestao_conselheiro'.
+ * Resolve o relacionamento M:N entre Gestao e Conselheiro, incluindo dados
+ * extras.
  */
 @Entity
-@Table(name = "usuario")
-public class Usuario implements Serializable {
+@Table(name = "gestao_conselheiro")
+public class GestaoConselheiro implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     // =========================================================================
-    // CONSTANTES PÚBLICAS PARA SITUAÇÃO
+    // CONSTANTES PÚBLICAS PARA A SITUAÇÃO
     // =========================================================================
     public static final String SITUACAO_ATIVO = "A";
     public static final String SITUACAO_INATIVO = "I";
@@ -25,35 +25,27 @@ public class Usuario implements Serializable {
     // =========================================================================
     // CAMPOS DA ENTIDADE
     // =========================================================================
-    @Id
-    @Column(name = "idUsuarioPessoa")
-    private Integer idUsuarioPessoa;
+    @EmbeddedId
+    private GestaoConselheiroId id = new GestaoConselheiroId();
 
-    @NotNull
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY) // ANTES: padrão EAGER; DEPOIS:
-                                                                                       // LAZY
-    @MapsId
-    @JoinColumn(name = "idUsuarioPessoa")
-    private Pessoa pessoa;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("idGestao")
+    @JoinColumn(name = "idGestao")
+    private Gestao gestao;
 
-    @Size(max = 64)
-    @Column(name = "senha", length = 64)
-    private String senha;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("idPessoa")
+    @JoinColumn(name = "idPessoa")
+    private Conselheiro conselheiro;
 
     @NotNull
     @Column(name = "inSituacao", length = 1, nullable = false)
     private String inSituacao;
 
-    @Transient
-    private boolean eConselheiro;
-
-    @Transient
-    private Integer crm;
-
     // =========================================================================
     // CONSTRUTORES
     // =========================================================================
-    public Usuario() {
+    public GestaoConselheiro() {
     }
 
     // =========================================================================
@@ -77,35 +69,41 @@ public class Usuario implements Serializable {
             inSituacao = inSituacao.toUpperCase();
         }
         if (!SITUACAO_ATIVO.equals(inSituacao) && !SITUACAO_INATIVO.equals(inSituacao)) {
-            inSituacao = SITUACAO_ATIVO; // valor padrão
+            inSituacao = SITUACAO_INATIVO; // valor padrão seguro
         }
     }
 
     // =========================================================================
     // GETTERS E SETTERS
     // =========================================================================
-    public Integer getIdUsuarioPessoa() {
-        return idUsuarioPessoa;
+    public GestaoConselheiroId getId() {
+        return id;
     }
 
-    public void setIdUsuarioPessoa(Integer idUsuarioPessoa) {
-        this.idUsuarioPessoa = idUsuarioPessoa;
+    public void setId(GestaoConselheiroId id) {
+        this.id = id;
     }
 
-    public Pessoa getPessoa() {
-        return pessoa;
+    public Gestao getGestao() {
+        return gestao;
     }
 
-    public void setPessoa(Pessoa pessoa) {
-        this.pessoa = pessoa;
+    public void setGestao(Gestao gestao) {
+        this.gestao = gestao;
+        if (gestao != null && gestao.getIdGestao() != null) {
+            this.id.setIdGestao(gestao.getIdGestao());
+        }
     }
 
-    public String getSenha() {
-        return senha;
+    public Conselheiro getConselheiro() {
+        return conselheiro;
     }
 
-    public void setSenha(String senha) {
-        this.senha = senha;
+    public void setConselheiro(Conselheiro conselheiro) {
+        this.conselheiro = conselheiro;
+        if (conselheiro != null && conselheiro.getIdPessoa() != null) {
+            this.id.setIdPessoa(conselheiro.getIdPessoa());
+        }
     }
 
     public String getInSituacao() {
@@ -116,24 +114,8 @@ public class Usuario implements Serializable {
         this.inSituacao = inSituacao;
     }
 
-    public boolean iseConselheiro() {
-        return eConselheiro;
-    }
-
-    public void seteConselheiro(boolean eConselheiro) {
-        this.eConselheiro = eConselheiro;
-    }
-
-    public Integer getCrm() {
-        return crm;
-    }
-
-    public void setCrm(Integer crm) {
-        this.crm = crm;
-    }
-
     // =========================================================================
-    // EQUALS & HASHCODE
+    // EQUALS & HASHCODE (baseado na chave composta)
     // =========================================================================
     @Override
     public boolean equals(Object o) {
@@ -141,24 +123,23 @@ public class Usuario implements Serializable {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        Usuario usuario = (Usuario) o;
-        return Objects.equals(idUsuarioPessoa, usuario.idUsuarioPessoa);
+        GestaoConselheiro that = (GestaoConselheiro) o;
+        return Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(idUsuarioPessoa);
+        return Objects.hash(id);
     }
 
     // =========================================================================
-    // TO_STRING (seguro)
+    // TO_STRING
     // =========================================================================
     @Override
     public String toString() {
-        return "Usuario{" +
-                "id=" + idUsuarioPessoa +
-                ", nome=" + (pessoa != null ? pessoa.getNome() : "null") +
-                ", situacao=" + inSituacao +
+        return "GestaoConselheiro{" +
+                "id=" + id +
+                ", situacao='" + inSituacao + '\'' +
                 '}';
     }
 }

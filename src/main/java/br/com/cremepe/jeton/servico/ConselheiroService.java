@@ -1,10 +1,10 @@
 package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.annotation.Auditar;
-import br.com.cremepe.jeton.dominio.Conselheiro;
-import br.com.cremepe.jeton.dominio.NivelAcesso;
-import br.com.cremepe.jeton.dominio.Pessoa;
-import br.com.cremepe.jeton.dominio.Usuario;
+import br.com.cremepe.jeton.domain.Conselheiro;
+import br.com.cremepe.jeton.domain.NivelAcesso;
+import br.com.cremepe.jeton.domain.Pessoa;
+import br.com.cremepe.jeton.domain.Usuario;
 import br.com.cremepe.jeton.repository.ConselheiroRepository;
 import br.com.cremepe.jeton.repository.PessoaRepository;
 import br.com.cremepe.jeton.repository.UsuarioRepository;

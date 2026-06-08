@@ -1,6 +1,6 @@
 package br.com.cremepe.jeton.repository;
 
-import br.com.cremepe.jeton.dominio.PontosSaldo;
+import br.com.cremepe.jeton.domain.PontosSaldo;
 import br.com.cremepe.jeton.dto.PontosRemanescentesDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

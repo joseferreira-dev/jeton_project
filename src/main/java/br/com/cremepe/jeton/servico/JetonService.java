@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.annotation.Auditar;
-import br.com.cremepe.jeton.dominio.*;
+import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.dto.AtividadeRelatorioDTO;
 import br.com.cremepe.jeton.dto.ConselheiroRelatorioDTO;
 import br.com.cremepe.jeton.dto.PontosRemanescentesDTO;

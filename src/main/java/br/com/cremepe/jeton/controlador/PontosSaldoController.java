@@ -1,6 +1,6 @@
 package br.com.cremepe.jeton.controlador;
 
-import br.com.cremepe.jeton.dominio.PontosSaldo;
+import br.com.cremepe.jeton.domain.PontosSaldo;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.GestaoService;
 import br.com.cremepe.jeton.servico.PontosSaldoService;

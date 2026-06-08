@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
-import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.servico.RegrasService;
+import br.com.cremepe.jeton.domain.Regras;
 import br.com.cremepe.jeton.servico.PortariaService;
 import br.com.cremepe.jeton.servico.ResolucaoService;
 import jakarta.servlet.http.HttpSession;

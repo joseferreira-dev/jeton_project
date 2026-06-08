@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.annotation.Auditar;
-import br.com.cremepe.jeton.dominio.Parametros;
+import br.com.cremepe.jeton.domain.Parametros;
 import br.com.cremepe.jeton.repository.ParametrosRepository;
 
 import org.slf4j.Logger;

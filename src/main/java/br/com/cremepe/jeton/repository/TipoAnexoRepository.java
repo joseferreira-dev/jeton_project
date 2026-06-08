@@ -1,8 +1,9 @@
 package br.com.cremepe.jeton.repository;
 
-import br.com.cremepe.jeton.dominio.TipoAnexo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import br.com.cremepe.jeton.domain.TipoAnexo;
 
 import java.util.List;
 import java.util.Optional;

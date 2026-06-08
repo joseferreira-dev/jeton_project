@@ -1,9 +1,9 @@
 package br.com.cremepe.jeton.controlador;
 
-import br.com.cremepe.jeton.dominio.Conselheiro;
-import br.com.cremepe.jeton.dominio.Gestao;
-import br.com.cremepe.jeton.dominio.Jeton;
-import br.com.cremepe.jeton.dominio.PontosSaldo;
+import br.com.cremepe.jeton.domain.Conselheiro;
+import br.com.cremepe.jeton.domain.Gestao;
+import br.com.cremepe.jeton.domain.Jeton;
+import br.com.cremepe.jeton.domain.PontosSaldo;
 import br.com.cremepe.jeton.dto.AtividadeRelatorioDTO;
 import br.com.cremepe.jeton.dto.ConselheiroRelatorioDTO;
 import br.com.cremepe.jeton.dto.RelatorioGeralDTO;

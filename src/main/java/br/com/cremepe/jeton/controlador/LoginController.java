@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.controlador;
 
-import br.com.cremepe.jeton.dominio.AtividadeConselhal;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
+import br.com.cremepe.jeton.domain.AtividadeConselhal;
+import br.com.cremepe.jeton.domain.ViewUserLogin;
 import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repository.ComprovanteRepository;
 import br.com.cremepe.jeton.repository.ConselheiroRepository;

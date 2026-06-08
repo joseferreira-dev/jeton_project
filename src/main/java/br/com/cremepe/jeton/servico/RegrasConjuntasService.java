@@ -1,8 +1,8 @@
 package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.annotation.Auditar;
-import br.com.cremepe.jeton.dominio.Regras;
-import br.com.cremepe.jeton.dominio.RegrasConjuntas;
+import br.com.cremepe.jeton.domain.Regras;
+import br.com.cremepe.jeton.domain.RegrasConjuntas;
 import br.com.cremepe.jeton.repository.RegrasConjuntasRepository;
 
 import org.slf4j.Logger;

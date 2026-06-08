@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.annotation.Auditar;
-import br.com.cremepe.jeton.dominio.Resolucao;
+import br.com.cremepe.jeton.domain.Resolucao;
 import br.com.cremepe.jeton.repository.RegrasRepository;
 import br.com.cremepe.jeton.repository.ResolucaoRepository;
 

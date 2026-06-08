@@ -1,8 +1,8 @@
 package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.annotation.Auditar;
-import br.com.cremepe.jeton.dominio.Comprovante;
-import br.com.cremepe.jeton.dominio.TipoAnexo;
+import br.com.cremepe.jeton.domain.Comprovante;
+import br.com.cremepe.jeton.domain.TipoAnexo;
 import br.com.cremepe.jeton.repository.ComprovanteRepository;
 import br.com.cremepe.jeton.repository.TipoAnexoRepository;
 

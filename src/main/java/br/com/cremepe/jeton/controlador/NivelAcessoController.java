@@ -1,6 +1,6 @@
 package br.com.cremepe.jeton.controlador;
 
-import br.com.cremepe.jeton.dominio.NivelAcesso;
+import br.com.cremepe.jeton.domain.NivelAcesso;
 import br.com.cremepe.jeton.servico.NivelAcessoService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;

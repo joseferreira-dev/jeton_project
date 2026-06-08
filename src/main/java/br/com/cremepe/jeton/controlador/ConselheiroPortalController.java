@@ -1,6 +1,6 @@
 package br.com.cremepe.jeton.controlador;
 
-import br.com.cremepe.jeton.dominio.*;
+import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repository.JetonRepository;
 import br.com.cremepe.jeton.repository.PontosSaldoRepository;

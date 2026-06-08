@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.seguranca;
 
-import br.com.cremepe.jeton.dominio.NivelAcesso;
-import br.com.cremepe.jeton.dominio.ViewUserLogin;
+import br.com.cremepe.jeton.domain.NivelAcesso;
+import br.com.cremepe.jeton.domain.ViewUserLogin;
 import br.com.cremepe.jeton.servico.AutorizacaoService;
 import br.com.cremepe.jeton.servico.ParametrosService;
 import jakarta.servlet.http.HttpServletRequest;
