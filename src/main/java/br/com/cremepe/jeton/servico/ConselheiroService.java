@@ -35,7 +35,7 @@ public class ConselheiroService {
     @Autowired
     private UsuarioRepository usuarioRepository;
     @Autowired
-    private AcessoService acessoService;
+    private PermissaoService permissaoService;
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -140,8 +140,8 @@ public class ConselheiroService {
 
         // Concede permissões padrão apenas para novos conselheiros
         if (isNovo) {
-            acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL);
-            acessoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_COMPROVANTES);
+            permissaoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL);
+            permissaoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_COMPROVANTES);
             log.info("Permissões padrão concedidas para o novo conselheiro ID={}", conselheiroSalvo.getIdPessoa());
         }
 

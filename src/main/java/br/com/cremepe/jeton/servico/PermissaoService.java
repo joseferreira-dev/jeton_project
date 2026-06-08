@@ -18,9 +18,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class AcessoService {
+public class PermissaoService {
 
-    private static final Logger log = LoggerFactory.getLogger(AcessoService.class);
+    private static final Logger log = LoggerFactory.getLogger(PermissaoService.class);
 
     @Autowired
     private UsuarioAcessoRepository usuarioAcessoRepository;

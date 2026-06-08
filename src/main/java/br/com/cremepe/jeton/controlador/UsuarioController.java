@@ -3,7 +3,7 @@ package br.com.cremepe.jeton.controlador;
 import br.com.cremepe.jeton.dominio.Usuario;
 import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import br.com.cremepe.jeton.repositorio.UsuarioAcessoRepository;
-import br.com.cremepe.jeton.servico.AcessoService;
+import br.com.cremepe.jeton.servico.PermissaoService;
 import br.com.cremepe.jeton.servico.ConselheiroService;
 import br.com.cremepe.jeton.servico.NivelAcessoService;
 import br.com.cremepe.jeton.servico.UsuarioService;
@@ -34,7 +34,7 @@ public class UsuarioController extends BaseController {
     @Autowired
     private NivelAcessoService nivelAcessoService;
     @Autowired
-    private AcessoService acessoService;
+    private PermissaoService permissaoService;
     @Autowired
     private UsuarioAcessoRepository usuarioAcessoRepository;
 
@@ -122,12 +122,12 @@ public class UsuarioController extends BaseController {
 
             for (String nivel : selecionados) {
                 if (!niveisAtuais.contains(nivel)) {
-                    acessoService.concederPermissao(id, nivel);
+                    permissaoService.concederPermissao(id, nivel);
                 }
             }
             for (String nivelAtual : niveisAtuais) {
                 if (!selecionados.contains(nivelAtual)) {
-                    acessoService.revogarPermissao(id, nivelAtual);
+                    permissaoService.revogarPermissao(id, nivelAtual);
                 }
             }
 
