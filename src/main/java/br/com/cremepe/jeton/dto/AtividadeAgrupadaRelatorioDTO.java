@@ -10,7 +10,7 @@ import java.util.Map;
  * colunas dinâmicas (Regra -> Total de Pontos/Atividades).
  * NOTA: Esta classe não possui mapeamento físico (@Entity) no banco de dados.
  */
-public class RelatorioAtividadeConselhalAgrupadoDTO implements Serializable {
+public class AtividadeAgrupadaRelatorioDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -19,10 +19,10 @@ public class RelatorioAtividadeConselhalAgrupadoDTO implements Serializable {
     private Map<String, Integer> regras = new LinkedHashMap<>();
     private int totalPontos;
 
-    public RelatorioAtividadeConselhalAgrupadoDTO() {
+    public AtividadeAgrupadaRelatorioDTO() {
     }
 
-    public RelatorioAtividadeConselhalAgrupadoDTO(String gestao, String conselheiro) {
+    public AtividadeAgrupadaRelatorioDTO(String gestao, String conselheiro) {
         this.gestao = gestao;
         this.conselheiro = conselheiro;
     }

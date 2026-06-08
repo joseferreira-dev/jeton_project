@@ -2,7 +2,7 @@ package br.com.cremepe.jeton.servico;
 
 import br.com.cremepe.jeton.anotacao.Auditar;
 import br.com.cremepe.jeton.dominio.ViewAtividadeConselhal;
-import br.com.cremepe.jeton.dto.RelatorioAtividadeConselhalAgrupadoDTO;
+import br.com.cremepe.jeton.dto.AtividadeAgrupadaRelatorioDTO;
 import br.com.cremepe.jeton.repositorio.ViewAtividadeConselhalRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +26,7 @@ public class RelatorioService {
 
     @Auditar(tabela = "relatorio", acao = "GERAR_RELATORIO_ATIVIDADES", descricao = "Geração de relatório agrupado de atividades", dadosParametros = "{ 'idGestao': #idGestao, 'idConselheiro': #idConselheiro, 'dataInicio': #dataInicio, 'dataFim': #dataFim }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional(readOnly = true)
-    public List<RelatorioAtividadeConselhalAgrupadoDTO> gerarRelatorioAgrupado(
+    public List<AtividadeAgrupadaRelatorioDTO> gerarRelatorioAgrupado(
             Integer idGestao, Integer idConselheiro, Integer idRegra,
             LocalDate dataInicio, LocalDate dataFim) {
 
@@ -63,10 +63,10 @@ public class RelatorioService {
                 .filter(at -> at.getNome() != null)
                 .collect(Collectors.groupingBy(ViewAtividadeConselhal::getNome));
 
-        List<RelatorioAtividadeConselhalAgrupadoDTO> relatorio = new ArrayList<>();
+        List<AtividadeAgrupadaRelatorioDTO> relatorio = new ArrayList<>();
 
         agrupadoPorNome.forEach((nome, atividades) -> {
-            RelatorioAtividadeConselhalAgrupadoDTO dto = new RelatorioAtividadeConselhalAgrupadoDTO();
+            AtividadeAgrupadaRelatorioDTO dto = new AtividadeAgrupadaRelatorioDTO();
             dto.setConselheiro(nome);
             dto.setGestao(atividades.get(0).getNomeGestao());
 
@@ -90,7 +90,7 @@ public class RelatorioService {
             relatorio.add(dto);
         });
 
-        relatorio.sort(Comparator.comparing(RelatorioAtividadeConselhalAgrupadoDTO::getConselheiro));
+        relatorio.sort(Comparator.comparing(AtividadeAgrupadaRelatorioDTO::getConselheiro));
         log.info("Relatório gerado com {} registros", relatorio.size());
         return relatorio;
     }
