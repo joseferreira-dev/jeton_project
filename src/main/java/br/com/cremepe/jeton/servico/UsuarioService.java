@@ -1,6 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
-import br.com.cremepe.jeton.anotacao.Auditar;
+import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.dominio.Conselheiro;
 import br.com.cremepe.jeton.dominio.Pessoa;
 import br.com.cremepe.jeton.dominio.Usuario;

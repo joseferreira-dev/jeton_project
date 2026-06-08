@@ -1,4 +1,4 @@
-package br.com.cremepe.jeton.anotacao;
+package br.com.cremepe.jeton.annotation;
 
 import java.lang.annotation.*;
 

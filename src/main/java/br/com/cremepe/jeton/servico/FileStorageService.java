@@ -1,9 +1,11 @@
 package br.com.cremepe.jeton.servico;
 
-import br.com.cremepe.jeton.anotacao.Auditar;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+
+import br.com.cremepe.jeton.annotation.Auditar;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

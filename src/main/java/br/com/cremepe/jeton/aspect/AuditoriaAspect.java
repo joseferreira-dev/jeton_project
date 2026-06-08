@@ -1,8 +1,8 @@
-package br.com.cremepe.jeton.aspecto;
+package br.com.cremepe.jeton.aspect;
 
-import br.com.cremepe.jeton.anotacao.Auditar;
-import br.com.cremepe.jeton.anotacao.AuditoriaContext;
-import br.com.cremepe.jeton.anotacao.AuditoriaUser;
+import br.com.cremepe.jeton.annotation.Auditar;
+import br.com.cremepe.jeton.annotation.AuditoriaContext;
+import br.com.cremepe.jeton.annotation.AuditoriaUser;
 import br.com.cremepe.jeton.servico.LogJetonService;
 import br.com.cremepe.jeton.servico.UsuarioLogadoService;
 import com.fasterxml.jackson.annotation.JsonInclude;

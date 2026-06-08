@@ -1,7 +1,8 @@
 package br.com.cremepe.jeton.servico;
 
-import br.com.cremepe.jeton.anotacao.Auditar;
 import org.springframework.stereotype.Service;
+
+import br.com.cremepe.jeton.annotation.Auditar;
 
 @Service
 public class AutorizacaoService {

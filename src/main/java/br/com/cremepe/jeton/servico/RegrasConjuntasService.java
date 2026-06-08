@@ -1,6 +1,6 @@
 package br.com.cremepe.jeton.servico;
 
-import br.com.cremepe.jeton.anotacao.Auditar;
+import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.dominio.Regras;
 import br.com.cremepe.jeton.dominio.RegrasConjuntas;
 import br.com.cremepe.jeton.repository.RegrasConjuntasRepository;

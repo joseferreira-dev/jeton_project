@@ -1,8 +1,8 @@
 package br.com.cremepe.jeton.servico;
 
-import br.com.cremepe.jeton.anotacao.Auditar;
-import br.com.cremepe.jeton.anotacao.AuditoriaContext;
-import br.com.cremepe.jeton.anotacao.AuditoriaUser;
+import br.com.cremepe.jeton.annotation.Auditar;
+import br.com.cremepe.jeton.annotation.AuditoriaContext;
+import br.com.cremepe.jeton.annotation.AuditoriaUser;
 import br.com.cremepe.jeton.dominio.ViewUserLogin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

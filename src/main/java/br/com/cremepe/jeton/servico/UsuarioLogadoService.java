@@ -1,7 +1,7 @@
 package br.com.cremepe.jeton.servico;
 
+import br.com.cremepe.jeton.annotation.AuditoriaUser;
 import br.com.cremepe.jeton.dominio.ViewUserLogin;
-import br.com.cremepe.jeton.anotacao.AuditoriaUser;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
