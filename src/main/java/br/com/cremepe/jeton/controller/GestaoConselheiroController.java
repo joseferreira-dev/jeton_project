@@ -3,7 +3,6 @@ package br.com.cremepe.jeton.controller;
 import br.com.cremepe.jeton.domain.Conselheiro;
 import br.com.cremepe.jeton.domain.Gestao;
 import br.com.cremepe.jeton.domain.GestaoConselheiro;
-import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.service.ConselheiroService;
 import br.com.cremepe.jeton.service.GestaoConselheiroService;
 import br.com.cremepe.jeton.service.GestaoService;
@@ -19,6 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
@@ -33,12 +33,7 @@ public class GestaoConselheiroController {
     private GestaoService gestaoService;
     @Autowired
     private ConselheiroService conselheiroService;
-    @Autowired
-    private AtividadeConselhalRepository atividadeRepository;
 
-    // =========================================================================
-    // LISTAGEM
-    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -65,9 +60,6 @@ public class GestaoConselheiroController {
         return "gestaoconselheiro/lista";
     }
 
-    // =========================================================================
-    // FORMULÁRIOS (NOVO / EDIÇÃO)
-    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -109,7 +101,6 @@ public class GestaoConselheiroController {
             Integer idGestao = vinculo.getGestao().getIdGestao();
             Integer idPessoa = vinculo.getConselheiro().getIdPessoa();
 
-            // Verifica se o vínculo já existe
             boolean exists = gestaoConselheiroService.buscarPorId(idGestao, idPessoa).isPresent();
 
             if (!exists) {
@@ -131,10 +122,12 @@ public class GestaoConselheiroController {
             @PathVariable("idPessoa") Integer idPessoa,
             HttpSession session,
             RedirectAttributes ra) {
+        if (naoAutenticado(session))
+            return "redirect:/login";
         try {
             gestaoConselheiroService.excluir(idGestao, idPessoa);
             ra.addFlashAttribute("sucesso", "Vínculo removido com sucesso!");
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Erro ao excluir vínculo {}/{}: {}", idGestao, idPessoa, e.getMessage());
             ra.addFlashAttribute("erro",
                     "Não foi possível remover o vínculo. O conselheiro já possui atividades nesta gestão.");
@@ -142,9 +135,6 @@ public class GestaoConselheiroController {
         return "redirect:/gestao-conselheiros";
     }
 
-    // =========================================================================
-    // VÍNCULO EM MASSA
-    // =========================================================================
     @GetMapping("/vincular/{idGestao}")
     public String prepararVincularMassa(@PathVariable("idGestao") Integer idGestao, Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -154,17 +144,12 @@ public class GestaoConselheiroController {
                 .orElseThrow(() -> new IllegalArgumentException("Gestão não encontrada"));
         List<Conselheiro> todosConselheiros = conselheiroService.listarTodos();
 
-        // IDs já vinculados (todos, independente do status)
         List<Integer> selecionadosIds = gestaoConselheiroService.listarTodos().stream()
                 .filter(v -> v.getId().getIdGestao().equals(idGestao))
                 .map(v -> v.getId().getIdPessoa())
                 .toList();
 
-        // IDs que possuem atividades (para desabilitar remoção)
-        List<Integer> idsComAtividades = selecionadosIds.stream()
-                .filter(idPessoa -> atividadeRepository.countByGestaoIdGestaoAndConselheiroIdPessoa(idGestao,
-                        idPessoa) > 0)
-                .toList();
+        List<Integer> idsComAtividades = gestaoConselheiroService.findConselheirosComAtividadesNaGestao(idGestao);
 
         model.addAttribute("idsComAtividades", idsComAtividades);
         model.addAttribute("gestao", gestao);
@@ -179,19 +164,27 @@ public class GestaoConselheiroController {
             @RequestParam(value = "conselheirosIds", required = false) List<Integer> conselheirosIds,
             HttpSession session,
             RedirectAttributes ra) {
+        if (naoAutenticado(session))
+            return "redirect:/login";
         try {
-            gestaoConselheiroService.atualizarVinculosEmMassa(idGestao, conselheirosIds);
-            ra.addFlashAttribute("sucesso", "Vínculos atualizados com sucesso!");
+            Map<String, List<Integer>> resultado = gestaoConselheiroService.atualizarVinculosEmMassa(idGestao,
+                    conselheirosIds);
+
+            String mensagem = "Vínculos atualizados com sucesso! ";
+            if (!resultado.get("removidos").isEmpty()) {
+                mensagem += resultado.get("removidos").size() + " vínculo(s) removido(s). ";
+            }
+            if (!resultado.get("adicionados").isEmpty()) {
+                mensagem += resultado.get("adicionados").size() + " vínculo(s) adicionado(s). ";
+            }
+            ra.addFlashAttribute("sucesso", mensagem);
         } catch (Exception e) {
             log.error("Erro ao atualizar vínculos em massa para gestão {}: {}", idGestao, e.getMessage());
-            ra.addFlashAttribute("erro", "Erro ao atualizar vínculos.");
+            ra.addFlashAttribute("erro", "Erro ao atualizar vínculos: " + e.getMessage());
         }
         return "redirect:/gestoes";
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
     }

@@ -16,9 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,7 +29,7 @@ public class GestaoConselheiroService {
     private static final Logger log = LoggerFactory.getLogger(GestaoConselheiroService.class);
 
     @Autowired
-    private GestaoConselheiroRepository repository;
+    private GestaoConselheiroRepository gestaoConselheiroRepository;
     @Autowired
     private GestaoRepository gestaoRepository;
     @Autowired
@@ -37,9 +39,7 @@ public class GestaoConselheiroService {
     @Autowired
     private PessoaRepository pessoaRepository;
 
-    // =========================================================================
     // OPERAÇÕES DE ESCRITA
-    // =========================================================================
 
     @Auditar(tabela = "gestao_conselheiro", acao = "CRIAR", descricao = "Criação de vínculo entre conselheiro e gestão", dadosParametros = "{ 'idGestao': #vinculo.gestao.idGestao, 'idPessoa': #vinculo.conselheiro.idPessoa, 'situacao': #vinculo.inSituacao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
@@ -56,7 +56,7 @@ public class GestaoConselheiroService {
         GestaoConselheiroId id = new GestaoConselheiroId(
                 vinculo.getGestao().getIdGestao(),
                 vinculo.getConselheiro().getIdPessoa());
-        if (!repository.existsById(id)) {
+        if (!gestaoConselheiroRepository.existsById(id)) {
             throw new RuntimeException("Vínculo não encontrado para atualização.");
         }
         return salvarVinculo(vinculo, false);
@@ -71,7 +71,7 @@ public class GestaoConselheiroService {
         // Para edição, carrega o vínculo existente (garante entidade gerenciada)
         GestaoConselheiro vinculoExistente = null;
         if (!isNovo) {
-            vinculoExistente = repository.findById(new GestaoConselheiroId(
+            vinculoExistente = gestaoConselheiroRepository.findById(new GestaoConselheiroId(
                     vinculo.getGestao().getIdGestao(),
                     vinculo.getConselheiro().getIdPessoa()))
                     .orElseThrow(() -> new RuntimeException("Vínculo não encontrado para edição."));
@@ -103,11 +103,11 @@ public class GestaoConselheiroService {
         if (isNovo) {
             // Criação: define o ID composto e salva
             vinculo.setId(new GestaoConselheiroId(idGestao, idPessoa));
-            salvo = repository.save(vinculo);
+            salvo = gestaoConselheiroRepository.save(vinculo);
         } else {
             // Atualização: apenas altera a situação
             vinculoExistente.setInSituacao(vinculo.getInSituacao());
-            salvo = repository.save(vinculoExistente);
+            salvo = gestaoConselheiroRepository.save(vinculoExistente);
         }
 
         log.info("Vínculo {}: gestão='{}' (ID={}), conselheiro='{}' (ID={}), situação={}",
@@ -118,12 +118,12 @@ public class GestaoConselheiroService {
     }
 
     private void inativarOutrosVinculosAtivos(Integer idGestaoAtual, Integer idPessoa) {
-        List<GestaoConselheiro> outrosVinculos = repository.findByConselheiroIdPessoaAndInSituacao(
+        List<GestaoConselheiro> outrosVinculos = gestaoConselheiroRepository.findByConselheiroIdPessoaAndInSituacao(
                 idPessoa, GestaoConselheiro.SITUACAO_ATIVO);
         for (GestaoConselheiro v : outrosVinculos) {
             if (!v.getId().getIdGestao().equals(idGestaoAtual)) {
                 v.setInSituacao(GestaoConselheiro.SITUACAO_INATIVO);
-                repository.save(v);
+                gestaoConselheiroRepository.save(v);
                 log.debug("Vínculo inativado: gestão={}, conselheiro={}", v.getId().getIdGestao(), idPessoa);
             }
         }
@@ -133,91 +133,91 @@ public class GestaoConselheiroService {
     // OPERAÇÕES EM MASSA
     // =========================================================================
 
+    // =========================================================================
+    // OPERAÇÕES EM MASSA (SUBSTITUI O MÉTODO ANTERIOR)
+    // =========================================================================
+
     @Auditar(tabela = "gestao_conselheiro", acao = "ATUALIZAR_EM_MASSA", descricao = "Atualização em massa de vínculos de conselheiros para uma gestão", dadosParametros = "{ 'idGestao': #idGestao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = true)
     @Transactional
     public Map<String, List<Integer>> atualizarVinculosEmMassa(Integer idGestao, List<Integer> idsPessoasSelecionadas) {
-        if (idsPessoasSelecionadas == null)
+        if (idsPessoasSelecionadas == null) {
             idsPessoasSelecionadas = new ArrayList<>();
+        }
 
         Gestao gestao = gestaoRepository.findById(idGestao)
                 .orElseThrow(() -> new RuntimeException("Gestão não encontrada: " + idGestao));
-        String nomeGestao = gestao.getNomeGestao();
 
-        List<GestaoConselheiro> vinculosAtuais = repository.findByIdIdGestao(idGestao);
-        List<Integer> idsAtuais = vinculosAtuais.stream()
+        List<GestaoConselheiro> vinculosAtuais = gestaoConselheiroRepository.findByIdIdGestao(idGestao);
+        Set<Integer> idsAtuais = vinculosAtuais.stream()
                 .map(v -> v.getId().getIdPessoa())
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
 
+        Set<Integer> idsNovos = new HashSet<>(idsPessoasSelecionadas);
+
+        // IDs a serem removidos (estavam na lista mas não estão mais)
+        Set<Integer> idsRemover = new HashSet<>(idsAtuais);
+        idsRemover.removeAll(idsNovos);
+
+        // Separa os que podem ser removidos (sem atividades) dos que não podem (com
+        // atividades)
+        // List<Integer> idsRemoverComAtividades = new ArrayList<>();
+        List<Integer> idsRemoverSemAtividades = new ArrayList<>();
+
+        for (Integer idPessoa : idsRemover) {
+            long qtdAtividades = atividadeRepository.countByGestaoIdGestaoAndConselheiroIdPessoa(idGestao, idPessoa);
+            if (qtdAtividades == 0) {
+                // idsRemoverComAtividades.add(idPessoa);
+                // } else {
+                idsRemoverSemAtividades.add(idPessoa);
+            }
+        }
+
+        // Remove os vínculos dos conselheiros sem atividades
         List<Integer> idsRemovidos = new ArrayList<>();
-        List<Integer> idsInativados = new ArrayList<>();
+        for (Integer idPessoa : idsRemoverSemAtividades) {
+            gestaoConselheiroRepository.deleteById(new GestaoConselheiroId(idGestao, idPessoa));
+            idsRemovidos.add(idPessoa);
+            log.info("Vínculo removido: gestão={}, conselheiro={}", idGestao, idPessoa);
+        }
+
+        // Para os conselheiros com atividades, não faz nada (mantém ativo)
+        // if (!idsRemoverComAtividades.isEmpty()) {
+        // String nomes = idsRemoverComAtividades.stream()
+        // .map(id -> pessoaRepository.findById(id).map(Pessoa::getNome).orElse("ID " +
+        // id))
+        // .collect(Collectors.joining(", "));
+        // log.warn("Os seguintes conselheiros possuem atividades e não puderam ser
+        // removidos da gestão {}: {}",
+        // idGestao, nomes);
+        // // Não lança exceção, apenas registra aviso
+        // }
+
+        // IDs a serem adicionados (não existiam antes)
+        Set<Integer> idsAdicionar = new HashSet<>(idsNovos);
+        idsAdicionar.removeAll(idsAtuais);
         List<Integer> idsAdicionados = new ArrayList<>();
-        List<Integer> idsReativados = new ArrayList<>();
 
-        // Remover ou inativar os desmarcados
-        for (GestaoConselheiro vinculo : vinculosAtuais) {
-            Integer idPessoa = vinculo.getId().getIdPessoa();
-            if (!idsPessoasSelecionadas.contains(idPessoa)) {
-                long qtdAtividades = atividadeRepository.countByGestaoIdGestaoAndConselheiroIdPessoa(idGestao,
-                        idPessoa);
-                if (qtdAtividades == 0) {
-                    repository.delete(vinculo);
-                    idsRemovidos.add(idPessoa);
-                } else {
-                    if (GestaoConselheiro.SITUACAO_ATIVO.equals(vinculo.getInSituacao())) {
-                        vinculo.setInSituacao(GestaoConselheiro.SITUACAO_INATIVO);
-                        repository.save(vinculo);
-                        idsInativados.add(idPessoa);
-                    }
-                }
-            }
+        for (Integer idPessoa : idsAdicionar) {
+            Conselheiro conselheiro = conselheiroRepository.findById(idPessoa)
+                    .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado: " + idPessoa));
+            GestaoConselheiro novoVinculo = new GestaoConselheiro();
+            novoVinculo.setId(new GestaoConselheiroId(idGestao, idPessoa));
+            novoVinculo.setGestao(gestao);
+            novoVinculo.setConselheiro(conselheiro);
+            novoVinculo.setInSituacao(GestaoConselheiro.SITUACAO_ATIVO);
+            gestaoConselheiroRepository.save(novoVinculo);
+            idsAdicionados.add(idPessoa);
+            log.info("Vínculo criado: gestão={}, conselheiro={}", idGestao, idPessoa);
         }
 
-        // Adicionar ou reativar novos
-        if (!idsPessoasSelecionadas.isEmpty()) {
-            for (Integer idPessoa : idsPessoasSelecionadas) {
-                if (!idsAtuais.contains(idPessoa)) {
-                    Conselheiro conselheiro = conselheiroRepository.findById(idPessoa)
-                            .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado: " + idPessoa));
-                    GestaoConselheiro novo = new GestaoConselheiro();
-                    novo.setId(new GestaoConselheiroId(idGestao, idPessoa));
-                    novo.setGestao(gestao);
-                    novo.setConselheiro(conselheiro);
-                    novo.setInSituacao(GestaoConselheiro.SITUACAO_ATIVO);
-                    inativarOutrosVinculosAtivos(idGestao, idPessoa);
-                    repository.save(novo);
-                    idsAdicionados.add(idPessoa);
-                } else {
-                    Optional<GestaoConselheiro> existente = repository
-                            .findById(new GestaoConselheiroId(idGestao, idPessoa));
-                    if (existente.isPresent()
-                            && GestaoConselheiro.SITUACAO_INATIVO.equals(existente.get().getInSituacao())) {
-                        existente.get().setInSituacao(GestaoConselheiro.SITUACAO_ATIVO);
-                        inativarOutrosVinculosAtivos(idGestao, idPessoa);
-                        repository.save(existente.get());
-                        idsReativados.add(idPessoa);
-                    }
-                }
-            }
-        }
-
-        // Log informativo apenas para debug
-        log.info(
-                "Atualização em massa de vínculos para gestão '{}' (ID={}). Removidos: {}, Inativados: {}, Adicionados: {}, Reativados: {}",
-                nomeGestao, idGestao, idsRemovidos.size(), idsInativados.size(), idsAdicionados.size(),
-                idsReativados.size());
-
-        // Retorna um mapa com as listas
         Map<String, List<Integer>> resultado = new HashMap<>();
         resultado.put("removidos", idsRemovidos);
-        resultado.put("inativados", idsInativados);
         resultado.put("adicionados", idsAdicionados);
-        resultado.put("reativados", idsReativados);
+        // resultado.put("naoRemovidosPorAtividades", idsRemoverComAtividades);
         return resultado;
     }
 
-    // =========================================================================
     // OPERAÇÕES DE ATIVAÇÃO / INATIVAÇÃO
-    // =========================================================================
 
     @Auditar(tabela = "gestao_conselheiro", acao = "ATIVAR", descricao = "Ativação de vínculo entre conselheiro e gestão", dadosParametros = "{ 'idGestao': #idGestao, 'idPessoa': #idPessoa }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
@@ -227,7 +227,7 @@ public class GestaoConselheiroService {
             return;
         vinculo.setInSituacao(GestaoConselheiro.SITUACAO_ATIVO);
         inativarOutrosVinculosAtivos(idGestao, idPessoa);
-        repository.save(vinculo);
+        gestaoConselheiroRepository.save(vinculo);
         log.info("Vínculo ativado: gestão={}, conselheiro={}", idGestao, idPessoa);
     }
 
@@ -238,7 +238,7 @@ public class GestaoConselheiroService {
         if (vinculo.isInativo())
             return;
         vinculo.setInSituacao(GestaoConselheiro.SITUACAO_INATIVO);
-        repository.save(vinculo);
+        gestaoConselheiroRepository.save(vinculo);
         log.info("Vínculo inativado: gestão={}, conselheiro={}", idGestao, idPessoa);
     }
 
@@ -249,56 +249,62 @@ public class GestaoConselheiroService {
         if (atividades > 0) {
             throw new RuntimeException("Não é possível excluir o vínculo pois existem atividades associadas.");
         }
-        repository.deleteById(new GestaoConselheiroId(idGestao, idPessoa));
+        gestaoConselheiroRepository.deleteById(new GestaoConselheiroId(idGestao, idPessoa));
         log.info("Vínculo excluído permanentemente: gestão={}, conselheiro={}", idGestao, idPessoa);
     }
 
-    // =========================================================================
     // OPERAÇÕES DE LEITURA
-    // =========================================================================
 
     @Transactional(readOnly = true)
     public Page<GestaoConselheiro> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size,
             String sortField, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
-        return repository.pesquisarPaginado(termo, situacao, pageable);
+        return gestaoConselheiroRepository.pesquisarPaginado(termo, situacao, pageable);
     }
 
     @Transactional(readOnly = true)
     public List<GestaoConselheiro> listarTodos() {
-        return repository.findAll();
+        return gestaoConselheiroRepository.findAll();
     }
 
     @Transactional(readOnly = true)
     public Optional<GestaoConselheiro> buscarPorId(Integer idGestao, Integer idPessoa) {
-        return repository.findById(new GestaoConselheiroId(idGestao, idPessoa));
+        return gestaoConselheiroRepository.findById(new GestaoConselheiroId(idGestao, idPessoa));
     }
 
     @Transactional(readOnly = true)
     public GestaoConselheiro buscarOuFalhar(Integer idGestao, Integer idPessoa) {
-        return repository.findById(new GestaoConselheiroId(idGestao, idPessoa))
+        return gestaoConselheiroRepository.findById(new GestaoConselheiroId(idGestao, idPessoa))
                 .orElseThrow(() -> new RuntimeException(
                         "Vínculo não encontrado para gestão " + idGestao + " e conselheiro " + idPessoa));
     }
 
     @Transactional(readOnly = true)
     public Optional<GestaoConselheiro> buscarPorConselheiroEStatus(Integer idPessoa, String situacao) {
-        List<GestaoConselheiro> lista = repository.findByConselheiroIdPessoaAndInSituacao(idPessoa, situacao);
+        List<GestaoConselheiro> lista = gestaoConselheiroRepository.findByConselheiroIdPessoaAndInSituacao(idPessoa,
+                situacao);
         return lista.isEmpty() ? Optional.empty() : Optional.of(lista.get(0));
     }
 
     @Transactional(readOnly = true)
     public boolean existeVinculoParaConselheiro(Integer idPessoa) {
-        return repository.existsByConselheiroIdPessoa(idPessoa);
+        return gestaoConselheiroRepository.existsByConselheiroIdPessoa(idPessoa);
     }
 
-    // =========================================================================
+    @Transactional(readOnly = true)
+    public List<Integer> findConselheirosComAtividadesNaGestao(Integer idGestao) {
+        return gestaoConselheiroRepository.findByIdIdGestao(idGestao).stream()
+                .map(gc -> gc.getId().getIdPessoa())
+                .filter(idPessoa -> atividadeRepository.countByGestaoIdGestaoAndConselheiroIdPessoa(idGestao,
+                        idPessoa) > 0)
+                .collect(Collectors.toList());
+    }
+
     // MÉTODOS AUXILIARES
-    // =========================================================================
 
     private void validarVinculoDuplicado(Integer idGestao, Integer idPessoa) {
-        if (repository.existsByGestaoAndConselheiro(idGestao, idPessoa)) {
+        if (gestaoConselheiroRepository.existsByGestaoAndConselheiro(idGestao, idPessoa)) {
             throw new RuntimeException("Já existe um vínculo entre a gestão informada e este conselheiro.");
         }
     }
