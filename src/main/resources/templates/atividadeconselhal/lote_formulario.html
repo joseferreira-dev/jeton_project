@@ -234,7 +234,7 @@
                 }
 
                 selectRegra.innerHTML = '<option value="">Carregando regras...</option>';
-                fetch(`/atividades/api/regras-por-data?data=${data}`)
+                fetch(`/atividades/regras-por-data?data=${data}`)
                     .then(response => response.json())
                     .then(result => {
                         nomeResolucao.value = result.nomeResolucao || "Nenhuma encontrada";

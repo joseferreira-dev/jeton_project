@@ -120,7 +120,7 @@
                 loadingDiv.style.display = 'block';
                 errorDiv.style.display = 'none';
                 try {
-                    const response = await fetch(`/atividades/api/regras-por-data?data=${data}`);
+                    const response = await fetch(`/atividades/regras-por-data?data=${data}`);
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}`);
                     }

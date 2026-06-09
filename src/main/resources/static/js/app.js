@@ -640,7 +640,7 @@ function atualizarRegrasPorData(idRegraParaSelecionar) {
 
     selectRegra.innerHTML = '<option value="">Carregando regras da época...</option>';
 
-    fetch(`/atividades/api/regras-por-data?data=${dataValue}`)
+    fetch(`/atividades/regras-por-data?data=${dataValue}`)
         .then(response => response.json())
         .then(data => {
             const nomeResolucao = document.getElementById('nomeResolucaoVisual');

@@ -290,7 +290,7 @@ public class AtividadeConselhalController {
                 .collect(Collectors.toList());
     }
 
-    @GetMapping("/api/regras-por-data")
+    @GetMapping("/regras-por-data")
     @ResponseBody
     public Map<String, Object> getRegrasENormativasPorData(@RequestParam String data) {
         Map<String, Object> response = new HashMap<>();
