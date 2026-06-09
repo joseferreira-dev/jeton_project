@@ -38,9 +38,6 @@ public class UsuarioController extends BaseController {
     @Autowired
     private UsuarioAcessoRepository usuarioAcessoRepository;
 
-    // =========================================================================
-    // LISTAGEM
-    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -64,9 +61,6 @@ public class UsuarioController extends BaseController {
         return "usuario/lista";
     }
 
-    // =========================================================================
-    // FORMULÁRIOS (NOVO / EDIÇÃO)
-    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -93,9 +87,6 @@ public class UsuarioController extends BaseController {
         return "usuario/formulario";
     }
 
-    // =========================================================================
-    // SALVAR (CRIAR / ATUALIZAR)
-    // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@Valid @ModelAttribute("usuario") Usuario usuario,
             @RequestParam(value = "niveisAcesso", required = false) List<String> niveisAcessoSelecionados,
@@ -104,7 +95,6 @@ public class UsuarioController extends BaseController {
         try {
             Usuario userSalvo;
 
-            // Decide se é criação ou atualização
             if (usuario.getIdUsuarioPessoa() == null) {
                 userSalvo = usuarioService.criar(usuario);
             } else {
@@ -140,9 +130,6 @@ public class UsuarioController extends BaseController {
         return "redirect:/usuarios";
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
@@ -153,13 +140,6 @@ public class UsuarioController extends BaseController {
             ra.addFlashAttribute("erro", "Erro: O utilizador possui registos financeiros ou atividades vinculadas.");
         }
         return "redirect:/usuarios";
-    }
-
-    // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
-    private boolean naoAutenticado(HttpSession session) {
-        return session.getAttribute("usuarioLogado") == null;
     }
 
     private void carregarListasApoio(Model model, Integer idUsuario) {
@@ -174,10 +154,6 @@ public class UsuarioController extends BaseController {
         }
         model.addAttribute("niveisAtuais", niveisAtuais);
     }
-
-    // =========================================================================
-    // PERFIL DO USUÁRIO LOGADO
-    // =========================================================================
 
     @GetMapping("/perfil")
     public String perfil(HttpSession session, Model model) {
@@ -222,9 +198,9 @@ public class UsuarioController extends BaseController {
             usuario.getPessoa().setCpf(existente.getPessoa().getCpf());
         }
 
-        // Impede que conselheiros alterem o CRM (não deve ser enviado no formulário)
+        // Impede que conselheiros alterem o CRM
         if (isConselheiro(session)) {
-            usuario.setCrm(null); // será ignorado
+            usuario.setCrm(null);
             usuario.seteConselheiro(true);
         }
 
@@ -235,5 +211,9 @@ public class UsuarioController extends BaseController {
             ra.addFlashAttribute("erro", "Erro ao atualizar perfil: " + e.getMessage());
         }
         return "redirect:/usuarios/perfil";
+    }
+
+    private boolean naoAutenticado(HttpSession session) {
+        return session.getAttribute("usuarioLogado") == null;
     }
 }
