@@ -17,9 +17,6 @@ public class ResolucaoController {
     @Autowired
     private ResolucaoService resolucaoService;
 
-    // =========================================================================
-    // LISTAGEM
-    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -43,9 +40,6 @@ public class ResolucaoController {
         return "resolucao/lista";
     }
 
-    // =========================================================================
-    // FORMULÁRIOS
-    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -63,9 +57,6 @@ public class ResolucaoController {
         return "resolucao/formulario";
     }
 
-    // =========================================================================
-    // SALVAR
-    // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@ModelAttribute("resolucao") Resolucao resolucao,
             HttpSession session,
@@ -88,9 +79,6 @@ public class ResolucaoController {
         return "redirect:/resolucoes";
     }
 
-    // =========================================================================
-    // REVOGAÇÃO
-    // =========================================================================
     @GetMapping("/revogar/{id}")
     public String revogar(@PathVariable("id") Integer id,
             HttpSession session,
@@ -106,9 +94,6 @@ public class ResolucaoController {
         return "redirect:/resolucoes";
     }
 
-    // =========================================================================
-    // RESTAURAR
-    // =========================================================================
     @GetMapping("/restaurar/{id}")
     public String restaurar(@PathVariable("id") Integer id,
             HttpSession session,
@@ -124,9 +109,6 @@ public class ResolucaoController {
         return "redirect:/resolucoes";
     }
 
-    // =========================================================================
-    // EXCLUSÃO FÍSICA
-    // =========================================================================
     @GetMapping("/deletar/{id}")
     public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
@@ -142,9 +124,6 @@ public class ResolucaoController {
         return "redirect:/resolucoes";
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
     }

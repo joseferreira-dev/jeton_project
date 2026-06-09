@@ -16,9 +16,6 @@ public class TipoAnexoController {
     @Autowired
     private TipoAnexoService tipoAnexoService;
 
-    // =========================================================================
-    // LISTAGEM
-    // =========================================================================
     @GetMapping
     public String listar(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -27,9 +24,6 @@ public class TipoAnexoController {
         return "tipoanexo/lista";
     }
 
-    // =========================================================================
-    // FORMULÁRIOS
-    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -47,9 +41,6 @@ public class TipoAnexoController {
         return "tipoanexo/formulario";
     }
 
-    // =========================================================================
-    // SALVAR (CRIAR / ATUALIZAR)
-    // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@ModelAttribute("tipoAnexo") TipoAnexo tipoAnexo,
             HttpSession session,
@@ -72,9 +63,6 @@ public class TipoAnexoController {
         return "redirect:/tipos-anexo";
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
@@ -88,9 +76,6 @@ public class TipoAnexoController {
         return "redirect:/tipos-anexo";
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
     }
