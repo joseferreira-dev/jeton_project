@@ -1,10 +1,9 @@
 package br.com.cremepe.jeton.controller;
 
 import br.com.cremepe.jeton.domain.*;
-import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
-import br.com.cremepe.jeton.repository.JetonRepository;
-import br.com.cremepe.jeton.repository.PontosSaldoRepository;
 import br.com.cremepe.jeton.service.*;
+import br.com.cremepe.jeton.util.DataUtils;
+import br.com.cremepe.jeton.util.TurnoUtils;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -20,7 +19,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,15 +37,9 @@ public class ConselheiroPortalController {
     @Autowired
     private TipoAnexoService tipoAnexoService;
     @Autowired
-    private PontosSaldoRepository pontosSaldoRepository;
-    @Autowired
-    private AtividadeConselhalRepository atividadeRepository;
-    @Autowired
-    private JetonRepository jetonRepository;
+    private PontosSaldoService pontosSaldoService;
 
-    // =========================================================================
-    // VERIFICAÇÕES DE ACESSO E UTILITÁRIOS
-    // =========================================================================
+    // VERIFICAÇÕES DE ACESSO
 
     private boolean isConselheiro(HttpSession session) {
         ViewUserLogin user = (ViewUserLogin) session.getAttribute("usuarioLogado");
@@ -64,9 +56,7 @@ public class ConselheiroPortalController {
                 .map(GestaoConselheiro::getGestao);
     }
 
-    // =========================================================================
     // DASHBOARD
-    // =========================================================================
 
     @GetMapping
     public String redirectToDashboard() {
@@ -88,28 +78,17 @@ public class ConselheiroPortalController {
             return "conselheiro/dashboard";
         }
 
-        // Saldo total de pontos (saldo antigo + atividades validadas não computadas)
-        Integer pontosSaldoAntigo = pontosSaldoRepository.somarPontosSobrandoTotal(idConselheiro);
-        if (pontosSaldoAntigo == null)
-            pontosSaldoAntigo = 0;
-        Integer pontosAtividadesNaoComputadas = atividadeRepository
-                .sumPontosAtividadesValidadasNaoComputadas(idConselheiro);
-        if (pontosAtividadesNaoComputadas == null)
-            pontosAtividadesNaoComputadas = 0;
-        int saldoTotal = pontosSaldoAntigo + pontosAtividadesNaoComputadas;
-
-        // Novos indicadores
-        long atividadesPendentes = atividadeRepository.countByConselheiroIdPessoaAndInSituacao(idConselheiro, "P");
-        long atividadesTotais = atividadeRepository.countByConselheiroIdPessoa(idConselheiro);
-        BigDecimal totalRecebido = jetonRepository.sumValorRecebidoPorConselheiro(idConselheiro);
+        int saldoTotal = pontosSaldoService.somarPontosSobrandoTotal(idConselheiro)
+                + atividadeService.sumPontosValidadasNaoComputadas(idConselheiro);
+        long atividadesPendentes = atividadeService.countPendentesPorConselheiro(idConselheiro);
+        long atividadesTotais = atividadeService.countTotalPorConselheiro(idConselheiro);
+        BigDecimal totalRecebido = jetonService.sumValorRecebidoPorConselheiro(idConselheiro);
         if (totalRecebido == null)
             totalRecebido = BigDecimal.ZERO;
 
-        // Gestão ativa (apenas para exibição)
         Optional<Gestao> gestaoAtivaOpt = getGestaoAtivaDoConselheiro(idConselheiro);
         String nomeGestaoAtiva = gestaoAtivaOpt.map(Gestao::getNomeGestao).orElse(null);
 
-        // Últimas atividades (lista)
         Pageable top5 = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "dataHoraAtividade"));
         Page<AtividadeConselhal> paginaAtividades = atividadeService.listarPorConselheiro(idConselheiro, top5);
         List<Jeton> ultimosPagamentos = jetonService.listarPorConselheiro(idConselheiro, 5);
@@ -127,9 +106,7 @@ public class ConselheiroPortalController {
         return "conselheiro/dashboard";
     }
 
-    // =========================================================================
-    // ATIVIDADES (CRUD restrito ao próprio conselheiro)
-    // =========================================================================
+    // ATIVIDADES
 
     @GetMapping("/atividades")
     public String listarAtividades(
@@ -166,9 +143,7 @@ public class ConselheiroPortalController {
             return "redirect:/conselheiro/dashboard";
         }
 
-        Gestao gestao = gestaoOpt.get(); // <-- Extrai a Gestão do Optional
-
-        // Restante do método (criação da atividade, etc.)
+        Gestao gestao = gestaoOpt.get();
         AtividadeConselhal atividade = new AtividadeConselhal();
         Conselheiro conselheiro = conselheiroService.buscarPorId(idConselheiro)
                 .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado"));
@@ -194,7 +169,6 @@ public class ConselheiroPortalController {
             ra.addFlashAttribute("erro", "Você só pode editar suas próprias atividades.");
             return "redirect:/conselheiro/atividades";
         }
-
         if (!atividade.isPendente()) {
             ra.addFlashAttribute("erro", "Apenas atividades pendentes podem ser editadas.");
             return "redirect:/conselheiro/atividades";
@@ -217,40 +191,33 @@ public class ConselheiroPortalController {
             return "redirect:/login";
 
         try {
-            // Validação: garantir que o conselheiro não está tentando associar outra pessoa
             if (atividade.getConselheiro() == null
                     || !atividade.getConselheiro().getIdPessoa().equals(getIdConselheiroLogado(session))) {
                 throw new RuntimeException("Conselheiro inválido para esta atividade.");
             }
 
-            LocalDateTime dataHora = parseDataHora(dataAtividadePura, ra);
-            if (dataHora == null)
-                return "redirect:/conselheiro/atividades/nova";
-
+            LocalDateTime dataHora = DataUtils.parseDataHora(dataAtividadePura,
+                    "A data e horário da atividade são obrigatórios.");
             atividade.setDataHoraAtividade(dataHora);
-            atividade.setInTurno(calcularTurno(dataHora.getHour()));
+            atividade.setInTurno(TurnoUtils.calcularTurno(dataHora.getHour()));
 
-            // Se for nova, define situação pendente
             if (atividade.getIdAtividade() == null) {
                 atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
-            }
-
-            if (atividade.getIdAtividade() == null) {
-                // Criação
                 atividadeService.criar(atividade, file, idTipoAnexo, nomeComprovanteUsuario);
             } else {
-                // Edição
                 Integer idComprovanteAntigo = null;
                 AtividadeConselhal existente = atividadeService.buscarPorId(atividade.getIdAtividade()).orElse(null);
                 if (existente != null && existente.getComprovante() != null) {
                     idComprovanteAntigo = existente.getComprovante().getIdComprovante();
                 }
-                atividadeService.atualizar(atividade, file, idTipoAnexo, nomeComprovanteUsuario,
-                        idComprovanteAntigo);
+                atividadeService.atualizar(atividade, file, idTipoAnexo, nomeComprovanteUsuario, idComprovanteAntigo);
             }
             ra.addFlashAttribute("sucesso", "Atividade salva com sucesso!");
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao salvar atividade: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
+            return "redirect:/conselheiro/atividades/nova";
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         }
         return "redirect:/conselheiro/atividades";
     }
@@ -263,25 +230,21 @@ public class ConselheiroPortalController {
         try {
             AtividadeConselhal atividade = atividadeService.buscarPorId(id)
                     .orElseThrow(() -> new RuntimeException("Atividade não encontrada"));
-
             if (!atividade.getConselheiro().getIdPessoa().equals(getIdConselheiroLogado(session))) {
                 throw new RuntimeException("Você só pode excluir suas próprias atividades.");
             }
             if (!atividade.isPendente()) {
                 throw new RuntimeException("Apenas atividades pendentes podem ser excluídas.");
             }
-
             atividadeService.excluir(id);
             ra.addFlashAttribute("sucesso", "Atividade excluída com sucesso.");
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             ra.addFlashAttribute("erro", e.getMessage());
         }
         return "redirect:/conselheiro/atividades";
     }
 
-    // =========================================================================
-    // PAGAMENTOS (JETONS DO CONSELHEIRO)
-    // =========================================================================
+    // PAGAMENTOS
 
     @GetMapping("/pagamentos")
     public String listarPagamentos(Model model, HttpSession session) {
@@ -294,37 +257,10 @@ public class ConselheiroPortalController {
         return "conselheiro/pagamentos";
     }
 
-    // =========================================================================
-    // PERFIL (redireciona para a tela existente)
-    // =========================================================================
+    // PERFIL
 
     @GetMapping("/perfil")
     public String perfil() {
         return "redirect:/usuarios/perfil";
-    }
-
-    // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
-
-    private LocalDateTime parseDataHora(String dataAtividadePura, RedirectAttributes ra) {
-        if (dataAtividadePura == null || dataAtividadePura.trim().isEmpty()) {
-            ra.addFlashAttribute("erro", "A data e horário da atividade são obrigatórios.");
-            return null;
-        }
-        try {
-            return LocalDateTime.parse(dataAtividadePura);
-        } catch (DateTimeParseException e) {
-            ra.addFlashAttribute("erro", "Formato de data/hora inválido. Use 'YYYY-MM-DDTHH:mm'.");
-            return null;
-        }
-    }
-
-    private String calcularTurno(int hora) {
-        if (hora >= 6 && hora < 12)
-            return "M";
-        if (hora >= 12 && hora < 18)
-            return "T";
-        return "N";
     }
 }

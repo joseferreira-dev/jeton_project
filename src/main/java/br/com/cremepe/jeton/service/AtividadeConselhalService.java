@@ -471,4 +471,17 @@ public class AtividadeConselhalService {
     public long contarAtividadesPorComprovante(Integer idComprovante) {
         return atividadeRepository.countByComprovanteIdComprovante(idComprovante);
     }
+
+    public int sumPontosValidadasNaoComputadas(Integer idPessoa) {
+        Integer soma = atividadeRepository.sumPontosAtividadesValidadasNaoComputadas(idPessoa);
+        return soma != null ? soma : 0;
+    }
+
+    public long countPendentesPorConselheiro(Integer idPessoa) {
+        return atividadeRepository.countByConselheiroIdPessoaAndInSituacao(idPessoa, "P");
+    }
+
+    public long countTotalPorConselheiro(Integer idPessoa) {
+        return atividadeRepository.countByConselheiroIdPessoa(idPessoa);
+    }
 }

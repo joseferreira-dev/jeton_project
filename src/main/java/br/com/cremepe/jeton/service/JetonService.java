@@ -574,4 +574,9 @@ public class JetonService {
 
         return geral;
     }
+
+    public BigDecimal sumValorRecebidoPorConselheiro(Integer idPessoa) {
+        BigDecimal valor = jetonRepository.sumValorRecebidoPorConselheiro(idPessoa);
+        return valor != null ? valor : BigDecimal.ZERO;
+    }
 }

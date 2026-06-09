@@ -19,7 +19,7 @@ public class PontosSaldoService {
     private static final Logger log = LoggerFactory.getLogger(PontosSaldoService.class);
 
     @Autowired
-    private PontosSaldoRepository repository;
+    private PontosSaldoRepository pontosSaldoRepository;
 
     // =========================================================================
     // OPERAÇÕES DE ESCRITA
@@ -38,7 +38,7 @@ public class PontosSaldoService {
         if (pontos.getIdPontosSaldo() == null) {
             throw new RuntimeException("ID do saldo de pontos não informado para atualização.");
         }
-        if (!repository.existsById(pontos.getIdPontosSaldo())) {
+        if (!pontosSaldoRepository.existsById(pontos.getIdPontosSaldo())) {
             throw new RuntimeException("Saldo de pontos não encontrado para atualização.");
         }
         return salvarPontos(pontos, false);
@@ -53,7 +53,7 @@ public class PontosSaldoService {
         validarIntegridade(pontos);
         normalizar(pontos);
 
-        PontosSaldo salvo = repository.save(pontos);
+        PontosSaldo salvo = pontosSaldoRepository.save(pontos);
         log.info(
                 "Saldo de pontos {}: id={}, conselheiro={}, gestão={}, pontosTrabalhados={}, pontosUtilizados={}, pontosSobrando={}, situação={}",
                 isNovo ? "criado" : "atualizado",
@@ -67,7 +67,7 @@ public class PontosSaldoService {
 
     private void validarIntegridade(PontosSaldo pontos) {
         if (pontos.getIdPontosSaldo() != null) {
-            Optional<PontosSaldo> existente = repository.findById(pontos.getIdPontosSaldo());
+            Optional<PontosSaldo> existente = pontosSaldoRepository.findById(pontos.getIdPontosSaldo());
             if (existente.isPresent()) {
                 PontosSaldo original = existente.get();
                 if (original.isUtilizado() || original.isExcluido()) {
@@ -117,7 +117,7 @@ public class PontosSaldoService {
             throw new RuntimeException(
                     "Não é possível excluir um saldo ativo com pontos remanescentes. Considere inativá-lo.");
         }
-        repository.deleteById(id);
+        pontosSaldoRepository.deleteById(id);
         log.info(
                 "Saldo de pontos excluído fisicamente: id={}, conselheiro={}, gestão={}, pontosSobrando={}, situação={}",
                 id, idConselheiro, idGestao, pontosSobrando, situacao);
@@ -129,28 +129,33 @@ public class PontosSaldoService {
 
     @Transactional(readOnly = true)
     public List<PontosSaldo> listarTodos() {
-        return repository.findAll();
+        return pontosSaldoRepository.findAll();
     }
 
     @Transactional(readOnly = true)
     public Optional<PontosSaldo> buscarPorId(Integer id) {
-        return repository.findById(id);
+        return pontosSaldoRepository.findById(id);
     }
 
     @Transactional(readOnly = true)
     public PontosSaldo buscarOuFalhar(Integer id) {
-        return repository.findById(id)
+        return pontosSaldoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Saldo de pontos não encontrado com ID: " + id));
     }
 
     @Transactional(readOnly = true)
     public List<PontosSaldo> buscarSaldosDisponiveis(Integer idPessoa, Integer idGestao) {
-        return repository.buscarSaldosDisponiveisOrdenadosFIFO(idPessoa, idGestao);
+        return pontosSaldoRepository.buscarSaldosDisponiveisOrdenadosFIFO(idPessoa, idGestao);
     }
 
     @Transactional(readOnly = true)
     public boolean existeSaldoAtivoParaConselheiroGestao(Integer idPessoa, Integer idGestao) {
-        return repository.existsByConselheiroIdPessoaAndGestaoIdGestaoAndInSituacao(idPessoa, idGestao,
+        return pontosSaldoRepository.existsByConselheiroIdPessoaAndGestaoIdGestaoAndInSituacao(idPessoa, idGestao,
                 PontosSaldo.SITUACAO_ATIVO);
+    }
+
+    public int somarPontosSobrandoTotal(Integer idPessoa) {
+        Integer soma = pontosSaldoRepository.somarPontosSobrandoTotal(idPessoa);
+        return soma != null ? soma : 0;
     }
 }
