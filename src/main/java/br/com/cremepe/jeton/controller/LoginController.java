@@ -1,10 +1,7 @@
 package br.com.cremepe.jeton.controller;
 
-import br.com.cremepe.jeton.domain.AtividadeConselhal;
 import br.com.cremepe.jeton.domain.ViewUserLogin;
-import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
-import br.com.cremepe.jeton.repository.ComprovanteRepository;
-import br.com.cremepe.jeton.repository.ConselheiroRepository;
+import br.com.cremepe.jeton.service.DashboardService;
 import br.com.cremepe.jeton.service.LoginService;
 import br.com.cremepe.jeton.service.ParametrosService;
 import jakarta.servlet.http.HttpSession;
@@ -18,9 +15,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.time.LocalDate;
-import java.util.List;
-
 @Controller
 public class LoginController {
 
@@ -31,14 +25,8 @@ public class LoginController {
     private LoginService loginService;
     @Autowired
     private ParametrosService parametrosService;
-
-    // Dashboard
     @Autowired
-    private AtividadeConselhalRepository atividadeRepository;
-    @Autowired
-    private ConselheiroRepository conselheiroRepository;
-    @Autowired
-    private ComprovanteRepository comprovanteRepository;
+    private DashboardService dashboardService;
 
     @GetMapping("/login")
     public String telaLogin() {
@@ -53,7 +41,7 @@ public class LoginController {
 
         if (cpf == null || cpf.isBlank() || senha == null || senha.isBlank()) {
             log.warn("Tentativa de login com CPF ou senha vazios");
-            return redirectToLoginWithError(redirectAttributes);
+            return redirecionaParaLoginComErro(redirectAttributes);
         }
 
         try {
@@ -67,11 +55,11 @@ public class LoginController {
             }
         } catch (RuntimeException e) {
             log.warn("Falha de autenticação para CPF: {}", cpf.replaceAll(".(?=.{4})", "*"));
-            return redirectToLoginWithError(redirectAttributes);
+            return redirecionaParaLoginComErro(redirectAttributes);
         }
     }
 
-    private String redirectToLoginWithError(RedirectAttributes ra) {
+    private String redirecionaParaLoginComErro(RedirectAttributes ra) {
         ra.addFlashAttribute("erro", ERRO_LOGIN);
         return "redirect:/login";
     }
@@ -97,18 +85,11 @@ public class LoginController {
             return "redirect:/conselheiro";
         }
 
-        long totalPendentes = atividadeRepository.countByInSituacao("P");
-        long totalConselheiros = conselheiroRepository.countByInSituacao("A");
-        LocalDate hoje = LocalDate.now();
-        long totalAtividadesMes = atividadeRepository.countAtividadesDoMes(hoje.getMonthValue(), hoje.getYear());
-        long totalComprovantes = comprovanteRepository.count();
-        List<AtividadeConselhal> atividadesRecentes = atividadeRepository.findTop5ByOrderByDataHoraRegistroDesc();
-
-        model.addAttribute("totalPendentes", totalPendentes);
-        model.addAttribute("totalConselheiros", totalConselheiros);
-        model.addAttribute("totalAtividadesMes", totalAtividadesMes);
-        model.addAttribute("totalComprovantes", totalComprovantes);
-        model.addAttribute("atividadesRecentes", atividadesRecentes);
+        model.addAttribute("totalPendentes", dashboardService.getTotalAtividadesPendentes());
+        model.addAttribute("totalConselheiros", dashboardService.getTotalConselheirosAtivos());
+        model.addAttribute("totalAtividadesMes", dashboardService.getTotalAtividadesDoMes());
+        model.addAttribute("totalComprovantes", dashboardService.getTotalComprovantes());
+        model.addAttribute("atividadesRecentes", dashboardService.getUltimasAtividades(5));
         model.addAttribute("sistemaBloqueado", parametrosService.isSistemaBloqueado());
 
         return "index";
