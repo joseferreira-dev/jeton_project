@@ -1,5 +1,9 @@
 package br.com.cremepe.jeton.controller;
 
+import br.com.cremepe.jeton.service.ConselheiroService;
+import br.com.cremepe.jeton.service.GestaoService;
+import br.com.cremepe.jeton.service.RelatorioService;
+
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -8,10 +12,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import br.com.cremepe.jeton.service.ConselheiroService;
-import br.com.cremepe.jeton.service.GestaoService;
-import br.com.cremepe.jeton.service.RelatorioService;
 
 import java.time.LocalDate;
 
@@ -30,8 +30,9 @@ public class RelatorioController {
 
     @GetMapping("/atividades")
     public String acessarTelaRelatorio(Model model, HttpSession session) {
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session)) {
             return "redirect:/login";
+        }
 
         model.addAttribute("listaRelatorio", java.util.Collections.emptyList());
         carregarFiltros(model);
@@ -46,18 +47,16 @@ public class RelatorioController {
             @RequestParam(value = "dataFim", required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate dataFim,
             Model model, HttpSession session) {
 
-        if (session.getAttribute("usuarioLogado") == null)
+        if (naoAutenticado(session)) {
             return "redirect:/login";
+        }
 
-        // Validação básica: Gestão é obrigatória para o relatório
         if (idGestao == null) {
             model.addAttribute("erro", "Por favor, selecione uma gestão.");
             carregarFiltros(model);
             return "relatorio/atividade_agrupada";
         }
 
-        // Executa o relatório passando os filtros (que podem ir nulos caso não
-        // preenchidos)
         var dadosRelatorio = relatorioService.gerarRelatorioAgrupado(idGestao, idConselheiro, null, dataInicio,
                 dataFim);
         model.addAttribute("listaRelatorio", dadosRelatorio);
@@ -66,8 +65,6 @@ public class RelatorioController {
             model.addAttribute("colunasRegras", dadosRelatorio.get(0).getRegras().keySet());
         }
 
-        // Devolve os parâmetros de busca para o formulário no HTML manter o estado
-        // visual
         model.addAttribute("idGestaoSelecionada", idGestao);
         model.addAttribute("idConselheiroSelecionado", idConselheiro);
         model.addAttribute("dataInicio", dataInicio);
@@ -80,5 +77,9 @@ public class RelatorioController {
     private void carregarFiltros(Model model) {
         model.addAttribute("listaConselheiros", conselheiroService.listarTodos());
         model.addAttribute("listaGestoes", gestaoService.listarTodos());
+    }
+
+    private boolean naoAutenticado(HttpSession session) {
+        return session.getAttribute("usuarioLogado") == null;
     }
 }
