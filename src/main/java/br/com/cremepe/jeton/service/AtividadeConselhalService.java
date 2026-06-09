@@ -4,6 +4,7 @@ import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.dto.LoteAtividadeDTO;
 import br.com.cremepe.jeton.repository.*;
+import br.com.cremepe.jeton.util.TurnoUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,8 +44,6 @@ public class AtividadeConselhalService {
     private ComprovanteService comprovanteService;
     @Autowired
     private ConselheiroService conselheiroService;
-    @Autowired
-    private FileStorageService fileStorageService;
     @Autowired
     private RegrasService regrasService;
 
@@ -130,7 +129,6 @@ public class AtividadeConselhalService {
             long outrasAtividades = atividadeRepository.countByComprovanteIdComprovante(idComprovanteAntigo);
             if (outrasAtividades == 0) {
                 comprovanteRepository.findById(idComprovanteAntigo).ifPresent(comp -> {
-                    fileStorageService.excluirArquivo(comp.getNomeArquivo(), comp.getAno(), comp.getMes());
                     comprovanteService.excluirComprovante(comp.getIdComprovante());
                 });
             }
@@ -189,10 +187,8 @@ public class AtividadeConselhalService {
         }
 
         Integer idComprovante = null;
-        Comprovante comprovanteBackup = null;
         if (atividade.getComprovante() != null) {
             idComprovante = atividade.getComprovante().getIdComprovante();
-            comprovanteBackup = atividade.getComprovante();
         }
 
         try {
@@ -206,10 +202,7 @@ public class AtividadeConselhalService {
             long outrasAtividades = atividadeRepository.countByComprovanteIdComprovante(idComprovante);
             if (outrasAtividades == 0) {
                 try {
-                    comprovanteRepository.deleteById(idComprovante);
-                    fileStorageService.excluirArquivo(comprovanteBackup.getNomeArquivo(),
-                            comprovanteBackup.getAno(),
-                            comprovanteBackup.getMes());
+                    comprovanteService.excluirComprovante(idComprovante);
                 } catch (Exception e) {
                     log.warn("Falha ao excluir comprovante ID {} durante exclusão da atividade {}: {}", idComprovante,
                             id, e.getMessage());
@@ -296,20 +289,6 @@ public class AtividadeConselhalService {
     }
 
     // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
-
-    private String calcularTurno(int hora) {
-        if (hora >= 6 && hora < 12) {
-            return AtividadeConselhal.TURNO_MANHA;
-        }
-        if (hora >= 12 && hora < 18) {
-            return AtividadeConselhal.TURNO_TARDE;
-        }
-        return AtividadeConselhal.TURNO_NOITE;
-    }
-
-    // =========================================================================
     // CRIAÇÃO EM LOTE
     // =========================================================================
 
@@ -323,8 +302,8 @@ public class AtividadeConselhalService {
         LocalDateTime dataHora = dto.getDataHoraAtividade();
         validarDataDentroDoMandato(dataHora.toLocalDate(), gestao);
 
-        // 2. Calcula turno automaticamente
-        String turno = calcularTurno(dataHora.getHour());
+        // 2. Calcula turno automaticamente usando TurnoUtils
+        String turno = TurnoUtils.calcularTurno(dataHora.getHour());
 
         // 3. Cria UM comprovante (se houver arquivo)
         Comprovante comprovante = null;
@@ -339,7 +318,6 @@ public class AtividadeConselhalService {
             Conselheiro conselheiro = conselheiroService.buscarPorId(idPessoa)
                     .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado: " + idPessoa));
 
-            // Verifica se o conselheiro está vinculado à gestão
             boolean vinculado = gestaoConselheiroRepository.existsByGestaoAndConselheiro(gestao.getIdGestao(),
                     idPessoa);
             if (!vinculado) {
@@ -407,7 +385,7 @@ public class AtividadeConselhalService {
         Regras regra = regrasService.buscarOuFalhar(dto.getIdRegra());
         LocalDateTime dataHora = dto.getDataHoraAtividade();
         validarDataDentroDoMandato(dataHora.toLocalDate(), gestao);
-        String turno = calcularTurno(dataHora.getHour());
+        String turno = TurnoUtils.calcularTurno(dataHora.getHour());
 
         // 4. Tratamento do comprovante
         Comprovante comprovanteAtual = comprovanteRepository.findById(idComprovante)
@@ -415,7 +393,6 @@ public class AtividadeConselhalService {
         Comprovante comprovanteFinal = comprovanteAtual;
 
         if (dto.getFile() != null && !dto.getFile().isEmpty()) {
-            // Cria novo comprovante
             comprovanteFinal = comprovanteService.criarComprovante(
                     dto.getFile(), dto.getIdTipoAnexo(), dto.getNomeComprovanteUsuario());
         } else if (dto.getNomeComprovanteUsuario() != null
@@ -488,5 +465,10 @@ public class AtividadeConselhalService {
 
         log.info("Lote atualizado: comprovante ID {}, {} atividades mantidas, {} removidas, {} adicionadas",
                 idComprovante, atividadesAtuais.size() - idsRemover.size(), idsRemover.size(), idsAdicionar.size());
+    }
+
+    @Transactional(readOnly = true)
+    public long contarAtividadesPorComprovante(Integer idComprovante) {
+        return atividadeRepository.countByComprovanteIdComprovante(idComprovante);
     }
 }

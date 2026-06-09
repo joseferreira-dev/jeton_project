@@ -212,7 +212,7 @@
                     atualizarListaSelecionados();
                     return;
                 }
-                fetch(`/atividades/conselheiros-por-gestao?gestaoId=${gestaoId}`)
+                fetch(`/api/atividades/conselheiros-por-gestao?gestaoId=${gestaoId}`)
                     .then(response => response.json())
                     .then(data => {
                         selectConselheiros.innerHTML = '';

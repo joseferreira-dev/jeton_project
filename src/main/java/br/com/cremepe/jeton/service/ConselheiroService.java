@@ -2,10 +2,12 @@ package br.com.cremepe.jeton.service;
 
 import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.Conselheiro;
+import br.com.cremepe.jeton.domain.GestaoConselheiro;
 import br.com.cremepe.jeton.domain.NivelAcesso;
 import br.com.cremepe.jeton.domain.Pessoa;
 import br.com.cremepe.jeton.domain.Usuario;
 import br.com.cremepe.jeton.repository.ConselheiroRepository;
+import br.com.cremepe.jeton.repository.GestaoConselheiroRepository;
 import br.com.cremepe.jeton.repository.PessoaRepository;
 import br.com.cremepe.jeton.repository.UsuarioRepository;
 import br.com.cremepe.jeton.util.CpfValidador;
@@ -20,8 +22,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ConselheiroService {
@@ -30,6 +34,8 @@ public class ConselheiroService {
 
     @Autowired
     private ConselheiroRepository conselheiroRepository;
+    @Autowired
+    private GestaoConselheiroRepository gestaoConselheiroRepository;
     @Autowired
     private PessoaRepository pessoaRepository;
     @Autowired
@@ -222,5 +228,13 @@ public class ConselheiroService {
     @Transactional(readOnly = true)
     public Optional<Conselheiro> buscarPorId(Integer id) {
         return conselheiroRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Conselheiro> listarPorGestao(Integer gestaoId) {
+        return gestaoConselheiroRepository.findByIdIdGestao(gestaoId).stream()
+                .map(GestaoConselheiro::getConselheiro)
+                .sorted(Comparator.comparing(c -> c.getPessoa().getNome()))
+                .collect(Collectors.toList());
     }
 }
