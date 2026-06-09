@@ -477,7 +477,7 @@ function abrirModalAtividades(btn) {
     const modal = new bootstrap.Modal(document.getElementById('modalAtividades'));
     modal.show();
 
-    fetch(`/jeton/atividades/conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
+    fetch(`/api/jeton/atividades/conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
         .then(response => response.json())
         .then(dados => {
             tbody.innerHTML = '';
@@ -524,7 +524,7 @@ function abrirRelatorioJeton(btn) {
     const modal = new bootstrap.Modal(document.getElementById('modalRelatorio'));
     modal.show();
 
-    fetch(`/jeton/relatorio-conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
+    fetch(`/api/jeton/relatorio-conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
         .then(response => response.json())
         .then(dados => {
             const saldoAnterior = document.getElementById('saldoAnterior');

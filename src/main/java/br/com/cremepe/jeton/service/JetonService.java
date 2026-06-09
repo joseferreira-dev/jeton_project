@@ -4,6 +4,7 @@ import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.dto.AtividadeRelatorioDTO;
 import br.com.cremepe.jeton.dto.ConselheiroRelatorioDTO;
+import br.com.cremepe.jeton.dto.JetonAgrupadoDTO;
 import br.com.cremepe.jeton.dto.PontosRemanescentesDTO;
 import br.com.cremepe.jeton.dto.RelatorioGeralDTO;
 import br.com.cremepe.jeton.repository.*;
@@ -45,6 +46,8 @@ public class JetonService {
     private ConselheiroRepository conselheiroRepository;
     @Autowired
     private GestaoRepository gestaoRepository;
+    @Autowired
+    private ConselheiroService conselheiroService;
 
     // =========================================================================
     // LEITURA
@@ -578,5 +581,62 @@ public class JetonService {
     public BigDecimal sumValorRecebidoPorConselheiro(Integer idPessoa) {
         BigDecimal valor = jetonRepository.sumValorRecebidoPorConselheiro(idPessoa);
         return valor != null ? valor : BigDecimal.ZERO;
+    }
+
+    public List<JetonAgrupadoDTO> listarJetonsAgrupadosPorGestaoEMes(Integer idGestao, Integer mes, Integer ano) {
+        List<Jeton> listaBruta = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano);
+        Map<Integer, JetonAgrupadoDTO> agrupado = new LinkedHashMap<>();
+        for (Jeton j : listaBruta) {
+            Integer idPessoa = j.getConselheiro().getIdPessoa();
+            JetonAgrupadoDTO dto = agrupado.get(idPessoa);
+            if (dto == null) {
+                dto = new JetonAgrupadoDTO(j.getConselheiro(), j.getGestao(), j.getMes(), j.getAno());
+                agrupado.put(idPessoa, dto);
+            }
+            dto.adicionarJeton(j);
+        }
+        return new ArrayList<>(agrupado.values());
+    }
+
+    public Map<String, Object> gerarRelatorioIndividualConselheiro(Integer idPessoa, Integer idGestao, Integer mes,
+            Integer ano) {
+        Conselheiro conselheiro = conselheiroService.buscarPorId(idPessoa)
+                .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado"));
+
+        List<Map<String, Object>> atividades = listarAtividadesAgrupadasPorConselheiro(idPessoa, idGestao, mes, ano);
+
+        // CORREÇÃO: agora passando os três parâmetros corretamente
+        List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano).stream()
+                .filter(j -> j.getConselheiro().getIdPessoa().equals(idPessoa))
+                .toList();
+
+        int saldoAnterior = 0;
+        int pontosAcumuladosMes = 0;
+        for (Jeton j : jetons) {
+            List<PontosSaldo> pontosList = pontosSaldoRepository.findByJetonIdJeton(j.getIdJeton());
+            for (PontosSaldo ps : pontosList) {
+                boolean doMesAtual = false;
+                if (ps.getAtividade() != null) {
+                    LocalDate dataAtv = ps.getAtividade().getDataHoraAtividade().toLocalDate();
+                    if (dataAtv.getYear() == ano && dataAtv.getMonthValue() == mes) {
+                        doMesAtual = true;
+                    }
+                }
+                if (doMesAtual) {
+                    pontosAcumuladosMes += ps.getPontosUtilizados();
+                } else {
+                    saldoAnterior += ps.getPontosUtilizados();
+                }
+            }
+        }
+        Integer saldoFuturo = pontosSaldoRepository.somarPontosSobrandoAtivos(idPessoa, idGestao);
+
+        Map<String, Object> resposta = new HashMap<>();
+        resposta.put("nomeConselheiro", conselheiro.getPessoa().getNome());
+        resposta.put("atividades", atividades);
+        resposta.put("saldoAnterior", saldoAnterior);
+        resposta.put("pontosAcumuladosMes", pontosAcumuladosMes);
+        resposta.put("saldoFuturo", saldoFuturo != null ? saldoFuturo : 0);
+        return resposta;
     }
 }
