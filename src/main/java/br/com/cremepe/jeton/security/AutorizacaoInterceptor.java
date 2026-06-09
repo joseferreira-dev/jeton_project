@@ -63,7 +63,7 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
             }
         }
 
-        if (uri.startsWith("/atividades/api/")) {
+        if (uri.startsWith("/atividades/")) {
             return true;
         }
 

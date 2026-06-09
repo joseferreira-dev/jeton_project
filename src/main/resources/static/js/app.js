@@ -611,7 +611,7 @@ function atualizarConselheiros(idParaSelecionar) {
         return;
     }
 
-    fetch(`/atividades/api/conselheiros-por-gestao?gestaoId=${gestaoId}`)
+    fetch(`/atividades/conselheiros-por-gestao?gestaoId=${gestaoId}`)
         .then(response => response.json())
         .then(data => {
             selectConselheiro.innerHTML = '<option value="">-- Selecione o Médico --</option>';

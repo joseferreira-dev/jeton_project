@@ -240,7 +240,7 @@ public class AtividadeConselhalController {
     // ENDPOINTS DA API (RESPONSE BODY)
     // =========================================================================
 
-    @GetMapping("/api/filtros-regras")
+    @GetMapping("/filtros-regras")
     @ResponseBody
     public Map<String, Object> getFiltrosRegras(
             @RequestParam(required = false) Integer resolucaoId,
@@ -276,7 +276,7 @@ public class AtividadeConselhalController {
         return response;
     }
 
-    @GetMapping("/api/conselheiros-por-gestao")
+    @GetMapping("/conselheiros-por-gestao")
     @ResponseBody
     public List<Map<String, Object>> getConselheirosPorGestao(@RequestParam Integer gestaoId) {
         return gestaoConselheiroRepository.findByIdIdGestao(gestaoId).stream()
