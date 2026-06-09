@@ -41,7 +41,6 @@ public class LogJetonController {
             return "redirect:/login";
         }
 
-        // Converte string vazia em null
         if (nomeTabela != null && nomeTabela.trim().isEmpty()) {
             nomeTabela = null;
         }
@@ -52,7 +51,6 @@ public class LogJetonController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "dataHoraLog"));
         Page<?> paginaLogs = logJetonService.listarComFiltros(nomeTabela, inicio, fim, pageable);
 
-        // Mapa de opções de tabelas ordenado alfabeticamente
         Map<String, String> opcoesTabelas = new TreeMap<>();
         opcoesTabelas.put("acesso_negado", "Acessos Negados");
         opcoesTabelas.put("atividade_conselhal", "Atividade Conselhal");

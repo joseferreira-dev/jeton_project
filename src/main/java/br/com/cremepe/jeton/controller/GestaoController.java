@@ -18,9 +18,6 @@ public class GestaoController {
     @Autowired
     private GestaoService gestaoService;
 
-    // =========================================================================
-    // LISTAGEM
-    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -44,9 +41,6 @@ public class GestaoController {
         return "gestao/lista";
     }
 
-    // =========================================================================
-    // FORMULÁRIOS (NOVO / EDIÇÃO)
-    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -66,10 +60,6 @@ public class GestaoController {
         model.addAttribute("urlAcao", "/gestoes/atualizar");
         return "gestao/formulario";
     }
-
-    // =========================================================================
-    // SALVAR (CRIAR / ATUALIZAR)
-    // =========================================================================
 
     @PostMapping("/salvar")
     public String salvar(@Valid @ModelAttribute("gestao") Gestao gestao,
@@ -95,9 +85,6 @@ public class GestaoController {
         return "redirect:/gestoes";
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
@@ -111,9 +98,6 @@ public class GestaoController {
         return "redirect:/gestoes";
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
     }

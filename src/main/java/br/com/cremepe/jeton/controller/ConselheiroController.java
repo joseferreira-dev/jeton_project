@@ -19,9 +19,6 @@ public class ConselheiroController {
     @Autowired
     private ConselheiroService conselheiroService;
 
-    // =========================================================================
-    // LISTAGEM
-    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -47,9 +44,6 @@ public class ConselheiroController {
         return "conselheiro/lista";
     }
 
-    // =========================================================================
-    // FORMULÁRIOS (NOVO / EDIÇÃO)
-    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -72,9 +66,6 @@ public class ConselheiroController {
         return "conselheiro/formulario";
     }
 
-    // =========================================================================
-    // SALVAR (CRIAR / ATUALIZAR)
-    // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@Valid @ModelAttribute("conselheiro") Conselheiro conselheiro,
             HttpSession session,
@@ -93,9 +84,6 @@ public class ConselheiroController {
         return "redirect:/conselheiros";
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         try {
@@ -108,9 +96,6 @@ public class ConselheiroController {
         return "redirect:/conselheiros";
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
     }

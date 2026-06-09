@@ -22,9 +22,6 @@ public class NivelAcessoController {
     @Autowired
     private NivelAcessoService nivelAcessoService;
 
-    // =========================================================================
-    // LISTAGEM
-    // =========================================================================
     @GetMapping
     public String listar(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -33,9 +30,6 @@ public class NivelAcessoController {
         return "nivelacesso/lista";
     }
 
-    // =========================================================================
-    // FORMULÁRIOS (NOVO / EDIÇÃO)
-    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -53,9 +47,6 @@ public class NivelAcessoController {
         return "nivelacesso/formulario";
     }
 
-    // =========================================================================
-    // SALVAR (CRIAR / ATUALIZAR)
-    // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@Valid @ModelAttribute("nivelAcesso") NivelAcesso nivel,
             HttpSession session,
@@ -78,9 +69,6 @@ public class NivelAcessoController {
         return "redirect:/niveis-acesso";
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") String id,
             HttpSession session,
@@ -99,9 +87,6 @@ public class NivelAcessoController {
         return "redirect:/niveis-acesso";
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
     }

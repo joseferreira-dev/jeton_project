@@ -56,8 +56,6 @@ public class ConselheiroPortalController {
                 .map(GestaoConselheiro::getGestao);
     }
 
-    // DASHBOARD
-
     @GetMapping
     public String redirectToDashboard() {
         return "redirect:/conselheiro/dashboard";
@@ -105,8 +103,6 @@ public class ConselheiroPortalController {
 
         return "conselheiro/dashboard";
     }
-
-    // ATIVIDADES
 
     @GetMapping("/atividades")
     public String listarAtividades(
@@ -244,8 +240,6 @@ public class ConselheiroPortalController {
         return "redirect:/conselheiro/atividades";
     }
 
-    // PAGAMENTOS
-
     @GetMapping("/pagamentos")
     public String listarPagamentos(Model model, HttpSession session) {
         if (!isConselheiro(session))
@@ -256,8 +250,6 @@ public class ConselheiroPortalController {
         model.addAttribute("pagamentos", pagamentos);
         return "conselheiro/pagamentos";
     }
-
-    // PERFIL
 
     @GetMapping("/perfil")
     public String perfil() {
