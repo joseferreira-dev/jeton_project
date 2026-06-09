@@ -66,8 +66,6 @@ public class AuditoriaAspect {
     @Before("@annotation(auditar)")
     public void beforeAudit(JoinPoint joinPoint, Auditar auditar) {
         profundidade.set(profundidade.get() + 1);
-        System.out.println(
-                ">>> BeforeAudit chamado para: " + auditar.acao() + " (profundidade=" + profundidade.get() + ")");
         AuditoriaUser usuario = usuarioLogadoService.getUsuarioLogado();
         if (usuario == null) {
             log.warn("Tentativa de auditar ação sem usuário logado: {}", auditar.acao());
@@ -188,8 +186,6 @@ public class AuditoriaAspect {
     @AfterReturning(pointcut = "@annotation(auditar)", returning = "retorno")
     public void afterReturning(JoinPoint joinPoint, Auditar auditar, Object retorno) {
         try {
-            System.out.println(">>> AfterReturning chamado para: " + auditar.acao() + " (profundidade="
-                    + profundidade.get() + ")");
             registrarAuditoria(joinPoint, auditar, retorno, null);
         } catch (Exception e) {
             log.error("Erro ao registrar auditoria (afterReturning)", e);
