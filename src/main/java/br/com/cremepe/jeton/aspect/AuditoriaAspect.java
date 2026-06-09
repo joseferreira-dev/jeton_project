@@ -160,10 +160,10 @@ public class AuditoriaAspect {
         }
 
         String className = switch (nomeTabela) {
-            case "atividade_conselhal" -> "br.com.cremepe.jeton.dominio.AtividadeConselhal";
-            case "gestao_conselheiro" -> "br.com.cremepe.jeton.dominio.GestaoConselheiro";
-            case "pontos_saldo" -> "br.com.cremepe.jeton.dominio.PontosSaldo";
-            case "usuario_acesso" -> "br.com.cremepe.jeton.dominio.UsuarioAcesso";
+            case "atividade_conselhal" -> "br.com.cremepe.jeton.domain.AtividadeConselhal";
+            case "gestao_conselheiro" -> "br.com.cremepe.jeton.domain.GestaoConselheiro";
+            case "pontos_saldo" -> "br.com.cremepe.jeton.domain.PontosSaldo";
+            case "usuario_acesso" -> "br.com.cremepe.jeton.domain.UsuarioAcesso";
             default -> {
                 String[] parts = nomeTabela.split("_");
                 StringBuilder camel = new StringBuilder();
@@ -174,7 +174,7 @@ public class AuditoriaAspect {
                         camel.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1).toLowerCase());
                     }
                 }
-                yield "br.com.cremepe.jeton.dominio." + camel.toString();
+                yield "br.com.cremepe.jeton.domain." + camel.toString();
             }
         };
         try {
@@ -370,7 +370,7 @@ public class AuditoriaAspect {
         if (obj == null)
             return false;
         String packageName = obj.getClass().getPackageName();
-        return packageName.startsWith("br.com.cremepe.jeton.dominio");
+        return packageName.startsWith("br.com.cremepe.jeton.domain");
     }
 
     private Map<String, Object> converterParaMap(Object obj) {
