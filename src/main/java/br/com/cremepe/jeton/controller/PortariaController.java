@@ -17,9 +17,6 @@ public class PortariaController {
     @Autowired
     private PortariaService portariaService;
 
-    // =========================================================================
-    // LISTAGEM
-    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -43,9 +40,6 @@ public class PortariaController {
         return "portaria/lista";
     }
 
-    // =========================================================================
-    // FORMULÁRIOS
-    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -64,9 +58,6 @@ public class PortariaController {
         return "portaria/formulario";
     }
 
-    // =========================================================================
-    // SALVAR
-    // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@ModelAttribute("portaria") Portaria portaria,
             HttpSession session,
@@ -89,9 +80,6 @@ public class PortariaController {
         return "redirect:/portarias";
     }
 
-    // =========================================================================
-    // REVOGAÇÃO (SOFT DELETE)
-    // =========================================================================
     @GetMapping("/revogar/{id}")
     public String revogar(@PathVariable("id") Integer id,
             HttpSession session,
@@ -107,9 +95,6 @@ public class PortariaController {
         return "redirect:/portarias";
     }
 
-    // =========================================================================
-    // RESTAURAR
-    // =========================================================================
     @GetMapping("/restaurar/{id}")
     public String restaurar(@PathVariable("id") Integer id,
             HttpSession session,
@@ -125,9 +110,6 @@ public class PortariaController {
         return "redirect:/portarias";
     }
 
-    // =========================================================================
-    // EXCLUSÃO FÍSICA (PERMANENTE)
-    // =========================================================================
     @GetMapping("/deletar/{id}")
     public String deletarFisicamente(@PathVariable("id") Integer id,
             HttpSession session,
@@ -143,9 +125,6 @@ public class PortariaController {
         return "redirect:/portarias";
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
     }

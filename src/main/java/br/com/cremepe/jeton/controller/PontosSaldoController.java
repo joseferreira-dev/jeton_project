@@ -22,9 +22,6 @@ public class PontosSaldoController {
     @Autowired
     private GestaoService gestaoService;
 
-    // =========================================================================
-    // LISTAGEM
-    // =========================================================================
     @GetMapping
     public String listar(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -33,9 +30,6 @@ public class PontosSaldoController {
         return "pontosremanescentes/lista";
     }
 
-    // =========================================================================
-    // FORMULÁRIOS (NOVO / EDIÇÃO)
-    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -56,9 +50,6 @@ public class PontosSaldoController {
         return "pontosremanescentes/formulario";
     }
 
-    // =========================================================================
-    // SALVAR (CRIAR / ATUALIZAR)
-    // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@ModelAttribute("pontos") PontosSaldo pontos,
             HttpSession session,
@@ -81,9 +72,6 @@ public class PontosSaldoController {
         return "redirect:/pontos-remanescentes";
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
@@ -99,9 +87,6 @@ public class PontosSaldoController {
         return "redirect:/pontos-remanescentes";
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
     }
