@@ -11,8 +11,12 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-clipboard-check me-2"></i> Atividades Conselhais
             </h2>
-            <a th:href="@{/atividades/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Registar
-                Atividade</a>
+            <div class="d-flex gap-2">
+                <a th:href="@{/atividades/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Registar
+                    Atividade</a>
+                <a th:href="@{/atividades/lote/novo}" class="btn btn-cremepe"><i
+                        class="fa-solid fa-layer-group me-1"></i> Criar em Lote</a>
+            </div>
         </div>
 
         <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show"><i
@@ -22,85 +26,77 @@
                 class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button"
                 class="btn-close" data-bs-dismiss="alert"></button></div>
 
+        <!-- Filtros (mantidos iguais) -->
         <form th:action="@{/atividades}" method="get" class="mb-4">
             <div class="card shadow-sm border-success mb-4">
                 <div class="card-header bg-success text-white fw-bold">
                     <i class="fa-solid fa-filter me-2"></i> Filtrar Atividades Conselhais
                 </div>
                 <div class="card-body p-4">
-                    <form th:action="@{/atividades}" method="get">
-                        <div class="row g-3 align-items-end">
-
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold small text-muted">Pesquisar (Nome ou Regra)</label>
-                                <input type="text" name="termo" class="form-control" placeholder="Digite para buscar..."
-                                    th:value="${termo}">
-                            </div>
-
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold small text-muted">Situação</label>
-                                <select name="situacao" class="form-select" onchange="this.form.submit()">
-                                    <option value="">Todas</option>
-                                    <option value="P" th:selected="${situacao == 'P'}">Pendentes</option>
-                                    <option value="C" th:selected="${situacao == 'C'}">Validadas</option>
-                                    <option value="F" th:selected="${situacao == 'F'}">Fechadas (Folha)</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold small text-muted">Turno</label>
-                                <select name="turno" class="form-select" onchange="this.form.submit()">
-                                    <option value="">Todos</option>
-                                    <option value="M" th:selected="${turno == 'M'}">Manhã</option>
-                                    <option value="T" th:selected="${turno == 'T'}">Tarde</option>
-                                    <option value="N" th:selected="${turno == 'N'}">Noite</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold small text-muted">Anexo / Comprovante</label>
-                                <select name="comprovanteFiltro" class="form-select" onchange="this.form.submit()">
-                                    <option value="">Todos os registos</option>
-                                    <option value="S" th:selected="${comprovanteFiltro == 'S'}">Apenas com Comprovante
-                                    </option>
-                                    <option value="N" th:selected="${comprovanteFiltro == 'N'}">Apenas sem Comprovante
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold small text-muted">Exibir</label>
-                                <select name="size" class="form-select" onchange="this.form.submit()">
-                                    <option value="10" th:selected="${size == 10}">10 registros</option>
-                                    <option value="20" th:selected="${size == 20}">20 registros</option>
-                                    <option value="50" th:selected="${size == 50}">50 registros</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold small text-muted">Data Inicial</label>
-                                <input type="date" name="dataInicio" class="form-control" th:value="${dataInicio}">
-                            </div>
-
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold small text-muted">Data Final</label>
-                                <input type="date" name="dataFim" class="form-control" th:value="${dataFim}">
-                            </div>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Pesquisar (Nome ou Regra)</label>
+                            <input type="text" name="termo" class="form-control" placeholder="Digite para buscar..."
+                                th:value="${termo}">
                         </div>
-
-                        <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
-                            <a th:href="@{/atividades}" class="btn btn-outline-secondary fw-bold px-4">
-                                <i class="fa-solid fa-eraser me-1"></i> Limpar Filtros
-                            </a>
-                            <button type="submit" class="btn btn-success fw-bold px-4">
-                                <i class="fa-solid fa-magnifying-glass me-1"></i> Aplicar Filtro
-                            </button>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">Situação</label>
+                            <select name="situacao" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todas</option>
+                                <option value="P" th:selected="${situacao == 'P'}">Pendentes</option>
+                                <option value="C" th:selected="${situacao == 'C'}">Validadas</option>
+                                <option value="F" th:selected="${situacao == 'F'}">Fechadas (Folha)</option>
+                            </select>
                         </div>
-                    </form>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">Turno</label>
+                            <select name="turno" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                <option value="M" th:selected="${turno == 'M'}">Manhã</option>
+                                <option value="T" th:selected="${turno == 'T'}">Tarde</option>
+                                <option value="N" th:selected="${turno == 'N'}">Noite</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Anexo / Comprovante</label>
+                            <select name="comprovanteFiltro" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todos os registos</option>
+                                <option value="S" th:selected="${comprovanteFiltro == 'S'}">Apenas com Comprovante
+                                </option>
+                                <option value="N" th:selected="${comprovanteFiltro == 'N'}">Apenas sem Comprovante
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">Exibir</label>
+                            <select name="size" class="form-select" onchange="this.form.submit()">
+                                <option value="10" th:selected="${size == 10}">10 registros</option>
+                                <option value="20" th:selected="${size == 20}">20 registros</option>
+                                <option value="50" th:selected="${size == 50}">50 registros</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Data Inicial</label>
+                            <input type="date" name="dataInicio" class="form-control" th:value="${dataInicio}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Data Final</label>
+                            <input type="date" name="dataFim" class="form-control" th:value="${dataFim}">
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
+                        <a th:href="@{/atividades}" class="btn btn-outline-secondary fw-bold px-4">
+                            <i class="fa-solid fa-eraser me-1"></i> Limpar Filtros
+                        </a>
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i> Aplicar Filtro
+                        </button>
+                    </div>
                 </div>
             </div>
         </form>
 
+        <!-- Tabela de atividades -->
         <div class="card shadow-sm mb-4">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -153,7 +149,6 @@
                                     <div class="fw-bold text-cremepe" th:text="${a.conselheiro.pessoa.nome}"></div>
                                     <div class="small text-dark fw-bold" th:text="${a.regra?.nomeRegra}">Regra</div>
                                 </td>
-
                                 <td>
                                     <div class="small">
                                         <span th:if="${a.regra?.portaria != null}"
@@ -163,7 +158,6 @@
                                             th:text="'Resolução ' + ${a.regra.resolucao.numero} + '/' + ${a.regra.resolucao.ano}"></span>
                                     </div>
                                 </td>
-
                                 <td>
                                     <div th:text="${#temporals.format(a.dataHoraAtividade, 'dd/MM/yyyy HH:mm')}">Data
                                     </div>
@@ -177,7 +171,6 @@
                                                 class="fa-solid fa-moon text-secondary me-1"></i> Noite</span>
                                     </div>
                                 </td>
-
                                 <td>
                                     <span th:if="${a.inSituacao == 'P'}" class="badge bg-warning text-dark">
                                         <i class="fa-solid fa-clock me-1"></i> Pendente
@@ -294,6 +287,7 @@
             </div>
         </div>
 
+        <!-- Modais (mantidos iguais) -->
         <div class="modal fade" id="modalDetalhes" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content border-0 shadow">
@@ -321,7 +315,6 @@
                     </div>
                     <div class="modal-body p-0 bg-dark d-flex justify-content-center align-items-center"
                         id="modalComprovanteBody">
-                        <!-- Conteúdo dinâmico (iframe ou imagem) será inserido aqui -->
                         <div class="text-center text-white" id="loadingComprovante">
                             <i class="fa-solid fa-spinner fa-spin fa-3x"></i>
                             <p class="mt-2">Carregando comprovante...</p>

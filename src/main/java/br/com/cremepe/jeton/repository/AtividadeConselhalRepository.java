@@ -25,6 +25,12 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
     List<AtividadeConselhal> findTop5ByOrderByDataHoraRegistroDesc();
 
     // =========================================================================
+    // CONSULTAS PARA LOTE E COMPARTILHAMENTO DE COMPROVANTE
+    // =========================================================================
+
+    List<AtividadeConselhal> findByComprovanteIdComprovante(Integer idComprovante);
+
+    // =========================================================================
     // CONTAGENS
     // =========================================================================
 

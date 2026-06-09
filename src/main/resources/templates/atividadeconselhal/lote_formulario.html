@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layout}">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Criar Atividades em Lote - Jeton</title>
+</head>
+
+<body>
+    <div layout:fragment="conteudo">
+        <div class="mb-4">
+            <h2 class="h4 text-cremepe fw-bold">
+                <i class="fa-solid fa-layer-group me-2"></i> Criar Atividades em Lote
+            </h2>
+            <p class="text-muted">Preencha os dados comuns e selecione os conselheiros participantes.</p>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form th:action="@{/atividades/lote/salvar}" method="post" enctype="multipart/form-data" id="formLote">
+                    <div class="row g-4">
+                        <!-- Gestão -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Gestão Referente</label>
+                            <select class="form-select" name="idGestao" id="selectGestao" required>
+                                <option value="">-- Selecione a Gestão Primeiro --</option>
+                                <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}"
+                                    th:text="${g.nomeGestao}"></option>
+                            </select>
+                        </div>
+
+                        <!-- Data e Turno -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Data e Horário da Atividade</label>
+                            <input type="datetime-local" class="form-control" name="dataHoraAtividade"
+                                id="dataAtividade" required>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Turno</label>
+                            <input type="text" class="form-control" id="turnoVisual" value="Automático (via Horário)"
+                                disabled>
+                            <small class="text-muted" style="font-size: 0.70rem;">M (06h00-11h59) | T (12h00-17h59) | N
+                                (18h00-23h59)</small>
+                        </div>
+
+                        <!-- Conselheiros (select múltiplo) e lista dinâmica ao lado -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Conselheiros (selecione um ou mais)</label>
+                            <select class="form-select" name="idsConselheiros" id="selectConselheiros" multiple
+                                size="12" required disabled>
+                                <option value="">-- Aguardando Gestão --</option>
+                            </select>
+                            <small class="text-muted">Segure Ctrl (ou Cmd) para selecionar vários.</small>
+                        </div>
+
+                        <div class="col-md-6" id="divSelecionadosLote">
+                            <label class="form-label fw-bold">Conselheiros selecionados:</label>
+                            <div id="listaSelecionados" class="border rounded p-2 bg-light"
+                                style="min-height: 266px; max-height: 266px; overflow-y: auto;">
+                                <span class="text-muted">Nenhum selecionado</span>
+                            </div>
+                        </div>
+
+                        <!-- Resolução e Portaria (identificadas pela data) -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Resolução Aplicada (Identificada por Data)</label>
+                            <input type="text" class="form-control" id="nomeResolucaoVisual" readonly
+                                placeholder="Selecione a data para identificar">
+                            <input type="hidden" name="idResolucao" id="idResolucaoHidden">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Portaria Aplicada (Identificada por Data)</label>
+                            <input type="text" class="form-control" id="nomePortariaVisual" readonly
+                                placeholder="Selecione a data para identificar">
+                            <input type="hidden" name="idPortaria" id="idPortariaHidden">
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="resetarFiltros()"><i
+                                    class="fa-solid fa-eraser me-1"></i> Limpar</button>
+                        </div>
+
+                        <!-- Regra Enquadrada -->
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold text-cremepe">Regra Enquadrada (Atividade
+                                Específica)</label>
+                            <select class="form-select border-primary" name="idRegra" id="selectRegra" required
+                                disabled>
+                                <option value="">-- Escolha a documentação acima para desbloquear as regras --</option>
+                            </select>
+                        </div>
+
+                        <!-- Guia da Regra -->
+                        <div class="col-md-12" id="boxGuia" style="display: none;">
+                            <div class="alert alert-info border-0 shadow-sm mb-0">
+                                <h6 class="fw-bold text-primary"><i class="fa-solid fa-circle-info me-2"></i>Guia de
+                                    Verificação da Atividade</h6>
+                                <hr class="my-2">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <small class="d-block text-muted fw-bold">Descrição da Atividade:</small>
+                                        <span id="guiaDescricao"></span>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <small class="d-block text-muted fw-bold">Pontuação:</small>
+                                        <span class="badge bg-primary fs-6" id="guiaPontos">0</span> pontos
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comprovante -->
+                    <div class="row g-4 mt-2">
+                        <div class="col-md-12">
+                            <div class="card bg-light border-dashed">
+                                <div class="card-body">
+                                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-paperclip me-2"></i>Anexar
+                                        Comprovante (Obrigatório para Jeton)</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label small fw-bold">Nome do Comprovante (Descrição para
+                                                o sistema)</label>
+                                            <input type="text" class="form-control form-control-sm"
+                                                name="nomeComprovanteUsuario"
+                                                placeholder="Ex: Certidão de comparecimento - Reunião X">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Tipo de Documento</label>
+                                            <select class="form-select form-select-sm" name="idTipoAnexo">
+                                                <option value="">-- Selecione o Tipo --</option>
+                                                <option th:each="t : ${listaTiposAnexo}" th:value="${t.idTipo}"
+                                                    th:text="${t.nome}"></option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <label class="form-label small fw-bold">Ficheiro (PDF ou Imagem)</label>
+                                            <input type="file" class="form-control form-select-sm" name="file"
+                                                accept=".pdf,image/*">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 border-top pt-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <a th:href="@{/atividades}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-cremepe px-4">Criar em Lote</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script th:inline="javascript">
+            // Elementos do DOM
+            const selectGestao = document.getElementById('selectGestao');
+            const selectConselheiros = document.getElementById('selectConselheiros');
+            const listaSelecionadosDiv = document.getElementById('listaSelecionados');
+            const dataAtividade = document.getElementById('dataAtividade');
+            const selectRegra = document.getElementById('selectRegra');
+            const turnoVisual = document.getElementById('turnoVisual');
+            const nomeResolucao = document.getElementById('nomeResolucaoVisual');
+            const idResolucaoHidden = document.getElementById('idResolucaoHidden');
+            const nomePortaria = document.getElementById('nomePortariaVisual');
+            const idPortariaHidden = document.getElementById('idPortariaHidden');
+            const boxGuia = document.getElementById('boxGuia');
+            const guiaDescricao = document.getElementById('guiaDescricao');
+            const guiaPontos = document.getElementById('guiaPontos');
+
+            let regrasCache = [];
+
+            // Atualiza a lista de conselheiros selecionados (exibição)
+            function atualizarListaSelecionados() {
+                const selectedOptions = Array.from(selectConselheiros.selectedOptions);
+                if (selectedOptions.length === 0) {
+                    listaSelecionadosDiv.innerHTML = '<span class="text-muted">Nenhum selecionado</span>';
+                    return;
+                }
+                let html = '<ul class="list-unstyled mb-0">';
+                selectedOptions.forEach(opt => {
+                    html += `<li><i class="fa-solid fa-user-check text-success me-1"></i> ${opt.text}</li>`;
+                });
+                html += '</ul>';
+                listaSelecionadosDiv.innerHTML = html;
+            }
+
+            // Carrega conselheiros por gestão
+            function carregarConselheiros() {
+                const gestaoId = selectGestao.value;
+                if (!gestaoId) {
+                    selectConselheiros.innerHTML = '<option value="">-- Selecione a gestão primeiro --</option>';
+                    selectConselheiros.disabled = true;
+                    atualizarListaSelecionados();
+                    return;
+                }
+                fetch(`/atividades/api/conselheiros-por-gestao?gestaoId=${gestaoId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        selectConselheiros.innerHTML = '';
+                        if (data && data.length > 0) {
+                            data.forEach(c => {
+                                const option = document.createElement('option');
+                                option.value = c.id;
+                                option.text = c.nome;
+                                selectConselheiros.appendChild(option);
+                            });
+                            selectConselheiros.disabled = false;
+                        } else {
+                            selectConselheiros.innerHTML = '<option value="">Nenhum conselheiro vinculado</option>';
+                            selectConselheiros.disabled = true;
+                        }
+                        atualizarListaSelecionados();
+                    })
+                    .catch(err => console.error("Erro ao carregar conselheiros:", err));
+            }
+
+            // Carrega regras por data e preenche normativas
+            function carregarRegrasPorData() {
+                const data = dataAtividade.value;
+                if (!data) {
+                    selectRegra.innerHTML = '<option value="">-- Selecione a data --</option>';
+                    selectRegra.disabled = true;
+                    nomeResolucao.value = '';
+                    idResolucaoHidden.value = '';
+                    nomePortaria.value = '';
+                    idPortariaHidden.value = '';
+                    boxGuia.style.display = 'none';
+                    return;
+                }
+
+                selectRegra.innerHTML = '<option value="">Carregando regras...</option>';
+                fetch(`/atividades/api/regras-por-data?data=${data}`)
+                    .then(response => response.json())
+                    .then(result => {
+                        nomeResolucao.value = result.nomeResolucao || "Nenhuma encontrada";
+                        idResolucaoHidden.value = result.idResolucao || "";
+                        nomePortaria.value = result.nomePortaria || "Nenhuma encontrada";
+                        idPortariaHidden.value = result.idPortaria || "";
+
+                        selectRegra.innerHTML = '<option value="">-- Selecione a Regra Enquadrada --</option>';
+                        if (result.regras && result.regras.length > 0) {
+                            regrasCache = result.regras;
+                            result.regras.forEach(r => {
+                                const option = document.createElement('option');
+                                option.value = r.id;
+                                option.text = `${r.nome} (${r.pontos} pts)`;
+                                selectRegra.appendChild(option);
+                            });
+                            selectRegra.disabled = false;
+                            exibirGuiaRegra();
+                        } else {
+                            selectRegra.innerHTML = '<option value="">Nenhuma regra cadastrada para este período</option>';
+                            selectRegra.disabled = true;
+                            boxGuia.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro ao buscar regras por data:', error);
+                        selectRegra.innerHTML = '<option value="">Erro ao carregar regras</option>';
+                        selectRegra.disabled = true;
+                    });
+            }
+
+            // Exibe guia da regra selecionada
+            function exibirGuiaRegra() {
+                const id = selectRegra.value;
+                if (!id || !regrasCache.length) {
+                    boxGuia.style.display = 'none';
+                    return;
+                }
+                const regra = regrasCache.find(r => r.id == id);
+                if (regra) {
+                    guiaDescricao.innerText = regra.descricao || '';
+                    guiaPontos.innerText = regra.pontos;
+                    boxGuia.style.display = 'block';
+                } else {
+                    boxGuia.style.display = 'none';
+                }
+            }
+
+            // Atualiza turno visual com base na data/hora
+            function atualizarTurnoVisual() {
+                const dataHora = dataAtividade.value;
+                if (dataHora) {
+                    const hora = new Date(dataHora).getHours();
+                    let turnoTexto = "Automático";
+                    let cor = "initial";
+                    if (hora >= 6 && hora < 12) { turnoTexto = "Manhã (M)"; cor = "#0d6efd"; }
+                    else if (hora >= 12 && hora < 18) { turnoTexto = "Tarde (T)"; cor = "#fd7e14"; }
+                    else { turnoTexto = "Noite (N)"; cor = "#6c757d"; }
+                    turnoVisual.value = turnoTexto;
+                    turnoVisual.style.color = cor;
+                } else {
+                    turnoVisual.value = "Automático (via Horário)";
+                    turnoVisual.style.color = "initial";
+                }
+            }
+
+            // Limpar filtros (normativas e regra)
+            function resetarFiltros() {
+                nomeResolucao.value = '';
+                idResolucaoHidden.value = '';
+                nomePortaria.value = '';
+                idPortariaHidden.value = '';
+                selectRegra.innerHTML = '<option value="">-- Escolha a documentação acima para desbloquear as regras --</option>';
+                selectRegra.disabled = true;
+                boxGuia.style.display = 'none';
+            }
+
+            // Eventos
+            selectGestao.addEventListener('change', carregarConselheiros);
+            selectConselheiros.addEventListener('change', atualizarListaSelecionados);
+            dataAtividade.addEventListener('change', () => {
+                carregarRegrasPorData();
+                atualizarTurnoVisual();
+            });
+            selectRegra.addEventListener('change', exibirGuiaRegra);
+
+            // Carrega inicialmente se já houver valores (edição de lote? mas esse formulário é apenas para criação)
+            if (selectGestao.value) carregarConselheiros();
+            if (dataAtividade.value) {
+                carregarRegrasPorData();
+                atualizarTurnoVisual();
+            }
+        </script>
+    </div>
+</body>
+
+</html>

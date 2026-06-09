@@ -4,6 +4,8 @@ import br.com.cremepe.jeton.domain.AtividadeConselhal;
 import br.com.cremepe.jeton.domain.Portaria;
 import br.com.cremepe.jeton.domain.Regras;
 import br.com.cremepe.jeton.domain.Resolucao;
+import br.com.cremepe.jeton.dto.LoteAtividadeDTO;
+import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repository.GestaoConselheiroRepository;
 import br.com.cremepe.jeton.service.AtividadeConselhalService;
 import br.com.cremepe.jeton.service.ConselheiroService;
@@ -44,6 +46,8 @@ public class AtividadeConselhalController {
     private GestaoConselheiroRepository gestaoConselheiroRepository;
     @Autowired
     private TipoAnexoService tipoAnexoService;
+    @Autowired
+    private AtividadeConselhalRepository atividadeRepository;
 
     // =========================================================================
     // PÁGINAS WEB (LISTAGEM, FORMULÁRIOS, AÇÕES)
@@ -91,11 +95,25 @@ public class AtividadeConselhalController {
     }
 
     @GetMapping("/editar/{id}")
-    public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
+    public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session,
+            RedirectAttributes ra) {
         if (naoAutenticado(session))
             return "redirect:/login";
         AtividadeConselhal atividade = atividadeService.buscarPorId(id)
                 .orElseThrow(() -> new IllegalArgumentException("Atividade não encontrada"));
+
+        // Se o comprovante e este é compartilhado com outras atividades
+        if (atividade.getComprovante() != null) {
+            long count = atividadeRepository
+                    .countByComprovanteIdComprovante(atividade.getComprovante().getIdComprovante());
+            if (count > 1) {
+                ra.addFlashAttribute("info",
+                        "Esta atividade compartilha o mesmo comprovante com outras " + (count - 1) +
+                                " atividades. Para editar todas de uma vez, utilize a edição em lote.");
+                return "redirect:/atividades/lote/editar/" + atividade.getComprovante().getIdComprovante();
+            }
+        }
+
         model.addAttribute("atividade", atividade);
         carregarListasDeApoio(model);
         return "atividadeconselhal/formulario";
@@ -327,5 +345,83 @@ public class AtividadeConselhalController {
         map.put("descricao", regra.getDescricao());
         map.put("pontos", regra.getPontos());
         return map;
+    }
+
+    // =========================================================================
+    // CRIAÇÃO EM LOTE
+    // =========================================================================
+
+    @GetMapping("/lote/novo")
+    public String prepararLote(Model model, HttpSession session) {
+        if (naoAutenticado(session))
+            return "redirect:/login";
+        model.addAttribute("listaGestoes", gestaoService.listarTodos());
+        model.addAttribute("listaTiposAnexo", tipoAnexoService.listarTodos());
+        return "atividadeconselhal/lote_formulario";
+    }
+
+    @PostMapping("/lote/salvar")
+    public String salvarLote(@ModelAttribute LoteAtividadeDTO dto,
+            HttpSession session,
+            RedirectAttributes ra) {
+        if (naoAutenticado(session))
+            return "redirect:/login";
+        try {
+            // Se o turno não foi enviado, ele será calculado dentro do service
+            if (dto.getInTurno() == null || dto.getInTurno().isEmpty()) {
+                dto.setInTurno(null);
+            }
+            atividadeService.criarLote(dto);
+            ra.addFlashAttribute("sucesso",
+                    "Atividades criadas em lote com sucesso para " + dto.getIdsConselheiros().size()
+                            + " conselheiros.");
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro ao criar lote: " + e.getMessage());
+        }
+        return "redirect:/atividades";
+    }
+
+    @GetMapping("/lote/editar/{idComprovante}")
+    public String prepararEdicaoLote(@PathVariable Integer idComprovante, Model model, HttpSession session) {
+        if (naoAutenticado(session))
+            return "redirect:/login";
+        List<AtividadeConselhal> atividades = atividadeService.listarPorComprovante(idComprovante);
+        if (atividades.isEmpty()) {
+            throw new IllegalArgumentException("Nenhuma atividade encontrada para este comprovante.");
+        }
+        AtividadeConselhal referencia = atividades.get(0);
+
+        // IDs dos conselheiros atualmente no lote
+        List<Integer> idsConselheirosAtuais = atividades.stream()
+                .map(a -> a.getConselheiro().getIdPessoa())
+                .distinct()
+                .collect(Collectors.toList());
+
+        model.addAttribute("atividadeReferencia", referencia);
+        model.addAttribute("quantidade", atividades.size());
+        model.addAttribute("listaGestoes", gestaoService.listarTodos());
+        model.addAttribute("listaTiposAnexo", tipoAnexoService.listarTodos());
+        model.addAttribute("idComprovante", idComprovante);
+        model.addAttribute("idsConselheirosAtuais", idsConselheirosAtuais);
+        return "atividadeconselhal/lote_edicao";
+    }
+
+    @PostMapping("/lote/atualizar/{idComprovante}")
+    public String atualizarLote(@PathVariable Integer idComprovante,
+            @ModelAttribute LoteAtividadeDTO dto,
+            HttpSession session,
+            RedirectAttributes ra) {
+        if (naoAutenticado(session))
+            return "redirect:/login";
+        try {
+            if (dto.getInTurno() == null || dto.getInTurno().isEmpty()) {
+                dto.setInTurno(null);
+            }
+            atividadeService.atualizarLote(idComprovante, dto);
+            ra.addFlashAttribute("sucesso", "Todas as atividades vinculadas ao comprovante foram atualizadas.");
+        } catch (Exception e) {
+            ra.addFlashAttribute("erro", "Erro ao atualizar lote: " + e.getMessage());
+        }
+        return "redirect:/atividades";
     }
 }
