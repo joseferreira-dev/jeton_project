@@ -28,9 +28,6 @@ public class RegrasController {
     @Autowired
     private ResolucaoService resolucaoService;
 
-    // =========================================================================
-    // LISTAGEM
-    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -57,9 +54,6 @@ public class RegrasController {
         return "regras/lista";
     }
 
-    // =========================================================================
-    // FORMULÁRIOS
-    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -105,9 +99,6 @@ public class RegrasController {
                 .collect(Collectors.toList());
     }
 
-    // =========================================================================
-    // SALVAR (CRIAR / ATUALIZAR)
-    // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@ModelAttribute("regra") Regras regra,
             HttpSession session,
@@ -130,9 +121,6 @@ public class RegrasController {
         return "redirect:/regras";
     }
 
-    // =========================================================================
-    // REVOGAÇÃO (SOFT DELETE)
-    // =========================================================================
     @GetMapping("/revogar/{id}")
     public String revogar(@PathVariable("id") Integer id,
             HttpSession session,
@@ -148,9 +136,6 @@ public class RegrasController {
         return "redirect:/regras";
     }
 
-    // =========================================================================
-    // RESTAURAR
-    // =========================================================================
     @GetMapping("/restaurar/{id}")
     public String restaurar(@PathVariable("id") Integer id,
             HttpSession session,
@@ -166,9 +151,6 @@ public class RegrasController {
         return "redirect:/regras";
     }
 
-    // =========================================================================
-    // EXCLUSÃO PERMANENTE
-    // =========================================================================
     @GetMapping("/deletar/{id}")
     public String deletar(@PathVariable("id") Integer id,
             HttpSession session,
@@ -184,9 +166,6 @@ public class RegrasController {
         return "redirect:/regras";
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
     }

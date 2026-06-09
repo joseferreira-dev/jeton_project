@@ -28,9 +28,6 @@ public class RegrasConjuntasController {
     @Autowired
     private ResolucaoService resolucaoService;
 
-    // =========================================================================
-    // LISTAGEM
-    // =========================================================================
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -55,9 +52,6 @@ public class RegrasConjuntasController {
         return "regrasconjuntas/lista";
     }
 
-    // =========================================================================
-    // FORMULÁRIOS
-    // =========================================================================
     @GetMapping("/novo")
     public String prepararNovo(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -89,9 +83,6 @@ public class RegrasConjuntasController {
         return "regrasconjuntas/formulario";
     }
 
-    // =========================================================================
-    // SALVAR
-    // =========================================================================
     @PostMapping("/salvar")
     public String salvar(@ModelAttribute("regrasConjuntas") RegrasConjuntas regrasConjuntas,
             HttpSession session,
@@ -114,9 +105,6 @@ public class RegrasConjuntasController {
         return "redirect:/regras-conjuntas";
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
@@ -132,9 +120,6 @@ public class RegrasConjuntasController {
         return "redirect:/regras-conjuntas";
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES
-    // =========================================================================
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
     }
