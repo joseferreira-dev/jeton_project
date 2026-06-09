@@ -89,7 +89,7 @@ public class RegrasController {
                 .collect(Collectors.toList()));
     }
 
-    @GetMapping("/api/regras-por-resolucao")
+    @GetMapping("/regras-por-resolucao")
     @ResponseBody
     public List<Map<String, Object>> getRegrasPorResolucao(@RequestParam(required = false) Integer resolucaoId) {
         List<Regras> regras = regrasService.listarRegrasPorResolucao(resolucaoId);

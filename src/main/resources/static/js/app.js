@@ -770,7 +770,7 @@ function inicializarFiltroRegrasConjuntas() {
 
     // Carrega regras com base na resolução selecionada
     function carregarRegras(resolucaoId, idsParaSelecionar) {
-        const url = resolucaoId ? `/regras/api/regras-por-resolucao?resolucaoId=${resolucaoId}` : '/regras/api/regras-por-resolucao';
+        const url = resolucaoId ? `/regras/regras-por-resolucao?resolucaoId=${resolucaoId}` : '/regras/regras-por-resolucao';
         fetch(url)
             .then(response => response.json())
             .then(data => {
