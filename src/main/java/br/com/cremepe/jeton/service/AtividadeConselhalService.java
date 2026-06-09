@@ -139,7 +139,7 @@ public class AtividadeConselhalService {
     }
 
     // =========================================================================
-    // VALIDAÇÃO – sem estado anterior, apenas ID
+    // VALIDAÇÃO
     // =========================================================================
     @Auditar(tabela = "atividade_conselhal", acao = "VALIDAR", descricao = "Validar atividade pendente", dadosParametros = "{ 'idAtividade': #id }", auditarExcecao = true)
     @Transactional
@@ -154,7 +154,7 @@ public class AtividadeConselhalService {
     }
 
     // =========================================================================
-    // DESVALIDAR – sem estado anterior, apenas ID
+    // DESVALIDAR
     // =========================================================================
     @Auditar(tabela = "atividade_conselhal", acao = "DESVALIDAR", descricao = "Desvalidar atividade", dadosParametros = "{ 'idAtividade': #id }", auditarExcecao = true)
     @Transactional
@@ -173,7 +173,7 @@ public class AtividadeConselhalService {
     }
 
     // =========================================================================
-    // EXCLUIR – captura estado anterior (entidade antes de excluir)
+    // EXCLUIR
     // =========================================================================
     @Auditar(tabela = "atividade_conselhal", acao = "EXCLUIR", capturarEstadoAnterior = true, descricao = "Excluir atividade", dadosParametros = "{ 'idAtividade': #id }", auditarExcecao = true)
     @Transactional

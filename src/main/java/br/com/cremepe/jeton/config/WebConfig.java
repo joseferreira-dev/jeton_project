@@ -15,7 +15,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // Aplica o interceptor a todas as rotas do sistema
+        // Aplica o interceptor a todas as rotas
         registry.addInterceptor(autorizacaoInterceptor).addPathPatterns("/**");
     }
 }

@@ -36,10 +36,6 @@ public class AtividadeConselhalController {
     @Autowired
     private TipoAnexoService tipoAnexoService;
 
-    // =========================================================================
-    // PÁGINAS WEB (LISTAGEM, FORMULÁRIOS, AÇÕES)
-    // =========================================================================
-
     @GetMapping
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
@@ -170,10 +166,6 @@ public class AtividadeConselhalController {
         return "redirect:/atividades";
     }
 
-    // =========================================================================
-    // CRIAÇÃO EM LOTE
-    // =========================================================================
-
     @GetMapping("/lote/novo")
     public String prepararLote(Model model, HttpSession session) {
         if (naoAutenticado(session))
@@ -242,10 +234,6 @@ public class AtividadeConselhalController {
         }
         return "redirect:/atividades";
     }
-
-    // =========================================================================
-    // MÉTODOS AUXILIARES PRIVADOS
-    // =========================================================================
 
     private boolean naoAutenticado(HttpSession session) {
         return session.getAttribute("usuarioLogado") == null;
