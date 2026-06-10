@@ -14,18 +14,12 @@ public class PontosSaldo implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PARA inSituacao (valores do banco)
-    // =========================================================================
     public static final String SITUACAO_ATIVO = "A";
     public static final String SITUACAO_INATIVO = "I";
     public static final String SITUACAO_PENDENTE = "P";
     public static final String SITUACAO_UTILIZADO = "U";
     public static final String SITUACAO_EXCLUIDO = "E";
 
-    // =========================================================================
-    // CAMPOS DA ENTIDADE
-    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idPontosSaldo")
@@ -75,15 +69,9 @@ public class PontosSaldo implements Serializable {
     @Column(name = "inSituacao", nullable = false, length = 1)
     private String inSituacao;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public PontosSaldo() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean isAtivo() {
         return SITUACAO_ATIVO.equals(inSituacao);
     }
@@ -108,9 +96,6 @@ public class PontosSaldo implements Serializable {
         return isAtivo() && pontosSobrando != null && pontosSobrando > 0;
     }
 
-    // =========================================================================
-    // JPA LIFECYCLE – NORMALIZAÇÃO
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalize() {
@@ -131,9 +116,6 @@ public class PontosSaldo implements Serializable {
             pontosSobrando = 0;
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdPontosSaldo() {
         return idPontosSaldo;
     }
@@ -222,9 +204,6 @@ public class PontosSaldo implements Serializable {
         this.inSituacao = inSituacao;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -240,9 +219,6 @@ public class PontosSaldo implements Serializable {
         return Objects.hash(idPontosSaldo);
     }
 
-    // =========================================================================
-    // TO_STRING
-    // =========================================================================
     @Override
     public String toString() {
         return "PontosSaldo{" +

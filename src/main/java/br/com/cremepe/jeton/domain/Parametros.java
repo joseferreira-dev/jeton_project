@@ -13,7 +13,7 @@ public class Parametros implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
-    private Integer id = 1; // único registro
+    private Integer id = 1;
 
     @Column(name = "bloqueaSistema", length = 1, nullable = false)
     private String bloqueaSistema;

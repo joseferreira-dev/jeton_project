@@ -12,11 +12,6 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Entidade JPA que representa a tabela 'log_jeton'.
- * Responsável por manter a trilha de auditoria e rastreabilidade de todas as
- * operações sensíveis realizadas no sistema.
- */
 @Entity
 @Table(name = "log_jeton")
 public class LogJeton implements Serializable {
@@ -31,31 +26,18 @@ public class LogJeton implements Serializable {
     @Column(name = "nomeTabela", length = 45, nullable = false)
     private String nomeTabela;
 
-    /**
-     * Relacionamento com o utilizador que efetuou a ação.
-     * Na base de dados, a chave estrangeira chama-se 'idUsuario'.
-     */
     @ManyToOne
     @JoinColumn(name = "idUsuario", nullable = false)
     private Usuario usuario;
 
-    // Espelha o tipo 'datetime' do MySQL para garantir a ordem cronológica exata
     @Column(name = "dataHoraLog", nullable = false)
     private LocalDateTime dataHoraLog;
 
-    /**
-     * Campo configurado especificamente para receber textos longos (ex: JSON ou
-     * dumps).
-     */
     @Column(name = "textoLog", columnDefinition = "text", nullable = false)
     private String textoLog;
 
     public LogJeton() {
     }
-
-    // ==========================================
-    // GETTERS E SETTERS
-    // ==========================================
 
     public Integer getIdLog() {
         return idLog;

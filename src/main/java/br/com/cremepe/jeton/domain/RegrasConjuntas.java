@@ -10,25 +10,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Entidade que define grupos de regras que partilham um limite de pontos comum.
- */
 @Entity
 @Table(name = "regras_conjuntas")
 public class RegrasConjuntas implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PARA inTipoLimite
-    // =========================================================================
     public static final String TIPO_LIMITE_DIARIO = "D";
     public static final String TIPO_LIMITE_TURNO = "T";
     public static final String TIPO_LIMITE_MENSAL = "M";
 
-    // =========================================================================
-    // CAMPOS
-    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idRegraConjunta")
@@ -49,23 +40,13 @@ public class RegrasConjuntas implements Serializable {
     @Column(name = "pontosLimite", nullable = false)
     private Integer pontosLimite;
 
-    /**
-     * Relacionamento Muitos-para-Muitos com a tabela 'regras'.
-     * O JoinTable define a tabela de ligação 'regra_conjunta_agrupada'.
-     */
     @ManyToMany
     @JoinTable(name = "regra_conjunta_agrupada", joinColumns = @JoinColumn(name = "idRegraConjunta"), inverseJoinColumns = @JoinColumn(name = "idRegra"))
     private List<Regras> regrasAgrupadas = new ArrayList<>();
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public RegrasConjuntas() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean isTipoDiario() {
         return TIPO_LIMITE_DIARIO.equals(inTipoLimite);
     }
@@ -78,9 +59,6 @@ public class RegrasConjuntas implements Serializable {
         return TIPO_LIMITE_MENSAL.equals(inTipoLimite);
     }
 
-    // =========================================================================
-    // JPA LIFECYCLE – NORMALIZAÇÃO
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalize() {
@@ -101,9 +79,6 @@ public class RegrasConjuntas implements Serializable {
         }
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdRegraConjunta() {
         return idRegraConjunta;
     }
@@ -144,9 +119,6 @@ public class RegrasConjuntas implements Serializable {
         this.regrasAgrupadas = regrasAgrupadas;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE (baseado no ID)
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -162,9 +134,6 @@ public class RegrasConjuntas implements Serializable {
         return Objects.hash(idRegraConjunta);
     }
 
-    // =========================================================================
-    // TO_STRING
-    // =========================================================================
     @Override
     public String toString() {
         return "RegrasConjuntas{" +

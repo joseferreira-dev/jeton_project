@@ -16,15 +16,9 @@ public class Resolucao implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PARA REVOGAÇÃO
-    // =========================================================================
     public static final String REVOGADO_SIM = "S";
     public static final String REVOGADO_NAO = "N";
 
-    // =========================================================================
-    // CAMPOS DA ENTIDADE
-    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idResolucao")
@@ -83,15 +77,9 @@ public class Resolucao implements Serializable {
     @Column(name = "valorJeton", nullable = false, precision = 10, scale = 2)
     private BigDecimal valorJeton;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public Resolucao() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean isRevogado() {
         return REVOGADO_SIM.equals(inRevogado);
     }
@@ -100,9 +88,6 @@ public class Resolucao implements Serializable {
         return REVOGADO_NAO.equals(inRevogado);
     }
 
-    // =========================================================================
-    // JPA LIFECYCLE – NORMALIZAÇÃO
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalize() {
@@ -112,15 +97,11 @@ public class Resolucao implements Serializable {
         if (linkPublicado != null) {
             linkPublicado = linkPublicado.trim();
         }
-        // Garante que o valor padrão seja 'N' caso venha inválido
         if (!REVOGADO_SIM.equals(inRevogado) && !REVOGADO_NAO.equals(inRevogado)) {
             inRevogado = REVOGADO_NAO;
         }
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdResolucao() {
         return idResolucao;
     }
@@ -225,9 +206,6 @@ public class Resolucao implements Serializable {
         this.valorJeton = valorJeton;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)

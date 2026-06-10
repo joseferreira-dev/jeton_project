@@ -15,15 +15,9 @@ public class Portaria implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PARA REVOGAÇÃO
-    // =========================================================================
     public static final String REVOGADO_SIM = "S";
     public static final String REVOGADO_NAO = "N";
 
-    // =========================================================================
-    // CAMPOS
-    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idPortaria")
@@ -54,15 +48,9 @@ public class Portaria implements Serializable {
     @Column(name = "inRevogado", nullable = false, length = 1)
     private String inRevogado = REVOGADO_NAO;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public Portaria() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean isRevogado() {
         return REVOGADO_SIM.equals(inRevogado);
     }
@@ -71,9 +59,6 @@ public class Portaria implements Serializable {
         return REVOGADO_NAO.equals(inRevogado);
     }
 
-    // =========================================================================
-    // JPA LIFECYCLE – NORMALIZAÇÃO
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalize() {
@@ -89,9 +74,6 @@ public class Portaria implements Serializable {
         }
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdPortaria() {
         return idPortaria;
     }
@@ -148,9 +130,6 @@ public class Portaria implements Serializable {
         this.inRevogado = inRevogado;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)

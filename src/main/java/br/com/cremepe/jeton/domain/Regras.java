@@ -7,29 +7,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Entidade JPA que representa a tabela 'regras'.
- * Eixo central que define as regras de pontuação de atividades baseadas em
- * Portarias e Resoluções.
- */
 @Entity
 @Table(name = "regras")
 public class Regras implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES
-    // =========================================================================
     public static final String REVOGADO_SIM = "S";
     public static final String REVOGADO_NAO = "N";
 
     public static final String JUDICANTE_SIM = "S";
     public static final String JUDICANTE_NAO = "N";
 
-    // =========================================================================
-    // CAMPOS
-    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idRegra")
@@ -75,15 +64,9 @@ public class Regras implements Serializable {
     @Column(name = "inJudicante", nullable = false, length = 1)
     private String inJudicante = JUDICANTE_NAO;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public Regras() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean isRevogado() {
         return REVOGADO_SIM.equals(inRevogado);
     }
@@ -100,9 +83,6 @@ public class Regras implements Serializable {
         return JUDICANTE_NAO.equals(inJudicante);
     }
 
-    // =========================================================================
-    // JPA LIFECYCLE – NORMALIZAÇÃO
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalize() {
@@ -115,7 +95,6 @@ public class Regras implements Serializable {
         if (inJudicante != null) {
             inJudicante = inJudicante.toUpperCase();
         }
-        // Garante valores padrão
         if (!REVOGADO_SIM.equals(inRevogado) && !REVOGADO_NAO.equals(inRevogado)) {
             inRevogado = REVOGADO_NAO;
         }
@@ -129,10 +108,6 @@ public class Regras implements Serializable {
             pontos = 0;
         }
     }
-
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
 
     public Integer getIdRegra() {
         return idRegra;
@@ -206,10 +181,6 @@ public class Regras implements Serializable {
         this.inJudicante = inJudicante;
     }
 
-    // =========================================================================
-    // MÉTODOS PARA O RELACIONAMENTO BIDIRECIONAL
-    // =========================================================================
-
     public List<RegrasConjuntas> getGruposDeRegras() {
         return gruposDeRegras;
     }
@@ -217,10 +188,6 @@ public class Regras implements Serializable {
     public void setGruposDeRegras(List<RegrasConjuntas> gruposDeRegras) {
         this.gruposDeRegras = gruposDeRegras;
     }
-
-    // =========================================================================
-    // MÉTODOS UTILITÁRIOS
-    // =========================================================================
 
     public void adicionarAoGrupo(RegrasConjuntas grupo) {
         this.gruposDeRegras.add(grupo);
@@ -233,10 +200,6 @@ public class Regras implements Serializable {
         this.gruposDeRegras.remove(grupo);
         grupo.getRegrasAgrupadas().remove(this);
     }
-
-    // =========================================================================
-    // EQUALS & HASHCODE
-    // =========================================================================
 
     @Override
     public boolean equals(Object o) {
@@ -252,10 +215,6 @@ public class Regras implements Serializable {
     public int hashCode() {
         return Objects.hash(idRegra);
     }
-
-    // =========================================================================
-    // TO_STRING
-    // =========================================================================
 
     @Override
     public String toString() {

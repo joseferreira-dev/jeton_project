@@ -8,25 +8,15 @@ import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * Entidade JPA que representa a tabela 'pessoa' no banco de dados.
- * Armazena dados comuns a conselheiros (C) e funcionários (F).
- */
 @Entity
 @Table(name = "pessoa")
 public class Pessoa implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PÚBLICAS PARA O TIPO DE PESSOA
-    // =========================================================================
     public static final String TIPO_FUNCIONARIO = "F";
     public static final String TIPO_CONSELHEIRO = "C";
 
-    // =========================================================================
-    // CAMPOS DA ENTIDADE
-    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idPessoa")
@@ -55,16 +45,9 @@ public class Pessoa implements Serializable {
     @Column(name = "inTipoPessoa", length = 1, nullable = false)
     private String inTipoPessoa;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public Pessoa() {
-        // Construtor padrão exigido pelo JPA
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean isFuncionario() {
         return TIPO_FUNCIONARIO.equals(inTipoPessoa);
     }
@@ -73,9 +56,6 @@ public class Pessoa implements Serializable {
         return TIPO_CONSELHEIRO.equals(inTipoPessoa);
     }
 
-    // =========================================================================
-    // JPA LIFECYCLE – NORMALIZAÇÃO AUTOMÁTICA
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalize() {
@@ -89,9 +69,6 @@ public class Pessoa implements Serializable {
             inTipoPessoa = inTipoPessoa.toUpperCase();
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdPessoa() {
         return idPessoa;
     }
@@ -132,9 +109,6 @@ public class Pessoa implements Serializable {
         this.inTipoPessoa = inTipoPessoa;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -150,15 +124,12 @@ public class Pessoa implements Serializable {
         return Objects.hash(idPessoa);
     }
 
-    // =========================================================================
-    // TO_STRING
-    // =========================================================================
     @Override
     public String toString() {
         return "Pessoa{" +
                 "id=" + idPessoa +
                 ", nome='" + nome + '\'' +
-                ", cpf='***'" + // CPF omitido por segurança
+                ", cpf='***'" +
                 ", email='" + email + '\'' +
                 ", tipo=" + inTipoPessoa +
                 '}';
