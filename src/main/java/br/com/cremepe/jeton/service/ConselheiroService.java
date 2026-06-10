@@ -44,10 +44,8 @@ public class ConselheiroService {
     private PermissaoService permissaoService;
     @Autowired
     private PasswordEncoder passwordEncoder;
-
-    // =========================================================================
-    // OPERAÇÕES DE ESCRITA
-    // =========================================================================
+    @Autowired
+    private UsuarioService usuarioService;
 
     @Auditar(tabela = "conselheiro", acao = "CRIAR", descricao = "Criação de novo conselheiro", dadosParametros = "{ 'conselheiro': #conselheiro }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
@@ -65,11 +63,6 @@ public class ConselheiroService {
         return salvarConselheiro(conselheiro, false);
     }
 
-    /**
-     * Método privado que contém a lógica comum de persistência.
-     * 
-     * @param isNovo indica se é criação (true) ou atualização (false)
-     */
     private Conselheiro salvarConselheiro(Conselheiro conselheiro, boolean isNovo) {
         // Se for uma edição (ID informado), carrega a entidade existente
         Conselheiro conselheiroExistente = null;
@@ -132,26 +125,36 @@ public class ConselheiroService {
                 conselheiroSalvo.getIdPessoa(), pessoa.getNome(), crm != null ? crm : 0,
                 conselheiroSalvo.getInSituacao());
 
-        // Sincroniza o usuário vinculado
-        Usuario usuario = usuarioRepository.findById(conselheiroSalvo.getIdPessoa()).orElse(new Usuario());
-        usuario.setPessoa(conselheiroSalvo.getPessoa());
-        usuario.setInSituacao(conselheiroSalvo.getInSituacao());
-
-        if (conselheiro.getSenhaAcesso() != null && !conselheiro.getSenhaAcesso().trim().isEmpty()) {
-            usuario.setSenha(passwordEncoder.encode(conselheiro.getSenhaAcesso()));
-        } else if (usuario.getSenha() == null && isNovo) {
-            throw new RuntimeException("A senha é obrigatória para criar o acesso no sistema.");
-        }
-        usuarioRepository.save(usuario);
+        // Sincroniza o usuário vinculado (cria ou atualiza)
+        sincronizarUsuario(conselheiroSalvo, conselheiro.getSenhaAcesso(), isNovo);
 
         // Concede permissões padrão apenas para novos conselheiros
         if (isNovo) {
-            permissaoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL);
-            permissaoService.concederPermissao(conselheiroSalvo.getIdPessoa(), NivelAcesso.NIVEL_COMPROVANTES);
-            log.info("Permissões padrão concedidas para o novo conselheiro ID={}", conselheiroSalvo.getIdPessoa());
+            concederPermissoesPadrao(conselheiroSalvo.getIdPessoa());
         }
 
         return conselheiroSalvo;
+    }
+
+    private void sincronizarUsuario(Conselheiro conselheiro, String senhaInformada, boolean isNovo) {
+        Usuario usuario = usuarioRepository.findById(conselheiro.getIdPessoa()).orElse(new Usuario());
+        usuario.setPessoa(conselheiro.getPessoa());
+        usuario.setInSituacao(conselheiro.getInSituacao());
+
+        if (senhaInformada != null && !senhaInformada.trim().isEmpty()) {
+            usuario.setSenha(passwordEncoder.encode(senhaInformada));
+        } else if (usuario.getSenha() == null && isNovo) {
+            throw new RuntimeException("A senha é obrigatória para criar o acesso no sistema.");
+        }
+
+        usuarioRepository.save(usuario);
+        log.debug("Usuário sincronizado para conselheiro ID={}", conselheiro.getIdPessoa());
+    }
+
+    private void concederPermissoesPadrao(Integer idConselheiro) {
+        permissaoService.concederPermissao(idConselheiro, NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL);
+        permissaoService.concederPermissao(idConselheiro, NivelAcesso.NIVEL_COMPROVANTES);
+        log.info("Permissões padrão concedidas para o novo conselheiro ID={}", idConselheiro);
     }
 
     @Auditar(tabela = "conselheiro", acao = "EXCLUIR", descricao = "Exclusão física de conselheiro", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true)
@@ -168,25 +171,12 @@ public class ConselheiroService {
         Integer crm = conselheiro.getCrm();
         String situacao = conselheiro.getInSituacao();
 
-        // 1. Remove as permissões (usuario_acesso) primeiro
-        conselheiroRepository.deletarPermissoesNativo(id);
-
-        // 2. Remove o conselheiro (se existir)
-        conselheiroRepository.deletarConselheiroNativo(id);
-
-        // 3. Remove o usuário
-        conselheiroRepository.deletarUsuarioNativo(id);
-
-        // 4. Remove a pessoa
-        conselheiroRepository.deletarPessoaNativa(id);
+        // Delega a remoção completa para o UsuarioService
+        usuarioService.excluir(id);
 
         log.info("Conselheiro excluído: ID={}, nome='{}', CPF={}, CRM={}, situação={}",
                 id, nome, cpf, crm, situacao);
     }
-
-    // =========================================================================
-    // MÉTODOS DE VALIDAÇÃO (privados)
-    // =========================================================================
 
     private void validarCpfUnico(String cpf, Integer idAtual) {
         Optional<Pessoa> existente = pessoaRepository.findByCpf(cpf);
@@ -207,10 +197,6 @@ public class ConselheiroService {
             throw new RuntimeException("Já existe um conselheiro registrado com o CRM-PE " + crm);
         }
     }
-
-    // =========================================================================
-    // OPERAÇÕES DE LEITURA
-    // =========================================================================
 
     @Transactional(readOnly = true)
     public Page<Conselheiro> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size,
