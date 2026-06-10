@@ -13,10 +13,34 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.util.Map;
+
 @Component
 public class AutorizacaoInterceptor implements HandlerInterceptor {
 
     private static final Logger log = LoggerFactory.getLogger(AutorizacaoInterceptor.class);
+
+    // Mapa de padrões de URI (prefixos) e permissões necessárias
+    private static final Map<String, String> URI_PERMISSOES = Map.ofEntries(
+            Map.entry("/atividades", NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL),
+            Map.entry("/comprovantes", NivelAcesso.NIVEL_COMPROVANTES),
+            Map.entry("/jeton", NivelAcesso.NIVEL_JETONS),
+            Map.entry("/gestoes", NivelAcesso.NIVEL_GESTAO_CONSELHEIROS),
+            Map.entry("/gestao-conselheiros", NivelAcesso.NIVEL_GESTAO_CONSELHEIROS),
+            Map.entry("/conselheiros", NivelAcesso.NIVEL_GESTAO_CONSELHEIROS),
+            Map.entry("/portarias", NivelAcesso.NIVEL_PORTARIAS_RESOLUCOES),
+            Map.entry("/resolucoes", NivelAcesso.NIVEL_PORTARIAS_RESOLUCOES),
+            Map.entry("/regras", NivelAcesso.NIVEL_PORTARIAS_RESOLUCOES),
+            Map.entry("/usuarios", NivelAcesso.NIVEL_USUARIOS),
+            Map.entry("/logs", NivelAcesso.NIVEL_NIVEIS_ACESSO));
+
+    private static final String[] ROTAS_PUBLICAS = {
+            "/login", "/autenticar", "/sair", "/css", "/js", "/images", "/error"
+    };
+
+    private static final String[] ROTAS_BLOQUEIO_PERMITIDAS = {
+            "/bloqueio", "/sair", "/login", "/autenticar", "/css", "/js", "/images", "/error"
+    };
 
     @Autowired
     private AutorizacaoService autorizacaoService;
@@ -30,29 +54,55 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
         String uri = request.getRequestURI();
         String method = request.getMethod();
 
-        // Rotas públicas
-        if (uri.startsWith("/login") || uri.startsWith("/autenticar") ||
-                uri.startsWith("/css") || uri.startsWith("/js") || uri.startsWith("/images") ||
-                uri.startsWith("/error")) {
+        // 1. Rotas públicas (acesso livre)
+        if (isRotaPublica(uri)) {
             return true;
         }
 
         HttpSession session = request.getSession();
         ViewUserLogin usuarioLogado = (ViewUserLogin) session.getAttribute("usuarioLogado");
 
-        // Autenticação
-        if (usuarioLogado == null) {
-            log.warn("Acesso não autenticado à URI: {} {}", method, uri);
-            response.sendRedirect("/login");
+        // 2. Verifica autenticação
+        if (!verificarAutenticacao(usuarioLogado, request, response)) {
             return false;
         }
 
-        // Verificação de bloqueio do sistema
+        // 3. Verifica bloqueio do sistema
+        if (!verificarBloqueioSistema(usuarioLogado, uri, response)) {
+            return false;
+        }
+
+        // 4. Verifica permissões de acesso (exceto portal do conselheiro)
+        if (!verificarPermissoes(usuarioLogado, uri, method, response)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean isRotaPublica(String uri) {
+        for (String publica : ROTAS_PUBLICAS) {
+            if (uri.startsWith(publica)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean verificarAutenticacao(ViewUserLogin usuarioLogado, HttpServletRequest request,
+            HttpServletResponse response) throws Exception {
+        if (usuarioLogado == null) {
+            log.warn("Acesso não autenticado à URI: {} {}", request.getMethod(), request.getRequestURI());
+            response.sendRedirect("/login");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean verificarBloqueioSistema(ViewUserLogin usuarioLogado, String uri,
+            HttpServletResponse response) throws Exception {
         boolean sistemaBloqueado = parametrosService.isSistemaBloqueado();
-        if (sistemaBloqueado && !uri.startsWith("/bloqueio") && !uri.startsWith("/sair")
-                && !uri.startsWith("/login") && !uri.startsWith("/autenticar")
-                && !uri.startsWith("/css") && !uri.startsWith("/js") && !uri.startsWith("/images")
-                && !uri.startsWith("/error")) {
+        if (sistemaBloqueado && !isRotaPermitidaDuranteBloqueio(uri)) {
             boolean isSuperAdmin = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_SUPER_ADMIN);
             boolean isBloqueio = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_BLOQUEIO_SISTEMA);
             if (!isSuperAdmin && !isBloqueio) {
@@ -62,79 +112,76 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
                 return false;
             }
         }
+        return true;
+    }
 
-        if (uri.startsWith("/atividades/")) {
-            return true;
+    private boolean isRotaPermitidaDuranteBloqueio(String uri) {
+        for (String permitida : ROTAS_BLOQUEIO_PERMITIDAS) {
+            if (uri.startsWith(permitida)) {
+                return true;
+            }
         }
+        return false;
+    }
 
-        // Autorização
-        boolean isSuperAdmin = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_SUPER_ADMIN);
-        String permissaoFaltante = null;
+    private boolean verificarPermissoes(ViewUserLogin usuarioLogado, String uri, String method,
+            HttpServletResponse response) throws Exception {
 
-        // Portal do Conselheiro
+        // Portal do Conselheiro (acesso exclusivo para tipo 'C')
         if (uri.startsWith("/conselheiro")) {
-            boolean isConselheiro = "C".equals(usuarioLogado.getInTipoPessoa());
-            if (!isConselheiro && !isSuperAdmin) {
-                log.warn("Acesso negado ao portal do conselheiro: usuário {} (tipo {})",
-                        usuarioLogado.getNome(), usuarioLogado.getInTipoPessoa());
-                response.sendRedirect("/index?erro=acesso_negado");
-                return false;
-            }
-            return true;
+            return verificarAcessoPortalConselheiro(usuarioLogado, uri, response);
         }
 
-        // Demais rotas
-        if (uri.startsWith("/atividades")) {
-            if ("C".equals(usuarioLogado.getInTipoPessoa())) {
-                permissaoFaltante = "ACESSO_RESTRITO_CONSELHEIRO";
-                response.sendRedirect("/index?erro=acesso_negado");
-                return false;
-            }
-            if (!(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL))) {
-                permissaoFaltante = NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL;
-                log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão A", usuarioLogado.getNome(), uri);
-            }
-        } else if (uri.startsWith("/comprovantes")
-                && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_COMPROVANTES))) {
-            permissaoFaltante = NivelAcesso.NIVEL_COMPROVANTES;
-            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão C", usuarioLogado.getNome(), uri);
-        } else if (uri.startsWith("/jeton")
-                && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_JETONS))) {
-            permissaoFaltante = NivelAcesso.NIVEL_JETONS;
-            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão J", usuarioLogado.getNome(), uri);
-        } else if ((uri.startsWith("/gestoes") || uri.startsWith("/gestao-conselheiros")
-                || uri.startsWith("/conselheiros"))
-                && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_GESTAO_CONSELHEIROS))) {
-            permissaoFaltante = NivelAcesso.NIVEL_GESTAO_CONSELHEIROS;
-            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão G", usuarioLogado.getNome(), uri);
-        } else if ((uri.startsWith("/portarias") || uri.startsWith("/resolucoes") || uri.startsWith("/regras"))
-                && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_PORTARIAS_RESOLUCOES))) {
-            permissaoFaltante = NivelAcesso.NIVEL_PORTARIAS_RESOLUCOES;
-            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão R", usuarioLogado.getNome(), uri);
-        } else if (uri.startsWith("/usuarios")
-                && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_USUARIOS))) {
-            permissaoFaltante = NivelAcesso.NIVEL_USUARIOS;
-            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão U", usuarioLogado.getNome(), uri);
-        } else if (uri.startsWith("/logs")
-                && !(isSuperAdmin || usuarioLogado.hasPermissao(NivelAcesso.NIVEL_NIVEIS_ACESSO))) {
-            permissaoFaltante = NivelAcesso.NIVEL_NIVEIS_ACESSO;
-            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão N", usuarioLogado.getNome(), uri);
+        boolean isSuperAdmin = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_SUPER_ADMIN);
+        if (isSuperAdmin) {
+            return true; // Super Admin tem acesso total
+        }
+
+        // Impede que conselheiros acessem rotas administrativas
+        if ("C".equals(usuarioLogado.getInTipoPessoa())) {
+            log.warn("Acesso negado: conselheiro {} tentou acessar rota administrativa {}", usuarioLogado.getNome(),
+                    uri);
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }
 
-        if (permissaoFaltante != null) {
-            // Registrar auditoria via serviço
+        // Verifica permissão específica com base no prefixo da URI
+        String permissaoNecessaria = obterPermissaoPorUri(uri);
+        if (permissaoNecessaria != null && !usuarioLogado.hasPermissao(permissaoNecessaria)) {
             autorizacaoService.registrarAcessoNegado(
                     usuarioLogado.getIdPessoa(),
                     usuarioLogado.getNome(),
                     method,
                     uri,
-                    permissaoFaltante);
+                    permissaoNecessaria);
+            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão {}",
+                    usuarioLogado.getNome(), uri, permissaoNecessaria);
             response.sendRedirect("/index?erro=acesso_negado");
             return false;
         }
 
         return true;
+    }
+
+    private boolean verificarAcessoPortalConselheiro(ViewUserLogin usuarioLogado, String uri,
+            HttpServletResponse response) throws Exception {
+        boolean isSuperAdmin = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_SUPER_ADMIN);
+        boolean isConselheiro = "C".equals(usuarioLogado.getInTipoPessoa());
+        if (!isConselheiro && !isSuperAdmin) {
+            log.warn("Acesso negado ao portal do conselheiro: usuário {} (tipo {})",
+                    usuarioLogado.getNome(), usuarioLogado.getInTipoPessoa());
+            response.sendRedirect("/index?erro=acesso_negado");
+            return false;
+        }
+        return true;
+    }
+
+    private String obterPermissaoPorUri(String uri) {
+        for (Map.Entry<String, String> entry : URI_PERMISSOES.entrySet()) {
+            if (uri.startsWith(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 }
