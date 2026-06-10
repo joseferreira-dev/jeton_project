@@ -188,35 +188,28 @@ public class ConselheiroPortalController {
         if (!isConselheiro(session))
             return "redirect:/login";
 
-        try {
-            if (atividade.getConselheiro() == null
-                    || !atividade.getConselheiro().getIdPessoa().equals(getIdConselheiroLogado(session))) {
-                throw new RuntimeException("Conselheiro inválido para esta atividade.");
-            }
-
-            LocalDateTime dataHora = DataUtils.parseDataHora(dataAtividadePura,
-                    "A data e horário da atividade são obrigatórios.");
-            atividade.setDataHoraAtividade(dataHora);
-            atividade.setInTurno(TurnoUtils.calcularTurno(dataHora.getHour()));
-
-            if (atividade.getIdAtividade() == null) {
-                atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
-                atividadeService.criar(atividade, file, idTipoAnexo, nomeComprovanteUsuario);
-            } else {
-                Integer idComprovanteAntigo = null;
-                AtividadeConselhal existente = atividadeService.buscarPorId(atividade.getIdAtividade()).orElse(null);
-                if (existente != null && existente.getComprovante() != null) {
-                    idComprovanteAntigo = existente.getComprovante().getIdComprovante();
-                }
-                atividadeService.atualizar(atividade, file, idTipoAnexo, nomeComprovanteUsuario, idComprovanteAntigo);
-            }
-            ra.addFlashAttribute("sucesso", "Atividade salva com sucesso!");
-        } catch (IllegalArgumentException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-            return "redirect:/conselheiro/atividades/nova";
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
+        if (atividade.getConselheiro() == null
+                || !atividade.getConselheiro().getIdPessoa().equals(getIdConselheiroLogado(session))) {
+            throw new RuntimeException("Conselheiro inválido para esta atividade.");
         }
+
+        LocalDateTime dataHora = DataUtils.parseDataHora(dataAtividadePura,
+                "A data e horário da atividade são obrigatórios.");
+        atividade.setDataHoraAtividade(dataHora);
+        atividade.setInTurno(TurnoUtils.calcularTurno(dataHora.getHour()));
+
+        if (atividade.getIdAtividade() == null) {
+            atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
+            atividadeService.criar(atividade, file, idTipoAnexo, nomeComprovanteUsuario);
+        } else {
+            Integer idComprovanteAntigo = null;
+            AtividadeConselhal existente = atividadeService.buscarPorId(atividade.getIdAtividade()).orElse(null);
+            if (existente != null && existente.getComprovante() != null) {
+                idComprovanteAntigo = existente.getComprovante().getIdComprovante();
+            }
+            atividadeService.atualizar(atividade, file, idTipoAnexo, nomeComprovanteUsuario, idComprovanteAntigo);
+        }
+        ra.addFlashAttribute("sucesso", "Atividade salva com sucesso!");
         return "redirect:/conselheiro/atividades";
     }
 
@@ -225,20 +218,16 @@ public class ConselheiroPortalController {
         if (!isConselheiro(session))
             return "redirect:/login";
 
-        try {
-            AtividadeConselhal atividade = atividadeService.buscarPorId(id)
-                    .orElseThrow(() -> new RuntimeException("Atividade não encontrada"));
-            if (!atividade.getConselheiro().getIdPessoa().equals(getIdConselheiroLogado(session))) {
-                throw new RuntimeException("Você só pode excluir suas próprias atividades.");
-            }
-            if (!atividade.isPendente()) {
-                throw new RuntimeException("Apenas atividades pendentes podem ser excluídas.");
-            }
-            atividadeService.excluir(id);
-            ra.addFlashAttribute("sucesso", "Atividade excluída com sucesso.");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
+        AtividadeConselhal atividade = atividadeService.buscarPorId(id)
+                .orElseThrow(() -> new RuntimeException("Atividade não encontrada"));
+        if (!atividade.getConselheiro().getIdPessoa().equals(getIdConselheiroLogado(session))) {
+            throw new RuntimeException("Você só pode excluir suas próprias atividades.");
         }
+        if (!atividade.isPendente()) {
+            throw new RuntimeException("Apenas atividades pendentes podem ser excluídas.");
+        }
+        atividadeService.excluir(id);
+        ra.addFlashAttribute("sucesso", "Atividade excluída com sucesso.");
         return "redirect:/conselheiro/atividades";
     }
 

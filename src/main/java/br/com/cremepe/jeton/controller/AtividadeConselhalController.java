@@ -88,25 +88,20 @@ public class AtividadeConselhalController {
             RedirectAttributes ra) {
         if (naoAutenticado(session))
             return "redirect:/login";
-        try {
-            AtividadeConselhal atividade = atividadeService.buscarPorId(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Atividade não encontrada"));
 
-            if (atividade.getComprovante() != null
-                    && atividadeService
-                            .contarAtividadesPorComprovante(atividade.getComprovante().getIdComprovante()) > 1) {
-                ra.addFlashAttribute("info",
-                        "Esta atividade compartilha o mesmo comprovante com outras atividades. Para editar todas de uma vez, utilize a edição em lote.");
-                return "redirect:/atividades/lote/editar/" + atividade.getComprovante().getIdComprovante();
-            }
+        AtividadeConselhal atividade = atividadeService.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Atividade não encontrada"));
 
-            model.addAttribute("atividade", atividade);
-            carregarListasDeApoio(model);
-            return "atividadeconselhal/formulario";
-        } catch (IllegalArgumentException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-            return "redirect:/atividades";
+        if (atividade.getComprovante() != null
+                && atividadeService.contarAtividadesPorComprovante(atividade.getComprovante().getIdComprovante()) > 1) {
+            ra.addFlashAttribute("info",
+                    "Esta atividade compartilha o mesmo comprovante com outras atividades. Para editar todas de uma vez, utilize a edição em lote.");
+            return "redirect:/atividades/lote/editar/" + atividade.getComprovante().getIdComprovante();
         }
+
+        model.addAttribute("atividade", atividade);
+        carregarListasDeApoio(model);
+        return "atividadeconselhal/formulario";
     }
 
     @PostMapping("/salvar")
@@ -117,66 +112,49 @@ public class AtividadeConselhalController {
             @RequestParam(value = "nomeComprovanteUsuario", required = false) String nomeComprovanteUsuario,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            LocalDateTime dataHora = DataUtils.parseDataHora(dataAtividadePura,
-                    "A data e o horário da atividade são obrigatórios para o enquadramento.");
-            atividade.setDataHoraAtividade(dataHora);
-            atividade.setInTurno(TurnoUtils.calcularTurno(dataHora.getHour()));
 
-            if (atividade.getIdAtividade() == null) {
+        LocalDateTime dataHora = DataUtils.parseDataHora(dataAtividadePura,
+                "A data e o horário da atividade são obrigatórios para o enquadramento.");
+        atividade.setDataHoraAtividade(dataHora);
+        atividade.setInTurno(TurnoUtils.calcularTurno(dataHora.getHour()));
+
+        if (atividade.getIdAtividade() == null) {
+            atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
+            atividadeService.criar(atividade, file, idTipoAnexo, nomeComprovanteUsuario);
+            ra.addFlashAttribute("sucesso", "Atividade criada com sucesso!");
+        } else {
+            if (atividade.getInSituacao() == null || atividade.getInSituacao().trim().isEmpty()) {
                 atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
-                atividadeService.criar(atividade, file, idTipoAnexo, nomeComprovanteUsuario);
-                ra.addFlashAttribute("sucesso", "Atividade criada com sucesso!");
-            } else {
-                if (atividade.getInSituacao() == null || atividade.getInSituacao().trim().isEmpty()) {
-                    atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
-                }
-                Integer idComprovanteAntigo = atividadeService.buscarPorId(atividade.getIdAtividade())
-                        .map(a -> a.getComprovante() != null ? a.getComprovante().getIdComprovante() : null)
-                        .orElse(null);
-                atividadeService.atualizar(atividade, file, idTipoAnexo, nomeComprovanteUsuario, idComprovanteAntigo);
-                ra.addFlashAttribute("sucesso", "Atividade atualizada com sucesso!");
             }
-        } catch (IllegalArgumentException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-            return "redirect:/atividades/novo";
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
+            Integer idComprovanteAntigo = atividadeService.buscarPorId(atividade.getIdAtividade())
+                    .map(a -> a.getComprovante() != null ? a.getComprovante().getIdComprovante() : null)
+                    .orElse(null);
+            atividadeService.atualizar(atividade, file, idTipoAnexo, nomeComprovanteUsuario, idComprovanteAntigo);
+            ra.addFlashAttribute("sucesso", "Atividade atualizada com sucesso!");
         }
+
         return "redirect:/atividades";
     }
 
     @GetMapping("/validar/{id}")
     public String validar(@PathVariable("id") Integer id, RedirectAttributes ra) {
-        try {
-            atividadeService.validar(id);
-            ra.addFlashAttribute("sucesso",
-                    "Atividade validada com sucesso! Ela agora está apta a receber processamento financeiro.");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        }
+        atividadeService.validar(id);
+        ra.addFlashAttribute("sucesso",
+                "Atividade validada com sucesso! Ela agora está apta a receber processamento financeiro.");
         return "redirect:/atividades";
     }
 
     @GetMapping("/desvalidar/{id}")
     public String desvalidar(@PathVariable("id") Integer id, RedirectAttributes ra) {
-        try {
-            atividadeService.desvalidar(id);
-            ra.addFlashAttribute("sucesso", "Atividade retornada ao status Pendente.");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        }
+        atividadeService.desvalidar(id);
+        ra.addFlashAttribute("sucesso", "Atividade retornada ao status Pendente.");
         return "redirect:/atividades";
     }
 
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
-        try {
-            atividadeService.excluir(id);
-            ra.addFlashAttribute("sucesso", "Atividade removida com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        }
+        atividadeService.excluir(id);
+        ra.addFlashAttribute("sucesso", "Atividade removida com sucesso!");
         return "redirect:/atividades";
     }
 
@@ -195,16 +173,13 @@ public class AtividadeConselhalController {
             RedirectAttributes ra) {
         if (naoAutenticado(session))
             return "redirect:/login";
-        try {
-            if (dto.getInTurno() == null || dto.getInTurno().isEmpty()) {
-                dto.setInTurno(null);
-            }
-            atividadeLoteService.criarLote(dto);
-            ra.addFlashAttribute("sucesso", "Atividades criadas em lote com sucesso para "
-                    + dto.getIdsConselheiros().size() + " conselheiros.");
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao criar lote: " + e.getMessage());
+
+        if (dto.getInTurno() == null || dto.getInTurno().isEmpty()) {
+            dto.setInTurno(null);
         }
+        atividadeLoteService.criarLote(dto);
+        ra.addFlashAttribute("sucesso", "Atividades criadas em lote com sucesso para "
+                + dto.getIdsConselheiros().size() + " conselheiros.");
         return "redirect:/atividades";
     }
 
@@ -241,15 +216,12 @@ public class AtividadeConselhalController {
             RedirectAttributes ra) {
         if (naoAutenticado(session))
             return "redirect:/login";
-        try {
-            if (dto.getInTurno() == null || dto.getInTurno().isEmpty()) {
-                dto.setInTurno(null);
-            }
-            atividadeLoteService.atualizarLote(idComprovante, dto);
-            ra.addFlashAttribute("sucesso", "Todas as atividades vinculadas ao comprovante foram atualizadas.");
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao atualizar lote: " + e.getMessage());
+
+        if (dto.getInTurno() == null || dto.getInTurno().isEmpty()) {
+            dto.setInTurno(null);
         }
+        atividadeLoteService.atualizarLote(idComprovante, dto);
+        ra.addFlashAttribute("sucesso", "Todas as atividades vinculadas ao comprovante foram atualizadas.");
         return "redirect:/atividades";
     }
 

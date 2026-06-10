@@ -56,20 +56,14 @@ public class PontosSaldoController {
     public String salvar(@ModelAttribute("pontos") PontosSaldo pontos,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            boolean isNovo = pontos.getIdPontosSaldo() == null;
+        boolean isNovo = pontos.getIdPontosSaldo() == null;
 
-            if (isNovo) {
-                pontosService.criar(pontos);
-                ra.addFlashAttribute("sucesso", "Registro de pontos criado com sucesso!");
-            } else {
-                pontosService.atualizar(pontos);
-                ra.addFlashAttribute("sucesso", "Registro de pontos atualizado com sucesso!");
-            }
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro inesperado ao salvar o registro.");
+        if (isNovo) {
+            pontosService.criar(pontos);
+            ra.addFlashAttribute("sucesso", "Registro de pontos criado com sucesso!");
+        } else {
+            pontosService.atualizar(pontos);
+            ra.addFlashAttribute("sucesso", "Registro de pontos atualizado com sucesso!");
         }
         return "redirect:/pontos-saldo";
     }
@@ -78,14 +72,8 @@ public class PontosSaldoController {
     public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            pontosService.excluir(id);
-            ra.addFlashAttribute("sucesso", "Registro de pontos removido com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao remover o registro.");
-        }
+        pontosService.excluir(id);
+        ra.addFlashAttribute("sucesso", "Registro de pontos removido com sucesso!");
         return "redirect:/pontos-saldo";
     }
 

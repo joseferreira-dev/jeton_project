@@ -66,35 +66,23 @@ public class GestaoController {
     @PostMapping("/salvar")
     public String salvar(@Valid @ModelAttribute("gestao") Gestao gestao,
             RedirectAttributes ra) {
-        try {
-            gestaoService.criarGestao(gestao);
-            ra.addFlashAttribute("sucesso", "Gestão criada com sucesso!");
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao criar: " + e.getMessage());
-        }
+        gestaoService.criarGestao(gestao);
+        ra.addFlashAttribute("sucesso", "Gestão criada com sucesso!");
         return "redirect:/gestoes";
     }
 
     @PostMapping("/atualizar")
     public String atualizar(@Valid @ModelAttribute("gestao") Gestao gestao,
             RedirectAttributes ra) {
-        try {
-            gestaoService.atualizarGestao(gestao);
-            ra.addFlashAttribute("sucesso", "Gestão atualizada com sucesso!");
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao atualizar: " + e.getMessage());
-        }
+        gestaoService.atualizarGestao(gestao);
+        ra.addFlashAttribute("sucesso", "Gestão atualizada com sucesso!");
         return "redirect:/gestoes";
     }
 
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
-        try {
-            gestaoService.excluirGestao(id);
-            ra.addFlashAttribute("sucesso", "Gestão removida com sucesso!");
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Não foi possível remover: " + e.getMessage());
-        }
+        gestaoService.excluirGestao(id);
+        ra.addFlashAttribute("sucesso", "Gestão removida com sucesso!");
         return "redirect:/gestoes";
     }
 

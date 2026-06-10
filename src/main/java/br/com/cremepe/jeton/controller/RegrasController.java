@@ -105,20 +105,14 @@ public class RegrasController {
     public String salvar(@ModelAttribute("regra") Regras regra,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            boolean isNovo = regra.getIdRegra() == null;
+        boolean isNovo = regra.getIdRegra() == null;
 
-            if (isNovo) {
-                regrasService.criar(regra);
-                ra.addFlashAttribute("sucesso", "Regra criada com sucesso!");
-            } else {
-                regrasService.atualizar(regra);
-                ra.addFlashAttribute("sucesso", "Regra atualizada com sucesso!");
-            }
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro inesperado ao salvar a regra.");
+        if (isNovo) {
+            regrasService.criar(regra);
+            ra.addFlashAttribute("sucesso", "Regra criada com sucesso!");
+        } else {
+            regrasService.atualizar(regra);
+            ra.addFlashAttribute("sucesso", "Regra atualizada com sucesso!");
         }
         return "redirect:/regras";
     }
@@ -127,14 +121,8 @@ public class RegrasController {
     public String revogar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            regrasService.revogar(id);
-            ra.addFlashAttribute("sucesso", "Regra revogada com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao revogar regra.");
-        }
+        regrasService.revogar(id);
+        ra.addFlashAttribute("sucesso", "Regra revogada com sucesso!");
         return "redirect:/regras";
     }
 
@@ -142,14 +130,8 @@ public class RegrasController {
     public String restaurar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            regrasService.restaurar(id);
-            ra.addFlashAttribute("sucesso", "Regra restaurada (em vigor) com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao restaurar regra.");
-        }
+        regrasService.restaurar(id);
+        ra.addFlashAttribute("sucesso", "Regra restaurada (em vigor) com sucesso!");
         return "redirect:/regras";
     }
 
@@ -157,14 +139,8 @@ public class RegrasController {
     public String deletar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            regrasService.excluir(id);
-            ra.addFlashAttribute("sucesso", "Regra excluída definitivamente.");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro inesperado ao excluir regra.");
-        }
+        regrasService.excluir(id);
+        ra.addFlashAttribute("sucesso", "Regra excluída definitivamente.");
         return "redirect:/regras";
     }
 

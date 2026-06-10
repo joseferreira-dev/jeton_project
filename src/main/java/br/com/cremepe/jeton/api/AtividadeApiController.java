@@ -74,34 +74,29 @@ public class AtividadeApiController {
 
     @GetMapping("/regras-por-data")
     public Map<String, Object> getRegrasENormativasPorData(@RequestParam String data) {
+        String dataFormatada = data.contains("T") ? data.split("T")[0] : data;
+        LocalDate dataAtividade = LocalDate.parse(dataFormatada);
+
+        Optional<Resolucao> optResolucao = regrasService.buscarResolucaoPorData(dataAtividade);
+        Optional<Portaria> optPortaria = regrasService.buscarPortariaPorData(dataAtividade);
+
+        Integer idResolucao = optResolucao.map(Resolucao::getIdResolucao).orElse(null);
+        Integer idPortaria = optPortaria.map(Portaria::getIdPortaria).orElse(null);
+
         Map<String, Object> response = new HashMap<>();
-        try {
-            String dataFormatada = data.contains("T") ? data.split("T")[0] : data;
-            LocalDate dataAtividade = LocalDate.parse(dataFormatada);
+        response.put("idResolucao", idResolucao);
+        response.put("nomeResolucao", optResolucao.map(this::formatarResolucao).orElse("Nenhuma encontrada"));
+        response.put("idPortaria", idPortaria);
+        response.put("nomePortaria", optPortaria.map(this::formatarPortaria).orElse("Nenhuma (Apenas Resolução)"));
 
-            Optional<Resolucao> optResolucao = regrasService.buscarResolucaoPorData(dataAtividade);
-            Optional<Portaria> optPortaria = regrasService.buscarPortariaPorData(dataAtividade);
-
-            Integer idResolucao = optResolucao.map(Resolucao::getIdResolucao).orElse(null);
-            Integer idPortaria = optPortaria.map(Portaria::getIdPortaria).orElse(null);
-
-            response.put("idResolucao", idResolucao);
-            response.put("nomeResolucao", optResolucao.map(this::formatarResolucao).orElse("Nenhuma encontrada"));
-            response.put("idPortaria", idPortaria);
-            response.put("nomePortaria", optPortaria.map(this::formatarPortaria).orElse("Nenhuma (Apenas Resolução)"));
-
-            if (idResolucao != null) {
-                List<Regras> listaRegras = regrasService.listarRegrasPorNormativasInclusiveRevogadas(idResolucao,
-                        idPortaria);
-                response.put("regras", listaRegras.stream()
-                        .sorted(Comparator.comparing(Regras::getNomeRegra))
-                        .map(this::converterParaRegraDTO)
-                        .collect(Collectors.toList()));
-            } else {
-                response.put("regras", Collections.emptyList());
-            }
-        } catch (Exception e) {
-            response.put("erro", "Formato de data inválido ou erro interno ao processar.");
+        if (idResolucao != null) {
+            List<Regras> listaRegras = regrasService.listarRegrasPorNormativasInclusiveRevogadas(idResolucao,
+                    idPortaria);
+            response.put("regras", listaRegras.stream()
+                    .sorted(Comparator.comparing(Regras::getNomeRegra))
+                    .map(this::converterParaRegraDTO)
+                    .collect(Collectors.toList()));
+        } else {
             response.put("regras", Collections.emptyList());
         }
         return response;

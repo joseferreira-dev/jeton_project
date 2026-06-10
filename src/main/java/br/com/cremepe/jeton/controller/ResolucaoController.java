@@ -63,20 +63,14 @@ public class ResolucaoController {
     public String salvar(@ModelAttribute("resolucao") Resolucao resolucao,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            boolean isNovo = resolucao.getIdResolucao() == null;
+        boolean isNovo = resolucao.getIdResolucao() == null;
 
-            if (isNovo) {
-                resolucaoService.criar(resolucao);
-                ra.addFlashAttribute("sucesso", "Resolução criada com sucesso!");
-            } else {
-                resolucaoService.atualizar(resolucao);
-                ra.addFlashAttribute("sucesso", "Resolução atualizada com sucesso!");
-            }
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro inesperado ao salvar resolução.");
+        if (isNovo) {
+            resolucaoService.criar(resolucao);
+            ra.addFlashAttribute("sucesso", "Resolução criada com sucesso!");
+        } else {
+            resolucaoService.atualizar(resolucao);
+            ra.addFlashAttribute("sucesso", "Resolução atualizada com sucesso!");
         }
         return "redirect:/resolucoes";
     }
@@ -85,14 +79,8 @@ public class ResolucaoController {
     public String revogar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            resolucaoService.revogar(id);
-            ra.addFlashAttribute("sucesso", "Resolução revogada com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao revogar resolução.");
-        }
+        resolucaoService.revogar(id);
+        ra.addFlashAttribute("sucesso", "Resolução revogada com sucesso!");
         return "redirect:/resolucoes";
     }
 
@@ -100,14 +88,8 @@ public class ResolucaoController {
     public String restaurar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            resolucaoService.restaurar(id);
-            ra.addFlashAttribute("sucesso", "Resolução restaurada (em vigor) com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao restaurar resolução.");
-        }
+        resolucaoService.restaurar(id);
+        ra.addFlashAttribute("sucesso", "Resolução restaurada (em vigor) com sucesso!");
         return "redirect:/resolucoes";
     }
 
@@ -115,14 +97,8 @@ public class ResolucaoController {
     public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            resolucaoService.excluir(id);
-            ra.addFlashAttribute("sucesso", "Resolução excluída definitivamente.");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro inesperado ao excluir resolução.");
-        }
+        resolucaoService.excluir(id);
+        ra.addFlashAttribute("sucesso", "Resolução excluída definitivamente.");
         return "redirect:/resolucoes";
     }
 

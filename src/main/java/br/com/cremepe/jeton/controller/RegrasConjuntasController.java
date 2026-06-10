@@ -60,7 +60,7 @@ public class RegrasConjuntasController {
             return "redirect:/login";
         model.addAttribute("regrasConjuntas", new RegrasConjuntas());
         model.addAttribute("listaRegras", regrasService.listarTodos());
-        model.addAttribute("listaResolucoes", resolucaoService.listarTodos()); // <-- adicionar
+        model.addAttribute("listaResolucoes", resolucaoService.listarTodos());
         return "regrasconjuntas/formulario";
     }
 
@@ -89,20 +89,14 @@ public class RegrasConjuntasController {
     public String salvar(@ModelAttribute("regrasConjuntas") RegrasConjuntas regrasConjuntas,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            boolean isNovo = regrasConjuntas.getIdRegraConjunta() == null;
+        boolean isNovo = regrasConjuntas.getIdRegraConjunta() == null;
 
-            if (isNovo) {
-                regrasConjuntasService.criar(regrasConjuntas);
-                ra.addFlashAttribute("sucesso", "Regras Conjuntas criadas com sucesso!");
-            } else {
-                regrasConjuntasService.atualizar(regrasConjuntas);
-                ra.addFlashAttribute("sucesso", "Regras Conjuntas atualizadas com sucesso!");
-            }
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro inesperado ao salvar as Regras Conjuntas.");
+        if (isNovo) {
+            regrasConjuntasService.criar(regrasConjuntas);
+            ra.addFlashAttribute("sucesso", "Regras Conjuntas criadas com sucesso!");
+        } else {
+            regrasConjuntasService.atualizar(regrasConjuntas);
+            ra.addFlashAttribute("sucesso", "Regras Conjuntas atualizadas com sucesso!");
         }
         return "redirect:/regras-conjuntas";
     }
@@ -111,14 +105,8 @@ public class RegrasConjuntasController {
     public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            regrasConjuntasService.excluir(id);
-            ra.addFlashAttribute("sucesso", "Regra Conjunta removida com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao remover a Regra Conjunta.");
-        }
+        regrasConjuntasService.excluir(id);
+        ra.addFlashAttribute("sucesso", "Regra Conjunta removida com sucesso!");
         return "redirect:/regras-conjuntas";
     }
 

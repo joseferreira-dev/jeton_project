@@ -94,53 +94,43 @@ public class UsuarioController extends BaseController {
             @RequestParam(value = "niveisAcesso", required = false) List<String> niveisAcessoSelecionados,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            Usuario userSalvo;
+        Usuario userSalvo;
 
-            if (usuario.getIdUsuarioPessoa() == null) {
-                userSalvo = usuarioService.criar(usuario);
-            } else {
-                userSalvo = usuarioService.atualizar(usuario);
-            }
-
-            // Sincroniza permissões (níveis de acesso)
-            Integer id = userSalvo.getIdUsuarioPessoa();
-            List<String> niveisAtuais = usuarioAcessoRepository.findAll().stream()
-                    .filter(ua -> ua.getId().getIdUsuarioPessoa().equals(id))
-                    .map(ua -> ua.getId().getIdNivel())
-                    .toList();
-
-            List<String> selecionados = niveisAcessoSelecionados != null ? niveisAcessoSelecionados : new ArrayList<>();
-
-            for (String nivel : selecionados) {
-                if (!niveisAtuais.contains(nivel)) {
-                    permissaoService.concederPermissao(id, nivel);
-                }
-            }
-            for (String nivelAtual : niveisAtuais) {
-                if (!selecionados.contains(nivelAtual)) {
-                    permissaoService.revogarPermissao(id, nivelAtual);
-                }
-            }
-
-            log.info("Usuário salvo e permissões atualizadas: ID={}", id);
-            ra.addFlashAttribute("sucesso", "Utilizador e permissões atualizados com sucesso!");
-        } catch (Exception e) {
-            log.error("Erro ao salvar usuário: {}", e.getMessage());
-            ra.addFlashAttribute("erro", "Erro ao salvar: " + e.getMessage());
+        if (usuario.getIdUsuarioPessoa() == null) {
+            userSalvo = usuarioService.criar(usuario);
+        } else {
+            userSalvo = usuarioService.atualizar(usuario);
         }
+
+        // Sincroniza permissões (níveis de acesso)
+        Integer id = userSalvo.getIdUsuarioPessoa();
+        List<String> niveisAtuais = usuarioAcessoRepository.findAll().stream()
+                .filter(ua -> ua.getId().getIdUsuarioPessoa().equals(id))
+                .map(ua -> ua.getId().getIdNivel())
+                .toList();
+
+        List<String> selecionados = niveisAcessoSelecionados != null ? niveisAcessoSelecionados : new ArrayList<>();
+
+        for (String nivel : selecionados) {
+            if (!niveisAtuais.contains(nivel)) {
+                permissaoService.concederPermissao(id, nivel);
+            }
+        }
+        for (String nivelAtual : niveisAtuais) {
+            if (!selecionados.contains(nivelAtual)) {
+                permissaoService.revogarPermissao(id, nivelAtual);
+            }
+        }
+
+        log.info("Usuário salvo e permissões atualizadas: ID={}", id);
+        ra.addFlashAttribute("sucesso", "Utilizador e permissões atualizados com sucesso!");
         return "redirect:/usuarios";
     }
 
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
-        try {
-            usuarioService.excluir(id);
-            ra.addFlashAttribute("sucesso", "Utilizador removido com sucesso!");
-        } catch (Exception e) {
-            log.error("Erro ao excluir usuário ID={}: {}", id, e.getMessage());
-            ra.addFlashAttribute("erro", "Erro: O utilizador possui registos financeiros ou atividades vinculadas.");
-        }
+        usuarioService.excluir(id);
+        ra.addFlashAttribute("sucesso", "Utilizador removido com sucesso!");
         return "redirect:/usuarios";
     }
 
@@ -206,12 +196,8 @@ public class UsuarioController extends BaseController {
             usuario.seteConselheiro(true);
         }
 
-        try {
-            usuarioService.atualizarPerfil(usuario);
-            ra.addFlashAttribute("sucesso", "Perfil atualizado com sucesso!");
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao atualizar perfil: " + e.getMessage());
-        }
+        usuarioService.atualizarPerfil(usuario);
+        ra.addFlashAttribute("sucesso", "Perfil atualizado com sucesso!");
         return "redirect:/usuarios/perfil";
     }
 

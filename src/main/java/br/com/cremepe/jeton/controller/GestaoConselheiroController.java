@@ -78,19 +78,14 @@ public class GestaoConselheiroController {
         if (naoAutenticado(session))
             return "redirect:/login";
 
-        try {
-            GestaoConselheiro vinculo = gestaoConselheiroService.buscarOuFalhar(idGestao, idPessoa);
-            if (vinculo.isAtivo()) {
-                gestaoConselheiroService.inativarVinculo(idGestao, idPessoa);
-                ra.addFlashAttribute("sucesso", "O vínculo foi INATIVADO com sucesso.");
-            } else {
-                gestaoConselheiroService.ativarVinculo(idGestao, idPessoa);
-                ra.addFlashAttribute("sucesso",
-                        "O vínculo foi ATIVADO com sucesso. (Outras gestões foram inativadas automaticamente)");
-            }
-        } catch (Exception e) {
-            log.error("Erro ao alternar status do vínculo {}/{}: {}", idGestao, idPessoa, e.getMessage());
-            ra.addFlashAttribute("erro", "Erro ao tentar alternar o status do vínculo.");
+        GestaoConselheiro vinculo = gestaoConselheiroService.buscarOuFalhar(idGestao, idPessoa);
+        if (vinculo.isAtivo()) {
+            gestaoConselheiroService.inativarVinculo(idGestao, idPessoa);
+            ra.addFlashAttribute("sucesso", "O vínculo foi INATIVADO com sucesso.");
+        } else {
+            gestaoConselheiroService.ativarVinculo(idGestao, idPessoa);
+            ra.addFlashAttribute("sucesso",
+                    "O vínculo foi ATIVADO com sucesso. (Outras gestões foram inativadas automaticamente)");
         }
         return "redirect:/gestao-conselheiros";
     }
@@ -99,22 +94,17 @@ public class GestaoConselheiroController {
     public String salvar(@ModelAttribute("gestaoConselheiro") GestaoConselheiro vinculo,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            Integer idGestao = vinculo.getGestao().getIdGestao();
-            Integer idPessoa = vinculo.getConselheiro().getIdPessoa();
+        Integer idGestao = vinculo.getGestao().getIdGestao();
+        Integer idPessoa = vinculo.getConselheiro().getIdPessoa();
 
-            boolean exists = gestaoConselheiroService.buscarPorId(idGestao, idPessoa).isPresent();
+        boolean exists = gestaoConselheiroService.buscarPorId(idGestao, idPessoa).isPresent();
 
-            if (!exists) {
-                gestaoConselheiroService.criar(vinculo);
-                ra.addFlashAttribute("sucesso", "Vínculo de conselheiro criado com sucesso!");
-            } else {
-                gestaoConselheiroService.atualizar(vinculo);
-                ra.addFlashAttribute("sucesso", "Vínculo de conselheiro atualizado com sucesso!");
-            }
-        } catch (Exception e) {
-            log.error("Erro ao salvar vínculo: {}", e.getMessage());
-            ra.addFlashAttribute("erro", "Erro ao guardar o vínculo: " + e.getMessage());
+        if (!exists) {
+            gestaoConselheiroService.criar(vinculo);
+            ra.addFlashAttribute("sucesso", "Vínculo de conselheiro criado com sucesso!");
+        } else {
+            gestaoConselheiroService.atualizar(vinculo);
+            ra.addFlashAttribute("sucesso", "Vínculo de conselheiro atualizado com sucesso!");
         }
         return "redirect:/gestao-conselheiros";
     }
@@ -126,14 +116,9 @@ public class GestaoConselheiroController {
             RedirectAttributes ra) {
         if (naoAutenticado(session))
             return "redirect:/login";
-        try {
-            gestaoConselheiroService.excluir(idGestao, idPessoa);
-            ra.addFlashAttribute("sucesso", "Vínculo removido com sucesso!");
-        } catch (RuntimeException e) {
-            log.error("Erro ao excluir vínculo {}/{}: {}", idGestao, idPessoa, e.getMessage());
-            ra.addFlashAttribute("erro",
-                    "Não foi possível remover o vínculo. O conselheiro já possui atividades nesta gestão.");
-        }
+
+        gestaoConselheiroService.excluir(idGestao, idPessoa);
+        ra.addFlashAttribute("sucesso", "Vínculo removido com sucesso!");
         return "redirect:/gestao-conselheiros";
     }
 
@@ -168,22 +153,18 @@ public class GestaoConselheiroController {
             RedirectAttributes ra) {
         if (naoAutenticado(session))
             return "redirect:/login";
-        try {
-            Map<String, List<Integer>> resultado = gestaoConselheiroService.atualizarVinculosEmMassa(idGestao,
-                    conselheirosIds);
 
-            String mensagem = "Vínculos atualizados com sucesso! ";
-            if (!resultado.get("removidos").isEmpty()) {
-                mensagem += resultado.get("removidos").size() + " vínculo(s) removido(s). ";
-            }
-            if (!resultado.get("adicionados").isEmpty()) {
-                mensagem += resultado.get("adicionados").size() + " vínculo(s) adicionado(s). ";
-            }
-            ra.addFlashAttribute("sucesso", mensagem);
-        } catch (Exception e) {
-            log.error("Erro ao atualizar vínculos em massa para gestão {}: {}", idGestao, e.getMessage());
-            ra.addFlashAttribute("erro", "Erro ao atualizar vínculos: " + e.getMessage());
+        Map<String, List<Integer>> resultado = gestaoConselheiroService.atualizarVinculosEmMassa(idGestao,
+                conselheirosIds);
+
+        String mensagem = "Vínculos atualizados com sucesso! ";
+        if (!resultado.get("removidos").isEmpty()) {
+            mensagem += resultado.get("removidos").size() + " vínculo(s) removido(s). ";
         }
+        if (!resultado.get("adicionados").isEmpty()) {
+            mensagem += resultado.get("adicionados").size() + " vínculo(s) adicionado(s). ";
+        }
+        ra.addFlashAttribute("sucesso", mensagem);
         return "redirect:/gestoes";
     }
 

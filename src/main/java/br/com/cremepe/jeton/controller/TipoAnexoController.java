@@ -47,34 +47,22 @@ public class TipoAnexoController {
     public String salvar(@ModelAttribute("tipoAnexo") TipoAnexo tipoAnexo,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            boolean isNovo = tipoAnexo.getIdTipo() == null;
+        boolean isNovo = tipoAnexo.getIdTipo() == null;
 
-            if (isNovo) {
-                tipoAnexoService.criar(tipoAnexo);
-                ra.addFlashAttribute("sucesso", "Tipo de Anexo criado com sucesso!");
-            } else {
-                tipoAnexoService.atualizar(tipoAnexo);
-                ra.addFlashAttribute("sucesso", "Tipo de Anexo atualizado com sucesso!");
-            }
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro inesperado ao salvar tipo de anexo.");
+        if (isNovo) {
+            tipoAnexoService.criar(tipoAnexo);
+            ra.addFlashAttribute("sucesso", "Tipo de Anexo criado com sucesso!");
+        } else {
+            tipoAnexoService.atualizar(tipoAnexo);
+            ra.addFlashAttribute("sucesso", "Tipo de Anexo atualizado com sucesso!");
         }
         return "redirect:/tipos-anexo";
     }
 
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
-        try {
-            tipoAnexoService.excluir(id);
-            ra.addFlashAttribute("sucesso", "Tipo de Anexo removido com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao remover tipo de anexo.");
-        }
+        tipoAnexoService.excluir(id);
+        ra.addFlashAttribute("sucesso", "Tipo de Anexo removido com sucesso!");
         return "redirect:/tipos-anexo";
     }
 

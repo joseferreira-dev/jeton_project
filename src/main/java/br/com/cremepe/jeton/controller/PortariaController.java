@@ -64,20 +64,14 @@ public class PortariaController {
     public String salvar(@ModelAttribute("portaria") Portaria portaria,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            boolean isNovo = portaria.getIdPortaria() == null;
+        boolean isNovo = portaria.getIdPortaria() == null;
 
-            if (isNovo) {
-                portariaService.criar(portaria);
-                ra.addFlashAttribute("sucesso", "Portaria criada com sucesso!");
-            } else {
-                portariaService.atualizar(portaria);
-                ra.addFlashAttribute("sucesso", "Portaria atualizada com sucesso!");
-            }
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro inesperado ao salvar portaria.");
+        if (isNovo) {
+            portariaService.criar(portaria);
+            ra.addFlashAttribute("sucesso", "Portaria criada com sucesso!");
+        } else {
+            portariaService.atualizar(portaria);
+            ra.addFlashAttribute("sucesso", "Portaria atualizada com sucesso!");
         }
         return "redirect:/portarias";
     }
@@ -86,14 +80,8 @@ public class PortariaController {
     public String revogar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            portariaService.revogar(id);
-            ra.addFlashAttribute("sucesso", "Portaria revogada com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao revogar portaria.");
-        }
+        portariaService.revogar(id);
+        ra.addFlashAttribute("sucesso", "Portaria revogada com sucesso!");
         return "redirect:/portarias";
     }
 
@@ -101,14 +89,8 @@ public class PortariaController {
     public String restaurar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            portariaService.restaurar(id);
-            ra.addFlashAttribute("sucesso", "Portaria restaurada (em vigor) com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao restaurar portaria.");
-        }
+        portariaService.restaurar(id);
+        ra.addFlashAttribute("sucesso", "Portaria restaurada (em vigor) com sucesso!");
         return "redirect:/portarias";
     }
 
@@ -116,14 +98,8 @@ public class PortariaController {
     public String deletarFisicamente(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            portariaService.excluir(id);
-            ra.addFlashAttribute("sucesso", "Portaria excluída definitivamente.");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro inesperado ao excluir portaria.");
-        }
+        portariaService.excluir(id);
+        ra.addFlashAttribute("sucesso", "Portaria excluída definitivamente.");
         return "redirect:/portarias";
     }
 

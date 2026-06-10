@@ -70,17 +70,12 @@ public class JetonController {
             RedirectAttributes ra) {
         if (naoAutenticado(session))
             return "redirect:/login";
-        try {
-            Optional<Gestao> gestaoOpt = gestaoService.buscarPorId(idGestao);
-            if (gestaoOpt.isEmpty())
-                throw new RuntimeException("Gestão não encontrada.");
-            jetonService.processarFechamentoMensal(gestaoOpt.get(), mes, ano);
-            ra.addFlashAttribute("sucesso", "Cálculo da folha mensal executado com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro inesperado: " + e.getMessage());
-        }
+
+        Optional<Gestao> gestaoOpt = gestaoService.buscarPorId(idGestao);
+        if (gestaoOpt.isEmpty())
+            throw new RuntimeException("Gestão não encontrada.");
+        jetonService.processarFechamentoMensal(gestaoOpt.get(), mes, ano);
+        ra.addFlashAttribute("sucesso", "Cálculo da folha mensal executado com sucesso!");
         return "redirect:/jeton?idGestao=" + idGestao + "&mes=" + mes + "&ano=" + ano;
     }
 
@@ -92,17 +87,12 @@ public class JetonController {
             RedirectAttributes ra) {
         if (naoAutenticado(session))
             return "redirect:/login";
-        try {
-            Optional<Gestao> gestaoOpt = gestaoService.buscarPorId(idGestao);
-            if (gestaoOpt.isEmpty())
-                throw new RuntimeException("Gestão não encontrada.");
-            jetonService.realizarFechamentoDefinitivoFolha(gestaoOpt.get(), mes, ano);
-            ra.addFlashAttribute("sucesso", "Folha fechada e homologada definitivamente.");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro interno: " + e.getMessage());
-        }
+
+        Optional<Gestao> gestaoOpt = gestaoService.buscarPorId(idGestao);
+        if (gestaoOpt.isEmpty())
+            throw new RuntimeException("Gestão não encontrada.");
+        jetonService.realizarFechamentoDefinitivoFolha(gestaoOpt.get(), mes, ano);
+        ra.addFlashAttribute("sucesso", "Folha fechada e homologada definitivamente.");
         return "redirect:/jeton";
     }
 
@@ -110,12 +100,9 @@ public class JetonController {
     public String estornarJeton(@PathVariable("id") Integer idJeton, HttpSession session, RedirectAttributes ra) {
         if (naoAutenticado(session))
             return "redirect:/login";
-        try {
-            jetonService.estornarJetonPontual(idJeton);
-            ra.addFlashAttribute("sucesso", "Jeton estornado com sucesso!");
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("erro", e.getMessage());
-        }
+
+        jetonService.estornarJetonPontual(idJeton);
+        ra.addFlashAttribute("sucesso", "Jeton estornado com sucesso!");
         return "redirect:/jeton";
     }
 

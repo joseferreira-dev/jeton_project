@@ -72,29 +72,19 @@ public class ConselheiroController {
     public String salvar(@Valid @ModelAttribute("conselheiro") Conselheiro conselheiro,
             HttpSession session,
             RedirectAttributes ra) {
-        try {
-            if (conselheiro.getIdPessoa() == null) {
-                conselheiroService.criar(conselheiro);
-            } else {
-                conselheiroService.atualizar(conselheiro);
-            }
-
-            ra.addFlashAttribute("sucesso", "Conselheiro gravado com sucesso!");
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro", "Erro ao gravar: " + e.getMessage());
+        if (conselheiro.getIdPessoa() == null) {
+            conselheiroService.criar(conselheiro);
+        } else {
+            conselheiroService.atualizar(conselheiro);
         }
+        ra.addFlashAttribute("sucesso", "Conselheiro gravado com sucesso!");
         return "redirect:/conselheiros";
     }
 
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
-        try {
-            conselheiroService.excluir(id);
-            ra.addFlashAttribute("sucesso", "Conselheiro removido com sucesso!");
-        } catch (Exception e) {
-            ra.addFlashAttribute("erro",
-                    "Não foi possível remover. Este conselheiro possui registros ou atividades vinculadas.");
-        }
+        conselheiroService.excluir(id);
+        ra.addFlashAttribute("sucesso", "Conselheiro removido com sucesso!");
         return "redirect:/conselheiros";
     }
 

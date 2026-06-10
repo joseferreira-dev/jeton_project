@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -51,20 +50,15 @@ public class NivelAcessoController {
     public String salvar(@Valid @ModelAttribute("nivelAcesso") NivelAcesso nivel,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
-        try {
-            boolean isNovo = (nivel.getIdNivel() == null || nivel.getIdNivel().trim().isEmpty())
-                    || !nivelAcessoService.buscarPorId(nivel.getIdNivel()).isPresent();
+        boolean isNovo = (nivel.getIdNivel() == null || nivel.getIdNivel().trim().isEmpty())
+                || !nivelAcessoService.buscarPorId(nivel.getIdNivel()).isPresent();
 
-            if (isNovo) {
-                nivelAcessoService.criar(nivel);
-                redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso criado com sucesso!");
-            } else {
-                nivelAcessoService.atualizar(nivel);
-                redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso atualizado com sucesso!");
-            }
-        } catch (Exception e) {
-            log.error("Erro ao salvar nível de acesso: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("erro", "Erro ao salvar: " + e.getMessage());
+        if (isNovo) {
+            nivelAcessoService.criar(nivel);
+            redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso criado com sucesso!");
+        } else {
+            nivelAcessoService.atualizar(nivel);
+            redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso atualizado com sucesso!");
         }
         return "redirect:/niveis-acesso";
     }
@@ -73,17 +67,8 @@ public class NivelAcessoController {
     public String excluir(@PathVariable("id") String id,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
-        try {
-            nivelAcessoService.excluir(id);
-            redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso removido!");
-        } catch (DataIntegrityViolationException e) {
-            log.error("Erro de integridade ao excluir nível {}: {}", id, e.getMessage());
-            redirectAttributes.addFlashAttribute("erro",
-                    "Não é possível remover este nível pois ele está associado a um ou mais usuários.");
-        } catch (Exception e) {
-            log.error("Erro ao excluir nível {}: {}", id, e.getMessage());
-            redirectAttributes.addFlashAttribute("erro", "Erro ao remover Nível de Acesso.");
-        }
+        nivelAcessoService.excluir(id);
+        redirectAttributes.addFlashAttribute("sucesso", "Nível de Acesso removido!");
         return "redirect:/niveis-acesso";
     }
 
