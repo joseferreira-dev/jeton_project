@@ -2,11 +2,7 @@ package br.com.cremepe.jeton.service;
 
 import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.*;
-import br.com.cremepe.jeton.dto.AtividadeRelatorioDTO;
-import br.com.cremepe.jeton.dto.ConselheiroRelatorioDTO;
-import br.com.cremepe.jeton.dto.JetonAgrupadoDTO;
-import br.com.cremepe.jeton.dto.PontosRemanescentesDTO;
-import br.com.cremepe.jeton.dto.RelatorioGeralDTO;
+import br.com.cremepe.jeton.dto.*;
 import br.com.cremepe.jeton.repository.*;
 
 import org.slf4j.Logger;
@@ -49,10 +45,6 @@ public class JetonService {
     @Autowired
     private ConselheiroService conselheiroService;
 
-    // =========================================================================
-    // LEITURA
-    // =========================================================================
-
     @Transactional(readOnly = true)
     public List<PontosRemanescentesDTO> listarSaldosAgrupados() {
         return pontosSaldoRepository.buscarSaldosAgrupadosPorConselheiro();
@@ -91,10 +83,6 @@ public class JetonService {
         return resultado;
     }
 
-    // =========================================================================
-    // PROCESSAMENTO
-    // =========================================================================
-
     @Auditar(tabela = "jeton", acao = "PROCESSAR_FOLHA", descricao = "Processamento mensal de folha de jetons", dadosParametros = "{ 'idGestao': #gestao.idGestao, 'nomeGestao': #gestao.nomeGestao, 'mes': #mes, 'ano': #ano }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void processarFechamentoMensal(Gestao gestao, Integer mes, Integer ano) {
@@ -102,46 +90,12 @@ public class JetonService {
         log.info("Iniciando processamento mensal: gestão '{}' (ID={}), competência {}/{}",
                 nomeGestao, gestao.getIdGestao(), mes, ano);
 
-        // Trava 1: Impede recálculo de mês já homologado
-        if (isFolhaHomologada(gestao.getIdGestao(), mes, ano)) {
-            throw new RuntimeException("A folha do período " + mes + "/" + ano +
-                    " já foi homologada e não pode ser recalculada.");
-        }
+        // Validações preliminares
+        validarPreProcessamento(gestao.getIdGestao(), mes, ano);
+        limparProcessamentosAnteriores(gestao.getIdGestao(), mes, ano);
 
-        // Trava 2: Nenhuma atividade pendente
-        long pendentesNoMes = atividadeRepository.contarAtividadesPendentesNoMes(gestao.getIdGestao(), mes, ano);
-        if (pendentesNoMes > 0) {
-            throw new RuntimeException("Cálculo bloqueado: existem " + pendentesNoMes +
-                    " atividade(s) pendentes no período. Valide-as ou exclua-as antes de processar.");
-        }
-
-        // Trava 3: Meses anteriores devem estar fechados
-        LocalDateTime inicioDoMes = LocalDate.of(ano, mes, 1).atStartOfDay();
-        long anterioresNaoFechadas = atividadeRepository.contarAtividadesAnterioresNaoFechadas(gestao.getIdGestao(),
-                inicioDoMes);
-        if (anterioresNaoFechadas > 0) {
-            throw new RuntimeException("Cálculo bloqueado: existem " + anterioresNaoFechadas +
-                    " atividade(s) de meses anteriores ainda não homologadas.");
-        }
-
-        // Auto-limpeza: estorna processamentos antigos da mesma competência
-        List<Jeton> jetonsExistentes = jetonRepository.findByGestaoIdGestaoAndMesAndAno(gestao.getIdGestao(), mes, ano);
-        List<AtividadeConselhal> atividadesComputadas = atividadeRepository.findComputadasDoMes(gestao.getIdGestao(),
-                mes, ano);
-        Set<Integer> conselheirosParaEstorno = new HashSet<>();
-        jetonsExistentes.forEach(j -> conselheirosParaEstorno.add(j.getConselheiro().getIdPessoa()));
-        atividadesComputadas.forEach(a -> conselheirosParaEstorno.add(a.getConselheiro().getIdPessoa()));
-        for (Integer idPessoa : conselheirosParaEstorno) {
-            estornarFolhaDoConselheiro(idPessoa, gestao.getIdGestao(), mes, ano);
-        }
-
-        // Obter resolução vigente no último dia do mês
-        LocalDate ultimoDiaMes = LocalDate.of(ano, mes, 1).with(java.time.temporal.TemporalAdjusters.lastDayOfMonth());
-        List<Resolucao> resolucoesVigentes = resolucaoRepository.findResolucoesVigentesNaData(ultimoDiaMes);
-        if (resolucoesVigentes.isEmpty()) {
-            throw new RuntimeException("Nenhuma Resolução ativa cadastrada para a competência " + mes + "/" + ano);
-        }
-        Resolucao resolucaoTeto = resolucoesVigentes.get(0);
+        // Resolução vigente no último dia do mês
+        Resolucao resolucaoTeto = obterResolucaoVigente(gestao.getIdGestao(), mes, ano);
         int maxJetonsPermitidos = (resolucaoTeto.getMaxJetonsMes() != null && resolucaoTeto.getMaxJetonsMes() > 0)
                 ? resolucaoTeto.getMaxJetonsMes()
                 : 22;
@@ -153,153 +107,238 @@ public class JetonService {
 
         for (GestaoConselheiro vinculo : vinculos) {
             Conselheiro conselheiro = vinculo.getConselheiro();
-            String nomeConselheiro = conselheiro.getPessoa().getNome();
-            List<PontosSaldo> saldosAntigos = pontosSaldoRepository.buscarSaldosDisponiveisOrdenadosFIFO(
-                    conselheiro.getIdPessoa(), gestao.getIdGestao());
-            List<AtividadeConselhal> novasAtividades = atividadeRepository.findHomologadasParaCalculo(
-                    conselheiro.getIdPessoa(), mes, ano);
-
-            if (saldosAntigos.isEmpty() && novasAtividades.isEmpty())
-                continue;
-
-            log.debug("Processando conselheiro: {} (ID={})", nomeConselheiro, conselheiro.getIdPessoa());
-
-            List<PontosSaldo> filaUnificada = new ArrayList<>(saldosAntigos);
-            List<Integer> idsAtividadesProcessadas = new ArrayList<>();
-
-            // Transformar novas atividades em saldos
-            for (AtividadeConselhal atividade : novasAtividades) {
-                List<Resolucao> resAtvList = resolucaoRepository
-                        .findResolucoesVigentesNaData(atividade.getDataHoraAtividade().toLocalDate());
-                Resolucao resolucaoAtividade = resAtvList.isEmpty() ? resolucaoTeto : resAtvList.get(0);
-
-                PontosSaldo novoSaldo = new PontosSaldo();
-                novoSaldo.setAtividade(atividade);
-                novoSaldo.setConselheiro(conselheiro);
-                novoSaldo.setGestao(gestao);
-                novoSaldo.setResolucao(resolucaoAtividade);
-                novoSaldo.setDataHora(atividade.getDataHoraAtividade());
-
-                int multRegra = (atividade.getRegra() != null && atividade.getRegra().getPontos() != null)
-                        ? atividade.getRegra().getPontos()
-                        : 1;
-                int qtdAtv = (atividade.getQtdAtividade() != null) ? atividade.getQtdAtividade() : 1;
-                int totalPontos = qtdAtv * multRegra;
-
-                novoSaldo.setPontosTrabalhados(totalPontos);
-                novoSaldo.setPontosUtilizados(0);
-                novoSaldo.setPontosSobrando(totalPontos);
-                novoSaldo.setInSituacao(PontosSaldo.SITUACAO_ATIVO);
-
-                filaUnificada.add(pontosSaldoRepository.save(novoSaldo));
-                idsAtividadesProcessadas.add(atividade.getIdAtividade());
+            ProcessamentoResultado resultado = processarConselheiro(conselheiro, gestao, mes, ano, resolucaoTeto,
+                    maxJetonsPermitidos);
+            if (resultado != null) {
+                totalConselheirosProcessados++;
+                totalJetonsGeradosGeral += resultado.totalJetons;
+                totalValorPagoGeral = totalValorPagoGeral.add(resultado.valorTotal);
             }
-
-            filaUnificada.sort(Comparator.comparing(PontosSaldo::getDataHora)
-                    .thenComparing(PontosSaldo::getIdPontosSaldo));
-
-            aplicarLimitesTurno(filaUnificada, conselheiro.getIdPessoa());
-
-            // Absorção matemática (FIFO)
-            int bufferPontos = 0;
-            int totalJetonsGerados = 0;
-            int totalPontosConsumidos = 0;
-            Map<Resolucao, Integer> demonstrativoJetons = new LinkedHashMap<>();
-
-            for (PontosSaldo saldo : filaUnificada) {
-                bufferPontos += saldo.getPontosSobrando();
-                Resolucao norma = saldo.getResolucao();
-                int pontosPorJeton = (norma.getPontosPorJeton() != null && norma.getPontosPorJeton() > 0)
-                        ? norma.getPontosPorJeton()
-                        : 3;
-
-                int jetonsPossiveis = bufferPontos / pontosPorJeton;
-                int jetonsEfetivos = Math.min(jetonsPossiveis, maxJetonsPermitidos - totalJetonsGerados);
-
-                if (jetonsEfetivos > 0) {
-                    demonstrativoJetons.put(norma, demonstrativoJetons.getOrDefault(norma, 0) + jetonsEfetivos);
-                    totalJetonsGerados += jetonsEfetivos;
-                    int consumidos = jetonsEfetivos * pontosPorJeton;
-                    bufferPontos -= consumidos;
-                    totalPontosConsumidos += consumidos;
-                }
-            }
-
-            // Gerar registros financeiros
-            Jeton primeiroJetonSalvo = null;
-            for (Map.Entry<Resolucao, Integer> entry : demonstrativoJetons.entrySet()) {
-                Jeton jeton = new Jeton();
-                jeton.setGestao(gestao);
-                jeton.setConselheiro(conselheiro);
-                jeton.setMes(mes);
-                jeton.setAno(ano);
-                jeton.setTotalJeton(entry.getValue());
-                BigDecimal valorBase = (entry.getKey().getValorJeton() != null) ? entry.getKey().getValorJeton()
-                        : BigDecimal.ZERO;
-                jeton.setValor(valorBase.multiply(BigDecimal.valueOf(entry.getValue())));
-                jeton.setInSituacao(Jeton.SITUACAO_ATIVO);
-                jeton.getAtividades().addAll(novasAtividades);
-                jeton = jetonRepository.save(jeton);
-                if (primeiroJetonSalvo == null)
-                    primeiroJetonSalvo = jeton;
-
-                log.debug("   Gerado {} jetons para {} no valor total de {} ({} por jeton)",
-                        entry.getValue(), nomeConselheiro, jeton.getValor().toString(), valorBase.toString());
-            }
-
-            // Consumo fracionado (splitting)
-            int pontosParaConsumir = totalPontosConsumidos;
-            if (pontosParaConsumir > 0 && primeiroJetonSalvo != null) {
-                for (PontosSaldo saldo : filaUnificada) {
-                    if (pontosParaConsumir <= 0)
-                        break;
-                    int disponivel = saldo.getPontosSobrando();
-                    if (disponivel == 0)
-                        continue;
-
-                    int consumir = Math.min(disponivel, pontosParaConsumir);
-                    if (consumir < disponivel) {
-                        // divide
-                        saldo.setPontosSobrando(0);
-                        saldo.setPontosUtilizados(saldo.getPontosUtilizados() + consumir);
-                        saldo.setInSituacao(PontosSaldo.SITUACAO_INATIVO);
-                        saldo.setJeton(primeiroJetonSalvo);
-                        pontosSaldoRepository.save(saldo);
-
-                        PontosSaldo remainder = new PontosSaldo();
-                        remainder.setAtividade(saldo.getAtividade());
-                        remainder.setConselheiro(saldo.getConselheiro());
-                        remainder.setGestao(saldo.getGestao());
-                        remainder.setResolucao(saldo.getResolucao());
-                        remainder.setDataHora(saldo.getDataHora());
-                        remainder.setPontosTrabalhados(disponivel - consumir);
-                        remainder.setPontosUtilizados(0);
-                        remainder.setPontosSobrando(disponivel - consumir);
-                        remainder.setInSituacao(PontosSaldo.SITUACAO_ATIVO);
-                        pontosSaldoRepository.save(remainder);
-                    } else {
-                        saldo.setPontosSobrando(0);
-                        saldo.setPontosUtilizados(saldo.getPontosUtilizados() + consumir);
-                        saldo.setInSituacao(PontosSaldo.SITUACAO_INATIVO);
-                        saldo.setJeton(primeiroJetonSalvo);
-                        pontosSaldoRepository.save(saldo);
-                    }
-                    pontosParaConsumir -= consumir;
-                }
-            }
-
-            if (!idsAtividadesProcessadas.isEmpty()) {
-                atividadeRepository.marcarComoComputadaEmLote(idsAtividadesProcessadas);
-            }
-
-            totalConselheirosProcessados++;
-            totalJetonsGeradosGeral += totalJetonsGerados;
-            totalValorPagoGeral = totalValorPagoGeral
-                    .add(primeiroJetonSalvo != null ? primeiroJetonSalvo.getValor() : BigDecimal.ZERO);
         }
 
         log.info("Processamento mensal finalizado: gestão '{}', {}/{} - {} conselheiros, {} jetons, valor total {}",
                 nomeGestao, mes, ano, totalConselheirosProcessados, totalJetonsGeradosGeral, totalValorPagoGeral);
+    }
+
+    private void validarPreProcessamento(Integer idGestao, Integer mes, Integer ano) {
+        // Trava 1: Impede recálculo de mês já homologado
+        if (isFolhaHomologada(idGestao, mes, ano)) {
+            throw new RuntimeException("A folha do período " + mes + "/" + ano +
+                    " já foi homologada e não pode ser recalculada.");
+        }
+
+        // Trava 2: Nenhuma atividade pendente
+        long pendentesNoMes = atividadeRepository.contarAtividadesPendentesNoMes(idGestao, mes, ano);
+        if (pendentesNoMes > 0) {
+            throw new RuntimeException("Cálculo bloqueado: existem " + pendentesNoMes +
+                    " atividade(s) pendentes no período. Valide-as ou exclua-as antes de processar.");
+        }
+
+        // Trava 3: Meses anteriores devem estar fechados
+        LocalDateTime inicioDoMes = LocalDate.of(ano, mes, 1).atStartOfDay();
+        long anterioresNaoFechadas = atividadeRepository.contarAtividadesAnterioresNaoFechadas(idGestao, inicioDoMes);
+        if (anterioresNaoFechadas > 0) {
+            throw new RuntimeException("Cálculo bloqueado: existem " + anterioresNaoFechadas +
+                    " atividade(s) de meses anteriores ainda não homologadas.");
+        }
+    }
+
+    private void limparProcessamentosAnteriores(Integer idGestao, Integer mes, Integer ano) {
+        List<Jeton> jetonsExistentes = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano);
+        List<AtividadeConselhal> atividadesComputadas = atividadeRepository.findComputadasDoMes(idGestao, mes, ano);
+        Set<Integer> conselheirosParaEstorno = new HashSet<>();
+        jetonsExistentes.forEach(j -> conselheirosParaEstorno.add(j.getConselheiro().getIdPessoa()));
+        atividadesComputadas.forEach(a -> conselheirosParaEstorno.add(a.getConselheiro().getIdPessoa()));
+
+        for (Integer idPessoa : conselheirosParaEstorno) {
+            estornarFolhaDoConselheiro(idPessoa, idGestao, mes, ano);
+        }
+    }
+
+    private Resolucao obterResolucaoVigente(Integer idGestao, Integer mes, Integer ano) {
+        LocalDate ultimoDiaMes = LocalDate.of(ano, mes, 1).with(java.time.temporal.TemporalAdjusters.lastDayOfMonth());
+        List<Resolucao> resolucoesVigentes = resolucaoRepository.findResolucoesVigentesNaData(ultimoDiaMes);
+        if (resolucoesVigentes.isEmpty()) {
+            throw new RuntimeException("Nenhuma Resolução ativa cadastrada para a competência " + mes + "/" + ano);
+        }
+        return resolucoesVigentes.get(0);
+    }
+
+    private ProcessamentoResultado processarConselheiro(Conselheiro conselheiro, Gestao gestao,
+            Integer mes, Integer ano,
+            Resolucao resolucaoTeto, int maxJetonsPermitidos) {
+        String nomeConselheiro = conselheiro.getPessoa().getNome();
+        List<PontosSaldo> saldosAntigos = pontosSaldoRepository.buscarSaldosDisponiveisOrdenadosFIFO(
+                conselheiro.getIdPessoa(), gestao.getIdGestao());
+        List<AtividadeConselhal> novasAtividades = atividadeRepository.findHomologadasParaCalculo(
+                conselheiro.getIdPessoa(), mes, ano);
+
+        if (saldosAntigos.isEmpty() && novasAtividades.isEmpty())
+            return null;
+
+        log.debug("Processando conselheiro: {} (ID={})", nomeConselheiro, conselheiro.getIdPessoa());
+
+        List<PontosSaldo> filaUnificada = new ArrayList<>(saldosAntigos);
+        List<Integer> idsAtividadesProcessadas = new ArrayList<>();
+
+        // Converte atividades em saldos e adiciona à fila
+        for (AtividadeConselhal atividade : novasAtividades) {
+            PontosSaldo novoSaldo = converterAtividadeEmSaldo(atividade, conselheiro, gestao, resolucaoTeto);
+            filaUnificada.add(pontosSaldoRepository.save(novoSaldo));
+            idsAtividadesProcessadas.add(atividade.getIdAtividade());
+        }
+
+        filaUnificada.sort(Comparator.comparing(PontosSaldo::getDataHora)
+                .thenComparing(PontosSaldo::getIdPontosSaldo));
+
+        aplicarLimitesTurno(filaUnificada, conselheiro.getIdPessoa());
+
+        // Cálculo dos jetons (absorção FIFO)
+        ResultadoAbsorcao absorcao = calcularJetonsParaConselheiro(filaUnificada, maxJetonsPermitidos);
+
+        if (absorcao.totalJetons == 0 && idsAtividadesProcessadas.isEmpty()) {
+            return null; // nenhum jeton gerado e nenhuma atividade nova
+        }
+
+        // Gera os registros financeiros (Jetons)
+        List<Jeton> jetonsGerados = gerarRegistrosJetons(absorcao.demonstrativo, gestao, conselheiro, mes, ano,
+                novasAtividades);
+        Jeton primeiroJeton = jetonsGerados.isEmpty() ? null : jetonsGerados.get(0);
+
+        // Consumo fracionado dos pontos (splitting)
+        consumirPontosFracionados(filaUnificada, absorcao.totalPontosConsumidos, primeiroJeton);
+
+        if (!idsAtividadesProcessadas.isEmpty()) {
+            atividadeRepository.marcarComoComputadaEmLote(idsAtividadesProcessadas);
+        }
+
+        BigDecimal valorTotal = jetonsGerados.stream().map(Jeton::getValor).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new ProcessamentoResultado(absorcao.totalJetons, valorTotal);
+    }
+
+    private PontosSaldo converterAtividadeEmSaldo(AtividadeConselhal atividade, Conselheiro conselheiro,
+            Gestao gestao, Resolucao resolucaoTeto) {
+        List<Resolucao> resAtvList = resolucaoRepository
+                .findResolucoesVigentesNaData(atividade.getDataHoraAtividade().toLocalDate());
+        Resolucao resolucaoAtividade = resAtvList.isEmpty() ? resolucaoTeto : resAtvList.get(0);
+
+        PontosSaldo novoSaldo = new PontosSaldo();
+        novoSaldo.setAtividade(atividade);
+        novoSaldo.setConselheiro(conselheiro);
+        novoSaldo.setGestao(gestao);
+        novoSaldo.setResolucao(resolucaoAtividade);
+        novoSaldo.setDataHora(atividade.getDataHoraAtividade());
+
+        int multRegra = (atividade.getRegra() != null && atividade.getRegra().getPontos() != null)
+                ? atividade.getRegra().getPontos()
+                : 1;
+        int qtdAtv = (atividade.getQtdAtividade() != null) ? atividade.getQtdAtividade() : 1;
+        int totalPontos = qtdAtv * multRegra;
+
+        novoSaldo.setPontosTrabalhados(totalPontos);
+        novoSaldo.setPontosUtilizados(0);
+        novoSaldo.setPontosSobrando(totalPontos);
+        novoSaldo.setInSituacao(PontosSaldo.SITUACAO_ATIVO);
+
+        return novoSaldo;
+    }
+
+    private ResultadoAbsorcao calcularJetonsParaConselheiro(List<PontosSaldo> filaUnificada, int maxJetonsPermitidos) {
+        int bufferPontos = 0;
+        int totalJetons = 0;
+        int totalPontosConsumidos = 0;
+        Map<Resolucao, Integer> demonstrativo = new LinkedHashMap<>();
+
+        for (PontosSaldo saldo : filaUnificada) {
+            bufferPontos += saldo.getPontosSobrando();
+            Resolucao norma = saldo.getResolucao();
+            int pontosPorJeton = (norma.getPontosPorJeton() != null && norma.getPontosPorJeton() > 0)
+                    ? norma.getPontosPorJeton()
+                    : 3;
+
+            int jetonsPossiveis = bufferPontos / pontosPorJeton;
+            int jetonsEfetivos = Math.min(jetonsPossiveis, maxJetonsPermitidos - totalJetons);
+
+            if (jetonsEfetivos > 0) {
+                demonstrativo.put(norma, demonstrativo.getOrDefault(norma, 0) + jetonsEfetivos);
+                totalJetons += jetonsEfetivos;
+                int consumidos = jetonsEfetivos * pontosPorJeton;
+                bufferPontos -= consumidos;
+                totalPontosConsumidos += consumidos;
+            }
+        }
+
+        ResultadoAbsorcao resultado = new ResultadoAbsorcao();
+        resultado.demonstrativo = demonstrativo;
+        resultado.totalJetons = totalJetons;
+        resultado.totalPontosConsumidos = totalPontosConsumidos;
+        return resultado;
+    }
+
+    private List<Jeton> gerarRegistrosJetons(Map<Resolucao, Integer> demonstrativo, Gestao gestao,
+            Conselheiro conselheiro, Integer mes, Integer ano,
+            List<AtividadeConselhal> novasAtividades) {
+        List<Jeton> jetonsSalvos = new ArrayList<>();
+        for (Map.Entry<Resolucao, Integer> entry : demonstrativo.entrySet()) {
+            Jeton jeton = new Jeton();
+            jeton.setGestao(gestao);
+            jeton.setConselheiro(conselheiro);
+            jeton.setMes(mes);
+            jeton.setAno(ano);
+            jeton.setTotalJeton(entry.getValue());
+            BigDecimal valorBase = (entry.getKey().getValorJeton() != null) ? entry.getKey().getValorJeton()
+                    : BigDecimal.ZERO;
+            jeton.setValor(valorBase.multiply(BigDecimal.valueOf(entry.getValue())));
+            jeton.setInSituacao(Jeton.SITUACAO_ATIVO);
+            jeton.getAtividades().addAll(novasAtividades);
+            jetonsSalvos.add(jetonRepository.save(jeton));
+            log.debug("   Gerado {} jetons para {} no valor total de {} ({} por jeton)",
+                    entry.getValue(), conselheiro.getPessoa().getNome(), jeton.getValor().toString(),
+                    valorBase.toString());
+        }
+        return jetonsSalvos;
+    }
+
+    private void consumirPontosFracionados(List<PontosSaldo> filaUnificada, int pontosParaConsumir, Jeton jetonAlvo) {
+        if (pontosParaConsumir <= 0 || jetonAlvo == null)
+            return;
+
+        for (PontosSaldo saldo : filaUnificada) {
+            if (pontosParaConsumir <= 0)
+                break;
+            int disponivel = saldo.getPontosSobrando();
+            if (disponivel == 0)
+                continue;
+
+            int consumir = Math.min(disponivel, pontosParaConsumir);
+            if (consumir < disponivel) {
+                // Divide o saldo
+                saldo.setPontosSobrando(0);
+                saldo.setPontosUtilizados(saldo.getPontosUtilizados() + consumir);
+                saldo.setInSituacao(PontosSaldo.SITUACAO_INATIVO);
+                saldo.setJeton(jetonAlvo);
+                pontosSaldoRepository.save(saldo);
+
+                PontosSaldo remainder = new PontosSaldo();
+                remainder.setAtividade(saldo.getAtividade());
+                remainder.setConselheiro(saldo.getConselheiro());
+                remainder.setGestao(saldo.getGestao());
+                remainder.setResolucao(saldo.getResolucao());
+                remainder.setDataHora(saldo.getDataHora());
+                remainder.setPontosTrabalhados(disponivel - consumir);
+                remainder.setPontosUtilizados(0);
+                remainder.setPontosSobrando(disponivel - consumir);
+                remainder.setInSituacao(PontosSaldo.SITUACAO_ATIVO);
+                pontosSaldoRepository.save(remainder);
+            } else {
+                saldo.setPontosSobrando(0);
+                saldo.setPontosUtilizados(saldo.getPontosUtilizados() + consumir);
+                saldo.setInSituacao(PontosSaldo.SITUACAO_INATIVO);
+                saldo.setJeton(jetonAlvo);
+                pontosSaldoRepository.save(saldo);
+            }
+            pontosParaConsumir -= consumir;
+        }
     }
 
     private void aplicarLimitesTurno(List<PontosSaldo> saldos, Integer idPessoa) {
@@ -453,19 +492,13 @@ public class JetonService {
                 id, nomeConselheiro, nomeGestao, jeton.getMes(), jeton.getAno());
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES PRIVADOS
-    // =========================================================================
-
     private boolean isFolhaHomologada(Integer idGestao, Integer mes, Integer ano) {
-        // Jetons com status 'E' (Excluído/Homologado)
         List<Jeton> jetonsHomologados = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano)
                 .stream().filter(j -> Jeton.SITUACAO_EXCLUIDO.equals(j.getInSituacao()))
                 .toList();
         if (!jetonsHomologados.isEmpty())
             return true;
 
-        // Atividades com situação 'F' (Fechada) na competência
         long atividadesFechadas = atividadeRepository.countAtividadesFechadasNoPeriodo(idGestao, mes, ano);
         return atividadesFechadas > 0;
     }
@@ -480,10 +513,6 @@ public class JetonService {
         return page.getContent();
     }
 
-    // =========================================================================
-    // RELATÓRIO
-    // =========================================================================
-
     @Transactional(readOnly = true)
     public RelatorioGeralDTO gerarRelatorioGeral(Integer idGestao, Integer mes, Integer ano) {
         Gestao gestao = gestaoRepository.findById(idGestao)
@@ -492,7 +521,6 @@ public class JetonService {
         List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano);
         Map<Integer, ConselheiroRelatorioDTO> mapa = new LinkedHashMap<>();
 
-        // Agrupa por conselheiro e soma totais de jetons e valores
         for (Jeton j : jetons) {
             ConselheiroRelatorioDTO dto = mapa.computeIfAbsent(j.getConselheiro().getIdPessoa(), k -> {
                 ConselheiroRelatorioDTO novo = new ConselheiroRelatorioDTO();
@@ -510,12 +538,10 @@ public class JetonService {
             dto.setValor(dto.getValor().add(j.getValor()));
         }
 
-        // Preenche os detalhes de cada conselheiro (saldos e atividades)
         for (Map.Entry<Integer, ConselheiroRelatorioDTO> entry : mapa.entrySet()) {
             Integer idPessoa = entry.getKey();
             ConselheiroRelatorioDTO dto = entry.getValue();
 
-            // Busca todos os saldos associados aos jetons deste conselheiro no mês
             List<Jeton> jetonsCons = jetons.stream()
                     .filter(j -> j.getConselheiro().getIdPessoa().equals(idPessoa))
                     .collect(Collectors.toList());
@@ -543,11 +569,9 @@ public class JetonService {
             dto.setSaldoAnterior(saldoAnterior);
             dto.setPontosAcumuladosMes(pontosAcumuladosMes);
 
-            // Saldo futuro: pontos que sobraram após o processamento (ativos)
             Integer saldoFuturo = pontosSaldoRepository.somarPontosSobrandoAtivos(idPessoa, idGestao);
             dto.setSaldoFuturo(saldoFuturo != null ? saldoFuturo : 0);
 
-            // Atividades do mês que foram computadas
             List<AtividadeConselhal> atividadesMes = atividadeRepository.findComputadasPorConselheiroEMes(idPessoa, mes,
                     ano);
             List<AtividadeRelatorioDTO> atividadesDTO = new ArrayList<>();
@@ -605,7 +629,6 @@ public class JetonService {
 
         List<Map<String, Object>> atividades = listarAtividadesAgrupadasPorConselheiro(idPessoa, idGestao, mes, ano);
 
-        // CORREÇÃO: agora passando os três parâmetros corretamente
         List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano).stream()
                 .filter(j -> j.getConselheiro().getIdPessoa().equals(idPessoa))
                 .toList();
@@ -638,5 +661,21 @@ public class JetonService {
         resposta.put("pontosAcumuladosMes", pontosAcumuladosMes);
         resposta.put("saldoFuturo", saldoFuturo != null ? saldoFuturo : 0);
         return resposta;
+    }
+
+    private static class ProcessamentoResultado {
+        int totalJetons;
+        BigDecimal valorTotal;
+
+        ProcessamentoResultado(int totalJetons, BigDecimal valorTotal) {
+            this.totalJetons = totalJetons;
+            this.valorTotal = valorTotal;
+        }
+    }
+
+    private static class ResultadoAbsorcao {
+        Map<Resolucao, Integer> demonstrativo = new LinkedHashMap<>();
+        int totalJetons = 0;
+        int totalPontosConsumidos = 0;
     }
 }
