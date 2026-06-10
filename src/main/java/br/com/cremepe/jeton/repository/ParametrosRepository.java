@@ -7,5 +7,4 @@ import br.com.cremepe.jeton.domain.Parametros;
 
 @Repository
 public interface ParametrosRepository extends JpaRepository<Parametros, Integer> {
-    // Os métodos padrão (findById, save) já resolvem
 }

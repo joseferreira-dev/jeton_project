@@ -8,10 +8,6 @@ import br.com.cremepe.jeton.domain.Pessoa;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repositório para a entidade Pessoa.
- * Fornece métodos básicos e consultas personalizadas.
- */
 @Repository
 public interface PessoaRepository extends JpaRepository<Pessoa, Integer> {
 

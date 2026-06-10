@@ -18,21 +18,9 @@ import java.util.List;
 @Repository
 public interface AtividadeConselhalRepository extends JpaRepository<AtividadeConselhal, Integer> {
 
-    // =========================================================================
-    // CONSULTAS BÁSICAS
-    // =========================================================================
-
     List<AtividadeConselhal> findTop5ByOrderByDataHoraRegistroDesc();
 
-    // =========================================================================
-    // CONSULTAS PARA LOTE E COMPARTILHAMENTO DE COMPROVANTE
-    // =========================================================================
-
     List<AtividadeConselhal> findByComprovanteIdComprovante(Integer idComprovante);
-
-    // =========================================================================
-    // CONTAGENS
-    // =========================================================================
 
     long countByGestaoIdGestaoAndConselheiroIdPessoa(Integer idGestao, Integer idPessoa);
 
@@ -55,10 +43,6 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
     long countAtividadesFechadasNoPeriodo(@Param("idGestao") Integer idGestao,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
-
-    // =========================================================================
-    // CONSULTAS COM PAGINAÇÃO E PESQUISA DINÂMICA
-    // =========================================================================
 
     @Query("SELECT a FROM AtividadeConselhal a WHERE " +
             "(LOWER(a.conselheiro.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR " +
@@ -89,10 +73,6 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
     List<AtividadeConselhal> findComputadasPorConselheiroEMes(@Param("idPessoa") Integer idPessoa,
             @Param("mes") Integer mes, @Param("ano") Integer ano);
 
-    // =========================================================================
-    // OPERAÇÕES DE MODIFICAÇÃO (ATUALIZAÇÃO EM MASSA)
-    // =========================================================================
-
     @Modifying
     @Transactional
     @Query("UPDATE AtividadeConselhal a SET a.inComputada = 'S' WHERE a.idAtividade IN :ids")
@@ -102,10 +82,6 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
     @Transactional
     @Query("UPDATE AtividadeConselhal a SET a.comprovante = NULL WHERE a.idAtividade = :id")
     void desvincularComprovante(@Param("id") Integer idAtividade);
-
-    // =========================================================================
-    // CONSULTAS PARA PROCESSAMENTO FINANCEIRO (JETON) – USAM dataHoraRegistro
-    // =========================================================================
 
     @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa " +
             "AND a.inSituacao = 'C' AND a.inComputada = 'N' " +

@@ -16,5 +16,4 @@ public interface ComprovanteRepository extends JpaRepository<Comprovante, Intege
     List<Comprovante> findByMesAndAno(Integer mes, Integer ano);
 
     List<Comprovante> findByTipoAnexoIdTipo(Integer idTipo);
-
 }

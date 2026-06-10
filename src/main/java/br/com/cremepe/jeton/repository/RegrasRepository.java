@@ -18,10 +18,6 @@ import java.util.List;
 @Repository
 public interface RegrasRepository extends JpaRepository<Regras, Integer> {
 
-    // =========================================================================
-    // CONSULTAS BÁSICAS E FILTROS
-    // =========================================================================
-
     List<Regras> findByResolucaoIdResolucao(Integer resolucaoId);
 
     List<Regras> findByResolucaoIdResolucaoAndInRevogado(Integer idResolucao, String inRevogado);
@@ -34,23 +30,11 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
 
     List<Regras> findByNomeRegraAndPortariaIdPortaria(String nomeRegra, Integer idPortaria);
 
-    // =========================================================================
-    // VALIDAÇÃO DE UNICIDADE
-    // =========================================================================
-
     boolean existsByNomeRegraAndIdRegraNot(String nomeRegra, Integer idRegra);
-
-    // =========================================================================
-    // CONTAGENS
-    // =========================================================================
 
     long countByPortariaIdPortaria(Integer idPortaria);
 
     long countByResolucaoIdResolucao(Integer idResolucao);
-
-    // =========================================================================
-    // CONSULTAS PARA NORMATIVAS COM REGRAS ATIVAS
-    // =========================================================================
 
     @Query("SELECT DISTINCT r.resolucao FROM Regras r WHERE r.resolucao IS NOT NULL AND r.inRevogado = 'N'")
     List<Resolucao> findResolucoesComRegras();
@@ -64,19 +48,11 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
     @Query("SELECT DISTINCT r.resolucao FROM Regras r WHERE r.portaria.idPortaria = :idPortaria AND r.resolucao IS NOT NULL AND r.inRevogado = 'N'")
     List<Resolucao> findResolucoesCompativeis(@Param("idPortaria") Integer idPortaria);
 
-    // =========================================================================
-    // CONSULTAS PARA REGRAS EXATAS
-    // =========================================================================
-
     @Query("SELECT r FROM Regras r WHERE r.inRevogado = 'N' AND " +
             "((:idResolucao IS NULL AND r.resolucao IS NULL) OR (r.resolucao.idResolucao = :idResolucao)) AND " +
             "((:idPortaria IS NULL AND r.portaria IS NULL) OR (r.portaria.idPortaria = :idPortaria))")
     List<Regras> findRegrasExatas(@Param("idResolucao") Integer idResolucao,
             @Param("idPortaria") Integer idPortaria);
-
-    // =========================================================================
-    // CONSULTAS COM PAGINAÇÃO (INCLUINDO FILTRO POR JUDICANTE)
-    // =========================================================================
 
     @Query("SELECT r FROM Regras r WHERE " +
             "(:termo IS NULL OR :termo = '' OR LOWER(r.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
@@ -94,10 +70,6 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
             @Param("judicante") String judicante,
             Pageable pageable);
 
-    // =========================================================================
-    // CONSULTAS PARA DATA (VIGÊNCIA DE NORMATIVAS)
-    // =========================================================================
-
     @Query("SELECT r FROM Regras r WHERE r.resolucao.idResolucao = :idResolucao " +
             "AND (:idPortaria IS NULL AND r.portaria IS NULL OR r.portaria.idPortaria = :idPortaria)")
     List<Regras> findRegrasPorNormativasInclusiveRevogadas(@Param("idResolucao") Integer idResolucao,
@@ -111,10 +83,6 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
             "AND :dataAtividade BETWEEN r.portaria.dtInicioVigencia AND COALESCE(r.portaria.dtFimVigencia, '2099-12-31')")
     List<Portaria> findPortariaPorData(@Param("dataAtividade") LocalDate dataAtividade);
 
-    // =========================================================================
-    // OPERAÇÕES DE MODIFICAÇÃO EM MASSA (REVOGAÇÃO/RESTAURAÇÃO)
-    // =========================================================================
-
     @Modifying
     @Query("UPDATE Regras r SET r.inRevogado = 'S' WHERE r.resolucao.idResolucao = :idResolucao")
     void revogarRegrasPorResolucao(@Param("idResolucao") Integer idResolucao);
@@ -126,10 +94,6 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
     @Modifying
     @Query("UPDATE Regras r SET r.inRevogado = 'N' WHERE r.resolucao.idResolucao = :idResolucao")
     void restaurarRegrasPorResolucao(@Param("idResolucao") Integer idResolucao);
-
-    // =========================================================================
-    // CONSULTA AUXILIAR PARA LIMITES POR TURNO
-    // =========================================================================
 
     @Query("SELECT COALESCE(SUM(ps.pontosUtilizados), 0) FROM PontosSaldo ps " +
             "WHERE ps.conselheiro.idPessoa = :idPessoa " +
