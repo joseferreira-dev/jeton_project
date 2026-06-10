@@ -2,9 +2,7 @@ package br.com.cremepe.jeton.service;
 
 import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.*;
-import br.com.cremepe.jeton.dto.LoteAtividadeDTO;
 import br.com.cremepe.jeton.repository.*;
-import br.com.cremepe.jeton.util.TurnoUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,12 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class AtividadeConselhalService {
@@ -42,14 +35,7 @@ public class AtividadeConselhalService {
     private GestaoConselheiroRepository gestaoConselheiroRepository;
     @Autowired
     private ComprovanteService comprovanteService;
-    @Autowired
-    private ConselheiroService conselheiroService;
-    @Autowired
-    private RegrasService regrasService;
 
-    // =========================================================================
-    // CRIAÇÃO
-    // =========================================================================
     @Auditar(tabela = "atividade_conselhal", acao = "CRIAR", descricao = "Criação de nova atividade", dadosParametros = "{ 'idAtividade': #atividade.idAtividade }", dadosRetorno = "#result", auditarExcecao = true)
     @Transactional
     public AtividadeConselhal criar(AtividadeConselhal atividade,
@@ -78,9 +64,6 @@ public class AtividadeConselhalService {
         return salva;
     }
 
-    // =========================================================================
-    // EDIÇÃO
-    // =========================================================================
     @Auditar(tabela = "atividade_conselhal", acao = "EDITAR", descricao = "Edição de atividade existente", capturarEstadoAnterior = true, dadosParametros = "{ 'idAtividade': #atividade.idAtividade }", dadosRetorno = "#result", auditarExcecao = true)
     @Transactional
     public AtividadeConselhal atualizar(AtividadeConselhal atividade,
@@ -138,9 +121,6 @@ public class AtividadeConselhalService {
         return salva;
     }
 
-    // =========================================================================
-    // VALIDAÇÃO
-    // =========================================================================
     @Auditar(tabela = "atividade_conselhal", acao = "VALIDAR", descricao = "Validar atividade pendente", dadosParametros = "{ 'idAtividade': #id }", auditarExcecao = true)
     @Transactional
     public void validar(Integer id) {
@@ -153,9 +133,6 @@ public class AtividadeConselhalService {
         log.info("Atividade validada: ID={}", id);
     }
 
-    // =========================================================================
-    // DESVALIDAR
-    // =========================================================================
     @Auditar(tabela = "atividade_conselhal", acao = "DESVALIDAR", descricao = "Desvalidar atividade", dadosParametros = "{ 'idAtividade': #id }", auditarExcecao = true)
     @Transactional
     public void desvalidar(Integer id) {
@@ -172,9 +149,6 @@ public class AtividadeConselhalService {
         log.info("Atividade desvalidada: ID={}", id);
     }
 
-    // =========================================================================
-    // EXCLUIR
-    // =========================================================================
     @Auditar(tabela = "atividade_conselhal", acao = "EXCLUIR", capturarEstadoAnterior = true, descricao = "Excluir atividade", dadosParametros = "{ 'idAtividade': #id }", auditarExcecao = true)
     @Transactional
     public void excluir(Integer id) {
@@ -213,9 +187,6 @@ public class AtividadeConselhalService {
         log.info("Atividade excluída: ID={}", id);
     }
 
-    // =========================================================================
-    // LEITURA (sem alterações)
-    // =========================================================================
     @Transactional(readOnly = true)
     public Page<AtividadeConselhal> listarComPaginacaoEPesquisa(String termo, String situacao, String turno,
             String comprovanteFiltro, LocalDate dataInicio, LocalDate dataFim,
@@ -243,9 +214,6 @@ public class AtividadeConselhalService {
         return atividadeRepository.findByConselheiroIdPessoa(idPessoa, pageable);
     }
 
-    // =========================================================================
-    // MÉTODOS PRIVADOS
-    // =========================================================================
     private Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo,
             String nomeComprovanteUsuario) {
         return comprovanteService.criarComprovante(file, idTipoAnexo, nomeComprovanteUsuario);
@@ -288,190 +256,6 @@ public class AtividadeConselhalService {
                 .orElseThrow(() -> new RuntimeException("Atividade não encontrada."));
     }
 
-    // =========================================================================
-    // CRIAÇÃO EM LOTE
-    // =========================================================================
-
-    @Auditar(tabela = "atividade_conselhal", acao = "CRIAR_LOTE", descricao = "Criação de múltiplas atividades com mesmo comprovante", dadosParametros = "{ 'idGestao': #dto.idGestao, 'idsConselheiros': #dto.idsConselheiros }", auditarExcecao = true, incluirRetorno = false)
-    @Transactional
-    public List<AtividadeConselhal> criarLote(LoteAtividadeDTO dto) {
-        // 1. Validações básicas
-        Gestao gestao = gestaoRepository.findById(dto.getIdGestao())
-                .orElseThrow(() -> new RuntimeException("Gestão não encontrada"));
-        Regras regra = regrasService.buscarOuFalhar(dto.getIdRegra());
-        LocalDateTime dataHora = dto.getDataHoraAtividade();
-        validarDataDentroDoMandato(dataHora.toLocalDate(), gestao);
-
-        // 2. Calcula turno automaticamente usando TurnoUtils
-        String turno = TurnoUtils.calcularTurno(dataHora.getHour());
-
-        // 3. Cria UM comprovante (se houver arquivo)
-        Comprovante comprovante = null;
-        if (dto.getFile() != null && !dto.getFile().isEmpty()) {
-            comprovante = comprovanteService.criarComprovante(
-                    dto.getFile(), dto.getIdTipoAnexo(), dto.getNomeComprovanteUsuario());
-        }
-
-        // 4. Cria uma atividade para cada conselheiro
-        List<AtividadeConselhal> criadas = new ArrayList<>();
-        for (Integer idPessoa : dto.getIdsConselheiros()) {
-            Conselheiro conselheiro = conselheiroService.buscarPorId(idPessoa)
-                    .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado: " + idPessoa));
-
-            boolean vinculado = gestaoConselheiroRepository.existsByGestaoAndConselheiro(gestao.getIdGestao(),
-                    idPessoa);
-            if (!vinculado) {
-                throw new RuntimeException("Conselheiro " + conselheiro.getPessoa().getNome() +
-                        " não está vinculado à gestão selecionada.");
-            }
-
-            AtividadeConselhal atividade = new AtividadeConselhal();
-            atividade.setGestao(gestao);
-            atividade.setConselheiro(conselheiro);
-            atividade.setRegra(regra);
-            atividade.setComprovante(comprovante);
-            atividade.setQtdAtividade(1);
-            atividade.setDataHoraAtividade(dataHora);
-            atividade.setDataHoraRegistro(LocalDateTime.now());
-            atividade.setInTurno(turno);
-            atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
-            atividade.setInComputada(AtividadeConselhal.COMPUTADA_NAO);
-
-            criadas.add(atividadeRepository.save(atividade));
-        }
-
-        log.info("Lote de {} atividades criado para gestão {} com comprovante ID {}",
-                criadas.size(), gestao.getNomeGestao(), comprovante != null ? comprovante.getIdComprovante() : null);
-        return criadas;
-    }
-
-    // =========================================================================
-    // CONSULTA POR COMPROVANTE (PARA EDIÇÃO EM LOTE)
-    // =========================================================================
-
-    @Transactional(readOnly = true)
-    public List<AtividadeConselhal> listarPorComprovante(Integer idComprovante) {
-        return atividadeRepository.findByComprovanteIdComprovante(idComprovante);
-    }
-
-    // =========================================================================
-    // EDIÇÃO EM LOTE (TODAS ATIVIDADES QUE COMPARTILHAM O MESMO COMPROVANTE)
-    // =========================================================================
-
-    @Auditar(tabela = "atividade_conselhal", acao = "EDITAR_LOTE", descricao = "Edição em massa de atividades que compartilham o mesmo comprovante, com adição/remoção de conselheiros", capturarEstadoAnterior = true, auditarExcecao = true)
-    @Transactional
-    public void atualizarLote(Integer idComprovante, LoteAtividadeDTO dto) {
-        // 1. Atividades atuais vinculadas ao comprovante
-        List<AtividadeConselhal> atividadesAtuais = atividadeRepository.findByComprovanteIdComprovante(idComprovante);
-        if (atividadesAtuais.isEmpty()) {
-            throw new RuntimeException("Nenhuma atividade encontrada para o comprovante informado.");
-        }
-
-        // 2. IDs atuais e novos
-        Set<Integer> idsAtuais = atividadesAtuais.stream()
-                .map(a -> a.getConselheiro().getIdPessoa())
-                .collect(Collectors.toSet());
-        Set<Integer> idsNovos = new HashSet<>(dto.getIdsConselheiros());
-
-        Set<Integer> idsRemover = new HashSet<>(idsAtuais);
-        idsRemover.removeAll(idsNovos);
-
-        Set<Integer> idsAdicionar = new HashSet<>(idsNovos);
-        idsAdicionar.removeAll(idsAtuais);
-
-        // 3. Validações comuns
-        Gestao gestao = gestaoRepository.findById(dto.getIdGestao())
-                .orElseThrow(() -> new RuntimeException("Gestão não encontrada"));
-        Regras regra = regrasService.buscarOuFalhar(dto.getIdRegra());
-        LocalDateTime dataHora = dto.getDataHoraAtividade();
-        validarDataDentroDoMandato(dataHora.toLocalDate(), gestao);
-        String turno = TurnoUtils.calcularTurno(dataHora.getHour());
-
-        // 4. Tratamento do comprovante
-        Comprovante comprovanteAtual = comprovanteRepository.findById(idComprovante)
-                .orElseThrow(() -> new RuntimeException("Comprovante não encontrado"));
-        Comprovante comprovanteFinal = comprovanteAtual;
-
-        if (dto.getFile() != null && !dto.getFile().isEmpty()) {
-            comprovanteFinal = comprovanteService.criarComprovante(
-                    dto.getFile(), dto.getIdTipoAnexo(), dto.getNomeComprovanteUsuario());
-        } else if (dto.getNomeComprovanteUsuario() != null
-                && !dto.getNomeComprovanteUsuario().equals(comprovanteAtual.getNomeComprovante())) {
-            comprovanteAtual.setNomeComprovante(dto.getNomeComprovanteUsuario());
-            comprovanteFinal = comprovanteRepository.save(comprovanteAtual);
-        }
-
-        // 5. Atualiza dados comuns em todas as atividades atuais
-        for (AtividadeConselhal at : atividadesAtuais) {
-            if (AtividadeConselhal.SITUACAO_FECHADA.equals(at.getInSituacao())) {
-                throw new RuntimeException(
-                        "A atividade ID " + at.getIdAtividade() + " está fechada e não pode ser editada.");
-            }
-            at.setGestao(gestao);
-            at.setRegra(regra);
-            at.setDataHoraAtividade(dataHora);
-            at.setInTurno(turno);
-            at.setComprovante(comprovanteFinal);
-            atividadeRepository.save(at);
-        }
-
-        // 6. Remove atividades dos conselheiros desselecionados
-        for (Integer idPessoa : idsRemover) {
-            Optional<AtividadeConselhal> atividadeRemover = atividadesAtuais.stream()
-                    .filter(a -> a.getConselheiro().getIdPessoa().equals(idPessoa))
-                    .findFirst();
-            if (atividadeRemover.isPresent()) {
-                atividadeRepository.delete(atividadeRemover.get());
-                log.info("Atividade removida do lote: conselheiro ID {}, atividade ID {}", idPessoa,
-                        atividadeRemover.get().getIdAtividade());
-            }
-        }
-
-        // 7. Cria novas atividades para os conselheiros adicionados
-        for (Integer idPessoa : idsAdicionar) {
-            Conselheiro conselheiro = conselheiroService.buscarPorId(idPessoa)
-                    .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado: " + idPessoa));
-
-            boolean vinculado = gestaoConselheiroRepository.existsByGestaoAndConselheiro(gestao.getIdGestao(),
-                    idPessoa);
-            if (!vinculado) {
-                throw new RuntimeException("Conselheiro " + conselheiro.getPessoa().getNome() +
-                        " não está vinculado à gestão selecionada.");
-            }
-
-            AtividadeConselhal novaAtividade = new AtividadeConselhal();
-            novaAtividade.setGestao(gestao);
-            novaAtividade.setConselheiro(conselheiro);
-            novaAtividade.setRegra(regra);
-            novaAtividade.setComprovante(comprovanteFinal);
-            novaAtividade.setQtdAtividade(1);
-            novaAtividade.setDataHoraAtividade(dataHora);
-            novaAtividade.setDataHoraRegistro(LocalDateTime.now());
-            novaAtividade.setInTurno(turno);
-            novaAtividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
-            novaAtividade.setInComputada(AtividadeConselhal.COMPUTADA_NAO);
-
-            atividadeRepository.save(novaAtividade);
-            log.info("Nova atividade adicionada ao lote: conselheiro ID {}", idPessoa);
-        }
-
-        // 8. Se houve criação de novo comprovante, tenta excluir o antigo
-        if (dto.getFile() != null && !dto.getFile().isEmpty()) {
-            long outras = atividadeRepository.countByComprovanteIdComprovante(idComprovante);
-            if (outras == 0) {
-                comprovanteService.excluirComprovante(idComprovante);
-            }
-        }
-
-        log.info("Lote atualizado: comprovante ID {}, {} atividades mantidas, {} removidas, {} adicionadas",
-                idComprovante, atividadesAtuais.size() - idsRemover.size(), idsRemover.size(), idsAdicionar.size());
-    }
-
-    @Transactional(readOnly = true)
-    public long contarAtividadesPorComprovante(Integer idComprovante) {
-        return atividadeRepository.countByComprovanteIdComprovante(idComprovante);
-    }
-
     public int sumPontosValidadasNaoComputadas(Integer idPessoa) {
         Integer soma = atividadeRepository.sumPontosAtividadesValidadasNaoComputadas(idPessoa);
         return soma != null ? soma : 0;
@@ -483,5 +267,10 @@ public class AtividadeConselhalService {
 
     public long countTotalPorConselheiro(Integer idPessoa) {
         return atividadeRepository.countByConselheiroIdPessoa(idPessoa);
+    }
+
+    @Transactional(readOnly = true)
+    public long contarAtividadesPorComprovante(Integer idComprovante) {
+        return atividadeRepository.countByComprovanteIdComprovante(idComprovante);
     }
 }

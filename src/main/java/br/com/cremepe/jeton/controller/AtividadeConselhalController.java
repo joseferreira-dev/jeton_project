@@ -3,6 +3,7 @@ package br.com.cremepe.jeton.controller;
 import br.com.cremepe.jeton.domain.AtividadeConselhal;
 import br.com.cremepe.jeton.dto.LoteAtividadeDTO;
 import br.com.cremepe.jeton.service.AtividadeConselhalService;
+import br.com.cremepe.jeton.service.AtividadeLoteService;
 import br.com.cremepe.jeton.service.ConselheiroService;
 import br.com.cremepe.jeton.service.GestaoService;
 import br.com.cremepe.jeton.service.RegrasService;
@@ -27,6 +28,8 @@ public class AtividadeConselhalController {
 
     @Autowired
     private AtividadeConselhalService atividadeService;
+    @Autowired
+    private AtividadeLoteService atividadeLoteService;
     @Autowired
     private ConselheiroService conselheiroService;
     @Autowired
@@ -185,7 +188,7 @@ public class AtividadeConselhalController {
             if (dto.getInTurno() == null || dto.getInTurno().isEmpty()) {
                 dto.setInTurno(null);
             }
-            atividadeService.criarLote(dto);
+            atividadeLoteService.criarLote(dto);
             ra.addFlashAttribute("sucesso", "Atividades criadas em lote com sucesso para "
                     + dto.getIdsConselheiros().size() + " conselheiros.");
         } catch (Exception e) {
@@ -198,7 +201,7 @@ public class AtividadeConselhalController {
     public String prepararEdicaoLote(@PathVariable Integer idComprovante, Model model, HttpSession session) {
         if (naoAutenticado(session))
             return "redirect:/login";
-        var atividades = atividadeService.listarPorComprovante(idComprovante);
+        var atividades = atividadeLoteService.listarPorComprovante(idComprovante);
         if (atividades.isEmpty()) {
             throw new IllegalArgumentException("Nenhuma atividade encontrada para este comprovante.");
         }
@@ -227,7 +230,7 @@ public class AtividadeConselhalController {
             if (dto.getInTurno() == null || dto.getInTurno().isEmpty()) {
                 dto.setInTurno(null);
             }
-            atividadeService.atualizarLote(idComprovante, dto);
+            atividadeLoteService.atualizarLote(idComprovante, dto);
             ra.addFlashAttribute("sucesso", "Todas as atividades vinculadas ao comprovante foram atualizadas.");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro ao atualizar lote: " + e.getMessage());
