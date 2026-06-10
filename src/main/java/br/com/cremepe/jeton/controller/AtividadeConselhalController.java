@@ -21,6 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Controller
 @RequestMapping("/atividades")
@@ -85,19 +86,25 @@ public class AtividadeConselhalController {
             RedirectAttributes ra) {
         if (naoAutenticado(session))
             return "redirect:/login";
-        AtividadeConselhal atividade = atividadeService.buscarPorId(id)
-                .orElseThrow(() -> new IllegalArgumentException("Atividade não encontrada"));
+        try {
+            AtividadeConselhal atividade = atividadeService.buscarPorId(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Atividade não encontrada"));
 
-        if (atividade.getComprovante() != null
-                && atividadeService.contarAtividadesPorComprovante(atividade.getComprovante().getIdComprovante()) > 1) {
-            ra.addFlashAttribute("info",
-                    "Esta atividade compartilha o mesmo comprovante com outras atividades. Para editar todas de uma vez, utilize a edição em lote.");
-            return "redirect:/atividades/lote/editar/" + atividade.getComprovante().getIdComprovante();
+            if (atividade.getComprovante() != null
+                    && atividadeService
+                            .contarAtividadesPorComprovante(atividade.getComprovante().getIdComprovante()) > 1) {
+                ra.addFlashAttribute("info",
+                        "Esta atividade compartilha o mesmo comprovante com outras atividades. Para editar todas de uma vez, utilize a edição em lote.");
+                return "redirect:/atividades/lote/editar/" + atividade.getComprovante().getIdComprovante();
+            }
+
+            model.addAttribute("atividade", atividade);
+            carregarListasDeApoio(model);
+            return "atividadeconselhal/formulario";
+        } catch (IllegalArgumentException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
+            return "redirect:/atividades";
         }
-
-        model.addAttribute("atividade", atividade);
-        carregarListasDeApoio(model);
-        return "atividadeconselhal/formulario";
     }
 
     @PostMapping("/salvar")
@@ -131,6 +138,8 @@ public class AtividadeConselhalController {
         } catch (IllegalArgumentException e) {
             ra.addFlashAttribute("erro", e.getMessage());
             return "redirect:/atividades/novo";
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("erro", e.getMessage());
         }
         return "redirect:/atividades";
     }
@@ -198,15 +207,19 @@ public class AtividadeConselhalController {
     }
 
     @GetMapping("/lote/editar/{idComprovante}")
-    public String prepararEdicaoLote(@PathVariable Integer idComprovante, Model model, HttpSession session) {
-        if (naoAutenticado(session))
+    public String prepararEdicaoLote(@PathVariable Integer idComprovante, Model model, HttpSession session,
+            RedirectAttributes ra) {
+        if (naoAutenticado(session)) {
             return "redirect:/login";
-        var atividades = atividadeLoteService.listarPorComprovante(idComprovante);
-        if (atividades.isEmpty()) {
-            throw new IllegalArgumentException("Nenhuma atividade encontrada para este comprovante.");
         }
-        AtividadeConselhal referencia = atividades.get(0);
 
+        List<AtividadeConselhal> atividades = atividadeLoteService.listarPorComprovante(idComprovante);
+        if (atividades.isEmpty()) {
+            ra.addFlashAttribute("erro", "Nenhuma atividade encontrada para o comprovante informado.");
+            return "redirect:/atividades";
+        }
+
+        AtividadeConselhal referencia = atividades.get(0);
         model.addAttribute("atividadeReferencia", referencia);
         model.addAttribute("quantidade", atividades.size());
         model.addAttribute("listaGestoes", gestaoService.listarTodos());
