@@ -88,9 +88,7 @@ public class GestaoController {
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
-            Gestao gestao = new Gestao();
-            gestao.setIdGestao(id);
-            gestaoService.excluirGestao(gestao);
+            gestaoService.excluirGestao(id);
             ra.addFlashAttribute("sucesso", "Gestão removida com sucesso!");
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Não foi possível remover: " + e.getMessage());

@@ -25,10 +25,6 @@ public class GestaoService {
     @Autowired
     private GestaoRepository gestaoRepository;
 
-    // =========================================================================
-    // OPERAÇÕES DE ESCRITA
-    // =========================================================================
-
     @Auditar(tabela = "gestao", acao = "CRIAR", capturarEstadoAnterior = false, descricao = "Criação de nova gestão", auditarExcecao = true)
     @Transactional
     public Gestao criarGestao(Gestao gestao) {
@@ -65,17 +61,13 @@ public class GestaoService {
 
     @Auditar(tabela = "gestao", acao = "EXCLUIR", capturarEstadoAnterior = true, descricao = "Exclusão de gestão", auditarExcecao = true)
     @Transactional
-    public void excluirGestao(Gestao gestao) {
-        Gestao existente = buscarGestaoOuFalhar(gestao.getIdGestao());
+    public void excluirGestao(Integer id) {
+        Gestao existente = buscarGestaoOuFalhar(id);
         gestaoRepository.deleteById(existente.getIdGestao());
         log.info("Gestão excluída: ID={}, nome='{}', período={} até {}",
                 existente.getIdGestao(), existente.getNomeGestao(),
                 existente.getDtInicio(), existente.getDtFim());
     }
-
-    // =========================================================================
-    // MÉTODOS DE VALIDAÇÃO E LEITURA
-    // =========================================================================
 
     private void validarDatas(Gestao gestao) {
         if (gestao.getDtInicio() == null || gestao.getDtFim() == null) {
