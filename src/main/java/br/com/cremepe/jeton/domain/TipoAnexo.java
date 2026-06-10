@@ -13,15 +13,9 @@ public class TipoAnexo implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PARA EXIGE_PUBLICACAO
-    // =========================================================================
     public static final String EXIGE_PUBLICACAO_SIM = "S";
     public static final String EXIGE_PUBLICACAO_NAO = "N";
 
-    // =========================================================================
-    // CAMPOS
-    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idTipo")
@@ -37,15 +31,9 @@ public class TipoAnexo implements Serializable {
     @Column(name = "exigePublicacao", nullable = false, length = 1)
     private String exigePublicacao;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public TipoAnexo() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean isExigePublicacao() {
         return EXIGE_PUBLICACAO_SIM.equals(exigePublicacao);
     }
@@ -54,9 +42,6 @@ public class TipoAnexo implements Serializable {
         return EXIGE_PUBLICACAO_NAO.equals(exigePublicacao);
     }
 
-    // =========================================================================
-    // JPA LIFECYCLE – NORMALIZAÇÃO
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalize() {
@@ -72,9 +57,6 @@ public class TipoAnexo implements Serializable {
         }
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdTipo() {
         return idTipo;
     }
@@ -99,9 +81,6 @@ public class TipoAnexo implements Serializable {
         this.exigePublicacao = exigePublicacao;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)

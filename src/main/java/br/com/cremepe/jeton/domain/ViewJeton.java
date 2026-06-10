@@ -52,9 +52,6 @@ public class ViewJeton implements Serializable {
     public ViewJeton() {
     }
 
-    // =========================================================================
-    // GETTERS (imutável, sem setters)
-    // =========================================================================
     public Integer getIdJeton() {
         return idJeton;
     }

@@ -8,9 +8,6 @@ import org.hibernate.annotations.Immutable;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-/**
- * Entidade de leitura que mapeia a view 'vw_atividade_conselhal'.
- */
 @Entity
 @Immutable
 @Table(name = "vw_atividade_conselhal")
@@ -69,10 +66,6 @@ public class ViewAtividadeConselhal implements Serializable {
 
     public ViewAtividadeConselhal() {
     }
-
-    // ==========================================
-    // APENAS GETTERS (Entidade Imutável)
-    // ==========================================
 
     public Integer getIdAtividade() {
         return idAtividade;

@@ -6,32 +6,21 @@ import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * Entidade JPA que representa a tabela 'usuario'.
- * Possui relacionamento 1:1 com a entidade Pessoa (compartilha a mesma PK).
- */
 @Entity
 @Table(name = "usuario")
 public class Usuario implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PÚBLICAS PARA SITUAÇÃO
-    // =========================================================================
     public static final String SITUACAO_ATIVO = "A";
     public static final String SITUACAO_INATIVO = "I";
 
-    // =========================================================================
-    // CAMPOS DA ENTIDADE
-    // =========================================================================
     @Id
     @Column(name = "idUsuarioPessoa")
     private Integer idUsuarioPessoa;
 
     @NotNull
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY) // ANTES: padrão EAGER; DEPOIS:
-                                                                                       // LAZY
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "idUsuarioPessoa")
     private Pessoa pessoa;
@@ -50,15 +39,9 @@ public class Usuario implements Serializable {
     @Transient
     private Integer crm;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public Usuario() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean isAtivo() {
         return SITUACAO_ATIVO.equals(inSituacao);
     }
@@ -67,9 +50,6 @@ public class Usuario implements Serializable {
         return SITUACAO_INATIVO.equals(inSituacao);
     }
 
-    // =========================================================================
-    // JPA LIFECYCLE – NORMALIZAÇÃO
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalize() {
@@ -81,9 +61,6 @@ public class Usuario implements Serializable {
         }
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdUsuarioPessoa() {
         return idUsuarioPessoa;
     }
@@ -132,9 +109,6 @@ public class Usuario implements Serializable {
         this.crm = crm;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -150,9 +124,6 @@ public class Usuario implements Serializable {
         return Objects.hash(idUsuarioPessoa);
     }
 
-    // =========================================================================
-    // TO_STRING (seguro)
-    // =========================================================================
     @Override
     public String toString() {
         return "Usuario{" +

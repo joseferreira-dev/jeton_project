@@ -11,10 +11,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Entidade de leitura que mapeia a view 'vw_user_login'.
- * Fornece dados de autenticação e permissões de forma imutável.
- */
 @Entity
 @Immutable
 @Table(name = "vw_user_login")
@@ -44,15 +40,9 @@ public class ViewUserLogin implements Serializable {
     @Column(name = "permissoes", columnDefinition = "text")
     private String permissoes;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public ViewUserLogin() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean hasPermissao(String nivel) {
         if (permissoes == null || permissoes.isBlank())
             return false;
@@ -66,9 +56,6 @@ public class ViewUserLogin implements Serializable {
         return Arrays.asList(permissoes.split(","));
     }
 
-    // =========================================================================
-    // GETTERS (imutável, sem setters)
-    // =========================================================================
     public Integer getIdPessoa() {
         return idPessoa;
     }
@@ -97,9 +84,6 @@ public class ViewUserLogin implements Serializable {
         return permissoes;
     }
 
-    // =========================================================================
-    // EQUALS, HASHCODE E TO_STRING (seguro)
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)

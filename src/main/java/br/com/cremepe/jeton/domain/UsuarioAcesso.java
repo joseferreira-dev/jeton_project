@@ -5,10 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * Entidade que representa a tabela associativa 'usuario_acesso'.
- * Armazena os níveis de acesso concedidos a cada usuário.
- */
 @Entity
 @Table(name = "usuario_acesso")
 public class UsuarioAcesso implements Serializable {
@@ -30,15 +26,9 @@ public class UsuarioAcesso implements Serializable {
     @JoinColumn(name = "idNivel")
     private NivelAcesso nivelAcesso;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public UsuarioAcesso() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public String getUsuarioNome() {
         return usuario != null && usuario.getPessoa() != null ? usuario.getPessoa().getNome() : null;
     }
@@ -47,9 +37,6 @@ public class UsuarioAcesso implements Serializable {
         return nivelAcesso != null ? nivelAcesso.getNomeNivel() : null;
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public UsuarioAcessoId getId() {
         return id;
     }
@@ -80,9 +67,6 @@ public class UsuarioAcesso implements Serializable {
         }
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE (baseado na chave composta)
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -98,9 +82,6 @@ public class UsuarioAcesso implements Serializable {
         return Objects.hash(id);
     }
 
-    // =========================================================================
-    // TO_STRING
-    // =========================================================================
     @Override
     public String toString() {
         return "UsuarioAcesso{" +
