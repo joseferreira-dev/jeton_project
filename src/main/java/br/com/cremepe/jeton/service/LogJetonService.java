@@ -4,7 +4,6 @@ import br.com.cremepe.jeton.domain.LogJeton;
 import br.com.cremepe.jeton.domain.Usuario;
 import br.com.cremepe.jeton.repository.LogJetonRepository;
 import br.com.cremepe.jeton.repository.UsuarioRepository;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +34,7 @@ public class LogJetonService {
             return;
         }
 
-        Usuario usuario = usuarioRepository.findById(idUsuario)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado para log: " + idUsuario));
+        Usuario usuario = usuarioRepository.getReferenceById(idUsuario);
 
         LogJeton logJeton = new LogJeton();
         logJeton.setNomeTabela(nomeTabela);
