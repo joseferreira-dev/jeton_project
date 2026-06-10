@@ -24,10 +24,6 @@ public class NivelAcessoService {
     @Autowired
     private UsuarioAcessoRepository usuarioAcessoRepository;
 
-    // =========================================================================
-    // OPERAÇÕES DE ESCRITA
-    // =========================================================================
-
     @Auditar(tabela = "nivel_acesso", acao = "CRIAR", descricao = "Criação de novo nível de acesso", dadosParametros = "{ 'idNivel': #nivel.idNivel, 'nomeNivel': #nivel.nomeNivel }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public NivelAcesso criar(NivelAcesso nivel) {
@@ -44,11 +40,6 @@ public class NivelAcessoService {
         return salvar(nivel, false);
     }
 
-    /**
-     * Método privado que contém a lógica comum de persistência.
-     * 
-     * @param isNovo true para criação, false para atualização
-     */
     private NivelAcesso salvar(NivelAcesso nivel, boolean isNovo) {
         // Normaliza e valida ID
         String idNormalizado = nivel.getIdNivel() != null ? nivel.getIdNivel().trim().toUpperCase() : null;
@@ -56,23 +47,18 @@ public class NivelAcessoService {
             if (idNormalizado == null || idNormalizado.isEmpty()) {
                 throw new RuntimeException("O ID do nível de acesso é obrigatório (uma letra maiúscula de A a Z).");
             }
-            // Verifica se já existe um nível com este ID
             if (repository.existsById(idNormalizado)) {
                 throw new RuntimeException("Já existe um nível de acesso com o ID '" + idNormalizado + "'.");
             }
             nivel.setIdNivel(idNormalizado);
         } else {
-            // Para atualização, carrega o existente para garantir que o ID não foi alterado
             NivelAcesso existente = repository.findById(nivel.getIdNivel())
                     .orElseThrow(() -> new RuntimeException("Nível de acesso não encontrado para atualização."));
-            // Mantém o ID original
             nivel.setIdNivel(existente.getIdNivel());
         }
 
-        // Valida nome único (ignorando o próprio registro)
         validarNomeUnico(nivel, isNovo ? null : nivel.getIdNivel());
 
-        // Garante que o nome seja trimado
         if (nivel.getNomeNivel() != null) {
             nivel.setNomeNivel(nivel.getNomeNivel().trim());
         }
@@ -94,14 +80,9 @@ public class NivelAcessoService {
         }
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
-
     @Auditar(tabela = "nivel_acesso", acao = "EXCLUIR", descricao = "Exclusão de nível de acesso (apenas se não houver usuários vinculados)", dadosParametros = "{ 'idNivel': #id }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluir(String id) {
-        // Verifica se existem usuários com este nível de acesso
         boolean emUso = usuarioAcessoRepository.existsByIdIdNivel(id);
         if (emUso) {
             throw new RuntimeException(
@@ -109,17 +90,12 @@ public class NivelAcessoService {
                             "' pois ele está associado a um ou mais usuários.");
         }
 
-        // Busca o nível para obter nome antes de excluir (para o log)
         NivelAcesso nivel = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Nível de acesso não encontrado: " + id));
 
         repository.deleteById(id);
         log.info("Nível de acesso excluído: id={}, nome={}", id, nivel.getNomeNivel());
     }
-
-    // =========================================================================
-    // OPERAÇÕES DE LEITURA (sem alterações)
-    // =========================================================================
 
     @Transactional(readOnly = true)
     public List<NivelAcesso> listarTodos() {
