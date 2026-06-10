@@ -10,26 +10,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Entidade que representa o fecho financeiro (Jeton) de um Conselheiro num
- * determinado mês.
- */
 @Entity
 @Table(name = "jeton")
 public class Jeton implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PARA inSituacao (valores do banco)
-    // =========================================================================
     public static final String SITUACAO_ATIVO = "A";
     public static final String SITUACAO_PAGO = "P";
     public static final String SITUACAO_EXCLUIDO = "E";
 
-    // =========================================================================
-    // CAMPOS
-    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idJeton")
@@ -73,15 +63,9 @@ public class Jeton implements Serializable {
     @JoinTable(name = "jeton_atividade", joinColumns = @JoinColumn(name = "idJeton"), inverseJoinColumns = @JoinColumn(name = "idAtividade"))
     private List<AtividadeConselhal> atividades = new ArrayList<>();
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public Jeton() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean isAtivo() {
         return SITUACAO_ATIVO.equals(inSituacao);
     }
@@ -94,9 +78,6 @@ public class Jeton implements Serializable {
         return SITUACAO_EXCLUIDO.equals(inSituacao);
     }
 
-    // =========================================================================
-    // JPA LIFECYCLE – NORMALIZAÇÃO
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalize() {
@@ -114,9 +95,6 @@ public class Jeton implements Serializable {
             valor = BigDecimal.ZERO;
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdJeton() {
         return idJeton;
     }
@@ -189,9 +167,6 @@ public class Jeton implements Serializable {
         this.atividades = atividades;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -207,9 +182,6 @@ public class Jeton implements Serializable {
         return Objects.hash(idJeton);
     }
 
-    // =========================================================================
-    // TO_STRING
-    // =========================================================================
     @Override
     public String toString() {
         return "Jeton{" +

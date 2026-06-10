@@ -10,26 +10,16 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Objects;
 
-/**
- * Entidade que representa uma gestão (mandato) dentro do sistema.
- * Define o período de vigência e o nome da gestão.
- */
 @Entity
 @Table(name = "gestao")
 public class Gestao implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PARA ORDENAÇÃO (usadas nos controllers)
-    // =========================================================================
     public static final String SORT_DT_INICIO = "dtInicio";
     public static final String SORT_DT_FIM = "dtFim";
     public static final String SORT_NOME = "nomeGestao";
 
-    // =========================================================================
-    // CAMPOS DA ENTIDADE
-    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idGestao")
@@ -49,15 +39,9 @@ public class Gestao implements Serializable {
     @Column(name = "dtFim", nullable = false)
     private LocalDate dtFim;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public Gestao() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean isPeriodoValido() {
         return dtInicio != null && dtFim != null && dtFim.isAfter(dtInicio);
     }
@@ -67,9 +51,6 @@ public class Gestao implements Serializable {
         return dtInicio != null && dtFim != null && !hoje.isBefore(dtInicio) && !hoje.isAfter(dtFim);
     }
 
-    // =========================================================================
-    // JPA LIFECYCLE – NORMALIZAÇÃO
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalize() {
@@ -77,9 +58,6 @@ public class Gestao implements Serializable {
             nomeGestao = nomeGestao.trim();
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdGestao() {
         return idGestao;
     }
@@ -112,9 +90,6 @@ public class Gestao implements Serializable {
         this.dtFim = dtFim;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE (baseado no ID)
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -130,9 +105,6 @@ public class Gestao implements Serializable {
         return Objects.hash(idGestao);
     }
 
-    // =========================================================================
-    // TO_STRING (para logs)
-    // =========================================================================
     @Override
     public String toString() {
         return "Gestao{" +

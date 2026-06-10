@@ -5,9 +5,6 @@ import jakarta.persistence.Embeddable;
 import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * Classe que representa a Chave Primária Composta da tabela 'jeton_saldo'.
- */
 @Embeddable
 public class JetonSaldoId implements Serializable {
 
@@ -27,9 +24,6 @@ public class JetonSaldoId implements Serializable {
         this.idPontosSaldo = idPontosSaldo;
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdJeton() {
         return idJeton;
     }
@@ -46,9 +40,6 @@ public class JetonSaldoId implements Serializable {
         this.idPontosSaldo = idPontosSaldo;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE (baseado na chave composta)
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)

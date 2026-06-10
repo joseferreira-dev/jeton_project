@@ -4,19 +4,12 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * Entidade JPA que representa a tabela associativa 'jeton_saldo'.
- * Faz a ligação explícita entre um pagamento (Jeton) e os saldos de pontos.
- */
 @Entity
 @Table(name = "jeton_saldo")
 public class JetonSaldo implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CAMPOS DA ENTIDADE
-    // =========================================================================
     @EmbeddedId
     private JetonSaldoId id = new JetonSaldoId();
 
@@ -30,15 +23,9 @@ public class JetonSaldo implements Serializable {
     @JoinColumn(name = "idPontosSaldo")
     private PontosSaldo pontosSaldo;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public JetonSaldo() {
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public JetonSaldoId getId() {
         return id;
     }
@@ -63,9 +50,6 @@ public class JetonSaldo implements Serializable {
         this.pontosSaldo = pontosSaldo;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE (baseado na chave composta)
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)

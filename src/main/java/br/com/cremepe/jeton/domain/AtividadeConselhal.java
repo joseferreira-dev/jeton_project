@@ -8,23 +8,12 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Entidade que representa as atividades (eventos, reuniões, etc.) realizadas
- * por um conselheiro.
- * Cada atividade está vinculada a uma gestão, uma regra de pontuação e,
- * opcionalmente, a um comprovante.
- * As atividades passam por estados: PENDENTE -> VALIDADA -> FECHADA (após
- * processamento financeiro).
- */
 @Entity
 @Table(name = "atividade_conselhal")
 public class AtividadeConselhal implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PÚBLICAS PARA OS ESTADOS DA ATIVIDADE
-    // =========================================================================
     public static final String SITUACAO_PENDENTE = "P";
     public static final String SITUACAO_VALIDADA = "C";
     public static final String SITUACAO_FECHADA = "F";
@@ -36,9 +25,6 @@ public class AtividadeConselhal implements Serializable {
     public static final String TURNO_TARDE = "T";
     public static final String TURNO_NOITE = "N";
 
-    // =========================================================================
-    // CAMPOS DA ENTIDADE
-    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idAtividade")
@@ -93,16 +79,9 @@ public class AtividadeConselhal implements Serializable {
     @Column(name = "inComputada", nullable = false, length = 1)
     private String inComputada = COMPUTADA_NAO;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public AtividadeConselhal() {
-        // Construtor padrão exigido pelo JPA
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA (STATUS HELPERS)
-    // =========================================================================
     public boolean isPendente() {
         return SITUACAO_PENDENTE.equals(inSituacao);
     }
@@ -131,9 +110,6 @@ public class AtividadeConselhal implements Serializable {
         return TURNO_NOITE.equals(inTurno);
     }
 
-    // =========================================================================
-    // MÉTODOS JPA LIFECYCLE (NORMALIZAÇÃO AUTOMÁTICA)
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalizeFields() {
@@ -150,9 +126,6 @@ public class AtividadeConselhal implements Serializable {
         }
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdAtividade() {
         return idAtividade;
     }
@@ -241,9 +214,6 @@ public class AtividadeConselhal implements Serializable {
         this.inComputada = inComputada;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE (BASEADO APENAS NO ID)
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -259,9 +229,6 @@ public class AtividadeConselhal implements Serializable {
         return Objects.hash(idAtividade);
     }
 
-    // =========================================================================
-    // TO_STRING
-    // =========================================================================
     @Override
     public String toString() {
         return "AtividadeConselhal{" +

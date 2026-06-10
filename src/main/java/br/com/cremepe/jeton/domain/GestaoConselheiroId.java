@@ -5,10 +5,6 @@ import jakarta.persistence.Embeddable;
 import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * Classe que representa a Chave Primária Composta da tabela associativa
- * 'gestao_conselheiro'.
- */
 @Embeddable
 public class GestaoConselheiroId implements Serializable {
 
@@ -28,9 +24,6 @@ public class GestaoConselheiroId implements Serializable {
         this.idPessoa = idPessoa;
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdGestao() {
         return idGestao;
     }
@@ -47,9 +40,6 @@ public class GestaoConselheiroId implements Serializable {
         this.idPessoa = idPessoa;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)

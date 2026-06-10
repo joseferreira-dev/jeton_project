@@ -7,26 +7,16 @@ import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * Entidade que armazena as referências aos ficheiros de comprovação das
- * atividades.
- */
 @Entity
 @Table(name = "comprovante")
 public class Comprovante implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PÚBLICAS (para uso em outros serviços)
-    // =========================================================================
     public static final String CONTENT_TYPE_PDF = "application/pdf";
     public static final String CONTENT_TYPE_IMAGE = "image/jpeg";
     public static final String CONTENT_TYPE_FALLBACK = "application/octet-stream";
 
-    // =========================================================================
-    // CAMPOS DA ENTIDADE
-    // =========================================================================
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idComprovante")
@@ -61,16 +51,9 @@ public class Comprovante implements Serializable {
     @Column(name = "ano", nullable = false)
     private Integer ano;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public Comprovante() {
-        // Construtor padrão exigido pelo JPA
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdComprovante() {
         return idComprovante;
     }
@@ -127,9 +110,6 @@ public class Comprovante implements Serializable {
         this.ano = ano;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE (baseado apenas no ID)
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -145,9 +125,6 @@ public class Comprovante implements Serializable {
         return Objects.hash(idComprovante);
     }
 
-    // =========================================================================
-    // TO_STRING
-    // =========================================================================
     @Override
     public String toString() {
         return "Comprovante{" +

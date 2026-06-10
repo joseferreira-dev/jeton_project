@@ -7,25 +7,15 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-/**
- * Entidade JPA que representa a tabela 'conselheiro'.
- * Possui relacionamento 1:1 com a entidade Pessoa (compartilha a mesma PK).
- */
 @Entity
 @Table(name = "conselheiro")
 public class Conselheiro implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PÚBLICAS PARA SITUAÇÃO
-    // =========================================================================
     public static final String SITUACAO_ATIVO = "A";
     public static final String SITUACAO_INATIVO = "I";
 
-    // =========================================================================
-    // CAMPOS DA ENTIDADE
-    // =========================================================================
     @Id
     @Column(name = "idPessoa")
     private Integer idPessoa;
@@ -47,15 +37,9 @@ public class Conselheiro implements Serializable {
     @Column(name = "inSituacao", length = 1, nullable = false)
     private String inSituacao;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public Conselheiro() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean isAtivo() {
         return SITUACAO_ATIVO.equals(inSituacao);
     }
@@ -64,9 +48,6 @@ public class Conselheiro implements Serializable {
         return SITUACAO_INATIVO.equals(inSituacao);
     }
 
-    // =========================================================================
-    // JPA LIFECYCLE – NORMALIZAÇÃO
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalize() {
@@ -78,9 +59,6 @@ public class Conselheiro implements Serializable {
         }
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public Integer getIdPessoa() {
         return idPessoa;
     }
@@ -121,9 +99,6 @@ public class Conselheiro implements Serializable {
         this.inSituacao = inSituacao;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE (baseado no ID)
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -139,9 +114,6 @@ public class Conselheiro implements Serializable {
         return Objects.hash(idPessoa);
     }
 
-    // =========================================================================
-    // TO_STRING
-    // =========================================================================
     @Override
     public String toString() {
         return "Conselheiro{" +

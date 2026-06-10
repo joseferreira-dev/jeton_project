@@ -5,26 +5,15 @@ import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * Entidade JPA que representa a tabela associativa 'gestao_conselheiro'.
- * Resolve o relacionamento M:N entre Gestao e Conselheiro, incluindo dados
- * extras.
- */
 @Entity
 @Table(name = "gestao_conselheiro")
 public class GestaoConselheiro implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // =========================================================================
-    // CONSTANTES PÚBLICAS PARA A SITUAÇÃO
-    // =========================================================================
     public static final String SITUACAO_ATIVO = "A";
     public static final String SITUACAO_INATIVO = "I";
 
-    // =========================================================================
-    // CAMPOS DA ENTIDADE
-    // =========================================================================
     @EmbeddedId
     private GestaoConselheiroId id = new GestaoConselheiroId();
 
@@ -42,15 +31,9 @@ public class GestaoConselheiro implements Serializable {
     @Column(name = "inSituacao", length = 1, nullable = false)
     private String inSituacao;
 
-    // =========================================================================
-    // CONSTRUTORES
-    // =========================================================================
     public GestaoConselheiro() {
     }
 
-    // =========================================================================
-    // MÉTODOS DE CONVENIÊNCIA
-    // =========================================================================
     public boolean isAtivo() {
         return SITUACAO_ATIVO.equals(inSituacao);
     }
@@ -59,9 +42,6 @@ public class GestaoConselheiro implements Serializable {
         return SITUACAO_INATIVO.equals(inSituacao);
     }
 
-    // =========================================================================
-    // JPA LIFECYCLE – NORMALIZAÇÃO
-    // =========================================================================
     @PrePersist
     @PreUpdate
     protected void normalize() {
@@ -73,9 +53,6 @@ public class GestaoConselheiro implements Serializable {
         }
     }
 
-    // =========================================================================
-    // GETTERS E SETTERS
-    // =========================================================================
     public GestaoConselheiroId getId() {
         return id;
     }
@@ -114,9 +91,6 @@ public class GestaoConselheiro implements Serializable {
         this.inSituacao = inSituacao;
     }
 
-    // =========================================================================
-    // EQUALS & HASHCODE (baseado na chave composta)
-    // =========================================================================
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -132,9 +106,6 @@ public class GestaoConselheiro implements Serializable {
         return Objects.hash(id);
     }
 
-    // =========================================================================
-    // TO_STRING
-    // =========================================================================
     @Override
     public String toString() {
         return "GestaoConselheiro{" +
