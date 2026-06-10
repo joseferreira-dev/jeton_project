@@ -1,28 +1,78 @@
 package br.com.cremepe.jeton.config;
 
+import br.com.cremepe.jeton.security.CustomAuthenticationFailureHandler;
+import br.com.cremepe.jeton.security.CustomAuthenticationSuccessHandler;
+import br.com.cremepe.jeton.security.CustomLogoutSuccessHandler;
+import br.com.cremepe.jeton.security.CustomUserDetailsService;
+import br.com.cremepe.jeton.security.SistemaBloqueioFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
+@SuppressWarnings("unused")
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
+
+    private final CustomUserDetailsService customUserDetailsService;
+    private final CustomAuthenticationSuccessHandler authenticationSuccessHandler;
+    private final CustomAuthenticationFailureHandler authenticationFailureHandler;
+    private final CustomLogoutSuccessHandler logoutSuccessHandler;
+    private final SistemaBloqueioFilter sistemaBloqueioFilter;
+
+    @Autowired
+    public SecurityConfig(CustomUserDetailsService customUserDetailsService,
+            CustomAuthenticationSuccessHandler authenticationSuccessHandler,
+            CustomAuthenticationFailureHandler authenticationFailureHandler,
+            CustomLogoutSuccessHandler logoutSuccessHandler,
+            SistemaBloqueioFilter sistemaBloqueioFilter) {
+        this.customUserDetailsService = customUserDetailsService;
+        this.authenticationSuccessHandler = authenticationSuccessHandler;
+        this.authenticationFailureHandler = authenticationFailureHandler;
+        this.logoutSuccessHandler = logoutSuccessHandler;
+        this.sistemaBloqueioFilter = sistemaBloqueioFilter;
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll())
-                .csrf(csrf -> csrf.disable());
-        return http.build();
-    }
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.png", "/favicon.ico").permitAll()
+                        .requestMatchers("/login", "/autenticar", "/sair", "/bloqueio", "/bloqueio/status").permitAll()
+                        .requestMatchers("/conselheiro/**").hasRole("CONSELHEIRO")
+                        .anyRequest().authenticated())
+                .addFilterBefore(sistemaBloqueioFilter, UsernamePasswordAuthenticationFilter.class)
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .loginProcessingUrl("/autenticar")
+                        .usernameParameter("cpf")
+                        .passwordParameter("senha")
+                        .successHandler(authenticationSuccessHandler)
+                        .failureHandler(authenticationFailureHandler)
+                        .permitAll())
+                .logout(logout -> logout
+                        .logoutUrl("/sair")
+                        .logoutSuccessHandler(logoutSuccessHandler)
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll())
+                .sessionManagement(session -> session
+                        .sessionFixation().migrateSession()
+                        .maximumSessions(1)
+                        .expiredUrl("/login?expired"));
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
+        return http.build();
     }
 }

@@ -5,6 +5,7 @@ import br.com.cremepe.jeton.service.PortariaService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/portarias")
+@PreAuthorize("hasAuthority('R') or hasAuthority('S')")
 public class PortariaController {
 
     @Autowired

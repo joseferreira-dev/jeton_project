@@ -2,6 +2,7 @@ package br.com.cremepe.jeton.api;
 
 import br.com.cremepe.jeton.service.JetonService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/jeton")
+@PreAuthorize("isAuthenticated()")
 public class JetonApiController {
 
     @Autowired

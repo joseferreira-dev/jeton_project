@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +36,7 @@ public class GestaoConselheiroController {
     private ConselheiroService conselheiroService;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('G') or hasAuthority('S')")
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
             @RequestParam(value = "situacao", required = false, defaultValue = "") String situacao,

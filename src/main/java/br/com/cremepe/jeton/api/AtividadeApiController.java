@@ -7,6 +7,7 @@ import br.com.cremepe.jeton.dto.RegraDTO;
 import br.com.cremepe.jeton.service.ConselheiroService;
 import br.com.cremepe.jeton.service.RegrasService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/atividades")
+@PreAuthorize("isAuthenticated()")
 public class AtividadeApiController {
 
     @Autowired

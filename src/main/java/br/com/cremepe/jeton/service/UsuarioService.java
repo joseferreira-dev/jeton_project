@@ -4,11 +4,9 @@ import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.Conselheiro;
 import br.com.cremepe.jeton.domain.Pessoa;
 import br.com.cremepe.jeton.domain.Usuario;
-import br.com.cremepe.jeton.domain.ViewUserLogin;
 import br.com.cremepe.jeton.repository.ConselheiroRepository;
 import br.com.cremepe.jeton.repository.PessoaRepository;
 import br.com.cremepe.jeton.repository.UsuarioRepository;
-import br.com.cremepe.jeton.repository.ViewUserLoginRepository;
 import br.com.cremepe.jeton.util.CpfValidador;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,8 +29,6 @@ public class UsuarioService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
-    @Autowired
-    private ViewUserLoginRepository viewUserLoginRepository;
     @Autowired
     private PessoaRepository pessoaRepository;
     @Autowired
@@ -223,43 +216,6 @@ public class UsuarioService {
         return usuarioRepository.findById(id);
     }
 
-    @Transactional
-    public Optional<ViewUserLogin> autenticar(String cpf, String senha) {
-        String cpfLimpo = cpf.replaceAll("[^0-9]", "");
-        Optional<ViewUserLogin> userOpt = viewUserLoginRepository.findByCpf(cpfLimpo);
-        if (userOpt.isEmpty()) {
-            return Optional.empty();
-        }
-        ViewUserLogin usuario = userOpt.get();
-        String senhaStored = usuario.getSenha();
-
-        // Verifica se a senha armazenada é SHA-256 (64 caracteres hexadecimais)
-        if (senhaStored != null && senhaStored.matches("^[A-F0-9]{64}$")) {
-            // Senha antiga em SHA-256
-            String hashInput = gerarSHA256(senha);
-            if (hashInput.equalsIgnoreCase(senhaStored)) {
-                // Migra para BCrypt
-                String newBcryptHash = passwordEncoder.encode(senha);
-                // Atualiza no banco
-                usuarioRepository.findByPessoaCpf(cpfLimpo).ifPresent(u -> {
-                    u.setSenha(newBcryptHash);
-                    usuarioRepository.save(u);
-                });
-                // Retorna o usuário (já que a autenticação foi bem‑sucedida)
-                return userOpt;
-            } else {
-                return Optional.empty();
-            }
-        } else {
-            // Senha já em BCrypt (ou nula)
-            if (passwordEncoder.matches(senha, senhaStored)) {
-                return userOpt;
-            } else {
-                return Optional.empty();
-            }
-        }
-    }
-
     @Auditar(tabela = "usuario", acao = "EXCLUIR", descricao = "Exclusão física de usuário", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public void excluir(Integer id) {
@@ -281,19 +237,5 @@ public class UsuarioService {
 
         log.info("Usuário excluído: ID={}, nome='{}', CPF={}, tipo={}, situação={}",
                 id, nome, cpf, tipoPessoa, situacao);
-    }
-
-    private String gerarSHA256(String senha) {
-        try {
-            MessageDigest algoritmo = MessageDigest.getInstance("SHA-256");
-            byte[] messageDigest = algoritmo.digest(senha.getBytes(StandardCharsets.UTF_8));
-            StringBuilder stringHexa = new StringBuilder();
-            for (byte b : messageDigest) {
-                stringHexa.append(String.format("%02X", 0xFF & b));
-            }
-            return stringHexa.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Erro ao processar segurança da senha", e);
-        }
     }
 }

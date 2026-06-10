@@ -6,13 +6,15 @@ import br.com.cremepe.jeton.service.GestaoService;
 import br.com.cremepe.jeton.service.PontosSaldoService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
-@RequestMapping("/pontos-remanescentes")
+@RequestMapping("/pontos-saldo")
+@PreAuthorize("hasAuthority('P') or hasAuthority('S')")
 public class PontosSaldoController {
 
     @Autowired
@@ -69,7 +71,7 @@ public class PontosSaldoController {
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro inesperado ao salvar o registro.");
         }
-        return "redirect:/pontos-remanescentes";
+        return "redirect:/pontos-saldo";
     }
 
     @GetMapping("/excluir/{id}")
@@ -84,7 +86,7 @@ public class PontosSaldoController {
         } catch (Exception e) {
             ra.addFlashAttribute("erro", "Erro ao remover o registro.");
         }
-        return "redirect:/pontos-remanescentes";
+        return "redirect:/pontos-saldo";
     }
 
     private boolean naoAutenticado(HttpSession session) {
