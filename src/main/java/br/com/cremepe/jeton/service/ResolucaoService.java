@@ -29,10 +29,6 @@ public class ResolucaoService {
     @Autowired
     private RegrasRepository regrasRepository;
 
-    // =========================================================================
-    // OPERAÇÕES DE ESCRITA
-    // =========================================================================
-
     @Auditar(tabela = "resolucao", acao = "CRIAR", descricao = "Criação de nova resolução", dadosParametros = "{ 'numero': #resolucao.numero, 'ano': #resolucao.ano, 'dtInicioVigencia': #resolucao.dtInicioVigencia, 'dtFimVigencia': #resolucao.dtFimVigencia, 'ementa': #resolucao.ementa, 'pontosPorJeton': #resolucao.pontosPorJeton, 'maxJetonsDia': #resolucao.maxJetonsDia, 'maxJetonsPeriodo': #resolucao.maxJetonsPeriodo, 'maxJetonsMes': #resolucao.maxJetonsMes, 'valorJeton': #resolucao.valorJeton, 'linkPublicado': #resolucao.linkPublicado }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public Resolucao criar(Resolucao resolucao) {
@@ -52,11 +48,6 @@ public class ResolucaoService {
         return salvarResolucao(resolucao, false);
     }
 
-    /**
-     * Método privado com a lógica comum de persistência.
-     * 
-     * @param isNovo true para criação, false para atualização
-     */
     private Resolucao salvarResolucao(Resolucao resolucao, boolean isNovo) {
         validarUnicidade(resolucao);
         validarSobreposicao(resolucao);
@@ -121,10 +112,6 @@ public class ResolucaoService {
             resolucao.setValorJeton(java.math.BigDecimal.ZERO);
     }
 
-    // =========================================================================
-    // REVOGAÇÃO
-    // =========================================================================
-
     @Auditar(tabela = "resolucao", acao = "REVOGAR", descricao = "Revogação de resolução", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void revogar(Integer id) {
@@ -138,10 +125,6 @@ public class ResolucaoService {
         log.info("Resolução revogada: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
     }
 
-    // =========================================================================
-    // RESTAURAÇÃO
-    // =========================================================================
-
     @Auditar(tabela = "resolucao", acao = "RESTAURAR", descricao = "Restauração de resolução revogada (volta a ficar em vigor)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void restaurar(Integer id) {
@@ -154,10 +137,6 @@ public class ResolucaoService {
         regrasRepository.restaurarRegrasPorResolucao(id);
         log.info("Resolução restaurada: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
     }
-
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
 
     @Auditar(tabela = "resolucao", acao = "EXCLUIR", descricao = "Exclusão permanente de resolução", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
@@ -174,10 +153,6 @@ public class ResolucaoService {
         repository.deleteById(id);
         log.info("Resolução excluída fisicamente: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
     }
-
-    // =========================================================================
-    // OPERAÇÕES DE LEITURA
-    // =========================================================================
 
     @Transactional(readOnly = true)
     public List<Resolucao> listarTodos() {

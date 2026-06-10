@@ -21,10 +21,6 @@ public class PontosSaldoService {
     @Autowired
     private PontosSaldoRepository pontosSaldoRepository;
 
-    // =========================================================================
-    // OPERAÇÕES DE ESCRITA
-    // =========================================================================
-
     @Auditar(tabela = "pontos_saldo", acao = "CRIAR", descricao = "Criação de registro de saldo de pontos", dadosParametros = "{ 'conselheiroId': #pontos.conselheiro?.idPessoa, 'gestaoId': #pontos.gestao?.idGestao, 'pontosTrabalhados': #pontos.pontosTrabalhados, 'pontosUtilizados': #pontos.pontosUtilizados, 'pontosSobrando': #pontos.pontosSobrando, 'situacao': #pontos.inSituacao, 'atividadeId': #pontos.atividade?.idAtividade, 'jetonId': #pontos.jeton?.idJeton, 'resolucaoId': #pontos.resolucao?.idResolucao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public PontosSaldo criar(PontosSaldo pontos) {
@@ -44,11 +40,6 @@ public class PontosSaldoService {
         return salvarPontos(pontos, false);
     }
 
-    /**
-     * Método privado com a lógica comum de persistência.
-     * 
-     * @param isNovo true para criação, false para atualização
-     */
     private PontosSaldo salvarPontos(PontosSaldo pontos, boolean isNovo) {
         validarIntegridade(pontos);
         normalizar(pontos);
@@ -97,10 +88,6 @@ public class PontosSaldoService {
             pontos.setPontosSobrando(0);
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
-
     @Auditar(tabela = "pontos_saldo", acao = "EXCLUIR", descricao = "Exclusão de registro de saldo de pontos (apenas se não utilizado)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluir(Integer id) {
@@ -122,10 +109,6 @@ public class PontosSaldoService {
                 "Saldo de pontos excluído fisicamente: id={}, conselheiro={}, gestão={}, pontosSobrando={}, situação={}",
                 id, idConselheiro, idGestao, pontosSobrando, situacao);
     }
-
-    // =========================================================================
-    // OPERAÇÕES DE LEITURA
-    // =========================================================================
 
     @Transactional(readOnly = true)
     public List<PontosSaldo> listarTodos() {

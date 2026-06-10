@@ -37,10 +37,6 @@ public class RegrasService {
     @Autowired
     private AtividadeConselhalRepository atividadeRepository;
 
-    // =========================================================================
-    // OPERAÇÕES DE ESCRITA
-    // =========================================================================
-
     @Auditar(tabela = "regras", acao = "CRIAR", descricao = "Criação de nova regra de pontuação", dadosParametros = "{ 'nomeRegra': #regra.nomeRegra, 'pontos': #regra.pontos, 'pontosLimitesTurno': #regra.pontosLimitesTurno, 'inJudicante': #regra.inJudicante, 'idResolucao': #regra.resolucao?.idResolucao, 'idPortaria': #regra.portaria?.idPortaria }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public Regras criar(Regras regra) {
@@ -60,11 +56,6 @@ public class RegrasService {
         return salvarRegra(regra, false);
     }
 
-    /**
-     * Método privado com a lógica comum de persistência.
-     * 
-     * @param isNovo true para criação, false para atualização
-     */
     private Regras salvarRegra(Regras regra, boolean isNovo) {
         // Carrega a Resolução gerenciada
         Resolucao resolucaoManaged = carregarResolucaoGerenciada(regra.getResolucao());
@@ -139,10 +130,6 @@ public class RegrasService {
             regra.setNomeRegra(regra.getNomeRegra().trim());
     }
 
-    // =========================================================================
-    // REVOGAÇÃO
-    // =========================================================================
-
     @Auditar(tabela = "regras", acao = "REVOGAR", descricao = "Revogação de regra de pontuação", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void revogar(Integer id) {
@@ -155,10 +142,6 @@ public class RegrasService {
         log.info("Regra revogada: id={}, nome={}", id, regra.getNomeRegra());
     }
 
-    // =========================================================================
-    // RESTAURAÇÃO
-    // =========================================================================
-
     @Auditar(tabela = "regras", acao = "RESTAURAR", descricao = "Restauração de regra revogada (volta a ficar em vigor)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void restaurar(Integer id) {
@@ -170,10 +153,6 @@ public class RegrasService {
         repository.save(regra);
         log.info("Regra restaurada: id={}, nome={}", id, regra.getNomeRegra());
     }
-
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
 
     @Auditar(tabela = "regras", acao = "EXCLUIR", descricao = "Exclusão permanente de regra", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
@@ -190,10 +169,6 @@ public class RegrasService {
         repository.deleteById(id);
         log.info("Regra excluída: id={}, nome={}", id, regra.getNomeRegra());
     }
-
-    // =========================================================================
-    // OPERAÇÕES DE LEITURA
-    // =========================================================================
 
     @Transactional(readOnly = true)
     public List<Regras> listarTodos() {
@@ -218,10 +193,6 @@ public class RegrasService {
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
         return repository.pesquisarPaginado(termo, situacao, judicante, pageable);
     }
-
-    // =========================================================================
-    // MÉTODOS AUXILIARES UTILIZADOS POR OUTROS SERVIÇOS
-    // =========================================================================
 
     @Transactional(readOnly = true)
     public List<Resolucao> listarResolucoesComRegras() {

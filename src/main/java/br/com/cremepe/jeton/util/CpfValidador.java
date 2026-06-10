@@ -2,17 +2,12 @@ package br.com.cremepe.jeton.util;
 
 public class CpfValidador {
 
-    /**
-     * Valida um CPF com base no cálculo dos dígitos verificadores.
-     * @param cpf String contendo apenas os números do CPF (11 dígitos).
-     * @return boolean indicando se o CPF é válido ou não.
-     */
     public static boolean isCpfValido(String cpf) {
         if (cpf == null || cpf.length() != 11) {
             return false;
         }
 
-        // Bloqueia CPFs com todos os dígitos repetidos (combinações conhecidas e inválidas)
+        // Bloqueia CPFs com todos os dígitos repetidos
         if (cpf.matches("(\\d)\\1{10}")) {
             return false;
         }

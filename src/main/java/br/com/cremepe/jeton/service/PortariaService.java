@@ -29,10 +29,6 @@ public class PortariaService {
     @Autowired
     private RegrasRepository regrasRepository;
 
-    // =========================================================================
-    // OPERAÇÕES DE ESCRITA
-    // =========================================================================
-
     @Auditar(tabela = "portaria", acao = "CRIAR", descricao = "Criação de nova portaria", dadosParametros = "{ 'numero': #portaria.numero, 'ano': #portaria.ano, 'dtInicioVigencia': #portaria.dtInicioVigencia, 'dtFimVigencia': #portaria.dtFimVigencia, 'linkPublicado': #portaria.linkPublicado }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public Portaria criar(Portaria portaria) {
@@ -52,11 +48,6 @@ public class PortariaService {
         return salvarPortaria(portaria, false);
     }
 
-    /**
-     * Método privado com a lógica comum de persistência.
-     * 
-     * @param isNovo true para criação, false para atualização
-     */
     private Portaria salvarPortaria(Portaria portaria, boolean isNovo) {
         validarUnicidade(portaria);
         validarSobreposicao(portaria);
@@ -107,10 +98,6 @@ public class PortariaService {
         }
     }
 
-    // =========================================================================
-    // REVOGAÇÃO
-    // =========================================================================
-
     @Auditar(tabela = "portaria", acao = "REVOGAR", descricao = "Revogação de portaria", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void revogar(Integer id) {
@@ -120,14 +107,9 @@ public class PortariaService {
         }
         portaria.setInRevogado(Portaria.REVOGADO_SIM);
         repository.save(portaria);
-        // Revoga todas as regras vinculadas a esta portaria
         regrasRepository.revogarRegrasPorPortaria(id);
         log.info("Portaria revogada: id={}, número={}/{}", id, portaria.getNumero(), portaria.getAno());
     }
-
-    // =========================================================================
-    // RESTAURAÇÃO
-    // =========================================================================
 
     @Auditar(tabela = "portaria", acao = "RESTAURAR", descricao = "Restauração de portaria revogada (volta a ficar em vigor)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
@@ -140,10 +122,6 @@ public class PortariaService {
         repository.save(portaria);
         log.info("Portaria restaurada: id={}, número={}/{}", id, portaria.getNumero(), portaria.getAno());
     }
-
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
 
     @Auditar(tabela = "portaria", acao = "EXCLUIR", descricao = "Exclusão permanente de portaria", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
@@ -160,10 +138,6 @@ public class PortariaService {
         repository.deleteById(id);
         log.info("Portaria excluída fisicamente: id={}, número={}/{}", id, portaria.getNumero(), portaria.getAno());
     }
-
-    // =========================================================================
-    // OPERAÇÕES DE LEITURA
-    // =========================================================================
 
     @Transactional(readOnly = true)
     public List<Portaria> listarTodos() {

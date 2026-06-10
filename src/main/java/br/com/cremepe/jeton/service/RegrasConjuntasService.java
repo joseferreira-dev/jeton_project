@@ -27,10 +27,6 @@ public class RegrasConjuntasService {
     @Autowired
     private RegrasConjuntasRepository repository;
 
-    // =========================================================================
-    // OPERAÇÕES DE ESCRITA
-    // =========================================================================
-
     @Auditar(tabela = "regras_conjuntas", acao = "CRIAR", descricao = "Criação de novo agrupamento de regras (regras conjuntas)", dadosParametros = "{ 'nomeRegra': #regra.nomeRegra, 'inTipoLimite': #regra.inTipoLimite, 'pontosLimite': #regra.pontosLimite }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public RegrasConjuntas criar(RegrasConjuntas regra) {
@@ -50,17 +46,10 @@ public class RegrasConjuntasService {
         return salvar(regra, false);
     }
 
-    /**
-     * Método privado com a lógica comum de persistência.
-     * 
-     * @param isNovo true para criação, false para atualização
-     */
     private RegrasConjuntas salvar(RegrasConjuntas regra, boolean isNovo) {
         validarNomeUnico(regra, isNovo ? null : regra.getIdRegraConjunta());
         normalizarFlags(regra);
 
-        // Para atualização, precisamos carregar a entidade existente para preservar as
-        // associações
         RegrasConjuntas regraParaSalvar;
         if (isNovo) {
             regraParaSalvar = regra;
@@ -71,7 +60,6 @@ public class RegrasConjuntasService {
             regraParaSalvar.setNomeRegra(regra.getNomeRegra());
             regraParaSalvar.setInTipoLimite(regra.getInTipoLimite());
             regraParaSalvar.setPontosLimite(regra.getPontosLimite());
-            // Preserva as regras agrupadas (não alteramos a lista diretamente por aqui)
         }
 
         RegrasConjuntas salva = repository.save(regraParaSalvar);
@@ -106,9 +94,6 @@ public class RegrasConjuntasService {
         }
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
     @Auditar(tabela = "regras_conjuntas", acao = "EXCLUIR", descricao = "Exclusão de agrupamento de regras (remove também as associações)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluir(Integer id) {
@@ -125,7 +110,7 @@ public class RegrasConjuntasService {
                     .collect(Collectors.joining("; "));
             // Remove todas as associações (limpa a tabela de ligação)
             regra.getRegrasAgrupadas().clear();
-            repository.save(regra); // persistir a remoção das associações
+            repository.save(regra);
             log.info("Associações de regras removidas para o agrupamento id={}, regras=[{}]", id, regrasVinculadas);
         }
 
@@ -133,10 +118,6 @@ public class RegrasConjuntasService {
         log.info("Regra Conjunta excluída: id={}, nome='{}', tipoLimite={}, pontosLimite={}",
                 id, nome, tipoLimite, pontosLimite);
     }
-
-    // =========================================================================
-    // OPERAÇÕES DE LEITURA
-    // =========================================================================
 
     @Transactional(readOnly = true)
     public List<RegrasConjuntas> listarTodos() {

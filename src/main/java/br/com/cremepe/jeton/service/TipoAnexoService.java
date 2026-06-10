@@ -24,10 +24,6 @@ public class TipoAnexoService {
     @Autowired
     private ComprovanteRepository comprovanteRepository;
 
-    // =========================================================================
-    // OPERAÇÕES DE ESCRITA
-    // =========================================================================
-
     @Auditar(tabela = "tipo_anexo", acao = "CRIAR", descricao = "Criação de novo tipo de anexo", dadosParametros = "{ 'nome': #tipoAnexo.nome, 'exigePublicacao': #tipoAnexo.exigePublicacao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public TipoAnexo criar(TipoAnexo tipoAnexo) {
@@ -48,11 +44,6 @@ public class TipoAnexoService {
         return salvarTipoAnexo(tipoAnexo, false);
     }
 
-    /**
-     * Método privado que contém a lógica comum de persistência.
-     * 
-     * @param isNovo true para criação, false para atualização
-     */
     private TipoAnexo salvarTipoAnexo(TipoAnexo tipoAnexo, boolean isNovo) {
         // Normaliza nome
         if (tipoAnexo.getNome() != null) {
@@ -88,10 +79,6 @@ public class TipoAnexoService {
         }
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
-
     @Auditar(tabela = "tipo_anexo", acao = "EXCLUIR", descricao = "Exclusão de tipo de anexo (apenas se não houver comprovantes vinculados)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluir(Integer id) {
@@ -113,10 +100,6 @@ public class TipoAnexoService {
         repository.deleteById(id);
         log.info("Tipo de anexo excluído: id={}, nome={}", id, tipo.getNome());
     }
-
-    // =========================================================================
-    // OPERAÇÕES DE LEITURA
-    // =========================================================================
 
     @Transactional(readOnly = true)
     public List<TipoAnexo> listarTodos() {

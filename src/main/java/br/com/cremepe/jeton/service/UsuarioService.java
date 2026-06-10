@@ -43,10 +43,6 @@ public class UsuarioService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // =========================================================================
-    // OPERAÇÕES DE ESCRITA
-    // =========================================================================
-
     @Auditar(tabela = "usuario", acao = "CRIAR", descricao = "Criação de novo usuário", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public Usuario criar(Usuario usuario) {
@@ -63,11 +59,6 @@ public class UsuarioService {
         return salvarUsuario(usuario, false);
     }
 
-    /**
-     * Método privado que contém a lógica comum de persistência.
-     * 
-     * @param isNovo indica se é criação (true) ou atualização (false)
-     */
     private Usuario salvarUsuario(Usuario usuario, boolean isNovo) {
         String nome = usuario.getPessoa().getNome();
         String tipoPessoa = usuario.iseConselheiro() ? "Conselheiro" : "Funcionário";
@@ -207,10 +198,6 @@ public class UsuarioService {
                 existente.getPessoa().getNome());
     }
 
-    // =========================================================================
-    // OPERAÇÕES DE LEITURA
-    // =========================================================================
-
     @Transactional(readOnly = true)
     public Page<Usuario> listarComPaginacaoEPesquisa(String termo, String situacao, int page, int size,
             String sortField, String sortDir) {
@@ -273,16 +260,9 @@ public class UsuarioService {
         }
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
-
     @Auditar(tabela = "usuario", acao = "EXCLUIR", descricao = "Exclusão física de usuário", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public void excluir(Integer id) {
-        // Busca o usuário antes de excluir para obter dados para o log (o aspecto
-        // também
-        // captura estado anterior, mas mantemos para compatibilidade com logs antigos)
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
         if (usuarioOpt.isEmpty()) {
             log.warn("Tentativa de excluir usuário inexistente ID={}", id);
@@ -294,25 +274,14 @@ public class UsuarioService {
         String tipoPessoa = usuario.getPessoa().isConselheiro() ? "Conselheiro" : "Funcionário";
         String situacao = usuario.getInSituacao();
 
-        // 1. Remove as permissões (usuario_acesso) primeiro
         usuarioRepository.deletarPermissoesNativo(id);
-
-        // 2. Remove o conselheiro (se existir)
         usuarioRepository.deletarConselheiroNativo(id);
-
-        // 3. Remove o usuário
         usuarioRepository.deletarUsuarioNativo(id);
-
-        // 4. Remove a pessoa
         usuarioRepository.deletarPessoaNativa(id);
 
         log.info("Usuário excluído: ID={}, nome='{}', CPF={}, tipo={}, situação={}",
                 id, nome, cpf, tipoPessoa, situacao);
     }
-
-    // =========================================================================
-    // MÉTODOS AUXILIARES PRIVADOS
-    // =========================================================================
 
     private String gerarSHA256(String senha) {
         try {
