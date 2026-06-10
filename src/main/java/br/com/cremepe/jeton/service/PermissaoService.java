@@ -30,10 +30,6 @@ public class PermissaoService {
     @Autowired
     private NivelAcessoRepository nivelAcessoRepository;
 
-    // =========================================================================
-    // OPERAÇÕES DE ESCRITA
-    // =========================================================================
-
     @Auditar(tabela = "usuario_acesso", acao = "CONCEDER", descricao = "Concessão de permissão (nível de acesso) a um usuário", dadosParametros = "{ 'usuarioId': #idUsuario, 'nivelId': #idNivel }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public UsuarioAcesso concederPermissao(Integer idUsuario, String idNivel) {
@@ -62,9 +58,8 @@ public class PermissaoService {
     @Transactional
     public void revogarPermissao(Integer idUsuario, String idNivel) {
         // Busca os dados antes de excluir para que o aspecto possa
-        // capturá-los (estado anterior). O aspecto já fará isso via
-        // entityManager.find(UsuarioAcesso.class, idComposto), mas
-        // garantimos que a entidade existe antes de deletar
+        // capturá-los. Isso já é feito via entityManager.find(...),
+        // mas grante que a entidade existe antes de deletar
         UsuarioAcessoId idComposto = new UsuarioAcessoId(idUsuario, idNivel);
         if (!usuarioAcessoRepository.existsById(idComposto)) {
             log.warn("Tentativa de revogar permissão inexistente: usuário {}, nível {}", idUsuario, idNivel);
@@ -79,8 +74,8 @@ public class PermissaoService {
     @Transactional
     public void revogarTodasPermissoes(Integer idUsuario) {
         // Busca todas as permissões do usuário para que o aspecto possa
-        // registrar o estado anterior. O aspecto não captura automaticamente
-        // coleções, então usamos dadosParametros para registrar
+        // registrar. O aspecto não captura automaticamente coleções, então
+        // usa-se dadosParametros para registrar
         List<UsuarioAcesso> permissoes = usuarioAcessoRepository.findByIdIdUsuarioPessoa(idUsuario);
         if (permissoes.isEmpty()) {
             log.info("Nenhuma permissão para revogar do usuário {}", idUsuario);
@@ -90,10 +85,6 @@ public class PermissaoService {
         usuarioAcessoRepository.deleteByUsuarioId(idUsuario);
         log.info("Todas as permissões do usuário {} foram revogadas", idUsuario);
     }
-
-    // =========================================================================
-    // OPERAÇÕES DE LEITURA
-    // =========================================================================
 
     @Transactional(readOnly = true)
     public boolean hasPermissao(Integer idUsuario, String idNivel) {
