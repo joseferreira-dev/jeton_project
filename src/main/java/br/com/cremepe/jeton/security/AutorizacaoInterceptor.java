@@ -54,6 +54,11 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
         String uri = request.getRequestURI();
         String method = request.getMethod();
 
+        // Ignora favicon para evitar logs indesejados
+        if (uri.endsWith("/favicon.ico") || uri.endsWith("/favicon.png")) {
+            return true;
+        }
+
         // 1. Rotas públicas (acesso livre)
         if (isRotaPublica(uri)) {
             return true;
@@ -73,7 +78,7 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
         }
 
         // 4. Verifica permissões de acesso (exceto portal do conselheiro)
-        if (!verificarPermissoes(usuarioLogado, uri, method, response)) {
+        if (!verificarPermissoes(usuarioLogado, uri, method, response, request)) {
             return false;
         }
 
@@ -125,55 +130,55 @@ public class AutorizacaoInterceptor implements HandlerInterceptor {
     }
 
     private boolean verificarPermissoes(ViewUserLogin usuarioLogado, String uri, String method,
-            HttpServletResponse response) throws Exception {
+            HttpServletResponse response, HttpServletRequest request) throws Exception {
 
-        // Portal do Conselheiro (acesso exclusivo para tipo 'C')
+        // 1. Super Admin tem acesso total
+        if (usuarioLogado.hasPermissao(NivelAcesso.NIVEL_SUPER_ADMIN)) {
+            return true;
+        }
+
+        // 2. Portal do Conselheiro (rota exclusiva)
         if (uri.startsWith("/conselheiro")) {
-            return verificarAcessoPortalConselheiro(usuarioLogado, uri, response);
+            boolean isConselheiro = "C".equals(usuarioLogado.getInTipoPessoa());
+            if (!isConselheiro) {
+                registrarAcessoNegado(usuarioLogado, method, uri, "ACESSO_RESTRITO_CONSELHEIRO");
+                response.sendRedirect("/index?erro=acesso_negado");
+                return false;
+            }
+            return true;
         }
 
-        boolean isSuperAdmin = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_SUPER_ADMIN);
-        if (isSuperAdmin) {
-            return true; // Super Admin tem acesso total
-        }
-
-        // Impede que conselheiros acessem rotas administrativas
-        if ("C".equals(usuarioLogado.getInTipoPessoa())) {
-            log.warn("Acesso negado: conselheiro {} tentou acessar rota administrativa {}", usuarioLogado.getNome(),
-                    uri);
-            response.sendRedirect("/index?erro=acesso_negado");
-            return false;
-        }
-
-        // Verifica permissão específica com base no prefixo da URI
+        // 3. Verifica se a rota exige alguma permissão específica
         String permissaoNecessaria = obterPermissaoPorUri(uri);
-        if (permissaoNecessaria != null && !usuarioLogado.hasPermissao(permissaoNecessaria)) {
-            autorizacaoService.registrarAcessoNegado(
-                    usuarioLogado.getIdPessoa(),
-                    usuarioLogado.getNome(),
-                    method,
-                    uri,
-                    permissaoNecessaria);
-            log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão {}",
-                    usuarioLogado.getNome(), uri, permissaoNecessaria);
-            response.sendRedirect("/index?erro=acesso_negado");
+        if (permissaoNecessaria != null) {
+            // Se o usuário tem a permissão, permite o acesso
+            if (usuarioLogado.hasPermissao(permissaoNecessaria)) {
+                return true;
+            }
+            // Caso contrário, registra e nega
+            registrarAcessoNegado(usuarioLogado, method, uri, permissaoNecessaria);
+            // Redireciona conforme o tipo de usuário
+            if ("C".equals(usuarioLogado.getInTipoPessoa())) {
+                response.sendRedirect("/conselheiro/dashboard");
+            } else {
+                response.sendRedirect("/index?erro=acesso_negado");
+            }
             return false;
         }
 
+        // 4. Rota sem permissão definida: permite para qualquer usuário autenticado
         return true;
     }
 
-    private boolean verificarAcessoPortalConselheiro(ViewUserLogin usuarioLogado, String uri,
-            HttpServletResponse response) throws Exception {
-        boolean isSuperAdmin = usuarioLogado.hasPermissao(NivelAcesso.NIVEL_SUPER_ADMIN);
-        boolean isConselheiro = "C".equals(usuarioLogado.getInTipoPessoa());
-        if (!isConselheiro && !isSuperAdmin) {
-            log.warn("Acesso negado ao portal do conselheiro: usuário {} (tipo {})",
-                    usuarioLogado.getNome(), usuarioLogado.getInTipoPessoa());
-            response.sendRedirect("/index?erro=acesso_negado");
-            return false;
-        }
-        return true;
+    private void registrarAcessoNegado(ViewUserLogin usuario, String method, String uri, String permissaoFaltante) {
+        autorizacaoService.registrarAcessoNegado(
+                usuario.getIdPessoa(),
+                usuario.getNome(),
+                method,
+                uri,
+                permissaoFaltante);
+        log.warn("Acesso negado: usuário {} tentou acessar {} sem permissão {}",
+                usuario.getNome(), uri, permissaoFaltante);
     }
 
     private String obterPermissaoPorUri(String uri) {
