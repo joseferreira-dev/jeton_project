@@ -28,9 +28,6 @@ public class ComprovanteService {
     @Autowired
     private FileStorageService fileStorageService;
 
-    // =========================================================================
-    // CRIAÇÃO
-    // =========================================================================
     @Auditar(tabela = "comprovante", acao = "CRIAR", descricao = "Criação de novo comprovante", dadosParametros = "{ 'nomeOriginal': #file.originalFilename, 'tamanho': #file.size, 'ano': #ano, 'mes': #mes, 'idTipoAnexo': #idTipoAnexo, 'descricaoUsuario': #descricaoUsuario }", dadosRetorno = "#result", auditarExcecao = true)
     @Transactional
     public Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo,
@@ -65,17 +62,11 @@ public class ComprovanteService {
         return salvo;
     }
 
-    // =========================================================================
-    // LEITURA
-    // =========================================================================
     @Transactional(readOnly = true)
     public Optional<Comprovante> buscarPorId(Integer id) {
         return comprovanteRepository.findById(id);
     }
 
-    // =========================================================================
-    // EXCLUSÃO
-    // =========================================================================
     @Auditar(tabela = "comprovante", acao = "EXCLUIR", descricao = "Exclusão de comprovante", dadosParametros = "{ 'idComprovante': #id }", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public void excluirComprovante(Integer id) {
@@ -89,9 +80,6 @@ public class ComprovanteService {
         });
     }
 
-    // =========================================================================
-    // ATUALIZAÇÃO
-    // =========================================================================
     @Auditar(tabela = "comprovante", acao = "ATUALIZAR", descricao = "Atualização de comprovante (ex: nome)", dadosParametros = "{ 'idComprovante': #comprovante.idComprovante, 'nomeComprovante': #comprovante.nomeComprovante }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public Comprovante atualizarComprovante(Comprovante comprovante) {
@@ -108,9 +96,6 @@ public class ComprovanteService {
         return atualizado;
     }
 
-    // =========================================================================
-    // MÉTODOS PRIVADOS AUXILIARES (sem alterações)
-    // =========================================================================
     private YearMonth obterDataAtual() {
         return YearMonth.now();
     }
