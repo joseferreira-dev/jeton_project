@@ -7,7 +7,6 @@ public class AtividadeRelatorioDTO {
     private LocalDate data;
     private Integer quantidade;
 
-    // getters e setters
     public String getRegra() {
         return regra;
     }

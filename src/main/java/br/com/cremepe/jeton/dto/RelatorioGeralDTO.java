@@ -12,7 +12,6 @@ public class RelatorioGeralDTO {
     private Integer totalGeralJetons;
     private BigDecimal totalGeralValor;
 
-    // getters e setters
     public Integer getIdGestao() {
         return idGestao;
     }

@@ -8,12 +8,11 @@ public class ConselheiroRelatorioDTO {
     private String nome;
     private Integer totalJetons;
     private BigDecimal valor;
-    private Integer saldoAnterior; // pontos utilizados de saldos anteriores
-    private Integer pontosAcumuladosMes; // pontos de atividades do mês
-    private Integer saldoFuturo; // pontos que sobram
+    private Integer saldoAnterior;
+    private Integer pontosAcumuladosMes;
+    private Integer saldoFuturo;
     private List<AtividadeRelatorioDTO> atividades;
 
-    // getters e setters
     public Integer getIdPessoa() {
         return idPessoa;
     }

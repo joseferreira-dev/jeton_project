@@ -15,11 +15,9 @@ public class LoteAtividadeDTO {
     private String nomeComprovanteUsuario;
     private List<Integer> idsConselheiros;
 
-    // Construtores
     public LoteAtividadeDTO() {
     }
 
-    // Getters e Setters
     public Integer getIdGestao() {
         return idGestao;
     }

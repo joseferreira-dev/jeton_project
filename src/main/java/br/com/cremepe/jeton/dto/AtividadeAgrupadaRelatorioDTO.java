@@ -4,12 +4,6 @@ import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * DTO utilizado para a extração de relatórios em formato Pivot. Agrupa as
- * atividades de um Conselheiro dentro de uma Gestão, transformando as Regras em
- * colunas dinâmicas (Regra -> Total de Pontos/Atividades).
- * NOTA: Esta classe não possui mapeamento físico (@Entity) no banco de dados.
- */
 public class AtividadeAgrupadaRelatorioDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -26,10 +20,6 @@ public class AtividadeAgrupadaRelatorioDTO implements Serializable {
         this.gestao = gestao;
         this.conselheiro = conselheiro;
     }
-
-    // ==========================================
-    // GETTERS E SETTERS
-    // ==========================================
 
     public String getGestao() {
         return gestao;
@@ -55,7 +45,6 @@ public class AtividadeAgrupadaRelatorioDTO implements Serializable {
         this.regras = regras;
     }
 
-    // Método utilitário recomendado para adicionar regras dinâmicas com facilidade
     public void adicionarRegra(String nomeRegra, Integer valor) {
         this.regras.put(nomeRegra, valor);
     }
@@ -64,7 +53,6 @@ public class AtividadeAgrupadaRelatorioDTO implements Serializable {
         this.totalPontos = totalPontos;
     }
 
-    // Adicione também o método Getter (será útil para o Thymeleaf exibir na tabela)
     public int getTotalPontos() {
         return totalPontos;
     }
