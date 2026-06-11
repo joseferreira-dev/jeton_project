@@ -4,6 +4,7 @@ import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.dto.*;
 import br.com.cremepe.jeton.repository.*;
+import br.com.cremepe.jeton.service.JetonCalculator.ResultadoAbsorcao;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,8 @@ public class JetonService {
     private GestaoRepository gestaoRepository;
     @Autowired
     private ConselheiroService conselheiroService;
+    @Autowired
+    private JetonCalculator jetonCalculator;
 
     @Transactional(readOnly = true)
     public List<PontosRemanescentesDTO> listarSaldosAgrupados() {
@@ -194,26 +197,26 @@ public class JetonService {
         aplicarLimitesTurno(filaUnificada, conselheiro.getIdPessoa());
 
         // Cálculo dos jetons (absorção FIFO)
-        ResultadoAbsorcao absorcao = calcularJetonsParaConselheiro(filaUnificada, maxJetonsPermitidos);
+        ResultadoAbsorcao absorcao = jetonCalculator.calcularJetons(filaUnificada, maxJetonsPermitidos);
 
-        if (absorcao.totalJetons == 0 && idsAtividadesProcessadas.isEmpty()) {
-            return null; // nenhum jeton gerado e nenhuma atividade nova
+        if (absorcao.totalJetons() == 0 && idsAtividadesProcessadas.isEmpty()) {
+            return null;
         }
 
         // Gera os registros financeiros (Jetons)
-        List<Jeton> jetonsGerados = gerarRegistrosJetons(absorcao.demonstrativo, gestao, conselheiro, mes, ano,
+        List<Jeton> jetonsGerados = gerarRegistrosJetons(absorcao.demonstrativo(), gestao, conselheiro, mes, ano,
                 novasAtividades);
         Jeton primeiroJeton = jetonsGerados.isEmpty() ? null : jetonsGerados.get(0);
 
         // Consumo fracionado dos pontos (splitting)
-        consumirPontosFracionados(filaUnificada, absorcao.totalPontosConsumidos, primeiroJeton);
+        consumirPontosFracionados(filaUnificada, absorcao.totalPontosConsumidos(), primeiroJeton);
 
         if (!idsAtividadesProcessadas.isEmpty()) {
             atividadeRepository.marcarComoComputadaEmLote(idsAtividadesProcessadas);
         }
 
         BigDecimal valorTotal = jetonsGerados.stream().map(Jeton::getValor).reduce(BigDecimal.ZERO, BigDecimal::add);
-        return new ProcessamentoResultado(absorcao.totalJetons, valorTotal);
+        return new ProcessamentoResultado(absorcao.totalJetons(), valorTotal);
     }
 
     private PontosSaldo converterAtividadeEmSaldo(AtividadeConselhal atividade, Conselheiro conselheiro,
@@ -241,38 +244,6 @@ public class JetonService {
         novoSaldo.setInSituacao(PontosSaldo.SITUACAO_ATIVO);
 
         return novoSaldo;
-    }
-
-    private ResultadoAbsorcao calcularJetonsParaConselheiro(List<PontosSaldo> filaUnificada, int maxJetonsPermitidos) {
-        int bufferPontos = 0;
-        int totalJetons = 0;
-        int totalPontosConsumidos = 0;
-        Map<Resolucao, Integer> demonstrativo = new LinkedHashMap<>();
-
-        for (PontosSaldo saldo : filaUnificada) {
-            bufferPontos += saldo.getPontosSobrando();
-            Resolucao norma = saldo.getResolucao();
-            int pontosPorJeton = (norma.getPontosPorJeton() != null && norma.getPontosPorJeton() > 0)
-                    ? norma.getPontosPorJeton()
-                    : 3;
-
-            int jetonsPossiveis = bufferPontos / pontosPorJeton;
-            int jetonsEfetivos = Math.min(jetonsPossiveis, maxJetonsPermitidos - totalJetons);
-
-            if (jetonsEfetivos > 0) {
-                demonstrativo.put(norma, demonstrativo.getOrDefault(norma, 0) + jetonsEfetivos);
-                totalJetons += jetonsEfetivos;
-                int consumidos = jetonsEfetivos * pontosPorJeton;
-                bufferPontos -= consumidos;
-                totalPontosConsumidos += consumidos;
-            }
-        }
-
-        ResultadoAbsorcao resultado = new ResultadoAbsorcao();
-        resultado.demonstrativo = demonstrativo;
-        resultado.totalJetons = totalJetons;
-        resultado.totalPontosConsumidos = totalPontosConsumidos;
-        return resultado;
     }
 
     private List<Jeton> gerarRegistrosJetons(Map<Resolucao, Integer> demonstrativo, Gestao gestao,
@@ -671,11 +642,5 @@ public class JetonService {
             this.totalJetons = totalJetons;
             this.valorTotal = valorTotal;
         }
-    }
-
-    private static class ResultadoAbsorcao {
-        Map<Resolucao, Integer> demonstrativo = new LinkedHashMap<>();
-        int totalJetons = 0;
-        int totalPontosConsumidos = 0;
     }
 }
