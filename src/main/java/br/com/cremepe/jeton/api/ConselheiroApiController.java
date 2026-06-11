@@ -17,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/conselheiros")
@@ -107,5 +108,12 @@ public class ConselheiroApiController {
     public ResponseEntity<Void> excluir(@PathVariable Integer id) {
         conselheiroService.excluir(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/conselheiros-por-gestao")
+    public List<ConselheiroDTO> getConselheirosPorGestao(@RequestParam Integer gestaoId) {
+        return conselheiroService.listarPorGestao(gestaoId).stream()
+                .map(conselheiroMapper::toDto)
+                .collect(Collectors.toList());
     }
 }
