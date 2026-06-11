@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.YearMonth;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -125,5 +126,10 @@ public class ComprovanteService {
         if (contentType.startsWith("image/"))
             return Comprovante.CONTENT_TYPE_IMAGE;
         return Comprovante.CONTENT_TYPE_FALLBACK;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Comprovante> listarTodos() {
+        return comprovanteRepository.findAll();
     }
 }
