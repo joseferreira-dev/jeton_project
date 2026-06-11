@@ -1,12 +1,7 @@
 package br.com.cremepe.jeton.api;
 
 import br.com.cremepe.jeton.domain.AtividadeConselhal;
-import br.com.cremepe.jeton.domain.Portaria;
-import br.com.cremepe.jeton.domain.Regras;
-import br.com.cremepe.jeton.domain.Resolucao;
 import br.com.cremepe.jeton.dto.AtividadeConselhalDTO;
-import br.com.cremepe.jeton.dto.PortariaDTO;
-import br.com.cremepe.jeton.dto.ResolucaoDTO;
 import br.com.cremepe.jeton.mapper.AtividadeMapper;
 import br.com.cremepe.jeton.mapper.ConselheiroMapper;
 import br.com.cremepe.jeton.mapper.PortariaMapper;
@@ -27,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/atividades")
@@ -107,66 +101,5 @@ public class AtividadeApiController {
     public ResponseEntity<Void> excluir(@PathVariable Integer id) {
         atividadeService.excluir(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/filtros-regras")
-    public Map<String, Object> getFiltrosRegras(
-            @RequestParam(required = false) Integer resolucaoId,
-            @RequestParam(required = false) Integer portariaId) {
-
-        Map<String, Object> response = new HashMap<>();
-
-        if (resolucaoId != null && portariaId == null) {
-            List<PortariaDTO> portarias = regrasService.listarPortariasCompativeis(resolucaoId).stream()
-                    .map(portariaMapper::toDto)
-                    .collect(Collectors.toList());
-            response.put("portariasCompativeis", portarias);
-        }
-        if (portariaId != null && resolucaoId == null) {
-            List<ResolucaoDTO> resolucoes = regrasService.listarResolucoesCompativeis(portariaId).stream()
-                    .map(resolucaoMapper::toDto)
-                    .collect(Collectors.toList());
-            response.put("resolucoesCompativeis", resolucoes);
-        }
-
-        List<Regras> regras = regrasService.listarRegrasExatas(resolucaoId, portariaId);
-        response.put("regras", regras.stream()
-                .map(regrasMapper::toDto)
-                .collect(Collectors.toList()));
-        return response;
-    }
-
-    @GetMapping("/regras-por-data")
-    public Map<String, Object> getRegrasENormativasPorData(@RequestParam String data) {
-        String dataFormatada = data.contains("T") ? data.split("T")[0] : data;
-        LocalDate dataAtividade = LocalDate.parse(dataFormatada);
-
-        Optional<Resolucao> optResolucao = regrasService.buscarResolucaoPorData(dataAtividade);
-        Optional<Portaria> optPortaria = regrasService.buscarPortariaPorData(dataAtividade);
-
-        Integer idResolucao = optResolucao.map(Resolucao::getIdResolucao).orElse(null);
-        Integer idPortaria = optPortaria.map(Portaria::getIdPortaria).orElse(null);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("idResolucao", idResolucao);
-        response.put("nomeResolucao", optResolucao
-                .map(r -> "Resolução " + r.getNumero() + "/" + r.getAno())
-                .orElse("Nenhuma encontrada"));
-        response.put("idPortaria", idPortaria);
-        response.put("nomePortaria", optPortaria
-                .map(p -> "Portaria " + p.getNumero() + "/" + p.getAno())
-                .orElse("Nenhuma (Apenas Resolução)"));
-
-        if (idResolucao != null) {
-            List<Regras> listaRegras = regrasService.listarRegrasPorNormativasInclusiveRevogadas(idResolucao,
-                    idPortaria);
-            response.put("regras", listaRegras.stream()
-                    .sorted(Comparator.comparing(Regras::getNomeRegra))
-                    .map(regrasMapper::toDto)
-                    .collect(Collectors.toList()));
-        } else {
-            response.put("regras", Collections.emptyList());
-        }
-        return response;
     }
 }
