@@ -15,6 +15,11 @@
             <p class="text-muted">Marque os médicos que fazem parte desta gestão.</p>
         </div>
 
+        <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
         <div class="card shadow-sm">
             <form th:action="@{/gestao-conselheiros/vincular/salvar}" method="post">
                 <input type="hidden" name="idGestao" th:value="${gestao.idGestao}">

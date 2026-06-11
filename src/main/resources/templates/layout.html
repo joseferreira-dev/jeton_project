@@ -56,7 +56,7 @@
                     </li>
 
                     <li class="nav-item dropdown"
-                        th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('G')}">
+                        th:if="${session.usuarioLogado != null and session.usuarioLogado.permissoes != null and (session.usuarioLogado.permissoes.contains('S') or session.usuarioLogado.permissoes.contains('G'))}">
                         <a class="nav-link dropdown-toggle" href="#" id="dropGestao" role="button"
                             data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fa-solid fa-users-gear me-1"></i> Gestão
@@ -86,7 +86,7 @@
                     </li>
 
                     <li class="nav-item dropdown"
-                        th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('R')}">
+                        th:if="${session.usuarioLogado != null and session.usuarioLogado.permissoes != null and (session.usuarioLogado.permissoes.contains('S') or session.usuarioLogado.permissoes.contains('G'))}">
                         <a class="nav-link dropdown-toggle" href="#" id="dropNormativas" role="button"
                             data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fa-solid fa-scale-balanced me-1"></i> Normativas
@@ -107,7 +107,7 @@
                     </li>
 
                     <li class="nav-item dropdown"
-                        th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('J')}">
+                        th:if="${session.usuarioLogado != null and session.usuarioLogado.permissoes != null and (session.usuarioLogado.permissoes.contains('S') or session.usuarioLogado.permissoes.contains('J'))}">
                         <a class="nav-link dropdown-toggle" href="#" id="dropFinanceiro" role="button"
                             data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fa-solid fa-coins me-1"></i> Financeiro
@@ -124,7 +124,7 @@
                     </li>
 
                     <li class="nav-item dropdown"
-                        th:if="${session.usuarioLogado?.permissoes?.contains('S') or session.usuarioLogado?.permissoes?.contains('U') or session.usuarioLogado?.permissoes?.contains('N')}">
+                        th:if="${session.usuarioLogado != null and session.usuarioLogado.permissoes != null and (session.usuarioLogado.permissoes.contains('S') or session.usuarioLogado?.permissoes?.contains('U') or session.usuarioLogado?.permissoes?.contains('N'))}">
                         <a class="nav-link dropdown-toggle" href="#" id="dropConfig" role="button"
                             data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fa-solid fa-gears me-1"></i> Configurações
