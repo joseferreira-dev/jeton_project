@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -272,5 +273,10 @@ public class AtividadeConselhalService {
     @Transactional(readOnly = true)
     public long contarAtividadesPorComprovante(Integer idComprovante) {
         return atividadeRepository.countByComprovanteIdComprovante(idComprovante);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AtividadeConselhal> listarTodas() {
+        return atividadeRepository.findAll();
     }
 }
