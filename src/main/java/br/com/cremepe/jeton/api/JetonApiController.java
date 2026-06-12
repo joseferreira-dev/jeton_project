@@ -144,8 +144,9 @@ public class JetonApiController {
         return ResponseEntity.ok(Map.of(
                 "conselheiro", relatorio.nomeConselheiro(),
                 "atividades", relatorio.atividades(),
-                "saldoAnterior", relatorio.saldoAnterior(),
-                "pontosAcumuladosMes", relatorio.pontosAcumuladosMes(),
+                "saldoExistente", relatorio.saldoExistente(),
+                "saldoAtividades", relatorio.saldoAtividades(),
+                "saldoUtilizado", relatorio.saldoUtilizado(),
                 "saldoFuturo", relatorio.saldoFuturo()));
     }
 

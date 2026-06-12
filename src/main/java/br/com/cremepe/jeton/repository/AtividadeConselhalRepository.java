@@ -146,4 +146,13 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             @Param("dataFim") LocalDate dataFim,
             @Param("situacao") String situacao,
             Pageable pageable);
+
+    @Query("SELECT SUM(a.qtdAtividade * a.regra.pontos) FROM AtividadeConselhal a " +
+            "WHERE a.conselheiro.idPessoa = :idPessoa " +
+            "AND MONTH(a.dataHoraAtividade) = :mes " +
+            "AND YEAR(a.dataHoraAtividade) = :ano " +
+            "AND a.inSituacao = 'C'")
+    Integer sumPontosAtividadesValidadasDoMes(@Param("idPessoa") Integer idPessoa,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
 }

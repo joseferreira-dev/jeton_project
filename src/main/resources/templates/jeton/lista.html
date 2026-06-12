@@ -111,53 +111,43 @@
                         <tbody>
                             <tr th:if="${#lists.isEmpty(listaJetons)}">
                                 <td colspan="6" class="text-center py-4 text-muted">
-                                    <i class="fa-solid fa-folder-open display-6 d-block mb-2 text-secondary"></i>
                                     Nenhum processamento financeiro encontrado para os parâmetros selecionados.
                                 </td>
                             </tr>
-
                             <tr th:each="j : ${listaJetons}">
                                 <td>
                                     <span class="fw-bold text-dark"
-                                        th:text="${j.conselheiro.pessoa.nome}">Conselheiro</span>
-                                    <br>
+                                        th:text="${j.nomeConselheiro}">Conselheiro</span><br>
                                     <small class="text-muted">
                                         <i class="fa-solid fa-file-invoice-dollar me-1"></i>
-                                        Gestão: <span th:text="${j.gestao.nomeGestao}"></span>
+                                        Gestão: <span th:text="${j.nomeGestao}"></span>
                                     </small>
                                 </td>
                                 <td class="text-center">
                                     <span class="badge bg-secondary px-2 py-1"
                                         th:text="${j.mes + '/' + j.ano}">07/2026</span>
                                 </td>
-                                <td class="text-center fw-bold text-primary">
-                                    <span th:text="${j.totalJeton}">0</span>
-                                </td>
-                                <td class="text-end fw-bold text-success">
-                                    <span
-                                        th:text="${'R$ ' + #numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}">R$
-                                        0,00</span>
+                                <td class="text-center fw-bold text-primary" th:text="${j.totalJeton}">0</td>
+                                <td class="text-end fw-bold text-success"
+                                    th:text="${'R$ ' + #numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}">R$ 0,00
                                 </td>
                                 <td class="text-center">
-                                    <span th:if="${j.inSituacao == 'A'}" class="badge bg-warning text-dark fw-bold">
+                                    <span th:if="${j.situacao == 'A'}" class="badge bg-warning text-dark fw-bold">
                                         <i class="fa-solid fa-calculator me-1"></i> Calculado (Aberto)
                                     </span>
-                                    <span th:if="${j.inSituacao == 'E'}" class="badge bg-success fw-bold">
+                                    <span th:if="${j.situacao == 'E'}" class="badge bg-success fw-bold">
                                         <i class="fa-solid fa-lock me-1"></i> Homologado (Folha)
                                     </span>
                                 </td>
-
                                 <td class="text-center no-print">
                                     <div class="btn-group gap-1">
                                         <button type="button" class="btn btn-sm btn-outline-primary"
-                                            th:data-pessoa="${j.conselheiro.idPessoa}"
-                                            th:data-gestao="${j.gestao.idGestao}" th:data-mes="${j.mes}"
-                                            th:data-ano="${j.ano}" th:data-nome="${j.conselheiro.pessoa.nome}"
-                                            onclick="abrirRelatorioJeton(this)">
+                                            th:data-pessoa="${j.idConselheiro}" th:data-gestao="${j.idGestao}"
+                                            th:data-mes="${j.mes}" th:data-ano="${j.ano}"
+                                            th:data-nome="${j.nomeConselheiro}" onclick="abrirRelatorioJeton(this)">
                                             <i class="fa-solid fa-magnifying-glass"></i> Origem
                                         </button>
-
-                                        <th:block th:if="${j.inSituacao == 'E'}">
+                                        <th:block th:if="${j.situacao == 'E'}">
                                             <button class="btn btn-sm btn-light" disabled><i
                                                     class="fa-solid fa-ban"></i> Trancado</button>
                                         </th:block>
@@ -242,32 +232,42 @@
                             <span class="text-muted" id="competenciaRelatorio"></span>
                         </div>
 
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-4">
+                        <div class="row g-3 mb-2">
+                            <div class="col-md-6">
                                 <div class="card border-left-info shadow-sm h-100">
                                     <div class="card-body py-2">
                                         <div class="text-xs fw-bold text-info text-uppercase mb-1">
-                                            Pontos Utilizados de Saldos Anteriores
+                                            Saldo Existente (Meses Anteriores)
                                         </div>
-                                        <div class="h5 mb-0 fw-bold text-gray-800" id="saldoAnterior">0</div>
+                                        <div class="h5 mb-0 fw-bold text-gray-800" id="saldoExistente">0</div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <div class="card border-left-success shadow-sm h-100">
                                     <div class="card-body py-2">
                                         <div class="text-xs fw-bold text-success text-uppercase mb-1">
-                                            Pontos Utilizados do Saldo deste Mês
+                                            Saldo de Atividades (Mês Atual)
                                         </div>
-                                        <div class="h5 mb-0 fw-bold text-gray-800" id="pontosAcumulados">0</div>
+                                        <div class="h5 mb-0 fw-bold text-gray-800" id="saldoAtividades">0</div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
+                                <div class="card border-left-primary shadow-sm h-100">
+                                    <div class="card-body py-2">
+                                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">
+                                            Saldo Utilizado para Gerar os Jetons
+                                        </div>
+                                        <div class="h5 mb-0 fw-bold text-gray-800" id="saldoUtilizado">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
                                 <div class="card border-left-warning shadow-sm h-100">
                                     <div class="card-body py-2">
                                         <div class="text-xs fw-bold text-warning text-uppercase mb-1">
-                                            Saldo Acumulado para os Próximos Meses
+                                            Saldo Que Sobrará para o Próximo Mês
                                         </div>
                                         <div class="h5 mb-0 fw-bold text-gray-800" id="saldoFuturo">0</div>
                                     </div>
@@ -275,7 +275,7 @@
                             </div>
                         </div>
 
-                        <h5 class="fw-bold"><i class="fa-solid fa-list-check me-2"></i>Atividades do Mês</h5>
+                        <h5 class="fw-bold"><i class="fa-solid fa-list-check me-2 mt-4"></i>Atividades do Mês</h5>
                         <div class="table-responsive">
                             <table class="table table-striped align-middle mb-0">
                                 <thead class="table-light">

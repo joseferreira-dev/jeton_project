@@ -369,7 +369,7 @@ function inicializarHomologacao() {
 }
 
 /**
- * Inicializa o botão "Baixar Detalhamento" na tela de processamento (jeton/lista)
+ * Inicializa o botão "Baixar Detalhamento" na tela de processamento
  */
 function inicializarBotaoRelatorio() {
     const btnBaixar = document.getElementById('btnBaixarRelatorio');
@@ -427,7 +427,7 @@ function inicializarBotaoRelatorio() {
             const ano = inputAno ? inputAno.value : '';
 
             if (idGestao && mes && ano) {
-                window.location.href = `/jeton/relatorio?idGestao=${idGestao}&mes=${mes}&ano=${ano}&formato=excel`;
+                window.location.href = `/jetons/relatorio?idGestao=${idGestao}&mes=${mes}&ano=${ano}&formato=excel`;
             }
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormatosRelatorio'));
             if (modal) modal.hide();
@@ -449,7 +449,7 @@ function inicializarBotaoRelatorio() {
             const ano = inputAno ? inputAno.value : '';
 
             if (idGestao && mes && ano) {
-                window.location.href = `/jeton/relatorio?idGestao=${idGestao}&mes=${mes}&ano=${ano}&formato=pdf`;
+                window.location.href = `/jetons/relatorio?idGestao=${idGestao}&mes=${mes}&ano=${ano}&formato=pdf`;
             }
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormatosRelatorio'));
             if (modal) modal.hide();
@@ -477,7 +477,7 @@ function abrirModalAtividades(btn) {
     const modal = new bootstrap.Modal(document.getElementById('modalAtividades'));
     modal.show();
 
-    fetch(`/api/jeton/atividades/conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
+    fetch(`/api/jetons/atividades/conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
         .then(response => response.json())
         .then(dados => {
             tbody.innerHTML = '';
@@ -524,15 +524,20 @@ function abrirRelatorioJeton(btn) {
     const modal = new bootstrap.Modal(document.getElementById('modalRelatorio'));
     modal.show();
 
-    fetch(`/api/jeton/relatorio-conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
+    fetch(`/api/jetons/relatorio-conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
         .then(response => response.json())
         .then(dados => {
             const saldoAnterior = document.getElementById('saldoAnterior');
             const pontosAcumulados = document.getElementById('pontosAcumulados');
             const saldoFuturo = document.getElementById('saldoFuturo');
-            if (saldoAnterior) saldoAnterior.innerText = dados.saldoAnterior || 0;
-            if (pontosAcumulados) pontosAcumulados.innerText = dados.pontosAcumuladosMes || 0;
-            if (saldoFuturo) saldoFuturo.innerText = dados.saldoFuturo || 0;
+            // if (saldoAnterior) saldoAnterior.innerText = dados.saldoAnterior || 0;
+            // if (pontosAcumulados) pontosAcumulados.innerText = dados.pontosAcumuladosMes || 0;
+            // if (saldoFuturo) saldoFuturo.innerText = dados.saldoFuturo || 0;
+            document.getElementById('saldoExistente').innerText = dados.saldoExistente || 0;
+            document.getElementById('saldoAtividades').innerText = dados.saldoAtividades || 0;
+            document.getElementById('saldoUtilizado').innerText = dados.saldoUtilizado || 0;
+            document.getElementById('saldoFuturo').innerText = dados.saldoFuturo || 0;
+
 
             if (tbody) {
                 tbody.innerHTML = '';

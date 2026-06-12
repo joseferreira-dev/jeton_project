@@ -658,13 +658,28 @@ public class JetonService {
             Integer idPessoa = j.getConselheiro().getIdPessoa();
             JetonAgrupadoDTO dto = agrupado.get(idPessoa);
             if (dto == null) {
-                dto = new JetonAgrupadoDTO(j.getConselheiro(), j.getGestao(), j.getMes(), j.getAno());
+                dto = new JetonAgrupadoDTO(
+                        idPessoa,
+                        j.getConselheiro().getPessoa().getNome(),
+                        j.getGestao().getIdGestao(),
+                        j.getGestao().getNomeGestao(),
+                        j.getMes(),
+                        j.getAno(),
+                        0,
+                        BigDecimal.ZERO,
+                        j.getInSituacao());
                 agrupado.put(idPessoa, dto);
             }
-            dto.adicionarJeton(j);
+            dto.setTotalJeton(dto.getTotalJeton() + j.getTotalJeton());
+            dto.setValor(dto.getValor().add(j.getValor()));
+            if ("E".equals(j.getInSituacao())) {
+                dto.setSituacao("E");
+            }
         }
         return new ArrayList<>(agrupado.values());
     }
+
+    // src/main/java/br/com/cremepe/jeton/service/JetonService.java
 
     public RelatorioConselheiroDTO gerarRelatorioIndividualConselheiro(
             Integer idPessoa, Integer idGestao, Integer mes, Integer ano) {
@@ -674,37 +689,52 @@ public class JetonService {
 
         List<AtividadeVinculadaDTO> atividades = listarAtividadesAgrupadasPorConselheiro(idPessoa, idGestao, mes, ano);
 
+        // Buscar jetons do período para este conselheiro
         List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano).stream()
                 .filter(j -> j.getConselheiro().getIdPessoa().equals(idPessoa))
                 .toList();
 
-        int saldoAnterior = 0;
-        int pontosAcumuladosMes = 0;
+        int saldoExistente = 0;
+        int pontosUtilizadosAtividades = 0; // parcela consumida das atividades
+        int pontosTotaisAtividades = 0;
+
+        // Percorre os jetons para calcular saldoExistente e pontosUtilizadosAtividades
         for (Jeton j : jetons) {
             List<PontosSaldo> pontosList = pontosSaldoRepository.findByJetonIdJeton(j.getIdJeton());
             for (PontosSaldo ps : pontosList) {
-                boolean doMesAtual = false;
+                boolean isDoMesAtual = false;
                 if (ps.getAtividade() != null) {
                     LocalDate dataAtv = ps.getAtividade().getDataHoraAtividade().toLocalDate();
                     if (dataAtv.getYear() == ano && dataAtv.getMonthValue() == mes) {
-                        doMesAtual = true;
+                        isDoMesAtual = true;
                     }
                 }
-                if (doMesAtual) {
-                    pontosAcumuladosMes += ps.getPontosUtilizados();
+                if (isDoMesAtual) {
+                    pontosUtilizadosAtividades += ps.getPontosUtilizados();
                 } else {
-                    saldoAnterior += ps.getPontosUtilizados();
+                    saldoExistente += ps.getPontosUtilizados();
                 }
             }
         }
+
+        // Soma total de pontos de todas as atividades validadas do mês
+        Integer pontosTotais = atividadeRepository.sumPontosAtividadesValidadasDoMes(idPessoa, mes, ano);
+        pontosTotaisAtividades = pontosTotais != null ? pontosTotais : 0;
+
+        // Saldo total consumido (existente + atividades)
+        int saldoUtilizado = saldoExistente + pontosUtilizadosAtividades;
+
+        // Saldo futuro (remanescente)
         Integer saldoFuturo = pontosSaldoRepository.somarPontosSobrandoAtivos(idPessoa, idGestao);
+        int saldoFuturoValue = saldoFuturo != null ? saldoFuturo : 0;
 
         return new RelatorioConselheiroDTO(
                 conselheiro.getPessoa().getNome(),
                 atividades,
-                saldoAnterior,
-                pontosAcumuladosMes,
-                saldoFuturo != null ? saldoFuturo : 0);
+                saldoExistente,
+                pontosTotaisAtividades, // total de pontos das atividades do mês
+                saldoUtilizado,
+                saldoFuturoValue);
     }
 
     private static class ProcessamentoResultado {

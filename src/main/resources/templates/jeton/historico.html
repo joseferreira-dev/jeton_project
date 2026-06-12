@@ -88,8 +88,8 @@
                             <tr th:each="j : ${listaJetons}">
                                 <td>
                                     <span class="fw-bold text-dark"
-                                        th:text="${j.conselheiro.pessoa.nome}">Conselheiro</span><br>
-                                    <small class="text-muted" th:text="${j.gestao.nomeGestao}">Gestão</small>
+                                        th:text="${j.nomeConselheiro}">Conselheiro</span><br>
+                                    <small class="text-muted" th:text="${j.nomeGestao}">Gestão</small>
                                 </td>
                                 <td class="text-center"><span class="badge bg-dark px-2 py-1"
                                         th:text="${j.mes + '/' + j.ano}">07/2026</span></td>
@@ -99,7 +99,7 @@
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
-                                        th:data-pessoa="${j.conselheiro.idPessoa}" th:data-gestao="${j.gestao.idGestao}"
+                                        th:data-pessoa="${j.idConselheiro}" th:data-gestao="${j.idGestao}"
                                         th:data-mes="${j.mes}" th:data-ano="${j.ano}"
                                         onclick="abrirModalAtividades(this)">
                                         <i class="fa-solid fa-magnifying-glass me-1"></i> Atividades
