@@ -9,7 +9,6 @@ import br.com.cremepe.jeton.service.GestaoService;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -28,12 +27,16 @@ public class GestaoConselheiroController {
 
     private static final Logger log = LoggerFactory.getLogger(GestaoConselheiroController.class);
 
-    @Autowired
-    private GestaoConselheiroService gestaoConselheiroService;
-    @Autowired
-    private GestaoService gestaoService;
-    @Autowired
-    private ConselheiroService conselheiroService;
+    private final GestaoConselheiroService gestaoConselheiroService;
+    private final GestaoService gestaoService;
+    private final ConselheiroService conselheiroService;
+
+    GestaoConselheiroController(GestaoConselheiroService gestaoConselheiroService, GestaoService gestaoService,
+            ConselheiroService conselheiroService) {
+        this.gestaoConselheiroService = gestaoConselheiroService;
+        this.gestaoService = gestaoService;
+        this.conselheiroService = conselheiroService;
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('G') or hasAuthority('S')")

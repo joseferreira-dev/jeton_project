@@ -6,7 +6,6 @@ import br.com.cremepe.jeton.service.FileStorageService;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -25,10 +24,13 @@ public class ComprovanteController {
 
     private static final Logger log = LoggerFactory.getLogger(ComprovanteController.class);
 
-    @Autowired
-    private ComprovanteService comprovanteService;
-    @Autowired
-    private FileStorageService fileStorageService;
+    private final ComprovanteService comprovanteService;
+    private final FileStorageService fileStorageService;
+
+    ComprovanteController(ComprovanteService comprovanteService, FileStorageService fileStorageService) {
+        this.comprovanteService = comprovanteService;
+        this.fileStorageService = fileStorageService;
+    }
 
     @GetMapping("/download/{id}")
     public ResponseEntity<?> downloadFicheiro(@PathVariable Integer id) {

@@ -11,7 +11,6 @@ import br.com.cremepe.jeton.service.TipoAnexoService;
 import br.com.cremepe.jeton.util.DataUtils;
 import br.com.cremepe.jeton.util.TurnoUtils;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -29,18 +28,23 @@ import java.util.List;
 @PreAuthorize("hasAuthority('A') or hasAuthority('S')")
 public class AtividadeConselhalController {
 
-    @Autowired
-    private AtividadeConselhalService atividadeService;
-    @Autowired
-    private AtividadeLoteService atividadeLoteService;
-    @Autowired
-    private ConselheiroService conselheiroService;
-    @Autowired
-    private GestaoService gestaoService;
-    @Autowired
-    private RegrasService regrasService;
-    @Autowired
-    private TipoAnexoService tipoAnexoService;
+    private final AtividadeConselhalService atividadeService;
+    private final AtividadeLoteService atividadeLoteService;
+    private final ConselheiroService conselheiroService;
+    private final GestaoService gestaoService;
+    private final RegrasService regrasService;
+    private final TipoAnexoService tipoAnexoService;
+
+    AtividadeConselhalController(AtividadeConselhalService atividadeService, AtividadeLoteService atividadeLoteService,
+            ConselheiroService conselheiroService, RegrasService regrasService, TipoAnexoService tipoAnexoService,
+            GestaoService gestaoService) {
+        this.atividadeService = atividadeService;
+        this.atividadeLoteService = atividadeLoteService;
+        this.conselheiroService = conselheiroService;
+        this.gestaoService = gestaoService;
+        this.regrasService = regrasService;
+        this.tipoAnexoService = tipoAnexoService;
+    }
 
     @GetMapping
     public String listar(

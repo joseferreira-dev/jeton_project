@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -18,8 +17,11 @@ public class NivelAcessoController {
 
     private static final Logger log = LoggerFactory.getLogger(NivelAcessoController.class);
 
-    @Autowired
-    private NivelAcessoService nivelAcessoService;
+    private final NivelAcessoService nivelAcessoService;
+
+    NivelAcessoController(NivelAcessoService nivelAcessoService) {
+        this.nivelAcessoService = nivelAcessoService;
+    }
 
     @GetMapping
     public String listar(Model model, HttpSession session) {

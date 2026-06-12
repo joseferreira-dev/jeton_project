@@ -4,7 +4,6 @@ import br.com.cremepe.jeton.domain.NivelAcesso;
 import br.com.cremepe.jeton.domain.ViewUserLogin;
 import br.com.cremepe.jeton.service.ParametrosService;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,8 +18,11 @@ import java.util.Map;
 @RequestMapping("/bloqueio")
 public class BloqueioController {
 
-    @Autowired
-    private ParametrosService parametrosService;
+    private final ParametrosService parametrosService;
+
+    BloqueioController(ParametrosService parametrosService) {
+        this.parametrosService = parametrosService;
+    }
 
     private boolean temPermissaoBloqueio(HttpSession session) {
         ViewUserLogin usuario = (ViewUserLogin) session.getAttribute("usuarioLogado");

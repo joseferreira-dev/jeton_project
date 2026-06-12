@@ -4,7 +4,6 @@ import br.com.cremepe.jeton.domain.ViewUserLogin;
 import br.com.cremepe.jeton.service.DashboardService;
 import br.com.cremepe.jeton.service.ParametrosService;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,10 +11,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class LoginController {
 
-    @Autowired
-    private ParametrosService parametrosService;
-    @Autowired
-    private DashboardService dashboardService;
+    private final ParametrosService parametrosService;
+    private final DashboardService dashboardService;
+
+    LoginController(ParametrosService parametrosService, DashboardService dashboardService) {
+        this.parametrosService = parametrosService;
+        this.dashboardService = dashboardService;
+    }
 
     @GetMapping("/login")
     public String telaLogin(HttpSession session, Model model) {

@@ -1,7 +1,6 @@
 package br.com.cremepe.jeton.controller;
 
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,8 +26,11 @@ import java.util.TreeMap;
 @PreAuthorize("hasAuthority('N') or hasAuthority('S')")
 public class LogJetonController {
 
-    @Autowired
-    private LogJetonService logJetonService;
+    private final LogJetonService logJetonService;
+
+    LogJetonController(LogJetonService logJetonService) {
+        this.logJetonService = logJetonService;
+    }
 
     @GetMapping
     public String listar(
