@@ -2,10 +2,10 @@ package br.com.cremepe.jeton.controller;
 
 import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.dto.JetonAgrupadoDTO;
+import br.com.cremepe.jeton.dto.JetonDTO;
 import br.com.cremepe.jeton.dto.RelatorioGeralDTO;
 import br.com.cremepe.jeton.service.*;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,12 +28,15 @@ import java.util.Optional;
 @PreAuthorize("hasAuthority('J') or hasAuthority('S')")
 public class JetonController {
 
-    @Autowired
-    private JetonService jetonService;
-    @Autowired
-    private GestaoService gestaoService;
-    @Autowired
-    private JetonRelatorioService relatorioService;
+    private final JetonService jetonService;
+    private final GestaoService gestaoService;
+    private final JetonRelatorioService relatorioService;
+
+    JetonController(JetonService jetonService, GestaoService gestaoService, JetonRelatorioService relatorioService) {
+        this.jetonService = jetonService;
+        this.gestaoService = gestaoService;
+        this.relatorioService = relatorioService;
+    }
 
     @GetMapping
     public String listar(
@@ -116,7 +119,7 @@ public class JetonController {
         if (naoAutenticado(session))
             return "redirect:/login";
 
-        List<Jeton> historico = jetonService.pesquisarHistorico(idGestao, mes, ano, termo);
+        List<JetonDTO> historico = jetonService.pesquisarHistorico(idGestao, mes, ano, termo);
         model.addAttribute("listaJetons", historico);
         model.addAttribute("listaGestoes", gestaoService.listarTodos());
         model.addAttribute("idGestaoSelecionada", idGestao);

@@ -3,12 +3,13 @@ package br.com.cremepe.jeton.service;
 import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.dto.*;
+import br.com.cremepe.jeton.mapper.AtividadeMapper;
+import br.com.cremepe.jeton.mapper.JetonMapper;
 import br.com.cremepe.jeton.repository.*;
 import br.com.cremepe.jeton.service.JetonCalculator.ResultadoAbsorcao;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -27,63 +30,127 @@ public class JetonService {
 
     private static final Logger log = LoggerFactory.getLogger(JetonService.class);
 
-    @Autowired
-    private JetonRepository jetonRepository;
-    @Autowired
-    private PontosSaldoRepository pontosSaldoRepository;
-    @Autowired
-    private AtividadeConselhalRepository atividadeRepository;
-    @Autowired
-    private ResolucaoRepository resolucaoRepository;
-    @Autowired
-    private GestaoConselheiroRepository gestaoConselheiroRepository;
-    @Autowired
-    private RegrasService regrasService;
-    @Autowired
-    private ConselheiroRepository conselheiroRepository;
-    @Autowired
-    private GestaoRepository gestaoRepository;
-    @Autowired
-    private ConselheiroService conselheiroService;
-    @Autowired
-    private JetonCalculator jetonCalculator;
+    private final JetonRepository jetonRepository;
+    private final PontosSaldoRepository pontosSaldoRepository;
+    private final AtividadeConselhalRepository atividadeRepository;
+    private final ResolucaoRepository resolucaoRepository;
+    private final GestaoConselheiroRepository gestaoConselheiroRepository;
+    private final RegrasService regrasService;
+    private final ConselheiroRepository conselheiroRepository;
+    private final GestaoRepository gestaoRepository;
+    private final ConselheiroService conselheiroService;
+    private final JetonCalculator jetonCalculator;
+    private final AtividadeMapper atividadeMapper;
+    private final JetonMapper jetonMapper;
+
+    JetonService(JetonRepository jetonRepository, PontosSaldoRepository pontosSaldoRepository,
+            AtividadeConselhalRepository atividadeRepository, ResolucaoRepository resolucaoRepository,
+            GestaoConselheiroRepository gestaoConselheiroRepository, RegrasService regrasService,
+            ConselheiroRepository conselheiroRepository, GestaoRepository gestaoRepository,
+            ConselheiroService conselheiroService, JetonCalculator jetonCalculator, AtividadeMapper atividadeMapper,
+            JetonMapper jetonMapper) {
+        this.jetonRepository = jetonRepository;
+        this.pontosSaldoRepository = pontosSaldoRepository;
+        this.atividadeRepository = atividadeRepository;
+        this.resolucaoRepository = resolucaoRepository;
+        this.gestaoConselheiroRepository = gestaoConselheiroRepository;
+        this.regrasService = regrasService;
+        this.conselheiroRepository = conselheiroRepository;
+        this.gestaoRepository = gestaoRepository;
+        this.conselheiroService = conselheiroService;
+        this.jetonCalculator = jetonCalculator;
+        this.atividadeMapper = atividadeMapper;
+        this.jetonMapper = jetonMapper;
+    }
+
+    @Transactional(readOnly = true)
+    public PontosRemanescentesDTO obterSaldoPorConselheiro(Integer idPessoa) {
+        PontosRemanescentesDTO dto = pontosSaldoRepository.buscarSaldoPorConselheiro(idPessoa)
+                .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado ou sem jetons"));
+
+        // Busca pontos de atividades validadas
+        Integer pontosValidadas = atividadeRepository.sumPontosAtividadesValidadasNaoComputadas(idPessoa);
+        Long pontosValidadasLong = pontosValidadas != null ? pontosValidadas.longValue() : 0L;
+        dto.setPontosAtividadesValidadas(pontosValidadasLong);
+
+        // Calcula saldo total
+        Long saldoRem = dto.getPontosRemanescentes() != null ? dto.getPontosRemanescentes() : 0L;
+        Long saldoTotal = saldoRem + pontosValidadasLong;
+        dto.setSaldoPontos(saldoTotal);
+
+        // Formatação
+        DecimalFormat pontoFormat = new DecimalFormat("#,###");
+        DecimalFormat moedaFormat = new DecimalFormat("R$ #,##0.00");
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(new Locale("pt", "BR"));
+        symbols.setGroupingSeparator('.');
+        symbols.setDecimalSeparator(',');
+        moedaFormat.setDecimalFormatSymbols(symbols);
+        pontoFormat.setDecimalFormatSymbols(symbols);
+
+        dto.setPontosRemanescentesFormatado(pontoFormat.format(saldoRem));
+        dto.setPontosAtividadesValidadasFormatado(pontoFormat.format(pontosValidadasLong));
+        dto.setSaldoPontosFormatado(pontoFormat.format(saldoTotal));
+
+        BigDecimal jetons = dto.getSomaJetons() != null ? dto.getSomaJetons() : BigDecimal.ZERO;
+        dto.setSomaJetonsFormatado(moedaFormat.format(jetons));
+
+        return dto;
+    }
 
     @Transactional(readOnly = true)
     public List<PontosRemanescentesDTO> listarSaldosAgrupados() {
-        return pontosSaldoRepository.buscarSaldosAgrupadosPorConselheiro();
+        List<PontosRemanescentesDTO> lista = pontosSaldoRepository.buscarSaldosAgrupadosPorConselheiroComJeton();
+
+        DecimalFormat pontoFormat = new DecimalFormat("#,###");
+        DecimalFormat moedaFormat = new DecimalFormat("R$ #,##0.00");
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(new Locale("pt", "BR"));
+        symbols.setGroupingSeparator('.');
+        symbols.setDecimalSeparator(',');
+        moedaFormat.setDecimalFormatSymbols(symbols);
+        pontoFormat.setDecimalFormatSymbols(symbols);
+
+        for (PontosRemanescentesDTO dto : lista) {
+            // pontos remanescentes
+            Long pontosRem = dto.getPontosRemanescentes() != null ? dto.getPontosRemanescentes() : 0L;
+            dto.setPontosRemanescentesFormatado(pontoFormat.format(pontosRem));
+
+            // valor em jetons
+            BigDecimal jetons = dto.getSomaJetons() != null ? dto.getSomaJetons() : BigDecimal.ZERO;
+            dto.setSomaJetonsFormatado(moedaFormat.format(jetons));
+
+            // pontos de atividades validadas
+            Integer pontosValidadas = atividadeRepository.sumPontosAtividadesValidadasNaoComputadas(dto.getIdPessoa());
+            Long pontosValidadasLong = pontosValidadas != null ? pontosValidadas.longValue() : 0L;
+            dto.setPontosAtividadesValidadas(pontosValidadasLong);
+            dto.setPontosAtividadesValidadasFormatado(pontoFormat.format(pontosValidadasLong));
+
+            // saldo total
+            Long saldoTotal = pontosRem + pontosValidadasLong;
+            dto.setSaldoPontos(saldoTotal);
+            dto.setSaldoPontosFormatado(pontoFormat.format(saldoTotal));
+        }
+        return lista;
     }
 
-    @Transactional(readOnly = true)
-    public List<Jeton> listarTodos() {
-        return jetonRepository.findAll();
-    }
-
-    @Transactional(readOnly = true)
-    public List<Jeton> pesquisarHistorico(Integer idGestao, Integer mes, Integer ano, String termo) {
+    public List<JetonDTO> pesquisarHistorico(Integer idGestao, Integer mes, Integer ano, String termo) {
         String termoBusca = (termo != null && !termo.trim().isEmpty()) ? termo.trim() : null;
-        return jetonRepository.pesquisarHistorico(idGestao, mes, ano, termoBusca);
+        return jetonRepository.pesquisarHistorico(idGestao, mes, ano, termoBusca)
+                .stream()
+                .map(jetonMapper::toDto)
+                .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> listarAtividadesAgrupadasPorConselheiro(Integer idPessoa, Integer idGestao,
-            Integer mes, Integer ano) {
+    public List<AtividadeVinculadaDTO> listarAtividadesAgrupadasPorConselheiro(
+            Integer idPessoa, Integer idGestao, Integer mes, Integer ano) {
+
         List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano).stream()
                 .filter(j -> j.getConselheiro().getIdPessoa().equals(idPessoa))
                 .toList();
 
-        List<Map<String, Object>> resultado = new ArrayList<>();
-        for (Jeton jeton : jetons) {
-            if (jeton.getAtividades() != null) {
-                for (AtividadeConselhal at : jeton.getAtividades()) {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("regra", at.getRegra() != null ? at.getRegra().getNomeRegra() : "Regra não identificada");
-                    map.put("data", at.getDataHoraAtividade().toLocalDate().toString());
-                    map.put("qtd", at.getQtdAtividade());
-                    resultado.add(map);
-                }
-            }
-        }
-        return resultado;
+        return jetons.stream()
+                .flatMap(j -> j.getAtividades().stream())
+                .map(atividadeMapper::toAtividadeVinculadaDto)
+                .collect(Collectors.toList());
     }
 
     @Auditar(tabela = "jeton", acao = "PROCESSAR_FOLHA", descricao = "Processamento mensal de folha de jetons", dadosParametros = "{ 'idGestao': #gestao.idGestao, 'nomeGestao': #gestao.nomeGestao, 'mes': #mes, 'ano': #ano }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
@@ -474,14 +541,20 @@ public class JetonService {
         return atividadesFechadas > 0;
     }
 
-    public List<Jeton> listarPorConselheiro(Integer idPessoa) {
-        return jetonRepository.findByConselheiroIdPessoaOrderByAnoDescMesDesc(idPessoa);
+    public List<JetonDTO> listarPorConselheiro(Integer idPessoa) {
+        return jetonRepository.findByConselheiroIdPessoaOrderByAnoDescMesDesc(idPessoa)
+                .stream()
+                .map(jetonMapper::toDto)
+                .collect(Collectors.toList());
     }
 
-    public List<Jeton> listarPorConselheiro(Integer idPessoa, int limit) {
+    public List<JetonDTO> listarPorConselheiro(Integer idPessoa, int limit) {
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "ano", "mes"));
         Page<Jeton> page = jetonRepository.findByConselheiroIdPessoa(idPessoa, pageable);
-        return page.getContent();
+        return page.getContent()
+                .stream()
+                .map(jetonMapper::toDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -593,12 +666,13 @@ public class JetonService {
         return new ArrayList<>(agrupado.values());
     }
 
-    public Map<String, Object> gerarRelatorioIndividualConselheiro(Integer idPessoa, Integer idGestao, Integer mes,
-            Integer ano) {
+    public RelatorioConselheiroDTO gerarRelatorioIndividualConselheiro(
+            Integer idPessoa, Integer idGestao, Integer mes, Integer ano) {
+
         Conselheiro conselheiro = conselheiroService.buscarPorId(idPessoa)
                 .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado"));
 
-        List<Map<String, Object>> atividades = listarAtividadesAgrupadasPorConselheiro(idPessoa, idGestao, mes, ano);
+        List<AtividadeVinculadaDTO> atividades = listarAtividadesAgrupadasPorConselheiro(idPessoa, idGestao, mes, ano);
 
         List<Jeton> jetons = jetonRepository.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano).stream()
                 .filter(j -> j.getConselheiro().getIdPessoa().equals(idPessoa))
@@ -625,13 +699,12 @@ public class JetonService {
         }
         Integer saldoFuturo = pontosSaldoRepository.somarPontosSobrandoAtivos(idPessoa, idGestao);
 
-        Map<String, Object> resposta = new HashMap<>();
-        resposta.put("nomeConselheiro", conselheiro.getPessoa().getNome());
-        resposta.put("atividades", atividades);
-        resposta.put("saldoAnterior", saldoAnterior);
-        resposta.put("pontosAcumuladosMes", pontosAcumuladosMes);
-        resposta.put("saldoFuturo", saldoFuturo != null ? saldoFuturo : 0);
-        return resposta;
+        return new RelatorioConselheiroDTO(
+                conselheiro.getPessoa().getNome(),
+                atividades,
+                saldoAnterior,
+                pontosAcumuladosMes,
+                saldoFuturo != null ? saldoFuturo : 0);
     }
 
     private static class ProcessamentoResultado {
@@ -642,5 +715,17 @@ public class JetonService {
             this.totalJetons = totalJetons;
             this.valorTotal = valorTotal;
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Jeton> buscarPorId(Integer id) {
+        return jetonRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<JetonDTO> listarTodos() {
+        return jetonRepository.findAll().stream()
+                .map(jetonMapper::toDto)
+                .collect(Collectors.toList());
     }
 }
