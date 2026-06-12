@@ -6,7 +6,6 @@ import br.com.cremepe.jeton.repository.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,16 +21,21 @@ public class GestaoConselheiroService {
 
     private static final Logger log = LoggerFactory.getLogger(GestaoConselheiroService.class);
 
-    @Autowired
-    private GestaoConselheiroRepository gestaoConselheiroRepository;
-    @Autowired
-    private GestaoRepository gestaoRepository;
-    @Autowired
-    private ConselheiroRepository conselheiroRepository;
-    @Autowired
-    private AtividadeConselhalRepository atividadeRepository;
-    @Autowired
-    private PessoaRepository pessoaRepository;
+    private final GestaoConselheiroRepository gestaoConselheiroRepository;
+    private final GestaoRepository gestaoRepository;
+    private final ConselheiroRepository conselheiroRepository;
+    private final AtividadeConselhalRepository atividadeRepository;
+    private final PessoaRepository pessoaRepository;
+
+    GestaoConselheiroService(GestaoConselheiroRepository gestaoConselheiroRepository,
+            ConselheiroRepository conselheiroRepository, PessoaRepository pessoaRepository,
+            AtividadeConselhalRepository atividadeRepository, GestaoRepository gestaoRepository) {
+        this.gestaoConselheiroRepository = gestaoConselheiroRepository;
+        this.gestaoRepository = gestaoRepository;
+        this.conselheiroRepository = conselheiroRepository;
+        this.atividadeRepository = atividadeRepository;
+        this.pessoaRepository = pessoaRepository;
+    }
 
     @Auditar(tabela = "gestao_conselheiro", acao = "CRIAR", descricao = "Criação de vínculo entre conselheiro e gestão", dadosParametros = "{ 'idGestao': #vinculo.gestao.idGestao, 'idPessoa': #vinculo.conselheiro.idPessoa, 'situacao': #vinculo.inSituacao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
@@ -257,5 +261,33 @@ public class GestaoConselheiroService {
         if (gestaoConselheiroRepository.existsByGestaoAndConselheiro(idGestao, idPessoa)) {
             throw new RuntimeException("Já existe um vínculo entre a gestão informada e este conselheiro.");
         }
+    }
+
+    public List<GestaoConselheiro> listarPorConselheiroAtivos(Integer idPessoa) {
+        return gestaoConselheiroRepository.findByConselheiroIdPessoaAndInSituacao(idPessoa,
+                GestaoConselheiro.SITUACAO_ATIVO);
+    }
+
+    public List<GestaoConselheiro> listarPorConselheiroInativos(Integer idPessoa) {
+        return gestaoConselheiroRepository.findByConselheiroIdPessoaAndInSituacao(idPessoa,
+                GestaoConselheiro.SITUACAO_INATIVO);
+    }
+
+    @Transactional(readOnly = true)
+    public List<GestaoConselheiro> listarPorConselheiro(Integer idConselheiro) {
+        return gestaoConselheiroRepository.findByIdIdPessoa(idConselheiro);
+    }
+
+    public List<GestaoConselheiro> listarPorGestaoAtivos(Integer idGestao) {
+        return gestaoConselheiroRepository.findByIdIdGestaoAndInSituacao(idGestao, GestaoConselheiro.SITUACAO_ATIVO);
+    }
+
+    public List<GestaoConselheiro> listarPorGestaoInativos(Integer idGestao) {
+        return gestaoConselheiroRepository.findByIdIdGestaoAndInSituacao(idGestao, GestaoConselheiro.SITUACAO_INATIVO);
+    }
+
+    @Transactional(readOnly = true)
+    public List<GestaoConselheiro> listarPorGestao(Integer idGestao) {
+        return gestaoConselheiroRepository.findByIdIdGestao(idGestao);
     }
 }
