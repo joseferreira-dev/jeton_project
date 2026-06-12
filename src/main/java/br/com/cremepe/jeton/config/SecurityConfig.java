@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.png", "/favicon.ico").permitAll()
                         .requestMatchers("/login", "/autenticar", "/sair", "/bloqueio", "/bloqueio/status").permitAll()
                         .requestMatchers("/conselheiro/**").hasRole("CONSELHEIRO")
+                        .requestMatchers("/", "/index", "/conselheiro/**").authenticated()
                         .anyRequest().authenticated())
                 .addFilterBefore(sistemaBloqueioFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(form -> form

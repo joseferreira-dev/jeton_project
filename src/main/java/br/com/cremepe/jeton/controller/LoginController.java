@@ -19,6 +19,18 @@ public class LoginController {
         this.dashboardService = dashboardService;
     }
 
+    @GetMapping("/")
+    public String home(HttpSession session) {
+        ViewUserLogin usuarioLogado = (ViewUserLogin) session.getAttribute("usuarioLogado");
+        if (usuarioLogado == null) {
+            return "redirect:/login";
+        }
+        if ("C".equals(usuarioLogado.getInTipoPessoa())) {
+            return "redirect:/conselheiro/dashboard";
+        }
+        return "redirect:/index";
+    }
+
     @GetMapping("/login")
     public String telaLogin(HttpSession session, Model model) {
         // Se já estiver autenticado, redireciona para a página apropriada

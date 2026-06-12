@@ -33,19 +33,22 @@
                         <tbody>
                             <tr th:each="j : ${pagamentos}">
                                 <td th:text="${j.mes + '/' + j.ano}"></td>
-                                <td th:text="${j.gestao.nomeGestao}"></td>
-                                <td class="text-center fw-bold" th:text="${j.totalJeton}"></td>
+                                <td th:text="${j.nomeGestao}">
+                                </td>
+                                <td class="text-center fw-bold" th:text="${j.totalJeton}">0</td>
                                 <td class="text-end fw-bold text-success"
-                                    th:text="'R$ ' + ${#numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}"></td>
+                                    th:text="'R$ ' + ${#numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}">
+                                </td>
                                 <td>
-                                    <span th:if="${j.inSituacao == 'E'}" class="badge bg-success">Homologado</span>
-                                    <span th:if="${j.inSituacao == 'A'}" class="badge bg-warning text-dark">Processado
+                                    <span th:if="${j.situacao == 'E'}" class="badge bg-success">Homologado</span>
+                                    <span th:if="${j.situacao == 'A'}" class="badge bg-warning text-dark">Processado
                                         (aberto)</span>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(pagamentos)}">
-                                <td colspan="5" class="text-center py-4 text-muted">Nenhum pagamento registrado até o
-                                    momento.</td>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    Nenhum pagamento registrado até o momento.
+                                </td>
                             </tr>
                         </tbody>
                     </table>

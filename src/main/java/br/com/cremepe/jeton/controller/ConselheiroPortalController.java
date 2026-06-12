@@ -1,11 +1,11 @@
 package br.com.cremepe.jeton.controller;
 
 import br.com.cremepe.jeton.domain.*;
+import br.com.cremepe.jeton.dto.JetonDTO;
 import br.com.cremepe.jeton.service.*;
 import br.com.cremepe.jeton.util.DataUtils;
 import br.com.cremepe.jeton.util.TurnoUtils;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,20 +28,23 @@ import java.util.Optional;
 @PreAuthorize("hasRole('CONSELHEIRO')")
 public class ConselheiroPortalController {
 
-    @Autowired
-    private AtividadeConselhalService atividadeService;
-    @Autowired
-    private JetonService jetonService;
-    @Autowired
-    private GestaoConselheiroService gestaoConselheiroService;
-    @Autowired
-    private ConselheiroService conselheiroService;
-    @Autowired
-    private TipoAnexoService tipoAnexoService;
-    @Autowired
-    private PontosSaldoService pontosSaldoService;
+    private final AtividadeConselhalService atividadeService;
+    private final JetonService jetonService;
+    private final GestaoConselheiroService gestaoConselheiroService;
+    private final ConselheiroService conselheiroService;
+    private final TipoAnexoService tipoAnexoService;
+    private final PontosSaldoService pontosSaldoService;
 
-    // VERIFICAÇÕES DE ACESSO
+    ConselheiroPortalController(AtividadeConselhalService atividadeService, JetonService jetonService,
+            GestaoConselheiroService gestaoConselheiroService, ConselheiroService conselheiroService,
+            TipoAnexoService tipoAnexoService, PontosSaldoService pontosSaldoService) {
+        this.atividadeService = atividadeService;
+        this.jetonService = jetonService;
+        this.gestaoConselheiroService = gestaoConselheiroService;
+        this.conselheiroService = conselheiroService;
+        this.tipoAnexoService = tipoAnexoService;
+        this.pontosSaldoService = pontosSaldoService;
+    }
 
     private boolean isConselheiro(HttpSession session) {
         ViewUserLogin user = (ViewUserLogin) session.getAttribute("usuarioLogado");
@@ -91,7 +94,7 @@ public class ConselheiroPortalController {
 
         Pageable top5 = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "dataHoraAtividade"));
         Page<AtividadeConselhal> paginaAtividades = atividadeService.listarPorConselheiro(idConselheiro, top5);
-        List<Jeton> ultimosPagamentos = jetonService.listarPorConselheiro(idConselheiro, 5);
+        List<JetonDTO> ultimosPagamentos = jetonService.listarPorConselheiro(idConselheiro, 5);
 
         model.addAttribute("nuncaVinculado", false);
         model.addAttribute("temGestaoAtiva", gestaoAtivaOpt.isPresent());
@@ -237,7 +240,7 @@ public class ConselheiroPortalController {
             return "redirect:/login";
 
         Integer idConselheiro = getIdConselheiroLogado(session);
-        List<Jeton> pagamentos = jetonService.listarPorConselheiro(idConselheiro);
+        List<JetonDTO> pagamentos = jetonService.listarPorConselheiro(idConselheiro);
         model.addAttribute("pagamentos", pagamentos);
         return "conselheiro/pagamentos";
     }
