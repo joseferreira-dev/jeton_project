@@ -38,13 +38,14 @@ public class AtividadeApiController {
     private final RegrasMapper regrasMapper;
 
     AtividadeApiController(AtividadeConselhalService atividadeService, ConselheiroService conselheiroService,
-            GestaoService gestaoService, RegrasService regrasService, ConselheiroMapper conselheiroMapper,
-            ResolucaoMapper resolucaoMapper, PortariaMapper portariaMapper, RegrasMapper regrasMapper) {
+            GestaoService gestaoService, RegrasService regrasService, AtividadeMapper atividadeMapper,
+            ConselheiroMapper conselheiroMapper, ResolucaoMapper resolucaoMapper, PortariaMapper portariaMapper,
+            RegrasMapper regrasMapper) {
         this.atividadeService = atividadeService;
         this.conselheiroService = conselheiroService;
         this.gestaoService = gestaoService;
         this.regrasService = regrasService;
-        this.atividadeMapper = null;
+        this.atividadeMapper = atividadeMapper;
         this.conselheiroMapper = conselheiroMapper;
         this.resolucaoMapper = resolucaoMapper;
         this.portariaMapper = portariaMapper;

@@ -8,7 +8,6 @@ import br.com.cremepe.jeton.repository.TipoAnexoRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,12 +21,16 @@ public class ComprovanteService {
 
     private static final Logger log = LoggerFactory.getLogger(ComprovanteService.class);
 
-    @Autowired
-    private ComprovanteRepository comprovanteRepository;
-    @Autowired
-    private TipoAnexoRepository tipoAnexoRepository;
-    @Autowired
-    private FileStorageService fileStorageService;
+    private final ComprovanteRepository comprovanteRepository;
+    private final TipoAnexoRepository tipoAnexoRepository;
+    private final FileStorageService fileStorageService;
+
+    ComprovanteService(ComprovanteRepository comprovanteRepository, TipoAnexoRepository tipoAnexoRepository,
+            FileStorageService fileStorageService) {
+        this.comprovanteRepository = comprovanteRepository;
+        this.tipoAnexoRepository = tipoAnexoRepository;
+        this.fileStorageService = fileStorageService;
+    }
 
     @Auditar(tabela = "comprovante", acao = "CRIAR", descricao = "Criação de novo comprovante", dadosParametros = "{ 'nomeOriginal': #file.originalFilename, 'tamanho': #file.size, 'ano': #ano, 'mes': #mes, 'idTipoAnexo': #idTipoAnexo, 'descricaoUsuario': #descricaoUsuario }", dadosRetorno = "#result", auditarExcecao = true)
     @Transactional

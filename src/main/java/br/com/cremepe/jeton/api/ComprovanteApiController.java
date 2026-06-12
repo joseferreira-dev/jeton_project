@@ -5,13 +5,15 @@ import br.com.cremepe.jeton.dto.ComprovanteDTO;
 import br.com.cremepe.jeton.mapper.ComprovanteMapper;
 import br.com.cremepe.jeton.service.ComprovanteService;
 import br.com.cremepe.jeton.service.FileStorageService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -20,14 +22,16 @@ import java.util.List;
 @PreAuthorize("isAuthenticated()")
 public class ComprovanteApiController {
 
-    @Autowired
-    private ComprovanteService comprovanteService;
+    private final ComprovanteService comprovanteService;
+    private final FileStorageService fileStorageService;
+    private final ComprovanteMapper comprovanteMapper;
 
-    @Autowired
-    private FileStorageService fileStorageService;
-
-    @Autowired
-    private ComprovanteMapper comprovanteMapper;
+    ComprovanteApiController(ComprovanteService comprovanteService, FileStorageService fileStorageService,
+            ComprovanteMapper comprovanteMapper) {
+        this.comprovanteService = comprovanteService;
+        this.fileStorageService = fileStorageService;
+        this.comprovanteMapper = comprovanteMapper;
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('C') or hasAuthority('S')")

@@ -3,17 +3,22 @@ package br.com.cremepe.jeton.service;
 import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.dto.LoteAtividadeDTO;
-import br.com.cremepe.jeton.repository.*;
+import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
+import br.com.cremepe.jeton.repository.ComprovanteRepository;
+import br.com.cremepe.jeton.repository.GestaoConselheiroRepository;
+import br.com.cremepe.jeton.repository.GestaoRepository;
 import br.com.cremepe.jeton.util.TurnoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,20 +26,26 @@ public class AtividadeLoteService {
 
     private static final Logger log = LoggerFactory.getLogger(AtividadeLoteService.class);
 
-    @Autowired
-    private AtividadeConselhalRepository atividadeRepository;
-    @Autowired
-    private ComprovanteRepository comprovanteRepository;
-    @Autowired
-    private GestaoRepository gestaoRepository;
-    @Autowired
-    private GestaoConselheiroRepository gestaoConselheiroRepository;
-    @Autowired
-    private ComprovanteService comprovanteService;
-    @Autowired
-    private ConselheiroService conselheiroService;
-    @Autowired
-    private RegrasService regrasService;
+    private final AtividadeConselhalRepository atividadeRepository;
+    private final ComprovanteRepository comprovanteRepository;
+    private final GestaoRepository gestaoRepository;
+    private final GestaoConselheiroRepository gestaoConselheiroRepository;
+    private final ComprovanteService comprovanteService;
+    private final ConselheiroService conselheiroService;
+    private final RegrasService regrasService;
+
+    AtividadeLoteService(AtividadeConselhalRepository atividadeRepository,
+            GestaoConselheiroRepository gestaoConselheiroRepository, GestaoRepository gestaoRepository,
+            ComprovanteService comprovanteService, RegrasService regrasService, ConselheiroService conselheiroService,
+            ComprovanteRepository comprovanteRepository) {
+        this.atividadeRepository = atividadeRepository;
+        this.comprovanteRepository = comprovanteRepository;
+        this.gestaoConselheiroRepository = gestaoConselheiroRepository;
+        this.gestaoRepository = gestaoRepository;
+        this.comprovanteService = comprovanteService;
+        this.regrasService = regrasService;
+        this.conselheiroService = conselheiroService;
+    }
 
     @Auditar(tabela = "atividade_conselhal", acao = "CRIAR_LOTE", descricao = "Criação de múltiplas atividades com mesmo comprovante", dadosParametros = "{ 'idGestao': #dto.idGestao, 'idsConselheiros': #dto.idsConselheiros }", auditarExcecao = true, incluirRetorno = false)
     @Transactional
