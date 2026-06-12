@@ -5,7 +5,6 @@ import br.com.cremepe.jeton.service.PortariaService;
 import br.com.cremepe.jeton.service.RegrasService;
 import br.com.cremepe.jeton.service.ResolucaoService;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -23,12 +22,15 @@ import java.util.stream.Collectors;
 @PreAuthorize("hasAuthority('R') or hasAuthority('S')")
 public class RegrasController {
 
-    @Autowired
-    private RegrasService regrasService;
-    @Autowired
-    private PortariaService portariaService;
-    @Autowired
-    private ResolucaoService resolucaoService;
+    private final RegrasService regrasService;
+    private final PortariaService portariaService;
+    private final ResolucaoService resolucaoService;
+
+    RegrasController(RegrasService regrasService, ResolucaoService resolucaoService, PortariaService portariaService) {
+        this.regrasService = regrasService;
+        this.portariaService = portariaService;
+        this.resolucaoService = resolucaoService;
+    }
 
     @GetMapping
     public String listar(

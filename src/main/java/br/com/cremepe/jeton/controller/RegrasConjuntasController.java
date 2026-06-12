@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -23,12 +22,16 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @PreAuthorize("hasAuthority('R') or hasAuthority('S')")
 public class RegrasConjuntasController {
 
-    @Autowired
-    private RegrasConjuntasService regrasConjuntasService;
-    @Autowired
-    private RegrasService regrasService;
-    @Autowired
-    private ResolucaoService resolucaoService;
+    private final RegrasConjuntasService regrasConjuntasService;
+    private final RegrasService regrasService;
+    private final ResolucaoService resolucaoService;
+
+    RegrasConjuntasController(RegrasConjuntasService regrasConjuntasService, RegrasService regrasService,
+            ResolucaoService resolucaoService) {
+        this.regrasConjuntasService = regrasConjuntasService;
+        this.regrasService = regrasService;
+        this.resolucaoService = resolucaoService;
+    }
 
     @GetMapping
     public String listar(

@@ -5,7 +5,6 @@ import br.com.cremepe.jeton.service.GestaoService;
 import br.com.cremepe.jeton.service.RelatorioService;
 
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -21,14 +20,16 @@ import java.time.LocalDate;
 @PreAuthorize("hasAuthority('A') or hasAuthority('S')")
 public class RelatorioController {
 
-    @Autowired
-    private RelatorioService relatorioService;
+    private final RelatorioService relatorioService;
+    private final ConselheiroService conselheiroService;
+    private final GestaoService gestaoService;
 
-    @Autowired
-    private ConselheiroService conselheiroService;
-
-    @Autowired
-    private GestaoService gestaoService;
+    RelatorioController(RelatorioService relatorioService, GestaoService gestaoService,
+            ConselheiroService conselheiroService) {
+        this.relatorioService = relatorioService;
+        this.conselheiroService = conselheiroService;
+        this.gestaoService = gestaoService;
+    }
 
     @GetMapping("/atividades")
     public String acessarTelaRelatorio(Model model, HttpSession session) {

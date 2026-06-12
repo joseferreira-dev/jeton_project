@@ -11,7 +11,6 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -29,16 +28,21 @@ public class UsuarioController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(UsuarioController.class);
 
-    @Autowired
-    private UsuarioService usuarioService;
-    @Autowired
-    private ConselheiroService conselheiroService;
-    @Autowired
-    private NivelAcessoService nivelAcessoService;
-    @Autowired
-    private PermissaoService permissaoService;
-    @Autowired
-    private UsuarioAcessoRepository usuarioAcessoRepository;
+    private final UsuarioService usuarioService;
+    private final ConselheiroService conselheiroService;
+    private final NivelAcessoService nivelAcessoService;
+    private final PermissaoService permissaoService;
+    private final UsuarioAcessoRepository usuarioAcessoRepository;
+
+    UsuarioController(UsuarioService usuarioService, NivelAcessoService nivelAcessoService,
+            PermissaoService permissaoService, UsuarioAcessoRepository usuarioAcessoRepository,
+            ConselheiroService conselheiroService) {
+        this.usuarioService = usuarioService;
+        this.conselheiroService = conselheiroService;
+        this.nivelAcessoService = nivelAcessoService;
+        this.permissaoService = permissaoService;
+        this.usuarioAcessoRepository = usuarioAcessoRepository;
+    }
 
     @GetMapping
     public String listar(
