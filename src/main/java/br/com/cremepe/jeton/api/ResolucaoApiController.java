@@ -1,5 +1,3 @@
-// src/main/java/br/com/cremepe/jeton/api/ResolucaoApiController.java
-
 package br.com.cremepe.jeton.api;
 
 import br.com.cremepe.jeton.domain.Resolucao;
@@ -7,7 +5,6 @@ import br.com.cremepe.jeton.dto.ResolucaoDTO;
 import br.com.cremepe.jeton.mapper.ResolucaoMapper;
 import br.com.cremepe.jeton.service.ResolucaoService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -23,11 +20,13 @@ import java.util.List;
 @PreAuthorize("isAuthenticated()")
 public class ResolucaoApiController {
 
-    @Autowired
-    private ResolucaoService resolucaoService;
+    private final ResolucaoService resolucaoService;
+    private final ResolucaoMapper resolucaoMapper;
 
-    @Autowired
-    private ResolucaoMapper resolucaoMapper;
+    ResolucaoApiController(ResolucaoService resolucaoService, ResolucaoMapper resolucaoMapper) {
+        this.resolucaoService = resolucaoService;
+        this.resolucaoMapper = resolucaoMapper;
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('R') or hasAuthority('S')")

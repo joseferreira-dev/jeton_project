@@ -13,7 +13,6 @@ import br.com.cremepe.jeton.repository.UsuarioRepository;
 import br.com.cremepe.jeton.util.CpfValidador;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,20 +31,26 @@ public class ConselheiroService {
 
     private static final Logger log = LoggerFactory.getLogger(ConselheiroService.class);
 
-    @Autowired
-    private ConselheiroRepository conselheiroRepository;
-    @Autowired
-    private GestaoConselheiroRepository gestaoConselheiroRepository;
-    @Autowired
-    private PessoaRepository pessoaRepository;
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-    @Autowired
-    private PermissaoService permissaoService;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private UsuarioService usuarioService;
+    private final ConselheiroRepository conselheiroRepository;
+    private final GestaoConselheiroRepository gestaoConselheiroRepository;
+    private final PessoaRepository pessoaRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final PermissaoService permissaoService;
+    private final PasswordEncoder passwordEncoder;
+    private final UsuarioService usuarioService;
+
+    ConselheiroService(ConselheiroRepository conselheiroRepository,
+            GestaoConselheiroRepository gestaoConselheiroRepository, PessoaRepository pessoaRepository,
+            UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, UsuarioService usuarioService,
+            PermissaoService permissaoService) {
+        this.conselheiroRepository = conselheiroRepository;
+        this.gestaoConselheiroRepository = gestaoConselheiroRepository;
+        this.pessoaRepository = pessoaRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.permissaoService = permissaoService;
+        this.passwordEncoder = passwordEncoder;
+        this.usuarioService = usuarioService;
+    }
 
     @Auditar(tabela = "conselheiro", acao = "CRIAR", descricao = "Criação de novo conselheiro", dadosParametros = "{ 'conselheiro': #conselheiro }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional

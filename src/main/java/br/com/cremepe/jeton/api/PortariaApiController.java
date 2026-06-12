@@ -5,7 +5,6 @@ import br.com.cremepe.jeton.dto.PortariaDTO;
 import br.com.cremepe.jeton.mapper.PortariaMapper;
 import br.com.cremepe.jeton.service.PortariaService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -21,11 +20,13 @@ import java.util.List;
 @PreAuthorize("isAuthenticated()")
 public class PortariaApiController {
 
-    @Autowired
-    private PortariaService portariaService;
+    private final PortariaService portariaService;
+    private final PortariaMapper portariaMapper;
 
-    @Autowired
-    private PortariaMapper portariaMapper;
+    PortariaApiController(PortariaService portariaService, PortariaMapper portariaMapper) {
+        this.portariaService = portariaService;
+        this.portariaMapper = portariaMapper;
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('R') or hasAuthority('S')")

@@ -5,7 +5,6 @@ import br.com.cremepe.jeton.dto.GestaoDTO;
 import br.com.cremepe.jeton.mapper.GestaoMapper;
 import br.com.cremepe.jeton.service.GestaoService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -21,11 +20,13 @@ import java.util.List;
 @PreAuthorize("isAuthenticated()")
 public class GestaoApiController {
 
-    @Autowired
-    private GestaoService gestaoService;
+    private final GestaoService gestaoService;
+    private final GestaoMapper gestaoMapper;
 
-    @Autowired
-    private GestaoMapper gestaoMapper;
+    GestaoApiController(GestaoService gestaoService, GestaoMapper gestaoMapper) {
+        this.gestaoService = gestaoService;
+        this.gestaoMapper = gestaoMapper;
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('G') or hasAuthority('S')")

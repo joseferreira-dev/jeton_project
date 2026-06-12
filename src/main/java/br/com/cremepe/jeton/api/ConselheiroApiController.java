@@ -7,7 +7,6 @@ import br.com.cremepe.jeton.dto.ConselheiroResponseDTO;
 import br.com.cremepe.jeton.mapper.ConselheiroMapper;
 import br.com.cremepe.jeton.service.ConselheiroService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -24,11 +23,13 @@ import java.util.stream.Collectors;
 @PreAuthorize("isAuthenticated()")
 public class ConselheiroApiController {
 
-    @Autowired
-    private ConselheiroService conselheiroService;
+    private final ConselheiroService conselheiroService;
+    private final ConselheiroMapper conselheiroMapper;
 
-    @Autowired
-    private ConselheiroMapper conselheiroMapper;
+    ConselheiroApiController(ConselheiroService conselheiroService, ConselheiroMapper conselheiroMapper) {
+        this.conselheiroService = conselheiroService;
+        this.conselheiroMapper = conselheiroMapper;
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('G') or hasAuthority('S')")
