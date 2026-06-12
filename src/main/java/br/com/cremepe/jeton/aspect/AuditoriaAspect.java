@@ -15,7 +15,6 @@ import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -31,23 +30,23 @@ public class AuditoriaAspect {
     private final ThreadLocal<Integer> profundidade = ThreadLocal.withInitial(() -> 0);
     private final ThreadLocal<Map<String, Object>> estadoAnteriorThreadLocal = new ThreadLocal<>();
 
-    @Autowired
-    private UsuarioLogadoService usuarioLogadoService;
+    private final UsuarioLogadoService usuarioLogadoService;
+    private final LogJetonService logJetonService;
+    private final EstadoAnteriorCapturador estadoAnteriorCapturador;
+    private final SpelEvaluator spelEvaluator;
+    private final JsonConverter jsonConverter;
+    private final DadosAuditoriaBuilder dadosAuditoriaBuilder;
 
-    @Autowired
-    private LogJetonService logJetonService;
-
-    @Autowired
-    private EstadoAnteriorCapturador estadoAnteriorCapturador;
-
-    @Autowired
-    private SpelEvaluator spelEvaluator;
-
-    @Autowired
-    private JsonConverter jsonConverter;
-
-    @Autowired
-    private DadosAuditoriaBuilder dadosAuditoriaBuilder;
+    AuditoriaAspect(UsuarioLogadoService usuarioLogadoService, LogJetonService logJetonService,
+            EstadoAnteriorCapturador estadoAnteriorCapturador, SpelEvaluator spelEvaluator, JsonConverter jsonConverter,
+            DadosAuditoriaBuilder dadosAuditoriaBuilder) {
+        this.usuarioLogadoService = usuarioLogadoService;
+        this.logJetonService = logJetonService;
+        this.estadoAnteriorCapturador = estadoAnteriorCapturador;
+        this.spelEvaluator = spelEvaluator;
+        this.jsonConverter = jsonConverter;
+        this.dadosAuditoriaBuilder = dadosAuditoriaBuilder;
+    }
 
     @Before("@annotation(auditar)")
     public void beforeAudit(JoinPoint joinPoint, Auditar auditar) {

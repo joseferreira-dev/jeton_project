@@ -1,5 +1,3 @@
-// src/main/java/br/com/cremepe/jeton/api/RegrasApiController.java
-
 package br.com.cremepe.jeton.api;
 
 import br.com.cremepe.jeton.domain.Regras;
@@ -15,7 +13,6 @@ import br.com.cremepe.jeton.service.RegrasService;
 import br.com.cremepe.jeton.service.ResolucaoService;
 import br.com.cremepe.jeton.service.PortariaService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -38,23 +35,23 @@ import java.util.stream.Collectors;
 @PreAuthorize("isAuthenticated()")
 public class RegrasApiController {
 
-    @Autowired
-    private RegrasService regrasService;
+    private final RegrasService regrasService;
+    private final ResolucaoService resolucaoService;
+    private final PortariaService portariaService;
+    private final RegrasMapper regrasMapper;
+    private final PortariaMapper portariaMapper;
+    private final ResolucaoMapper resolucaoMapper;
 
-    @Autowired
-    private ResolucaoService resolucaoService;
-
-    @Autowired
-    private PortariaService portariaService;
-
-    @Autowired
-    private RegrasMapper regrasMapper;
-
-    @Autowired
-    private PortariaMapper portariaMapper;
-
-    @Autowired
-    private ResolucaoMapper resolucaoMapper;
+    RegrasApiController(RegrasService regrasService, PortariaService portariaService, RegrasMapper regrasMapper,
+            ResolucaoService resolucaoService, PortariaMapper portariaMapper,
+            ResolucaoMapper resolucaoMapper) {
+        this.regrasService = regrasService;
+        this.resolucaoService = resolucaoService;
+        this.portariaService = portariaService;
+        this.regrasMapper = regrasMapper;
+        this.portariaMapper = portariaMapper;
+        this.resolucaoMapper = resolucaoMapper;
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('R') or hasAuthority('S')")

@@ -5,7 +5,6 @@ import br.com.cremepe.jeton.dto.TipoAnexoDTO;
 import br.com.cremepe.jeton.mapper.TipoAnexoMapper;
 import br.com.cremepe.jeton.service.TipoAnexoService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,11 +17,13 @@ import java.util.List;
 @PreAuthorize("isAuthenticated()")
 public class TipoAnexoApiController {
 
-    @Autowired
-    private TipoAnexoService tipoAnexoService;
+    private final TipoAnexoService tipoAnexoService;
+    private final TipoAnexoMapper tipoAnexoMapper;
 
-    @Autowired
-    private TipoAnexoMapper tipoAnexoMapper;
+    TipoAnexoApiController(TipoAnexoService tipoAnexoService, TipoAnexoMapper tipoAnexoMapper) {
+        this.tipoAnexoService = tipoAnexoService;
+        this.tipoAnexoMapper = tipoAnexoMapper;
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('T') or hasAuthority('S')")
