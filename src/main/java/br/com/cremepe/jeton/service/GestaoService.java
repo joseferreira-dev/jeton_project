@@ -6,7 +6,6 @@ import br.com.cremepe.jeton.repository.GestaoRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,8 +21,11 @@ public class GestaoService {
 
     private static final Logger log = LoggerFactory.getLogger(GestaoService.class);
 
-    @Autowired
-    private GestaoRepository gestaoRepository;
+    private final GestaoRepository gestaoRepository;
+
+    GestaoService(GestaoRepository gestaoRepository) {
+        this.gestaoRepository = gestaoRepository;
+    }
 
     @Auditar(tabela = "gestao", acao = "CRIAR", capturarEstadoAnterior = false, descricao = "Criação de nova gestão", auditarExcecao = true)
     @Transactional

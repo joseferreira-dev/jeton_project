@@ -5,7 +5,6 @@ import br.com.cremepe.jeton.domain.Parametros;
 import br.com.cremepe.jeton.repository.ParametrosRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,8 +13,11 @@ public class ParametrosService {
 
     private static final Logger log = LoggerFactory.getLogger(ParametrosService.class);
 
-    @Autowired
-    private ParametrosRepository repository;
+    private final ParametrosRepository repository;
+
+    ParametrosService(ParametrosRepository repository) {
+        this.repository = repository;
+    }
 
     private Parametros getParametros() {
         return repository.findById(1).orElseGet(() -> {

@@ -7,7 +7,6 @@ import br.com.cremepe.jeton.repository.ResolucaoRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,10 +23,13 @@ public class ResolucaoService {
 
     private static final Logger log = LoggerFactory.getLogger(ResolucaoService.class);
 
-    @Autowired
-    private ResolucaoRepository repository;
-    @Autowired
-    private RegrasRepository regrasRepository;
+    private final ResolucaoRepository repository;
+    private final RegrasRepository regrasRepository;
+
+    ResolucaoService(ResolucaoRepository repository, RegrasRepository regrasRepository) {
+        this.repository = repository;
+        this.regrasRepository = regrasRepository;
+    }
 
     @Auditar(tabela = "resolucao", acao = "CRIAR", descricao = "Criação de nova resolução", dadosParametros = "{ 'numero': #resolucao.numero, 'ano': #resolucao.ano, 'dtInicioVigencia': #resolucao.dtInicioVigencia, 'dtFimVigencia': #resolucao.dtFimVigencia, 'ementa': #resolucao.ementa, 'pontosPorJeton': #resolucao.pontosPorJeton, 'maxJetonsDia': #resolucao.maxJetonsDia, 'maxJetonsPeriodo': #resolucao.maxJetonsPeriodo, 'maxJetonsMes': #resolucao.maxJetonsMes, 'valorJeton': #resolucao.valorJeton, 'linkPublicado': #resolucao.linkPublicado }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional

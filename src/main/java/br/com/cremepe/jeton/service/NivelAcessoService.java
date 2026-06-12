@@ -7,7 +7,6 @@ import br.com.cremepe.jeton.repository.UsuarioAcessoRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +18,13 @@ public class NivelAcessoService {
 
     private static final Logger log = LoggerFactory.getLogger(NivelAcessoService.class);
 
-    @Autowired
-    private NivelAcessoRepository repository;
-    @Autowired
-    private UsuarioAcessoRepository usuarioAcessoRepository;
+    private final NivelAcessoRepository repository;
+    private final UsuarioAcessoRepository usuarioAcessoRepository;
+
+    NivelAcessoService(NivelAcessoRepository repository, UsuarioAcessoRepository usuarioAcessoRepository) {
+        this.repository = repository;
+        this.usuarioAcessoRepository = usuarioAcessoRepository;
+    }
 
     @Auditar(tabela = "nivel_acesso", acao = "CRIAR", descricao = "Criação de novo nível de acesso", dadosParametros = "{ 'idNivel': #nivel.idNivel, 'nomeNivel': #nivel.nomeNivel }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional

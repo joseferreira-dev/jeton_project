@@ -7,7 +7,6 @@ import br.com.cremepe.jeton.repository.RegrasRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,15 +23,18 @@ public class PortariaService {
 
     private static final Logger log = LoggerFactory.getLogger(PortariaService.class);
 
-    @Autowired
-    private PortariaRepository repository;
-    @Autowired
-    private RegrasRepository regrasRepository;
+    private final PortariaRepository repository;
+    private final RegrasRepository regrasRepository;
+
+    PortariaService(PortariaRepository repository, RegrasRepository regrasRepository) {
+        this.repository = repository;
+        this.regrasRepository = regrasRepository;
+    }
 
     @Auditar(tabela = "portaria", acao = "CRIAR", descricao = "Criação de nova portaria", dadosParametros = "{ 'numero': #portaria.numero, 'ano': #portaria.ano, 'dtInicioVigencia': #portaria.dtInicioVigencia, 'dtFimVigencia': #portaria.dtFimVigencia, 'linkPublicado': #portaria.linkPublicado }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public Portaria criar(Portaria portaria) {
-        portaria.setIdPortaria(null); // força criação
+        portaria.setIdPortaria(null);
         return salvarPortaria(portaria, true);
     }
 

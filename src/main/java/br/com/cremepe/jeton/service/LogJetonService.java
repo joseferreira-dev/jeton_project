@@ -6,7 +6,6 @@ import br.com.cremepe.jeton.repository.LogJetonRepository;
 import br.com.cremepe.jeton.repository.UsuarioRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,11 +20,13 @@ public class LogJetonService {
 
     private static final Logger log = LoggerFactory.getLogger(LogJetonService.class);
 
-    @Autowired
-    private LogJetonRepository logRepository;
+    private final LogJetonRepository logRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    LogJetonService(LogJetonRepository logRepository, UsuarioRepository usuarioRepository) {
+        this.logRepository = logRepository;
+        this.usuarioRepository = usuarioRepository;
+    }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registrarLog(String nomeTabela, Integer idUsuario, String textoLog) {

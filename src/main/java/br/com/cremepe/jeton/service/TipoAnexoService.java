@@ -7,7 +7,6 @@ import br.com.cremepe.jeton.repository.TipoAnexoRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +18,13 @@ public class TipoAnexoService {
 
     private static final Logger log = LoggerFactory.getLogger(TipoAnexoService.class);
 
-    @Autowired
-    private TipoAnexoRepository repository;
-    @Autowired
-    private ComprovanteRepository comprovanteRepository;
+    private final TipoAnexoRepository repository;
+    private final ComprovanteRepository comprovanteRepository;
+
+    TipoAnexoService(TipoAnexoRepository repository, ComprovanteRepository comprovanteRepository) {
+        this.repository = repository;
+        this.comprovanteRepository = comprovanteRepository;
+    }
 
     @Auditar(tabela = "tipo_anexo", acao = "CRIAR", descricao = "Criação de novo tipo de anexo", dadosParametros = "{ 'nome': #tipoAnexo.nome, 'exigePublicacao': #tipoAnexo.exigePublicacao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional

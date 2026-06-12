@@ -6,7 +6,6 @@ import br.com.cremepe.jeton.repository.PontosSaldoRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,8 +17,11 @@ public class PontosSaldoService {
 
     private static final Logger log = LoggerFactory.getLogger(PontosSaldoService.class);
 
-    @Autowired
-    private PontosSaldoRepository pontosSaldoRepository;
+    private final PontosSaldoRepository pontosSaldoRepository;
+
+    PontosSaldoService(PontosSaldoRepository pontosSaldoRepository) {
+        this.pontosSaldoRepository = pontosSaldoRepository;
+    }
 
     @Auditar(tabela = "pontos_saldo", acao = "CRIAR", descricao = "Criação de registro de saldo de pontos", dadosParametros = "{ 'conselheiroId': #pontos.conselheiro?.idPessoa, 'gestaoId': #pontos.gestao?.idGestao, 'pontosTrabalhados': #pontos.pontosTrabalhados, 'pontosUtilizados': #pontos.pontosUtilizados, 'pontosSobrando': #pontos.pontosSobrando, 'situacao': #pontos.inSituacao, 'atividadeId': #pontos.atividade?.idAtividade, 'jetonId': #pontos.jeton?.idJeton, 'resolucaoId': #pontos.resolucao?.idResolucao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional

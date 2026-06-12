@@ -10,7 +10,6 @@ import br.com.cremepe.jeton.repository.UsuarioRepository;
 import br.com.cremepe.jeton.util.CpfValidador;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,14 +26,18 @@ public class UsuarioService {
 
     private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-    @Autowired
-    private PessoaRepository pessoaRepository;
-    @Autowired
-    private ConselheiroRepository conselheiroRepository;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final UsuarioRepository usuarioRepository;
+    private final PessoaRepository pessoaRepository;
+    private final ConselheiroRepository conselheiroRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    UsuarioService(UsuarioRepository usuarioRepository, PessoaRepository pessoaRepository,
+            PasswordEncoder passwordEncoder, ConselheiroRepository conselheiroRepository) {
+        this.usuarioRepository = usuarioRepository;
+        this.pessoaRepository = pessoaRepository;
+        this.conselheiroRepository = conselheiroRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Auditar(tabela = "usuario", acao = "CRIAR", descricao = "Criação de novo usuário", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional

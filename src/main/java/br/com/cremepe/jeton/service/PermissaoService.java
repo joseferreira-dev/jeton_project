@@ -11,7 +11,6 @@ import br.com.cremepe.jeton.repository.UsuarioRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,12 +22,16 @@ public class PermissaoService {
 
     private static final Logger log = LoggerFactory.getLogger(PermissaoService.class);
 
-    @Autowired
-    private UsuarioAcessoRepository usuarioAcessoRepository;
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-    @Autowired
-    private NivelAcessoRepository nivelAcessoRepository;
+    private final UsuarioAcessoRepository usuarioAcessoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final NivelAcessoRepository nivelAcessoRepository;
+
+    PermissaoService(UsuarioAcessoRepository usuarioAcessoRepository, UsuarioRepository usuarioRepository,
+            NivelAcessoRepository nivelAcessoRepository) {
+        this.usuarioAcessoRepository = usuarioAcessoRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.nivelAcessoRepository = nivelAcessoRepository;
+    }
 
     @Auditar(tabela = "usuario_acesso", acao = "CONCEDER", descricao = "Concessão de permissão (nível de acesso) a um usuário", dadosParametros = "{ 'usuarioId': #idUsuario, 'nivelId': #idNivel }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional

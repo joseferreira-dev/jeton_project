@@ -7,7 +7,6 @@ import br.com.cremepe.jeton.repository.RegrasConjuntasRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,8 +23,11 @@ public class RegrasConjuntasService {
 
     private static final Logger log = LoggerFactory.getLogger(RegrasConjuntasService.class);
 
-    @Autowired
-    private RegrasConjuntasRepository repository;
+    private final RegrasConjuntasRepository repository;
+
+    RegrasConjuntasService(RegrasConjuntasRepository repository) {
+        this.repository = repository;
+    }
 
     @Auditar(tabela = "regras_conjuntas", acao = "CRIAR", descricao = "Criação de novo agrupamento de regras (regras conjuntas)", dadosParametros = "{ 'nomeRegra': #regra.nomeRegra, 'inTipoLimite': #regra.inTipoLimite, 'pontosLimite': #regra.pontosLimite }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional

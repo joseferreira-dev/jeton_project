@@ -7,7 +7,6 @@ import br.com.cremepe.jeton.repository.ViewAtividadeConselhalRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,8 +21,11 @@ public class RelatorioService {
 
     private static final Logger log = LoggerFactory.getLogger(RelatorioService.class);
 
-    @Autowired
-    private ViewAtividadeConselhalRepository viewRepository;
+    private final ViewAtividadeConselhalRepository viewRepository;
+
+    RelatorioService(ViewAtividadeConselhalRepository viewRepository) {
+        this.viewRepository = viewRepository;
+    }
 
     @Auditar(tabela = "relatorio", acao = "GERAR_RELATORIO_ATIVIDADES", descricao = "Geração de relatório agrupado de atividades", dadosParametros = "{ 'idGestao': #idGestao, 'idConselheiro': #idConselheiro, 'dataInicio': #dataInicio, 'dataFim': #dataFim }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional(readOnly = true)

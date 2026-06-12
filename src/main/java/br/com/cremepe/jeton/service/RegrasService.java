@@ -11,7 +11,6 @@ import br.com.cremepe.jeton.repository.ResolucaoRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,14 +27,18 @@ public class RegrasService {
 
     private static final Logger log = LoggerFactory.getLogger(RegrasService.class);
 
-    @Autowired
-    private RegrasRepository repository;
-    @Autowired
-    private ResolucaoRepository resolucaoRepository;
-    @Autowired
-    private PortariaRepository portariaRepository;
-    @Autowired
-    private AtividadeConselhalRepository atividadeRepository;
+    private final RegrasRepository repository;
+    private final ResolucaoRepository resolucaoRepository;
+    private final PortariaRepository portariaRepository;
+    private final AtividadeConselhalRepository atividadeRepository;
+
+    RegrasService(RegrasRepository repository, ResolucaoRepository resolucaoRepository,
+            PortariaRepository portariaRepository, AtividadeConselhalRepository atividadeRepository) {
+        this.repository = repository;
+        this.resolucaoRepository = resolucaoRepository;
+        this.portariaRepository = portariaRepository;
+        this.atividadeRepository = atividadeRepository;
+    }
 
     @Auditar(tabela = "regras", acao = "CRIAR", descricao = "Criação de nova regra de pontuação", dadosParametros = "{ 'nomeRegra': #regra.nomeRegra, 'pontos': #regra.pontos, 'pontosLimitesTurno': #regra.pontosLimitesTurno, 'inJudicante': #regra.inJudicante, 'idResolucao': #regra.resolucao?.idResolucao, 'idPortaria': #regra.portaria?.idPortaria }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
