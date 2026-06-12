@@ -5,7 +5,6 @@ import br.com.cremepe.jeton.service.LogJetonService;
 import br.com.cremepe.jeton.util.JsonConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.authentication.event.LogoutSuccessEvent;
@@ -21,11 +20,13 @@ public class AuthenticationAuditListener {
 
     private static final Logger log = LoggerFactory.getLogger(AuthenticationAuditListener.class);
 
-    @Autowired
-    private LogJetonService logJetonService;
+    private final LogJetonService logJetonService;
+    private final JsonConverter jsonConverter;
 
-    @Autowired
-    private JsonConverter jsonConverter;
+    AuthenticationAuditListener(LogJetonService logJetonService, JsonConverter jsonConverter) {
+        this.logJetonService = logJetonService;
+        this.jsonConverter = jsonConverter;
+    }
 
     @EventListener
     public void onAuthenticationSuccess(AuthenticationSuccessEvent event) {

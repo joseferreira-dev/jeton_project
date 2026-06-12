@@ -10,7 +10,6 @@ import br.com.cremepe.jeton.repository.UsuarioRepository;
 import br.com.cremepe.jeton.repository.ViewUserLoginRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -28,20 +27,21 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private static final Logger log = LoggerFactory.getLogger(CustomUserDetailsService.class);
 
-    @Autowired
-    private ViewUserLoginRepository viewUserLoginRepository;
+    private final ViewUserLoginRepository viewUserLoginRepository;
+    private final PessoaRepository pessoaRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final ConselheiroRepository conselheiroRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PessoaRepository pessoaRepository;
-
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-
-    @Autowired
-    private ConselheiroRepository conselheiroRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    CustomUserDetailsService(ViewUserLoginRepository viewUserLoginRepository, PessoaRepository pessoaRepository,
+            UsuarioRepository usuarioRepository, ConselheiroRepository conselheiroRepository,
+            PasswordEncoder passwordEncoder) {
+        this.viewUserLoginRepository = viewUserLoginRepository;
+        this.pessoaRepository = pessoaRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.conselheiroRepository = conselheiroRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     @Transactional(readOnly = true)

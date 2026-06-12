@@ -4,7 +4,6 @@ import br.com.cremepe.jeton.domain.AtividadeConselhal;
 import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repository.ComprovanteRepository;
 import br.com.cremepe.jeton.repository.ConselheiroRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -13,12 +12,16 @@ import java.util.List;
 @Service
 public class DashboardService {
 
-    @Autowired
-    private AtividadeConselhalRepository atividadeRepository;
-    @Autowired
-    private ConselheiroRepository conselheiroRepository;
-    @Autowired
-    private ComprovanteRepository comprovanteRepository;
+    private final AtividadeConselhalRepository atividadeRepository;
+    private final ConselheiroRepository conselheiroRepository;
+    private final ComprovanteRepository comprovanteRepository;
+
+    DashboardService(AtividadeConselhalRepository atividadeRepository, ConselheiroRepository conselheiroRepository,
+            ComprovanteRepository comprovanteRepository) {
+        this.atividadeRepository = atividadeRepository;
+        this.conselheiroRepository = conselheiroRepository;
+        this.comprovanteRepository = comprovanteRepository;
+    }
 
     public long getTotalAtividadesPendentes() {
         return atividadeRepository.countByInSituacao("P");

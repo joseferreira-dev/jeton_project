@@ -6,7 +6,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -22,8 +21,11 @@ public class SistemaBloqueioFilter extends OncePerRequestFilter {
             "/login", "/autenticar", "/sair", "/bloqueio", "/bloqueio/status",
             "/css/", "/js/", "/images/", "/favicon");
 
-    @Autowired
-    private ParametrosService parametrosService;
+    private final ParametrosService parametrosService;
+
+    SistemaBloqueioFilter(ParametrosService parametrosService) {
+        this.parametrosService = parametrosService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
