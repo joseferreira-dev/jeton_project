@@ -203,7 +203,7 @@
                     atualizarListaSelecionados();
                     return;
                 }
-                fetch(`/api/atividades/conselheiros-por-gestao?gestaoId=${gestaoId}`)
+                fetch(`/api/conselheiros/conselheiros-por-gestao?gestaoId=${gestaoId}`)
                     .then(response => response.json())
                     .then(data => {
                         selectConselheiros.innerHTML = '';
@@ -239,7 +239,7 @@
                 }
 
                 selectRegra.innerHTML = '<option value="">Carregando regras...</option>';
-                fetch(`/api/atividades/regras-por-data?data=${data}`)
+                fetch(`/api/regras/regras-por-data?data=${data}`)
                     .then(response => response.json())
                     .then(result => {
                         nomeResolucao.value = result.nomeResolucao || "Nenhuma encontrada";

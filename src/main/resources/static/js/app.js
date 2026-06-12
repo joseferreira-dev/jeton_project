@@ -611,7 +611,7 @@ function atualizarConselheiros(idParaSelecionar) {
         return;
     }
 
-    fetch(`/api/atividades/conselheiros-por-gestao?gestaoId=${gestaoId}`)
+    fetch(`/api/conselheiros/conselheiros-por-gestao?gestaoId=${gestaoId}`)
         .then(response => response.json())
         .then(data => {
             selectConselheiro.innerHTML = '<option value="">-- Selecione o Médico --</option>';
@@ -640,7 +640,7 @@ function atualizarRegrasPorData(idRegraParaSelecionar) {
 
     selectRegra.innerHTML = '<option value="">Carregando regras da época...</option>';
 
-    fetch(`/api/atividades/regras-por-data?data=${dataValue}`)
+    fetch(`/api/regras/regras-por-data?data=${dataValue}`)
         .then(response => response.json())
         .then(data => {
             const nomeResolucao = document.getElementById('nomeResolucaoVisual');
