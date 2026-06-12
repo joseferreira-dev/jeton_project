@@ -11,7 +11,6 @@ import br.com.cremepe.jeton.service.AtividadeConselhalService;
 import br.com.cremepe.jeton.service.ConselheiroService;
 import br.com.cremepe.jeton.service.GestaoService;
 import br.com.cremepe.jeton.service.RegrasService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -21,39 +20,36 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/atividades")
 @PreAuthorize("isAuthenticated()")
 public class AtividadeApiController {
 
-    @Autowired
-    private AtividadeConselhalService atividadeService;
+    private final AtividadeConselhalService atividadeService;
+    private final ConselheiroService conselheiroService;
+    private final GestaoService gestaoService;
+    private final RegrasService regrasService;
+    private final AtividadeMapper atividadeMapper;
+    private final ConselheiroMapper conselheiroMapper;
+    private final PortariaMapper portariaMapper;
+    private final ResolucaoMapper resolucaoMapper;
+    private final RegrasMapper regrasMapper;
 
-    @Autowired
-    private ConselheiroService conselheiroService;
-
-    @Autowired
-    private GestaoService gestaoService;
-
-    @Autowired
-    private RegrasService regrasService;
-
-    @Autowired
-    private AtividadeMapper atividadeMapper;
-
-    @Autowired
-    private ConselheiroMapper conselheiroMapper;
-
-    @Autowired
-    private PortariaMapper portariaMapper;
-
-    @Autowired
-    private ResolucaoMapper resolucaoMapper;
-
-    @Autowired
-    private RegrasMapper regrasMapper;
+    AtividadeApiController(AtividadeConselhalService atividadeService, ConselheiroService conselheiroService,
+            GestaoService gestaoService, RegrasService regrasService, ConselheiroMapper conselheiroMapper,
+            ResolucaoMapper resolucaoMapper, PortariaMapper portariaMapper, RegrasMapper regrasMapper) {
+        this.atividadeService = atividadeService;
+        this.conselheiroService = conselheiroService;
+        this.gestaoService = gestaoService;
+        this.regrasService = regrasService;
+        this.atividadeMapper = null;
+        this.conselheiroMapper = conselheiroMapper;
+        this.resolucaoMapper = resolucaoMapper;
+        this.portariaMapper = portariaMapper;
+        this.regrasMapper = regrasMapper;
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('A') or hasAuthority('S')")

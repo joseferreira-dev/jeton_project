@@ -6,7 +6,6 @@ import br.com.cremepe.jeton.repository.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,16 +25,21 @@ public class AtividadeConselhalService {
 
     private static final Logger log = LoggerFactory.getLogger(AtividadeConselhalService.class);
 
-    @Autowired
-    private AtividadeConselhalRepository atividadeRepository;
-    @Autowired
-    private ComprovanteRepository comprovanteRepository;
-    @Autowired
-    private GestaoRepository gestaoRepository;
-    @Autowired
-    private GestaoConselheiroRepository gestaoConselheiroRepository;
-    @Autowired
-    private ComprovanteService comprovanteService;
+    private final AtividadeConselhalRepository atividadeRepository;
+    private final ComprovanteRepository comprovanteRepository;
+    private final GestaoRepository gestaoRepository;
+    private final GestaoConselheiroRepository gestaoConselheiroRepository;
+    private final ComprovanteService comprovanteService;
+
+    AtividadeConselhalService(AtividadeConselhalRepository atividadeRepository,
+            ComprovanteRepository comprovanteRepository, GestaoRepository gestaoRepository,
+            GestaoConselheiroRepository gestaoConselheiroRepository, ComprovanteService comprovanteService) {
+        this.atividadeRepository = atividadeRepository;
+        this.comprovanteRepository = comprovanteRepository;
+        this.gestaoRepository = gestaoRepository;
+        this.gestaoConselheiroRepository = gestaoConselheiroRepository;
+        this.comprovanteService = comprovanteService;
+    }
 
     @Auditar(tabela = "atividade_conselhal", acao = "CRIAR", descricao = "Criação de nova atividade", dadosParametros = "{ 'idAtividade': #atividade.idAtividade }", dadosRetorno = "#result", auditarExcecao = true)
     @Transactional
