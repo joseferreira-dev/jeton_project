@@ -8,16 +8,34 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Integer> {
 
     List<PontosSaldo> findByJetonIdJeton(Integer idJeton);
 
-    @Query("SELECT new br.com.cremepe.jeton.dto.PontosRemanescentesDTO(c.idPessoa, p.nome, SUM(ps.pontosSobrando), COALESCE(SUM(j.valor), 0)) "
-            +
-            "FROM PontosSaldo ps JOIN ps.conselheiro c JOIN c.pessoa p LEFT JOIN ps.jeton j " +
-            "WHERE ps.inSituacao = 'A' GROUP BY c.idPessoa, p.nome")
-    List<PontosRemanescentesDTO> buscarSaldosAgrupadosPorConselheiro();
+    @Query("SELECT new br.com.cremepe.jeton.dto.PontosRemanescentesDTO(" +
+            "c.idPessoa, p.nome, " +
+            "COALESCE(SUM(ps.pontosSobrando), 0), " +
+            "COALESCE((SELECT SUM(j.valor) FROM Jeton j WHERE j.conselheiro.idPessoa = c.idPessoa), 0)) " +
+            "FROM Conselheiro c " +
+            "JOIN c.pessoa p " +
+            "LEFT JOIN PontosSaldo ps ON ps.conselheiro.idPessoa = c.idPessoa AND ps.inSituacao = 'A' " +
+            "WHERE c.idPessoa = :idPessoa " +
+            "GROUP BY c.idPessoa, p.nome")
+    Optional<PontosRemanescentesDTO> buscarSaldoPorConselheiro(@Param("idPessoa") Integer idPessoa);
+
+    @Query("SELECT new br.com.cremepe.jeton.dto.PontosRemanescentesDTO(" +
+            "c.idPessoa, p.nome, " +
+            "COALESCE(SUM(ps.pontosSobrando), 0), " +
+            "COALESCE((SELECT SUM(j.valor) FROM Jeton j WHERE j.conselheiro.idPessoa = c.idPessoa), 0)) " +
+            "FROM Conselheiro c " +
+            "JOIN c.pessoa p " +
+            "LEFT JOIN PontosSaldo ps ON ps.conselheiro.idPessoa = c.idPessoa AND ps.inSituacao = 'A' " +
+            "WHERE EXISTS (SELECT 1 FROM Jeton j WHERE j.conselheiro.idPessoa = c.idPessoa) " + // apenas quem tem
+                                                                                                // jetons
+            "GROUP BY c.idPessoa, p.nome")
+    List<PontosRemanescentesDTO> buscarSaldosAgrupadosPorConselheiroComJeton();
 
     @Query("SELECT ps FROM PontosSaldo ps WHERE ps.conselheiro.idPessoa = :idPessoa " +
             "AND ps.gestao.idGestao = :idGestao AND ps.inSituacao = 'A' AND ps.pontosSobrando > 0 " +
