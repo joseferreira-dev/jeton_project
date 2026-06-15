@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.NivelAcesso;
 import br.com.cremepe.jeton.domain.Usuario;
 import br.com.cremepe.jeton.domain.UsuarioAcesso;
@@ -25,15 +24,18 @@ public class PermissaoService {
     private final UsuarioAcessoRepository usuarioAcessoRepository;
     private final UsuarioRepository usuarioRepository;
     private final NivelAcessoRepository nivelAcessoRepository;
+    private final LogJetonService logJetonService; // <-- INJETADO
 
-    PermissaoService(UsuarioAcessoRepository usuarioAcessoRepository, UsuarioRepository usuarioRepository,
-            NivelAcessoRepository nivelAcessoRepository) {
+    public PermissaoService(UsuarioAcessoRepository usuarioAcessoRepository,
+            UsuarioRepository usuarioRepository,
+            NivelAcessoRepository nivelAcessoRepository,
+            LogJetonService logJetonService) {
         this.usuarioAcessoRepository = usuarioAcessoRepository;
         this.usuarioRepository = usuarioRepository;
         this.nivelAcessoRepository = nivelAcessoRepository;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "usuario_acesso", acao = "CONCEDER", descricao = "Concessão de permissão (nível de acesso) a um usuário", dadosParametros = "{ 'usuarioId': #idUsuario, 'nivelId': #idNivel }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public UsuarioAcesso concederPermissao(Integer idUsuario, String idNivel) {
         UsuarioAcessoId idComposto = new UsuarioAcessoId(idUsuario, idNivel);
@@ -52,17 +54,13 @@ public class PermissaoService {
 
             UsuarioAcesso salvo = usuarioAcessoRepository.save(novaPermissao);
             log.info("Permissão concedida: usuário {} -> nível {}", idUsuario, idNivel);
-
+            logJetonService.logPermissaoConcedida(usuario, nivelAcesso);
             return salvo;
         });
     }
 
-    @Auditar(tabela = "usuario_acesso", acao = "REVOGAR", descricao = "Revogação de permissão (nível de acesso) de um usuário", dadosParametros = "{ 'usuarioId': #idUsuario, 'nivelId': #idNivel }", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public void revogarPermissao(Integer idUsuario, String idNivel) {
-        // Busca os dados antes de excluir para que o aspecto possa
-        // capturá-los. Isso já é feito via entityManager.find(...),
-        // mas grante que a entidade existe antes de deletar
         UsuarioAcessoId idComposto = new UsuarioAcessoId(idUsuario, idNivel);
         if (!usuarioAcessoRepository.existsById(idComposto)) {
             log.warn("Tentativa de revogar permissão inexistente: usuário {}, nível {}", idUsuario, idNivel);
@@ -70,15 +68,16 @@ public class PermissaoService {
         }
 
         usuarioAcessoRepository.deleteById(idComposto);
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + idUsuario));
+        NivelAcesso nivelAcesso = nivelAcessoRepository.findById(idNivel)
+                .orElseThrow(() -> new RuntimeException("Nível de acesso não encontrado: " + idNivel));
         log.info("Permissão revogada: usuário {} -> nível {}", idUsuario, idNivel);
+        logJetonService.logPermissaoRevogada(usuario, nivelAcesso);
     }
 
-    @Auditar(tabela = "usuario_acesso", acao = "REVOGAR_TODAS", descricao = "Revogação de todas as permissões de um usuário", dadosParametros = "{ 'usuarioId': #idUsuario }", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public void revogarTodasPermissoes(Integer idUsuario) {
-        // Busca todas as permissões do usuário para que o aspecto possa
-        // registrar. O aspecto não captura automaticamente coleções, então
-        // usa-se dadosParametros para registrar
         List<UsuarioAcesso> permissoes = usuarioAcessoRepository.findByIdIdUsuarioPessoa(idUsuario);
         if (permissoes.isEmpty()) {
             log.info("Nenhuma permissão para revogar do usuário {}", idUsuario);
@@ -86,7 +85,10 @@ public class PermissaoService {
         }
 
         usuarioAcessoRepository.deleteByUsuarioId(idUsuario);
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + idUsuario));
         log.info("Todas as permissões do usuário {} foram revogadas", idUsuario);
+        logJetonService.logTodasPermissoesRevogadas(usuario);
     }
 
     @Transactional(readOnly = true)
