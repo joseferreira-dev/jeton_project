@@ -63,7 +63,7 @@ public class GestaoApiController {
         gestao.setNomeGestao(gestaoDTO.nome());
         gestao.setDtInicio(gestaoDTO.dataInicio());
         gestao.setDtFim(gestaoDTO.dataFim());
-        Gestao salva = gestaoService.criarGestao(gestao);
+        Gestao salva = gestaoService.criar(gestao);
         return ResponseEntity.status(HttpStatus.CREATED).body(gestaoMapper.toDto(salva));
     }
 
@@ -74,14 +74,14 @@ public class GestaoApiController {
         gestao.setNomeGestao(gestaoDTO.nome());
         gestao.setDtInicio(gestaoDTO.dataInicio());
         gestao.setDtFim(gestaoDTO.dataFim());
-        Gestao atualizada = gestaoService.atualizarGestao(gestao);
+        Gestao atualizada = gestaoService.atualizar(gestao);
         return ResponseEntity.ok(gestaoMapper.toDto(atualizada));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('S')")
     public ResponseEntity<Void> excluir(@PathVariable Integer id) {
-        gestaoService.excluirGestao(id);
+        gestaoService.excluir(id);
         return ResponseEntity.noContent().build();
     }
 }

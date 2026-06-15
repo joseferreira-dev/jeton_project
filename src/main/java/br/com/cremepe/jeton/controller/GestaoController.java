@@ -68,7 +68,7 @@ public class GestaoController {
     @PostMapping("/salvar")
     public String salvar(@Valid @ModelAttribute("gestao") Gestao gestao,
             RedirectAttributes ra) {
-        gestaoService.criarGestao(gestao);
+        gestaoService.criar(gestao);
         ra.addFlashAttribute("sucesso", "Gestão criada com sucesso!");
         return "redirect:/gestoes";
     }
@@ -76,14 +76,14 @@ public class GestaoController {
     @PostMapping("/atualizar")
     public String atualizar(@Valid @ModelAttribute("gestao") Gestao gestao,
             RedirectAttributes ra) {
-        gestaoService.atualizarGestao(gestao);
+        gestaoService.atualizar(gestao);
         ra.addFlashAttribute("sucesso", "Gestão atualizada com sucesso!");
         return "redirect:/gestoes";
     }
 
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
-        gestaoService.excluirGestao(id);
+        gestaoService.excluir(id);
         ra.addFlashAttribute("sucesso", "Gestão removida com sucesso!");
         return "redirect:/gestoes";
     }
