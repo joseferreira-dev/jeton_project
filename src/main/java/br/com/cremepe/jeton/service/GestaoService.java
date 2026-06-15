@@ -23,15 +23,14 @@ public class GestaoService {
     private final GestaoRepository gestaoRepository;
     private final LogJetonService logJetonService;
 
-    public GestaoService(
-            GestaoRepository gestaoRepository,
+    public GestaoService(GestaoRepository gestaoRepository,
             LogJetonService logJetonService) {
         this.gestaoRepository = gestaoRepository;
         this.logJetonService = logJetonService;
     }
 
     @Transactional
-    public Gestao criarGestao(Gestao gestao) {
+    public Gestao criar(Gestao gestao) {
         validarDatas(gestao);
         validarNomeUnico(gestao);
         validarSobreposicao(gestao);
@@ -46,7 +45,7 @@ public class GestaoService {
     }
 
     @Transactional
-    public Gestao atualizarGestao(Gestao gestao) {
+    public Gestao atualizar(Gestao gestao) {
         Gestao existente = buscarGestaoOuFalhar(gestao.getIdGestao());
 
         Gestao copia = copiarGestao(existente);
@@ -69,7 +68,7 @@ public class GestaoService {
     }
 
     @Transactional
-    public void excluirGestao(Integer id) {
+    public void excluir(Integer id) {
         Gestao existente = buscarGestaoOuFalhar(id);
         Gestao copia = copiarGestao(existente);
 
