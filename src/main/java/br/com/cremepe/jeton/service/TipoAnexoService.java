@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.TipoAnexo;
 import br.com.cremepe.jeton.repository.ComprovanteRepository;
 import br.com.cremepe.jeton.repository.TipoAnexoRepository;
@@ -20,33 +19,43 @@ public class TipoAnexoService {
 
     private final TipoAnexoRepository repository;
     private final ComprovanteRepository comprovanteRepository;
+    private final LogJetonService logJetonService; // <-- INJETADO
 
-    TipoAnexoService(TipoAnexoRepository repository, ComprovanteRepository comprovanteRepository) {
+    public TipoAnexoService(TipoAnexoRepository repository,
+            ComprovanteRepository comprovanteRepository,
+            LogJetonService logJetonService) {
         this.repository = repository;
         this.comprovanteRepository = comprovanteRepository;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "tipo_anexo", acao = "CRIAR", descricao = "Criação de novo tipo de anexo", dadosParametros = "{ 'nome': #tipoAnexo.nome, 'exigePublicacao': #tipoAnexo.exigePublicacao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public TipoAnexo criar(TipoAnexo tipoAnexo) {
-        tipoAnexo.setIdTipo(null); // força criação
-        return salvarTipoAnexo(tipoAnexo, true);
+        tipoAnexo.setIdTipo(null);
+        TipoAnexo salvo = salvar(tipoAnexo, true);
+        logJetonService.logTipoAnexoCriado(salvo);
+        return salvo;
     }
 
-    @Auditar(tabela = "tipo_anexo", acao = "ATUALIZAR", descricao = "Atualização de tipo de anexo existente", dadosParametros = "{ 'id': #tipoAnexo.idTipo, 'nome': #tipoAnexo.nome, 'exigePublicacao': #tipoAnexo.exigePublicacao }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public TipoAnexo atualizar(TipoAnexo tipoAnexo) {
         if (tipoAnexo.getIdTipo() == null) {
             throw new RuntimeException("ID do tipo de anexo não informado para atualização.");
         }
-        // Verifica se existe
         if (!repository.existsById(tipoAnexo.getIdTipo())) {
             throw new RuntimeException("Tipo de anexo não encontrado para atualização.");
         }
-        return salvarTipoAnexo(tipoAnexo, false);
+        // Captura o estado anterior
+        TipoAnexo antigo = repository.findById(tipoAnexo.getIdTipo())
+                .orElseThrow(() -> new RuntimeException("Tipo de anexo não encontrado."));
+        TipoAnexo copia = copiarTipoAnexo(antigo);
+
+        TipoAnexo atualizado = salvar(tipoAnexo, false);
+        logJetonService.logTipoAnexoAtualizado(copia, atualizado);
+        return atualizado;
     }
 
-    private TipoAnexo salvarTipoAnexo(TipoAnexo tipoAnexo, boolean isNovo) {
+    private TipoAnexo salvar(TipoAnexo tipoAnexo, boolean isNovo) {
         // Normaliza nome
         if (tipoAnexo.getNome() != null) {
             tipoAnexo.setNome(tipoAnexo.getNome().trim());
@@ -81,16 +90,15 @@ public class TipoAnexoService {
         }
     }
 
-    @Auditar(tabela = "tipo_anexo", acao = "EXCLUIR", descricao = "Exclusão de tipo de anexo (apenas se não houver comprovantes vinculados)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluir(Integer id) {
-        // Busca o tipo antes de excluir para obter dados (usados no log.info)
         Optional<TipoAnexo> tipoOpt = repository.findById(id);
         if (tipoOpt.isEmpty()) {
             log.warn("Tentativa de excluir tipo de anexo inexistente ID={}", id);
             throw new RuntimeException("Tipo de anexo não encontrado para exclusão.");
         }
         TipoAnexo tipo = tipoOpt.get();
+        TipoAnexo copia = copiarTipoAnexo(tipo);
 
         // Verifica se existem comprovantes usando este tipo
         long count = comprovanteRepository.findByTipoAnexoIdTipo(id).size();
@@ -101,6 +109,7 @@ public class TipoAnexoService {
 
         repository.deleteById(id);
         log.info("Tipo de anexo excluído: id={}, nome={}", id, tipo.getNome());
+        logJetonService.logTipoAnexoExcluido(copia);
     }
 
     @Transactional(readOnly = true)
@@ -117,5 +126,13 @@ public class TipoAnexoService {
     public TipoAnexo buscarOuFalhar(Integer id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tipo de anexo não encontrado com ID: " + id));
+    }
+
+    private TipoAnexo copiarTipoAnexo(TipoAnexo original) {
+        TipoAnexo copia = new TipoAnexo();
+        copia.setIdTipo(original.getIdTipo());
+        copia.setNome(original.getNome());
+        copia.setExigePublicacao(original.getExigePublicacao());
+        return copia;
     }
 }
