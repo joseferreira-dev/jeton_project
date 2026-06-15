@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.NivelAcesso;
 import br.com.cremepe.jeton.repository.NivelAcessoRepository;
 import br.com.cremepe.jeton.repository.UsuarioAcessoRepository;
@@ -20,26 +19,36 @@ public class NivelAcessoService {
 
     private final NivelAcessoRepository repository;
     private final UsuarioAcessoRepository usuarioAcessoRepository;
+    private final LogJetonService logJetonService; // <-- INJETADO
 
-    NivelAcessoService(NivelAcessoRepository repository, UsuarioAcessoRepository usuarioAcessoRepository) {
+    public NivelAcessoService(NivelAcessoRepository repository,
+            UsuarioAcessoRepository usuarioAcessoRepository,
+            LogJetonService logJetonService) {
         this.repository = repository;
         this.usuarioAcessoRepository = usuarioAcessoRepository;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "nivel_acesso", acao = "CRIAR", descricao = "Criação de novo nível de acesso", dadosParametros = "{ 'idNivel': #nivel.idNivel, 'nomeNivel': #nivel.nomeNivel }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public NivelAcesso criar(NivelAcesso nivel) {
         nivel.setIdNivel(null);
-        return salvar(nivel, true);
+        NivelAcesso salvo = salvar(nivel, true);
+        logJetonService.logNivelAcessoCriado(salvo);
+        return salvo;
     }
 
-    @Auditar(tabela = "nivel_acesso", acao = "ATUALIZAR", descricao = "Atualização de nível de acesso existente", dadosParametros = "{ 'idNivel': #nivel.idNivel, 'nomeNivel': #nivel.nomeNivel }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public NivelAcesso atualizar(NivelAcesso nivel) {
         if (nivel.getIdNivel() == null || nivel.getIdNivel().trim().isEmpty()) {
             throw new RuntimeException("ID do nível de acesso não informado para atualização.");
         }
-        return salvar(nivel, false);
+        NivelAcesso antigo = repository.findById(nivel.getIdNivel())
+                .orElseThrow(() -> new RuntimeException("Nível de acesso não encontrado para atualização."));
+        NivelAcesso copia = copiarNivelAcesso(antigo);
+
+        NivelAcesso atualizado = salvar(nivel, false);
+        logJetonService.logNivelAcessoAtualizado(copia, atualizado);
+        return atualizado;
     }
 
     private NivelAcesso salvar(NivelAcesso nivel, boolean isNovo) {
@@ -82,7 +91,6 @@ public class NivelAcessoService {
         }
     }
 
-    @Auditar(tabela = "nivel_acesso", acao = "EXCLUIR", descricao = "Exclusão de nível de acesso (apenas se não houver usuários vinculados)", dadosParametros = "{ 'idNivel': #id }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluir(String id) {
         boolean emUso = usuarioAcessoRepository.existsByIdIdNivel(id);
@@ -96,6 +104,8 @@ public class NivelAcessoService {
                 .orElseThrow(() -> new RuntimeException("Nível de acesso não encontrado: " + id));
 
         repository.deleteById(id);
+
+        logJetonService.logNivelAcessoExcluido(id, nivel.getNomeNivel());
         log.info("Nível de acesso excluído: id={}, nome={}", id, nivel.getNomeNivel());
     }
 
@@ -113,5 +123,12 @@ public class NivelAcessoService {
     public NivelAcesso buscarOuFalhar(String id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Nível de acesso não encontrado: " + id));
+    }
+
+    private NivelAcesso copiarNivelAcesso(NivelAcesso original) {
+        NivelAcesso copia = new NivelAcesso();
+        copia.setIdNivel(original.getIdNivel());
+        copia.setNomeNivel(original.getNomeNivel());
+        return copia;
     }
 }
