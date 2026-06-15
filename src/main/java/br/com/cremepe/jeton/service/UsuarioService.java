@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.Conselheiro;
 import br.com.cremepe.jeton.domain.Pessoa;
 import br.com.cremepe.jeton.domain.Usuario;
@@ -30,32 +29,41 @@ public class UsuarioService {
     private final PessoaRepository pessoaRepository;
     private final ConselheiroRepository conselheiroRepository;
     private final PasswordEncoder passwordEncoder;
+    private final LogJetonService logJetonService;
 
-    UsuarioService(UsuarioRepository usuarioRepository, PessoaRepository pessoaRepository,
-            PasswordEncoder passwordEncoder, ConselheiroRepository conselheiroRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository,
+            PessoaRepository pessoaRepository,
+            PasswordEncoder passwordEncoder,
+            ConselheiroRepository conselheiroRepository,
+            LogJetonService logJetonService) {
         this.usuarioRepository = usuarioRepository;
         this.pessoaRepository = pessoaRepository;
         this.conselheiroRepository = conselheiroRepository;
         this.passwordEncoder = passwordEncoder;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "usuario", acao = "CRIAR", descricao = "Criação de novo usuário", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public Usuario criar(Usuario usuario) {
-        usuario.setIdUsuarioPessoa(null); // força criação
-        return salvarUsuario(usuario, true);
+        usuario.setIdUsuarioPessoa(null);
+        Usuario salvo = salvar(usuario, true);
+        logJetonService.logUsuarioCriado(salvo);
+        return salvo;
     }
 
-    @Auditar(tabela = "usuario", acao = "ATUALIZAR", descricao = "Atualização de usuário existente", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public Usuario atualizar(Usuario usuario) {
         if (usuario.getIdUsuarioPessoa() == null) {
             throw new RuntimeException("ID do usuário não informado para atualização.");
         }
-        return salvarUsuario(usuario, false);
+        Usuario antigo = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado para atualização."));
+        Usuario atualizado = salvar(usuario, false);
+        logJetonService.logUsuarioAtualizado(antigo, atualizado);
+        return atualizado;
     }
 
-    private Usuario salvarUsuario(Usuario usuario, boolean isNovo) {
+    private Usuario salvar(Usuario usuario, boolean isNovo) {
         String nome = usuario.getPessoa().getNome();
         String tipoPessoa = usuario.iseConselheiro() ? "Conselheiro" : "Funcionário";
         String situacao = usuario.getInSituacao();
@@ -163,35 +171,28 @@ public class UsuarioService {
         }
     }
 
-    @Auditar(tabela = "usuario", acao = "ATUALIZAR_PERFIL", descricao = "Atualização do próprio perfil pelo usuário logado", dadosParametros = "{ 'usuario': #usuario }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public void atualizarPerfil(Usuario usuario) {
         Usuario existente = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado para atualização de perfil"));
+        Usuario antigo = copiarUsuario(existente);
 
-        // Valida se o e-mail já não está em uso por outro usuário
+        // Valida e atualiza os campos permitidos
         String novoEmail = usuario.getPessoa().getEmail();
         if (novoEmail != null && !novoEmail.equals(existente.getPessoa().getEmail())) {
             validarEmailUnico(novoEmail, existente.getIdUsuarioPessoa());
         }
 
-        // Atualiza apenas os campos permitidos
         Pessoa pessoa = existente.getPessoa();
         pessoa.setNome(usuario.getPessoa().getNome());
         pessoa.setEmail(usuario.getPessoa().getEmail());
-        // CPF não é alterado
 
-        // Se uma nova senha foi fornecida, atualiza
         if (usuario.getSenha() != null && !usuario.getSenha().trim().isEmpty()) {
             existente.setSenha(passwordEncoder.encode(usuario.getSenha()));
         }
 
-        // Salva (cascade salva a pessoa também)
         usuarioRepository.save(existente);
-
-        // Log de auditoria é gerado automaticamente pelo aspecto
-        log.info("Perfil do usuário ID={} ({}) atualizado", existente.getIdUsuarioPessoa(),
-                existente.getPessoa().getNome());
+        logJetonService.logUsuarioAtualizado(antigo, existente);
     }
 
     @Transactional(readOnly = true)
@@ -219,7 +220,6 @@ public class UsuarioService {
         return usuarioRepository.findById(id);
     }
 
-    @Auditar(tabela = "usuario", acao = "EXCLUIR", descricao = "Exclusão física de usuário", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public void excluir(Integer id) {
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
@@ -228,17 +228,28 @@ public class UsuarioService {
             throw new RuntimeException("Usuário não encontrado para exclusão.");
         }
         Usuario usuario = usuarioOpt.get();
-        String nome = usuario.getPessoa().getNome();
-        String cpf = usuario.getPessoa().getCpf();
-        String tipoPessoa = usuario.getPessoa().isConselheiro() ? "Conselheiro" : "Funcionário";
-        String situacao = usuario.getInSituacao();
 
+        // Remove associações e registros
         usuarioRepository.deletarPermissoesNativo(id);
         usuarioRepository.deletarConselheiroNativo(id);
         usuarioRepository.deletarUsuarioNativo(id);
         usuarioRepository.deletarPessoaNativa(id);
 
-        log.info("Usuário excluído: ID={}, nome='{}', CPF={}, tipo={}, situação={}",
-                id, nome, cpf, tipoPessoa, situacao);
+        logJetonService.logUsuarioExcluido(usuario);
+    }
+
+    private Usuario copiarUsuario(Usuario original) {
+        Usuario copia = new Usuario();
+        copia.setIdUsuarioPessoa(original.getIdUsuarioPessoa());
+        copia.setInSituacao(original.getInSituacao());
+        copia.setSenha(original.getSenha());
+        Pessoa p = new Pessoa();
+        p.setIdPessoa(original.getPessoa().getIdPessoa());
+        p.setNome(original.getPessoa().getNome());
+        p.setEmail(original.getPessoa().getEmail());
+        p.setCpf(original.getPessoa().getCpf());
+        p.setInTipoPessoa(original.getPessoa().getInTipoPessoa());
+        copia.setPessoa(p);
+        return copia;
     }
 }
