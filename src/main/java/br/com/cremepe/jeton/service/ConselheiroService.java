@@ -1,9 +1,7 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.Conselheiro;
 import br.com.cremepe.jeton.domain.GestaoConselheiro;
-import br.com.cremepe.jeton.domain.NivelAcesso;
 import br.com.cremepe.jeton.domain.Pessoa;
 import br.com.cremepe.jeton.domain.Usuario;
 import br.com.cremepe.jeton.repository.ConselheiroRepository;
@@ -38,11 +36,16 @@ public class ConselheiroService {
     private final PermissaoService permissaoService;
     private final PasswordEncoder passwordEncoder;
     private final UsuarioService usuarioService;
+    private final LogJetonService logJetonService;
 
-    ConselheiroService(ConselheiroRepository conselheiroRepository,
-            GestaoConselheiroRepository gestaoConselheiroRepository, PessoaRepository pessoaRepository,
-            UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, UsuarioService usuarioService,
-            PermissaoService permissaoService) {
+    public ConselheiroService(ConselheiroRepository conselheiroRepository,
+            GestaoConselheiroRepository gestaoConselheiroRepository,
+            PessoaRepository pessoaRepository,
+            UsuarioRepository usuarioRepository,
+            PasswordEncoder passwordEncoder,
+            UsuarioService usuarioService,
+            PermissaoService permissaoService,
+            LogJetonService logJetonService) {
         this.conselheiroRepository = conselheiroRepository;
         this.gestaoConselheiroRepository = gestaoConselheiroRepository;
         this.pessoaRepository = pessoaRepository;
@@ -50,33 +53,39 @@ public class ConselheiroService {
         this.permissaoService = permissaoService;
         this.passwordEncoder = passwordEncoder;
         this.usuarioService = usuarioService;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "conselheiro", acao = "CRIAR", descricao = "Criação de novo conselheiro", dadosParametros = "{ 'conselheiro': #conselheiro }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public Conselheiro criar(Conselheiro conselheiro) {
         conselheiro.setIdPessoa(null);
-        return salvarConselheiro(conselheiro, true);
+        Conselheiro salvo = salvarConselheiro(conselheiro, true);
+        logJetonService.logConselheiroCriado(salvo);
+        return salvo;
     }
 
-    @Auditar(tabela = "conselheiro", acao = "ATUALIZAR", descricao = "Atualização de conselheiro existente", dadosParametros = "{ 'conselheiro': #conselheiro }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public Conselheiro atualizar(Conselheiro conselheiro) {
         if (conselheiro.getIdPessoa() == null) {
             throw new RuntimeException("ID do conselheiro não informado para atualização.");
         }
-        return salvarConselheiro(conselheiro, false);
+        Conselheiro antigo = conselheiroRepository.findById(conselheiro.getIdPessoa())
+                .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado para edição."));
+
+        Conselheiro copiaAntigo = copiarConselheiro(antigo);
+
+        Conselheiro atualizado = salvarConselheiro(conselheiro, false);
+        logJetonService.logConselheiroAtualizado(copiaAntigo, atualizado);
+        return atualizado;
     }
 
     private Conselheiro salvarConselheiro(Conselheiro conselheiro, boolean isNovo) {
-        // Se for uma edição (ID informado), carrega a entidade existente
         Conselheiro conselheiroExistente = null;
         if (!isNovo) {
             conselheiroExistente = conselheiroRepository.findById(conselheiro.getIdPessoa())
                     .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado para edição."));
         }
 
-        // Obtém a pessoa a ser salva (pode ser a nova ou a existente)
         Pessoa pessoa;
         if (isNovo) {
             pessoa = conselheiro.getPessoa();
@@ -99,16 +108,13 @@ public class ConselheiroService {
             throw new RuntimeException("O número de CPF informado é inválido. Verifique os dígitos.");
         }
 
-        // Valida duplicidade de CPF (ignorando o próprio registro)
         validarCpfUnico(cpfLimpo, isNovo ? null : conselheiroExistente.getIdPessoa());
 
-        // Valida CRM (se informado)
         Integer crm = conselheiro.getCrm();
         if (crm != null) {
             validarCrmUnico(crm, isNovo ? null : conselheiroExistente.getIdPessoa());
         }
 
-        // Prepara o conselheiro final
         Conselheiro conselheiroFinal;
         if (isNovo) {
             conselheiroFinal = conselheiro;
@@ -123,20 +129,13 @@ public class ConselheiroService {
             conselheiroFinal.setInSituacao(conselheiro.getInSituacao());
         }
 
-        // Salva o conselheiro (cascade salvará a pessoa)
         Conselheiro conselheiroSalvo = conselheiroRepository.save(conselheiroFinal);
         log.info("Conselheiro {}: ID={}, nome='{}', CRM={}, situação={}",
                 isNovo ? "criado" : "atualizado",
                 conselheiroSalvo.getIdPessoa(), pessoa.getNome(), crm != null ? crm : 0,
                 conselheiroSalvo.getInSituacao());
 
-        // Sincroniza o usuário vinculado (cria ou atualiza)
         sincronizarUsuario(conselheiroSalvo, conselheiro.getSenhaAcesso(), isNovo);
-
-        // Concede permissões padrão apenas para novos conselheiros
-        if (isNovo) {
-            concederPermissoesPadrao(conselheiroSalvo.getIdPessoa());
-        }
 
         return conselheiroSalvo;
     }
@@ -156,13 +155,6 @@ public class ConselheiroService {
         log.debug("Usuário sincronizado para conselheiro ID={}", conselheiro.getIdPessoa());
     }
 
-    private void concederPermissoesPadrao(Integer idConselheiro) {
-        permissaoService.concederPermissao(idConselheiro, NivelAcesso.NIVEL_ATIVIDADE_CONSELHAL);
-        permissaoService.concederPermissao(idConselheiro, NivelAcesso.NIVEL_COMPROVANTES);
-        log.info("Permissões padrão concedidas para o novo conselheiro ID={}", idConselheiro);
-    }
-
-    @Auditar(tabela = "conselheiro", acao = "EXCLUIR", descricao = "Exclusão física de conselheiro", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public void excluir(Integer id) {
         Optional<Conselheiro> conselheiroOpt = conselheiroRepository.findById(id);
@@ -171,16 +163,15 @@ public class ConselheiroService {
             throw new RuntimeException("Conselheiro não encontrado para exclusão.");
         }
         Conselheiro conselheiro = conselheiroOpt.get();
-        String nome = conselheiro.getPessoa().getNome();
-        String cpf = conselheiro.getPessoa().getCpf();
-        Integer crm = conselheiro.getCrm();
-        String situacao = conselheiro.getInSituacao();
+
+        Conselheiro copia = copiarConselheiro(conselheiro);
 
         // Delega a remoção completa para o UsuarioService
         usuarioService.excluir(id);
 
+        logJetonService.logConselheiroExcluido(copia);
         log.info("Conselheiro excluído: ID={}, nome='{}', CPF={}, CRM={}, situação={}",
-                id, nome, cpf, crm, situacao);
+                id, copia.getPessoa().getNome(), copia.getPessoa().getCpf(), copia.getCrm(), copia.getInSituacao());
     }
 
     private void validarCpfUnico(String cpf, Integer idAtual) {
@@ -227,5 +218,22 @@ public class ConselheiroService {
                 .map(GestaoConselheiro::getConselheiro)
                 .sorted(Comparator.comparing(c -> c.getPessoa().getNome()))
                 .collect(Collectors.toList());
+    }
+
+    private Conselheiro copiarConselheiro(Conselheiro original) {
+        Conselheiro copia = new Conselheiro();
+        copia.setIdPessoa(original.getIdPessoa());
+        copia.setCrm(original.getCrm());
+        copia.setInSituacao(original.getInSituacao());
+        if (original.getPessoa() != null) {
+            Pessoa p = new Pessoa();
+            p.setIdPessoa(original.getPessoa().getIdPessoa());
+            p.setNome(original.getPessoa().getNome());
+            p.setEmail(original.getPessoa().getEmail());
+            p.setCpf(original.getPessoa().getCpf());
+            p.setInTipoPessoa(original.getPessoa().getInTipoPessoa());
+            copia.setPessoa(p);
+        }
+        return copia;
     }
 }
