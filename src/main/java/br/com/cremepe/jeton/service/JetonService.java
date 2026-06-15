@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.dto.*;
 import br.com.cremepe.jeton.mapper.AtividadeMapper;
@@ -42,13 +41,14 @@ public class JetonService {
     private final JetonCalculator jetonCalculator;
     private final AtividadeMapper atividadeMapper;
     private final JetonMapper jetonMapper;
+    private final LogJetonService logJetonService;
 
     JetonService(JetonRepository jetonRepository, PontosSaldoRepository pontosSaldoRepository,
             AtividadeConselhalRepository atividadeRepository, ResolucaoRepository resolucaoRepository,
             GestaoConselheiroRepository gestaoConselheiroRepository, RegrasService regrasService,
             ConselheiroRepository conselheiroRepository, GestaoRepository gestaoRepository,
             ConselheiroService conselheiroService, JetonCalculator jetonCalculator, AtividadeMapper atividadeMapper,
-            JetonMapper jetonMapper) {
+            JetonMapper jetonMapper, LogJetonService logJetonService) {
         this.jetonRepository = jetonRepository;
         this.pontosSaldoRepository = pontosSaldoRepository;
         this.atividadeRepository = atividadeRepository;
@@ -61,6 +61,7 @@ public class JetonService {
         this.jetonCalculator = jetonCalculator;
         this.atividadeMapper = atividadeMapper;
         this.jetonMapper = jetonMapper;
+        this.logJetonService = logJetonService;
     }
 
     @Transactional(readOnly = true)
@@ -153,7 +154,6 @@ public class JetonService {
                 .collect(Collectors.toList());
     }
 
-    @Auditar(tabela = "jeton", acao = "PROCESSAR_FOLHA", descricao = "Processamento mensal de folha de jetons", dadosParametros = "{ 'idGestao': #gestao.idGestao, 'nomeGestao': #gestao.nomeGestao, 'mes': #mes, 'ano': #ano }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void processarFechamentoMensal(Gestao gestao, Integer mes, Integer ano) {
         String nomeGestao = gestao.getNomeGestao();
@@ -188,6 +188,8 @@ public class JetonService {
 
         log.info("Processamento mensal finalizado: gestão '{}', {}/{} - {} conselheiros, {} jetons, valor total {}",
                 nomeGestao, mes, ano, totalConselheirosProcessados, totalJetonsGeradosGeral, totalValorPagoGeral);
+        logJetonService.logFolhaProcessada(gestao, mes, ano, totalConselheirosProcessados, totalJetonsGeradosGeral,
+                totalValorPagoGeral);
     }
 
     private void validarPreProcessamento(Integer idGestao, Integer mes, Integer ano) {
@@ -462,7 +464,6 @@ public class JetonService {
         log.debug("Folha estornada para {} na competência {}/{}", nomeConselheiro, mes, ano);
     }
 
-    @Auditar(tabela = "jeton", acao = "ESTORNAR_PONTUAL", descricao = "Estorno pontual de um Jeton (exclusão lógica)", dadosParametros = "{ 'idJeton': #idJeton }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void estornarJetonPontual(Integer idJeton) {
         Jeton jeton = jetonRepository.findById(idJeton)
@@ -494,9 +495,9 @@ public class JetonService {
 
         log.info("Jeton estornado pontualmente: ID {} - conselheiro '{}', gestão '{}', {}/{}",
                 idJeton, nomeConselheiro, nomeGestao, jeton.getMes(), jeton.getAno());
+        logJetonService.logJetonEstornado(idJeton, nomeConselheiro, nomeGestao, jeton.getMes(), jeton.getAno());
     }
 
-    @Auditar(tabela = "jeton", acao = "HOMOLOGAR_FOLHA", descricao = "Homologação e fechamento definitivo da folha mensal", dadosParametros = "{ 'idGestao': #gestao.idGestao, 'nomeGestao': #gestao.nomeGestao, 'mes': #mes, 'ano': #ano }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void realizarFechamentoDefinitivoFolha(Gestao gestao, Integer mes, Integer ano) {
         String nomeGestao = gestao.getNomeGestao();
@@ -514,9 +515,9 @@ public class JetonService {
 
         log.info("Folha fechada definitivamente: gestão '{}', {}/{} - {} atividades fechadas, {} jetons afetados",
                 nomeGestao, mes, ano, totalAtualizado, jetonsDoMes.size());
+        logJetonService.logFolhaHomologada(gestao, mes, ano, totalAtualizado, jetonsDoMes.size());
     }
 
-    @Auditar(tabela = "jeton", acao = "EXCLUIR", descricao = "Exclusão física de um registro de Jeton", dadosParametros = "{ 'idJeton': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluirJeton(Integer id) {
         Jeton jeton = jetonRepository.findById(id)
@@ -528,6 +529,7 @@ public class JetonService {
         jetonRepository.deleteById(id);
         log.info("Jeton excluído fisicamente: ID {} - conselheiro '{}', gestão '{}', {}/{}",
                 id, nomeConselheiro, nomeGestao, jeton.getMes(), jeton.getAno());
+        logJetonService.logJetonExcluido(id, nomeConselheiro, nomeGestao, jeton.getMes(), jeton.getAno());
     }
 
     private boolean isFolhaHomologada(Integer idGestao, Integer mes, Integer ano) {
