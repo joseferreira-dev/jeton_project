@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.repository.*;
 
@@ -30,18 +29,23 @@ public class AtividadeConselhalService {
     private final GestaoRepository gestaoRepository;
     private final GestaoConselheiroRepository gestaoConselheiroRepository;
     private final ComprovanteService comprovanteService;
+    private final LogJetonService logJetonService;
 
-    AtividadeConselhalService(AtividadeConselhalRepository atividadeRepository,
-            ComprovanteRepository comprovanteRepository, GestaoRepository gestaoRepository,
-            GestaoConselheiroRepository gestaoConselheiroRepository, ComprovanteService comprovanteService) {
+    AtividadeConselhalService(
+            AtividadeConselhalRepository atividadeRepository,
+            ComprovanteRepository comprovanteRepository,
+            GestaoRepository gestaoRepository,
+            GestaoConselheiroRepository gestaoConselheiroRepository,
+            ComprovanteService comprovanteService,
+            LogJetonService logJetonService) {
         this.atividadeRepository = atividadeRepository;
         this.comprovanteRepository = comprovanteRepository;
         this.gestaoRepository = gestaoRepository;
         this.gestaoConselheiroRepository = gestaoConselheiroRepository;
         this.comprovanteService = comprovanteService;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "atividade_conselhal", acao = "CRIAR", descricao = "Criação de nova atividade", dadosParametros = "{ 'idAtividade': #atividade.idAtividade }", dadosRetorno = "#result", auditarExcecao = true)
     @Transactional
     public AtividadeConselhal criar(AtividadeConselhal atividade,
             MultipartFile file,
@@ -66,10 +70,10 @@ public class AtividadeConselhalService {
 
         AtividadeConselhal salva = atividadeRepository.save(atividade);
         log.info("Atividade criada: ID={}", salva.getIdAtividade());
+        logJetonService.logAtividadeCriada(salva);
         return salva;
     }
 
-    @Auditar(tabela = "atividade_conselhal", acao = "EDITAR", descricao = "Edição de atividade existente", capturarEstadoAnterior = true, dadosParametros = "{ 'idAtividade': #atividade.idAtividade }", dadosRetorno = "#result", auditarExcecao = true)
     @Transactional
     public AtividadeConselhal atualizar(AtividadeConselhal atividade,
             MultipartFile file,
@@ -78,6 +82,8 @@ public class AtividadeConselhalService {
             Integer idComprovanteAntigo) {
         AtividadeConselhal existente = atividadeRepository.findById(atividade.getIdAtividade())
                 .orElseThrow(() -> new RuntimeException("Atividade não encontrada para edição"));
+
+        AtividadeConselhal copiaAnterior = copiarAtividade(existente);
 
         if (AtividadeConselhal.SITUACAO_FECHADA.equals(existente.getInSituacao())) {
             throw new RuntimeException("Operação negada: Esta atividade está fechada em folha.");
@@ -123,10 +129,10 @@ public class AtividadeConselhalService {
         }
 
         log.info("Atividade atualizada: ID={}", salva.getIdAtividade());
+        logJetonService.logAtividadeAtualizada(copiaAnterior, salva);
         return salva;
     }
 
-    @Auditar(tabela = "atividade_conselhal", acao = "VALIDAR", descricao = "Validar atividade pendente", dadosParametros = "{ 'idAtividade': #id }", auditarExcecao = true)
     @Transactional
     public void validar(Integer id) {
         AtividadeConselhal atividade = buscarAtividadeOuLancarExcecao(id);
@@ -135,10 +141,10 @@ public class AtividadeConselhalService {
         }
         atividade.setInSituacao(AtividadeConselhal.SITUACAO_VALIDADA);
         atividadeRepository.save(atividade);
+        logJetonService.logAtividadeValidada(id);
         log.info("Atividade validada: ID={}", id);
     }
 
-    @Auditar(tabela = "atividade_conselhal", acao = "DESVALIDAR", descricao = "Desvalidar atividade", dadosParametros = "{ 'idAtividade': #id }", auditarExcecao = true)
     @Transactional
     public void desvalidar(Integer id) {
         AtividadeConselhal atividade = buscarAtividadeOuLancarExcecao(id);
@@ -151,13 +157,14 @@ public class AtividadeConselhalService {
         }
         atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
         atividadeRepository.save(atividade);
+        logJetonService.logAtividadeDesvalidada(id);
         log.info("Atividade desvalidada: ID={}", id);
     }
 
-    @Auditar(tabela = "atividade_conselhal", acao = "EXCLUIR", capturarEstadoAnterior = true, descricao = "Excluir atividade", dadosParametros = "{ 'idAtividade': #id }", auditarExcecao = true)
     @Transactional
     public void excluir(Integer id) {
         AtividadeConselhal atividade = buscarAtividadeOuLancarExcecao(id);
+        AtividadeConselhal copia = copiarAtividade(atividade);
 
         if (AtividadeConselhal.SITUACAO_FECHADA.equals(atividade.getInSituacao())
                 || AtividadeConselhal.COMPUTADA_SIM.equals(atividade.getInComputada())) {
@@ -190,6 +197,7 @@ public class AtividadeConselhalService {
         }
 
         log.info("Atividade excluída: ID={}", id);
+        logJetonService.logAtividadeExcluida(copia);
     }
 
     @Transactional(readOnly = true)
@@ -282,5 +290,21 @@ public class AtividadeConselhalService {
     @Transactional(readOnly = true)
     public List<AtividadeConselhal> listarTodas() {
         return atividadeRepository.findAll();
+    }
+
+    private AtividadeConselhal copiarAtividade(AtividadeConselhal original) {
+        AtividadeConselhal copia = new AtividadeConselhal();
+        copia.setIdAtividade(original.getIdAtividade());
+        copia.setGestao(original.getGestao());
+        copia.setConselheiro(original.getConselheiro());
+        copia.setRegra(original.getRegra());
+        copia.setComprovante(original.getComprovante());
+        copia.setQtdAtividade(original.getQtdAtividade());
+        copia.setDataHoraAtividade(original.getDataHoraAtividade());
+        copia.setDataHoraRegistro(original.getDataHoraRegistro());
+        copia.setInTurno(original.getInTurno());
+        copia.setInSituacao(original.getInSituacao());
+        copia.setInComputada(original.getInComputada());
+        return copia;
     }
 }
