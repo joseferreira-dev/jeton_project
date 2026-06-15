@@ -181,7 +181,7 @@ public class AtividadeConselhalController {
         if (dto.getInTurno() == null || dto.getInTurno().isEmpty()) {
             dto.setInTurno(null);
         }
-        atividadeLoteService.criarLote(dto);
+        atividadeLoteService.criar(dto);
         ra.addFlashAttribute("sucesso", "Atividades criadas em lote com sucesso para "
                 + dto.getIdsConselheiros().size() + " conselheiros.");
         return "redirect:/atividades";
@@ -224,7 +224,7 @@ public class AtividadeConselhalController {
         if (dto.getInTurno() == null || dto.getInTurno().isEmpty()) {
             dto.setInTurno(null);
         }
-        atividadeLoteService.atualizarLote(idComprovante, dto);
+        atividadeLoteService.atualizar(idComprovante, dto);
         ra.addFlashAttribute("sucesso", "Todas as atividades vinculadas ao comprovante foram atualizadas.");
         return "redirect:/atividades";
     }

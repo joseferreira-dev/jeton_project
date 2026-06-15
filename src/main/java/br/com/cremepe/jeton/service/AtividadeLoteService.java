@@ -50,7 +50,7 @@ public class AtividadeLoteService {
     }
 
     @Transactional
-    public List<AtividadeConselhal> criarLote(LoteAtividadeDTO dto) {
+    public List<AtividadeConselhal> criar(LoteAtividadeDTO dto) {
         Gestao gestao = gestaoRepository.findById(dto.getIdGestao())
                 .orElseThrow(() -> new RuntimeException("Gestão não encontrada"));
         Regras regra = regrasService.buscarOuFalhar(dto.getIdRegra());
@@ -102,18 +102,8 @@ public class AtividadeLoteService {
         return criadas;
     }
 
-    @Transactional(readOnly = true)
-    public List<AtividadeConselhal> listarPorComprovante(Integer idComprovante) {
-        return atividadeRepository.findByComprovanteIdComprovante(idComprovante);
-    }
-
-    @Transactional(readOnly = true)
-    public long contarAtividadesPorComprovante(Integer idComprovante) {
-        return atividadeRepository.countByComprovanteIdComprovante(idComprovante);
-    }
-
     @Transactional
-    public void atualizarLote(Integer idComprovante, LoteAtividadeDTO dto) {
+    public void atualizar(Integer idComprovante, LoteAtividadeDTO dto) {
         List<AtividadeConselhal> atividadesAtuais = atividadeRepository.findByComprovanteIdComprovante(idComprovante);
         if (atividadesAtuais.isEmpty()) {
             throw new RuntimeException("Nenhuma atividade encontrada para o comprovante informado.");
@@ -211,9 +201,18 @@ public class AtividadeLoteService {
         log.info("Lote atualizado: comprovante ID {}, {} atividades mantidas, {} removidas, {} adicionadas",
                 idComprovante, atividadesAtuais.size() - idsRemover.size(), idsRemover.size(), idsAdicionar.size());
 
-        // LOG: registra a atualização do lote
         logJetonService.logLoteAtualizado(idComprovante, idsAtuais, dto.getIdsConselheiros(),
                 gestao.getIdGestao(), regra.getIdRegra(), dataHora);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AtividadeConselhal> listarPorComprovante(Integer idComprovante) {
+        return atividadeRepository.findByComprovanteIdComprovante(idComprovante);
+    }
+
+    @Transactional(readOnly = true)
+    public long contarAtividadesPorComprovante(Integer idComprovante) {
+        return atividadeRepository.countByComprovanteIdComprovante(idComprovante);
     }
 
     private void validarDataDentroDoMandato(LocalDate dataAtividade, Gestao gestao) {
