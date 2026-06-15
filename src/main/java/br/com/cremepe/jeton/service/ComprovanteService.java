@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.Comprovante;
 import br.com.cremepe.jeton.domain.TipoAnexo;
 import br.com.cremepe.jeton.repository.ComprovanteRepository;
@@ -24,32 +23,31 @@ public class ComprovanteService {
     private final ComprovanteRepository comprovanteRepository;
     private final TipoAnexoRepository tipoAnexoRepository;
     private final FileStorageService fileStorageService;
+    private final LogJetonService logJetonService;
 
-    ComprovanteService(ComprovanteRepository comprovanteRepository, TipoAnexoRepository tipoAnexoRepository,
-            FileStorageService fileStorageService) {
+    public ComprovanteService(ComprovanteRepository comprovanteRepository,
+            TipoAnexoRepository tipoAnexoRepository,
+            FileStorageService fileStorageService,
+            LogJetonService logJetonService) {
         this.comprovanteRepository = comprovanteRepository;
         this.tipoAnexoRepository = tipoAnexoRepository;
         this.fileStorageService = fileStorageService;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "comprovante", acao = "CRIAR", descricao = "Criação de novo comprovante", dadosParametros = "{ 'nomeOriginal': #file.originalFilename, 'tamanho': #file.size, 'ano': #ano, 'mes': #mes, 'idTipoAnexo': #idTipoAnexo, 'descricaoUsuario': #descricaoUsuario }", dadosRetorno = "#result", auditarExcecao = true)
     @Transactional
-    public Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo,
-            String descricaoUsuario) {
+    public Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo, String descricaoUsuario) {
         validarArquivo(file);
         YearMonth dataAtual = obterDataAtual();
         int ano = dataAtual.getYear();
         int mes = dataAtual.getMonthValue();
 
-        // 1. Envia o ficheiro para o FTP e obtém o nome único
         String nomeArquivoGerado = fileStorageService.salvarArquivoNoFtp(file, ano, mes);
         log.debug("Arquivo enviado para FTP: {}", nomeArquivoGerado);
 
-        // 2. Busca o Tipo de Anexo
         TipoAnexo tipo = tipoAnexoRepository.findById(idTipoAnexo)
                 .orElseThrow(() -> new RuntimeException("Tipo de anexo inválido. ID: " + idTipoAnexo));
 
-        // 3. Monta a entidade Comprovante
         Comprovante comprovante = new Comprovante();
         comprovante.setTipoAnexo(tipo);
         comprovante.setNomeComprovante(descricaoUsuario.trim());
@@ -58,11 +56,12 @@ public class ComprovanteService {
         comprovante.setMes(mes);
         comprovante.setAno(ano);
 
-        // 4. Salva os metadados
         Comprovante salvo = comprovanteRepository.save(comprovante);
         log.info("Novo comprovante criado: ID={}, nome='{}', arquivo={}, tipo={}, ano/mês={}/{}",
                 salvo.getIdComprovante(), salvo.getNomeComprovante(), salvo.getNomeArquivo(),
                 tipo.getNome(), salvo.getAno(), salvo.getMes());
+
+        logJetonService.logComprovanteCriado(salvo);
         return salvo;
     }
 
@@ -71,33 +70,18 @@ public class ComprovanteService {
         return comprovanteRepository.findById(id);
     }
 
-    @Auditar(tabela = "comprovante", acao = "EXCLUIR", descricao = "Exclusão de comprovante", dadosParametros = "{ 'idComprovante': #id }", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public void excluirComprovante(Integer id) {
         comprovanteRepository.findById(id).ifPresent(comp -> {
-            // Remove o arquivo físico do FTP
+            Comprovante copia = copiarComprovante(comp);
+
             fileStorageService.excluirArquivo(comp.getNomeArquivo(), comp.getAno(), comp.getMes());
-            // Remove o registro do banco
             comprovanteRepository.delete(comp);
+
+            logJetonService.logComprovanteExcluido(copia);
             log.info("Comprovante excluído: ID={}, nome='{}', arquivo={}", id, comp.getNomeComprovante(),
                     comp.getNomeArquivo());
         });
-    }
-
-    @Auditar(tabela = "comprovante", acao = "ATUALIZAR", descricao = "Atualização de comprovante (ex: nome)", dadosParametros = "{ 'idComprovante': #comprovante.idComprovante, 'nomeComprovante': #comprovante.nomeComprovante }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
-    @Transactional
-    public Comprovante atualizarComprovante(Comprovante comprovante) {
-        Comprovante existente = comprovanteRepository.findById(comprovante.getIdComprovante())
-                .orElseThrow(() -> new RuntimeException("Comprovante não encontrado para atualização"));
-
-        // Atualiza apenas campos permitidos (ex: nomeComprovante)
-        existente.setNomeComprovante(comprovante.getNomeComprovante());
-        // Se outros campos forem permitidos, atualize aqui
-
-        Comprovante atualizado = comprovanteRepository.save(existente);
-        log.info("Comprovante atualizado: ID={}, novo nome='{}'", atualizado.getIdComprovante(),
-                atualizado.getNomeComprovante());
-        return atualizado;
     }
 
     private YearMonth obterDataAtual() {
@@ -134,5 +118,17 @@ public class ComprovanteService {
     @Transactional(readOnly = true)
     public List<Comprovante> listarTodos() {
         return comprovanteRepository.findAll();
+    }
+
+    private Comprovante copiarComprovante(Comprovante original) {
+        Comprovante copia = new Comprovante();
+        copia.setIdComprovante(original.getIdComprovante());
+        copia.setTipoAnexo(original.getTipoAnexo());
+        copia.setNomeComprovante(original.getNomeComprovante());
+        copia.setNomeArquivo(original.getNomeArquivo());
+        copia.setContentType(original.getContentType());
+        copia.setMes(original.getMes());
+        copia.setAno(original.getAno());
+        return copia;
     }
 }
