@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.dto.LoteAtividadeDTO;
 import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
@@ -15,10 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,11 +29,16 @@ public class AtividadeLoteService {
     private final ComprovanteService comprovanteService;
     private final ConselheiroService conselheiroService;
     private final RegrasService regrasService;
+    private final LogJetonService logJetonService;
 
-    AtividadeLoteService(AtividadeConselhalRepository atividadeRepository,
-            GestaoConselheiroRepository gestaoConselheiroRepository, GestaoRepository gestaoRepository,
-            ComprovanteService comprovanteService, RegrasService regrasService, ConselheiroService conselheiroService,
-            ComprovanteRepository comprovanteRepository) {
+    public AtividadeLoteService(AtividadeConselhalRepository atividadeRepository,
+            GestaoConselheiroRepository gestaoConselheiroRepository,
+            GestaoRepository gestaoRepository,
+            ComprovanteService comprovanteService,
+            RegrasService regrasService,
+            ConselheiroService conselheiroService,
+            ComprovanteRepository comprovanteRepository,
+            LogJetonService logJetonService) {
         this.atividadeRepository = atividadeRepository;
         this.comprovanteRepository = comprovanteRepository;
         this.gestaoConselheiroRepository = gestaoConselheiroRepository;
@@ -45,9 +46,9 @@ public class AtividadeLoteService {
         this.comprovanteService = comprovanteService;
         this.regrasService = regrasService;
         this.conselheiroService = conselheiroService;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "atividade_conselhal", acao = "CRIAR_LOTE", descricao = "Criação de múltiplas atividades com mesmo comprovante", dadosParametros = "{ 'idGestao': #dto.idGestao, 'idsConselheiros': #dto.idsConselheiros }", auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public List<AtividadeConselhal> criarLote(LoteAtividadeDTO dto) {
         Gestao gestao = gestaoRepository.findById(dto.getIdGestao())
@@ -93,6 +94,11 @@ public class AtividadeLoteService {
 
         log.info("Lote de {} atividades criado para gestão {} com comprovante ID {}",
                 criadas.size(), gestao.getNomeGestao(), comprovante != null ? comprovante.getIdComprovante() : null);
+
+        Integer idComprovante = comprovante != null ? comprovante.getIdComprovante() : null;
+        logJetonService.logLoteCriado(idComprovante, gestao.getIdGestao(), regra.getIdRegra(),
+                dto.getIdsConselheiros(), dataHora);
+
         return criadas;
     }
 
@@ -106,7 +112,6 @@ public class AtividadeLoteService {
         return atividadeRepository.countByComprovanteIdComprovante(idComprovante);
     }
 
-    @Auditar(tabela = "atividade_conselhal", acao = "EDITAR_LOTE", descricao = "Edição em massa de atividades que compartilham o mesmo comprovante, com adição/remoção de conselheiros", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public void atualizarLote(Integer idComprovante, LoteAtividadeDTO dto) {
         List<AtividadeConselhal> atividadesAtuais = atividadeRepository.findByComprovanteIdComprovante(idComprovante);
@@ -114,16 +119,17 @@ public class AtividadeLoteService {
             throw new RuntimeException("Nenhuma atividade encontrada para o comprovante informado.");
         }
 
-        Set<Integer> idsAtuais = atividadesAtuais.stream()
+        List<Integer> idsAtuais = atividadesAtuais.stream()
                 .map(a -> a.getConselheiro().getIdPessoa())
-                .collect(Collectors.toSet());
-        Set<Integer> idsNovos = new HashSet<>(dto.getIdsConselheiros());
+                .collect(Collectors.toList());
 
-        Set<Integer> idsRemover = new HashSet<>(idsAtuais);
-        idsRemover.removeAll(idsNovos);
+        Set<Integer> idsNovosSet = new HashSet<>(dto.getIdsConselheiros());
+        Set<Integer> idsAtuaisSet = new HashSet<>(idsAtuais);
 
-        Set<Integer> idsAdicionar = new HashSet<>(idsNovos);
-        idsAdicionar.removeAll(idsAtuais);
+        Set<Integer> idsRemover = new HashSet<>(idsAtuaisSet);
+        idsRemover.removeAll(idsNovosSet);
+        Set<Integer> idsAdicionar = new HashSet<>(idsNovosSet);
+        idsAdicionar.removeAll(idsAtuaisSet);
 
         Gestao gestao = gestaoRepository.findById(dto.getIdGestao())
                 .orElseThrow(() -> new RuntimeException("Gestão não encontrada"));
@@ -204,6 +210,10 @@ public class AtividadeLoteService {
 
         log.info("Lote atualizado: comprovante ID {}, {} atividades mantidas, {} removidas, {} adicionadas",
                 idComprovante, atividadesAtuais.size() - idsRemover.size(), idsRemover.size(), idsAdicionar.size());
+
+        // LOG: registra a atualização do lote
+        logJetonService.logLoteAtualizado(idComprovante, idsAtuais, dto.getIdsConselheiros(),
+                gestao.getIdGestao(), regra.getIdRegra(), dataHora);
     }
 
     private void validarDataDentroDoMandato(LocalDate dataAtividade, Gestao gestao) {
