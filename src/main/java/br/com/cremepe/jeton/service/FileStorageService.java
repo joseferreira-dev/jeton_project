@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
@@ -35,7 +34,12 @@ public class FileStorageService {
     @Value("${ftp.locaweb.pass}")
     private String ftpPass;
 
-    @Auditar(tabela = "file_storage", acao = "UPLOAD", descricao = "Upload de arquivo para o servidor FTP", capturarEstadoAnterior = false, dadosParametros = "{ 'nomeOriginal': #file.originalFilename, 'tamanho': #file.size, 'ano': #ano, 'mes': #mes }", auditarExcecao = true)
+    private final LogJetonService logJetonService;
+
+    public FileStorageService(LogJetonService logJetonService) {
+        this.logJetonService = logJetonService;
+    }
+
     public String salvarArquivoNoFtp(MultipartFile file, Integer ano, Integer mes) {
         String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
         String extension = "";
@@ -49,7 +53,7 @@ public class FileStorageService {
             throw new RuntimeException("Caminho inválido: " + fileName);
         }
 
-        return executarOperacaoFtp((channelSftp) -> {
+        String resultado = executarOperacaoFtp((channelSftp) -> {
             String remoteDir = BASE_FTP_PATH + "/" + ano + "/" + mes;
             criarECarregarPasta(channelSftp, remoteDir);
             try (InputStream is = file.getInputStream()) {
@@ -58,6 +62,9 @@ public class FileStorageService {
             log.info("Upload concluído: {} -> {}/{}", fileName, ano, mes);
             return fileName;
         });
+
+        logJetonService.logUploadArquivo(originalFileName, resultado, file.getSize(), ano, mes, file.getContentType());
+        return resultado;
     }
 
     public Resource carregarArquivo(String fileName, Integer ano, Integer mes) {
@@ -70,13 +77,13 @@ public class FileStorageService {
         });
     }
 
-    @Auditar(tabela = "file_storage", acao = "EXCLUIR", descricao = "Remoção de arquivo do servidor FTP", capturarEstadoAnterior = false, dadosParametros = "{ 'fileName': #fileName, 'ano': #ano, 'mes': #mes }", auditarExcecao = true)
     public void excluirArquivo(String fileName, Integer ano, Integer mes) {
         executarOperacaoFtp((channelSftp) -> {
             String remoteFilePath = BASE_FTP_PATH + "/" + ano + "/" + mes + "/" + fileName;
             try {
                 channelSftp.rm(remoteFilePath);
                 log.info("Arquivo removido do FTP: {}", remoteFilePath);
+                logJetonService.logExcluirArquivo(fileName, ano, mes);
             } catch (Exception e) {
                 log.warn("Falha ao remover arquivo (pode já ter sido excluído): {}", e.getMessage());
             }
