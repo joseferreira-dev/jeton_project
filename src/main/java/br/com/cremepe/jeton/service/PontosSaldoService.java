@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.PontosSaldo;
 import br.com.cremepe.jeton.repository.PontosSaldoRepository;
 
@@ -18,19 +17,22 @@ public class PontosSaldoService {
     private static final Logger log = LoggerFactory.getLogger(PontosSaldoService.class);
 
     private final PontosSaldoRepository pontosSaldoRepository;
+    private final LogJetonService logJetonService;
 
-    PontosSaldoService(PontosSaldoRepository pontosSaldoRepository) {
+    public PontosSaldoService(PontosSaldoRepository pontosSaldoRepository,
+            LogJetonService logJetonService) {
         this.pontosSaldoRepository = pontosSaldoRepository;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "pontos_saldo", acao = "CRIAR", descricao = "Criação de registro de saldo de pontos", dadosParametros = "{ 'conselheiroId': #pontos.conselheiro?.idPessoa, 'gestaoId': #pontos.gestao?.idGestao, 'pontosTrabalhados': #pontos.pontosTrabalhados, 'pontosUtilizados': #pontos.pontosUtilizados, 'pontosSobrando': #pontos.pontosSobrando, 'situacao': #pontos.inSituacao, 'atividadeId': #pontos.atividade?.idAtividade, 'jetonId': #pontos.jeton?.idJeton, 'resolucaoId': #pontos.resolucao?.idResolucao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public PontosSaldo criar(PontosSaldo pontos) {
         pontos.setIdPontosSaldo(null);
-        return salvarPontos(pontos, true);
+        PontosSaldo salvo = salvarPontos(pontos, true);
+        logJetonService.logPontosSaldoCriado(salvo);
+        return salvo;
     }
 
-    @Auditar(tabela = "pontos_saldo", acao = "ATUALIZAR", descricao = "Atualização de registro de saldo de pontos", dadosParametros = "{ 'id': #pontos.idPontosSaldo, 'conselheiroId': #pontos.conselheiro?.idPessoa, 'gestaoId': #pontos.gestao?.idGestao, 'pontosTrabalhados': #pontos.pontosTrabalhados, 'pontosUtilizados': #pontos.pontosUtilizados, 'pontosSobrando': #pontos.pontosSobrando, 'situacao': #pontos.inSituacao, 'atividadeId': #pontos.atividade?.idAtividade, 'jetonId': #pontos.jeton?.idJeton, 'resolucaoId': #pontos.resolucao?.idResolucao }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public PontosSaldo atualizar(PontosSaldo pontos) {
         if (pontos.getIdPontosSaldo() == null) {
@@ -39,7 +41,12 @@ public class PontosSaldoService {
         if (!pontosSaldoRepository.existsById(pontos.getIdPontosSaldo())) {
             throw new RuntimeException("Saldo de pontos não encontrado para atualização.");
         }
-        return salvarPontos(pontos, false);
+        PontosSaldo antigo = pontosSaldoRepository.findById(pontos.getIdPontosSaldo()).orElseThrow();
+        PontosSaldo copia = copiarPontosSaldo(antigo);
+
+        PontosSaldo atualizado = salvarPontos(pontos, false);
+        logJetonService.logPontosSaldoAtualizado(copia, atualizado);
+        return atualizado;
     }
 
     private PontosSaldo salvarPontos(PontosSaldo pontos, boolean isNovo) {
@@ -90,10 +97,10 @@ public class PontosSaldoService {
             pontos.setPontosSobrando(0);
     }
 
-    @Auditar(tabela = "pontos_saldo", acao = "EXCLUIR", descricao = "Exclusão de registro de saldo de pontos (apenas se não utilizado)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluir(Integer id) {
         PontosSaldo saldo = buscarOuFalhar(id);
+        PontosSaldo copia = copiarPontosSaldo(saldo);
         Integer idConselheiro = saldo.getConselheiro() != null ? saldo.getConselheiro().getIdPessoa() : null;
         Integer idGestao = saldo.getGestao() != null ? saldo.getGestao().getIdGestao() : null;
         Integer pontosSobrando = saldo.getPontosSobrando();
@@ -110,6 +117,7 @@ public class PontosSaldoService {
         log.info(
                 "Saldo de pontos excluído fisicamente: id={}, conselheiro={}, gestão={}, pontosSobrando={}, situação={}",
                 id, idConselheiro, idGestao, pontosSobrando, situacao);
+        logJetonService.logPontosSaldoExcluido(copia);
     }
 
     @Transactional(readOnly = true)
@@ -142,5 +150,21 @@ public class PontosSaldoService {
     public int somarPontosSobrandoTotal(Integer idPessoa) {
         Integer soma = pontosSaldoRepository.somarPontosSobrandoTotal(idPessoa);
         return soma != null ? soma : 0;
+    }
+
+    private PontosSaldo copiarPontosSaldo(PontosSaldo original) {
+        PontosSaldo copia = new PontosSaldo();
+        copia.setIdPontosSaldo(original.getIdPontosSaldo());
+        copia.setAtividade(original.getAtividade());
+        copia.setConselheiro(original.getConselheiro());
+        copia.setJeton(original.getJeton());
+        copia.setGestao(original.getGestao());
+        copia.setResolucao(original.getResolucao());
+        copia.setDataHora(original.getDataHora());
+        copia.setPontosTrabalhados(original.getPontosTrabalhados());
+        copia.setPontosUtilizados(original.getPontosUtilizados());
+        copia.setPontosSobrando(original.getPontosSobrando());
+        copia.setInSituacao(original.getInSituacao());
+        return copia;
     }
 }
