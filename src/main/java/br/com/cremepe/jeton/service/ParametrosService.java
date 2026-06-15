@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.Parametros;
 import br.com.cremepe.jeton.repository.ParametrosRepository;
 import org.slf4j.Logger;
@@ -14,9 +13,11 @@ public class ParametrosService {
     private static final Logger log = LoggerFactory.getLogger(ParametrosService.class);
 
     private final ParametrosRepository repository;
+    private final LogJetonService logJetonService;
 
-    ParametrosService(ParametrosRepository repository) {
+    public ParametrosService(ParametrosRepository repository, LogJetonService logJetonService) {
         this.repository = repository;
+        this.logJetonService = logJetonService;
     }
 
     private Parametros getParametros() {
@@ -37,15 +38,20 @@ public class ParametrosService {
         return getParametros().getBloqueaSistema();
     }
 
-    @Auditar(tabela = "parametros", acao = "ALTERAR_BLOQUEIO", descricao = "Alterna o bloqueio do sistema", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = true)
     @Transactional
     public String alternarBloqueio() {
         Parametros params = repository.findById(1).orElseGet(Parametros::new);
-        String novoStatus = "S".equals(params.getBloqueaSistema()) ? "N" : "S";
-        params.setBloqueaSistema(novoStatus);
+        String statusAntigo = params.getBloqueaSistema();
+        if (statusAntigo == null)
+            statusAntigo = "N";
+
+        String statusNovo = "S".equals(statusAntigo) ? "N" : "S";
+        params.setBloqueaSistema(statusNovo);
         repository.save(params);
 
-        String statusDescricao = "S".equals(novoStatus) ? "BLOQUEADO" : "LIBERADO";
+        logJetonService.logBloqueioAlternado(statusAntigo, statusNovo);
+
+        String statusDescricao = "S".equals(statusNovo) ? "BLOQUEADO" : "LIBERADO";
         log.info("Status do bloqueio alterado para: {}", statusDescricao);
         return statusDescricao;
     }
