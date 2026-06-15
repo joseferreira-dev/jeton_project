@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.repository.*;
 
@@ -26,25 +25,30 @@ public class GestaoConselheiroService {
     private final ConselheiroRepository conselheiroRepository;
     private final AtividadeConselhalRepository atividadeRepository;
     private final PessoaRepository pessoaRepository;
+    private final LogJetonService logJetonService; // <-- INJETADO
 
-    GestaoConselheiroService(GestaoConselheiroRepository gestaoConselheiroRepository,
-            ConselheiroRepository conselheiroRepository, PessoaRepository pessoaRepository,
-            AtividadeConselhalRepository atividadeRepository, GestaoRepository gestaoRepository) {
+    public GestaoConselheiroService(GestaoConselheiroRepository gestaoConselheiroRepository,
+            ConselheiroRepository conselheiroRepository,
+            PessoaRepository pessoaRepository,
+            AtividadeConselhalRepository atividadeRepository,
+            GestaoRepository gestaoRepository,
+            LogJetonService logJetonService) {
         this.gestaoConselheiroRepository = gestaoConselheiroRepository;
         this.gestaoRepository = gestaoRepository;
         this.conselheiroRepository = conselheiroRepository;
         this.atividadeRepository = atividadeRepository;
         this.pessoaRepository = pessoaRepository;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "gestao_conselheiro", acao = "CRIAR", descricao = "Criação de vínculo entre conselheiro e gestão", dadosParametros = "{ 'idGestao': #vinculo.gestao.idGestao, 'idPessoa': #vinculo.conselheiro.idPessoa, 'situacao': #vinculo.inSituacao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public GestaoConselheiro criar(GestaoConselheiro vinculo) {
         vinculo.setId(null);
-        return salvarVinculo(vinculo, true);
+        GestaoConselheiro salvo = salvarVinculo(vinculo, true);
+        logJetonService.logVinculoCriado(salvo);
+        return salvo;
     }
 
-    @Auditar(tabela = "gestao_conselheiro", acao = "ATUALIZAR", descricao = "Atualização de vínculo entre conselheiro e gestão (apenas situação)", dadosParametros = "{ 'idGestao': #vinculo.gestao.idGestao, 'idPessoa': #vinculo.conselheiro.idPessoa, 'novaSituacao': #vinculo.inSituacao }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public GestaoConselheiro atualizar(GestaoConselheiro vinculo) {
         GestaoConselheiroId id = new GestaoConselheiroId(
@@ -53,7 +57,13 @@ public class GestaoConselheiroService {
         if (!gestaoConselheiroRepository.existsById(id)) {
             throw new RuntimeException("Vínculo não encontrado para atualização.");
         }
-        return salvarVinculo(vinculo, false);
+        GestaoConselheiro antigo = gestaoConselheiroRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Vínculo não encontrado para atualização."));
+        GestaoConselheiro copiaAntiga = copiarVinculo(antigo);
+
+        GestaoConselheiro atualizado = salvarVinculo(vinculo, false);
+        logJetonService.logVinculoAtualizado(copiaAntiga, atualizado);
+        return atualizado;
     }
 
     private GestaoConselheiro salvarVinculo(GestaoConselheiro vinculo, boolean isNovo) {
@@ -111,7 +121,6 @@ public class GestaoConselheiroService {
         }
     }
 
-    @Auditar(tabela = "gestao_conselheiro", acao = "ATUALIZAR_EM_MASSA", descricao = "Atualização em massa de vínculos de conselheiros para uma gestão", dadosParametros = "{ 'idGestao': #idGestao }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = true)
     @Transactional
     public Map<String, List<Integer>> atualizarVinculosEmMassa(Integer idGestao, List<Integer> idsPessoasSelecionadas) {
         if (idsPessoasSelecionadas == null) {
@@ -128,19 +137,20 @@ public class GestaoConselheiroService {
 
         Set<Integer> idsNovos = new HashSet<>(idsPessoasSelecionadas);
 
-        // IDs a serem removidos (estavam na lista mas não estão mais)
         Set<Integer> idsRemover = new HashSet<>(idsAtuais);
         idsRemover.removeAll(idsNovos);
 
         List<Integer> idsRemovidos = new ArrayList<>();
         for (Integer idPessoa : idsRemover) {
+            GestaoConselheiro vinculo = buscarOuFalhar(idGestao, idPessoa);
+            GestaoConselheiro copia = copiarVinculo(vinculo);
             if (removerVinculoSeSemAtividade(idGestao, idPessoa)) {
                 idsRemovidos.add(idPessoa);
                 log.info("Vínculo removido: gestão={}, conselheiro={}", idGestao, idPessoa);
+                logJetonService.logVinculoExcluido(copia);
             }
         }
 
-        // IDs a serem adicionados (não existiam antes)
         Set<Integer> idsAdicionar = new HashSet<>(idsNovos);
         idsAdicionar.removeAll(idsAtuais);
         List<Integer> idsAdicionados = new ArrayList<>();
@@ -149,7 +159,6 @@ public class GestaoConselheiroService {
             Conselheiro conselheiro = conselheiroRepository.findById(idPessoa)
                     .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado: " + idPessoa));
 
-            // Inativa outros vínculos ativos deste conselheiro
             inativarOutrosVinculosAtivos(idGestao, idPessoa);
 
             GestaoConselheiro novoVinculo = new GestaoConselheiro();
@@ -157,10 +166,13 @@ public class GestaoConselheiroService {
             novoVinculo.setGestao(gestao);
             novoVinculo.setConselheiro(conselheiro);
             novoVinculo.setInSituacao(GestaoConselheiro.SITUACAO_ATIVO);
-            gestaoConselheiroRepository.save(novoVinculo);
+            GestaoConselheiro adicionado = gestaoConselheiroRepository.save(novoVinculo);
+            logJetonService.logVinculoCriado(adicionado);
             idsAdicionados.add(idPessoa);
             log.info("Vínculo criado: gestão={}, conselheiro={}", idGestao, idPessoa);
         }
+
+        logJetonService.logVinculosAtualizadosEmMassa(idGestao, idsRemovidos, idsAdicionados);
 
         Map<String, List<Integer>> resultado = new HashMap<>();
         resultado.put("removidos", idsRemovidos);
@@ -179,7 +191,6 @@ public class GestaoConselheiroService {
         return false;
     }
 
-    @Auditar(tabela = "gestao_conselheiro", acao = "ATIVAR", descricao = "Ativação de vínculo entre conselheiro e gestão", dadosParametros = "{ 'idGestao': #idGestao, 'idPessoa': #idPessoa }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void ativarVinculo(Integer idGestao, Integer idPessoa) {
         GestaoConselheiro vinculo = buscarOuFalhar(idGestao, idPessoa);
@@ -188,10 +199,10 @@ public class GestaoConselheiroService {
         vinculo.setInSituacao(GestaoConselheiro.SITUACAO_ATIVO);
         inativarOutrosVinculosAtivos(idGestao, idPessoa);
         gestaoConselheiroRepository.save(vinculo);
+        logJetonService.logVinculoAtivado(idGestao, idPessoa);
         log.info("Vínculo ativado: gestão={}, conselheiro={}", idGestao, idPessoa);
     }
 
-    @Auditar(tabela = "gestao_conselheiro", acao = "INATIVAR", descricao = "Inativação de vínculo entre conselheiro e gestão", dadosParametros = "{ 'idGestao': #idGestao, 'idPessoa': #idPessoa }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void inativarVinculo(Integer idGestao, Integer idPessoa) {
         GestaoConselheiro vinculo = buscarOuFalhar(idGestao, idPessoa);
@@ -199,15 +210,18 @@ public class GestaoConselheiroService {
             return;
         vinculo.setInSituacao(GestaoConselheiro.SITUACAO_INATIVO);
         gestaoConselheiroRepository.save(vinculo);
+        logJetonService.logVinculoInativado(idGestao, idPessoa);
         log.info("Vínculo inativado: gestão={}, conselheiro={}", idGestao, idPessoa);
     }
 
-    @Auditar(tabela = "gestao_conselheiro", acao = "EXCLUIR", descricao = "Exclusão de vínculo", dadosParametros = "{ 'idGestao': #idGestao, 'idPessoa': #idPessoa }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluir(Integer idGestao, Integer idPessoa) {
+        GestaoConselheiro vinculo = buscarOuFalhar(idGestao, idPessoa);
+        GestaoConselheiro copia = copiarVinculo(vinculo);
         if (!removerVinculoSeSemAtividade(idGestao, idPessoa)) {
             throw new RuntimeException("Não é possível excluir o vínculo pois existem atividades associadas.");
         }
+        logJetonService.logVinculoExcluido(copia);
         log.info("Vínculo excluído permanentemente: gestão={}, conselheiro={}", idGestao, idPessoa);
     }
 
@@ -289,5 +303,16 @@ public class GestaoConselheiroService {
     @Transactional(readOnly = true)
     public List<GestaoConselheiro> listarPorGestao(Integer idGestao) {
         return gestaoConselheiroRepository.findByIdIdGestao(idGestao);
+    }
+
+    private GestaoConselheiro copiarVinculo(GestaoConselheiro original) {
+        GestaoConselheiro copia = new GestaoConselheiro();
+        if (original.getId() != null) {
+            copia.setId(new GestaoConselheiroId(original.getId().getIdGestao(), original.getId().getIdPessoa()));
+        }
+        copia.setGestao(original.getGestao());
+        copia.setConselheiro(original.getConselheiro());
+        copia.setInSituacao(original.getInSituacao());
+        return copia;
     }
 }
