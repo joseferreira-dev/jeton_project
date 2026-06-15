@@ -36,7 +36,7 @@ public class ComprovanteService {
     }
 
     @Transactional
-    public Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo, String descricaoUsuario) {
+    public Comprovante criar(MultipartFile file, Integer idTipoAnexo, String descricaoUsuario) {
         validarArquivo(file);
         YearMonth dataAtual = obterDataAtual();
         int ano = dataAtual.getYear();
@@ -65,13 +65,8 @@ public class ComprovanteService {
         return salvo;
     }
 
-    @Transactional(readOnly = true)
-    public Optional<Comprovante> buscarPorId(Integer id) {
-        return comprovanteRepository.findById(id);
-    }
-
     @Transactional
-    public void excluirComprovante(Integer id) {
+    public void excluir(Integer id) {
         comprovanteRepository.findById(id).ifPresent(comp -> {
             Comprovante copia = copiarComprovante(comp);
 
@@ -118,6 +113,11 @@ public class ComprovanteService {
     @Transactional(readOnly = true)
     public List<Comprovante> listarTodos() {
         return comprovanteRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Comprovante> buscarPorId(Integer id) {
+        return comprovanteRepository.findById(id);
     }
 
     private Comprovante copiarComprovante(Comprovante original) {

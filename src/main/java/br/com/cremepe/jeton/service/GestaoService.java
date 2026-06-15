@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.Gestao;
 import br.com.cremepe.jeton.repository.GestaoRepository;
 
@@ -22,12 +21,15 @@ public class GestaoService {
     private static final Logger log = LoggerFactory.getLogger(GestaoService.class);
 
     private final GestaoRepository gestaoRepository;
+    private final LogJetonService logJetonService;
 
-    GestaoService(GestaoRepository gestaoRepository) {
+    public GestaoService(
+            GestaoRepository gestaoRepository,
+            LogJetonService logJetonService) {
         this.gestaoRepository = gestaoRepository;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "gestao", acao = "CRIAR", capturarEstadoAnterior = false, descricao = "Criação de nova gestão", auditarExcecao = true)
     @Transactional
     public Gestao criarGestao(Gestao gestao) {
         validarDatas(gestao);
@@ -38,13 +40,16 @@ public class GestaoService {
         log.info("Gestão criada: ID={}, nome='{}', período={} até {}",
                 salva.getIdGestao(), salva.getNomeGestao(),
                 salva.getDtInicio(), salva.getDtFim());
+
+        logJetonService.logGestaoCriada(salva);
         return salva;
     }
 
-    @Auditar(tabela = "gestao", acao = "ATUALIZAR", capturarEstadoAnterior = true, descricao = "Edição de gestão", auditarExcecao = true)
     @Transactional
     public Gestao atualizarGestao(Gestao gestao) {
         Gestao existente = buscarGestaoOuFalhar(gestao.getIdGestao());
+
+        Gestao copia = copiarGestao(existente);
 
         validarDatas(gestao);
         validarNomeUnico(gestao);
@@ -58,17 +63,22 @@ public class GestaoService {
         log.info("Gestão atualizada: ID={}, nome='{}', período={} até {}",
                 atualizada.getIdGestao(), atualizada.getNomeGestao(),
                 atualizada.getDtInicio(), atualizada.getDtFim());
+
+        logJetonService.logGestaoAtualizada(copia, atualizada);
         return atualizada;
     }
 
-    @Auditar(tabela = "gestao", acao = "EXCLUIR", capturarEstadoAnterior = true, descricao = "Exclusão de gestão", auditarExcecao = true)
     @Transactional
     public void excluirGestao(Integer id) {
         Gestao existente = buscarGestaoOuFalhar(id);
+        Gestao copia = copiarGestao(existente);
+
         gestaoRepository.deleteById(existente.getIdGestao());
         log.info("Gestão excluída: ID={}, nome='{}', período={} até {}",
                 existente.getIdGestao(), existente.getNomeGestao(),
                 existente.getDtInicio(), existente.getDtFim());
+
+        logJetonService.logGestaoExcluida(copia);
     }
 
     private void validarDatas(Gestao gestao) {
@@ -121,5 +131,14 @@ public class GestaoService {
     public Gestao buscarGestaoOuFalhar(Integer id) {
         return gestaoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Gestão não encontrada com ID: " + id));
+    }
+
+    private Gestao copiarGestao(Gestao original) {
+        Gestao copia = new Gestao();
+        copia.setIdGestao(original.getIdGestao());
+        copia.setNomeGestao(original.getNomeGestao());
+        copia.setDtInicio(original.getDtInicio());
+        copia.setDtFim(original.getDtFim());
+        return copia;
     }
 }

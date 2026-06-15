@@ -44,7 +44,7 @@ public class GestaoConselheiroService {
     @Transactional
     public GestaoConselheiro criar(GestaoConselheiro vinculo) {
         vinculo.setId(null);
-        GestaoConselheiro salvo = salvarVinculo(vinculo, true);
+        GestaoConselheiro salvo = salvar(vinculo, true);
         logJetonService.logVinculoCriado(salvo);
         return salvo;
     }
@@ -61,12 +61,12 @@ public class GestaoConselheiroService {
                 .orElseThrow(() -> new RuntimeException("Vínculo não encontrado para atualização."));
         GestaoConselheiro copiaAntiga = copiarVinculo(antigo);
 
-        GestaoConselheiro atualizado = salvarVinculo(vinculo, false);
+        GestaoConselheiro atualizado = salvar(vinculo, false);
         logJetonService.logVinculoAtualizado(copiaAntiga, atualizado);
         return atualizado;
     }
 
-    private GestaoConselheiro salvarVinculo(GestaoConselheiro vinculo, boolean isNovo) {
+    private GestaoConselheiro salvar(GestaoConselheiro vinculo, boolean isNovo) {
         GestaoConselheiro vinculoExistente = null;
         if (!isNovo) {
             vinculoExistente = gestaoConselheiroRepository.findById(new GestaoConselheiroId(

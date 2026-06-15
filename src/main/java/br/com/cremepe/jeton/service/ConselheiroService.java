@@ -59,7 +59,7 @@ public class ConselheiroService {
     @Transactional
     public Conselheiro criar(Conselheiro conselheiro) {
         conselheiro.setIdPessoa(null);
-        Conselheiro salvo = salvarConselheiro(conselheiro, true);
+        Conselheiro salvo = salvar(conselheiro, true);
         logJetonService.logConselheiroCriado(salvo);
         return salvo;
     }
@@ -74,12 +74,12 @@ public class ConselheiroService {
 
         Conselheiro copiaAntigo = copiarConselheiro(antigo);
 
-        Conselheiro atualizado = salvarConselheiro(conselheiro, false);
+        Conselheiro atualizado = salvar(conselheiro, false);
         logJetonService.logConselheiroAtualizado(copiaAntigo, atualizado);
         return atualizado;
     }
 
-    private Conselheiro salvarConselheiro(Conselheiro conselheiro, boolean isNovo) {
+    private Conselheiro salvar(Conselheiro conselheiro, boolean isNovo) {
         Conselheiro conselheiroExistente = null;
         if (!isNovo) {
             conselheiroExistente = conselheiroRepository.findById(conselheiro.getIdPessoa())

@@ -61,7 +61,7 @@ public class AtividadeLoteService {
 
         Comprovante comprovante = null;
         if (dto.getFile() != null && !dto.getFile().isEmpty()) {
-            comprovante = comprovanteService.criarComprovante(
+            comprovante = comprovanteService.criar(
                     dto.getFile(), dto.getIdTipoAnexo(), dto.getNomeComprovanteUsuario());
         }
 
@@ -133,7 +133,7 @@ public class AtividadeLoteService {
         Comprovante comprovanteFinal = comprovanteAtual;
 
         if (dto.getFile() != null && !dto.getFile().isEmpty()) {
-            comprovanteFinal = comprovanteService.criarComprovante(
+            comprovanteFinal = comprovanteService.criar(
                     dto.getFile(), dto.getIdTipoAnexo(), dto.getNomeComprovanteUsuario());
         } else if (dto.getNomeComprovanteUsuario() != null
                 && !dto.getNomeComprovanteUsuario().equals(comprovanteAtual.getNomeComprovante())) {
@@ -194,7 +194,7 @@ public class AtividadeLoteService {
         if (dto.getFile() != null && !dto.getFile().isEmpty()) {
             long outras = atividadeRepository.countByComprovanteIdComprovante(idComprovante);
             if (outras == 0) {
-                comprovanteService.excluirComprovante(idComprovante);
+                comprovanteService.excluir(idComprovante);
             }
         }
 

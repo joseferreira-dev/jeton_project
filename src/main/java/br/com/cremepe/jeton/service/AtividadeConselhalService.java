@@ -123,7 +123,7 @@ public class AtividadeConselhalService {
             long outrasAtividades = atividadeRepository.countByComprovanteIdComprovante(idComprovanteAntigo);
             if (outrasAtividades == 0) {
                 comprovanteRepository.findById(idComprovanteAntigo).ifPresent(comp -> {
-                    comprovanteService.excluirComprovante(comp.getIdComprovante());
+                    comprovanteService.excluir(comp.getIdComprovante());
                 });
             }
         }
@@ -188,7 +188,7 @@ public class AtividadeConselhalService {
             long outrasAtividades = atividadeRepository.countByComprovanteIdComprovante(idComprovante);
             if (outrasAtividades == 0) {
                 try {
-                    comprovanteService.excluirComprovante(idComprovante);
+                    comprovanteService.excluir(idComprovante);
                 } catch (Exception e) {
                     log.warn("Falha ao excluir comprovante ID {} durante exclusão da atividade {}: {}", idComprovante,
                             id, e.getMessage());
@@ -229,7 +229,7 @@ public class AtividadeConselhalService {
 
     private Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo,
             String nomeComprovanteUsuario) {
-        return comprovanteService.criarComprovante(file, idTipoAnexo, nomeComprovanteUsuario);
+        return comprovanteService.criar(file, idTipoAnexo, nomeComprovanteUsuario);
     }
 
     private void validarAtividadeNaoFechada(Integer idAtividade) {
