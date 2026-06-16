@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.ViewAtividadeConselhal;
 import br.com.cremepe.jeton.dto.AtividadeAgrupadaRelatorioDTO;
 import br.com.cremepe.jeton.repository.ViewAtividadeConselhalRepository;
@@ -22,12 +21,14 @@ public class RelatorioService {
     private static final Logger log = LoggerFactory.getLogger(RelatorioService.class);
 
     private final ViewAtividadeConselhalRepository viewRepository;
+    private final LogJetonService logJetonService;
 
-    RelatorioService(ViewAtividadeConselhalRepository viewRepository) {
+    public RelatorioService(ViewAtividadeConselhalRepository viewRepository,
+            LogJetonService logJetonService) {
         this.viewRepository = viewRepository;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "relatorio", acao = "GERAR_RELATORIO_ATIVIDADES", descricao = "Geração de relatório agrupado de atividades", dadosParametros = "{ 'idGestao': #idGestao, 'idConselheiro': #idConselheiro, 'dataInicio': #dataInicio, 'dataFim': #dataFim }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional(readOnly = true)
     public List<AtividadeAgrupadaRelatorioDTO> gerarRelatorioAgrupado(
             Integer idGestao, Integer idConselheiro, Integer idRegra,
@@ -36,7 +37,6 @@ public class RelatorioService {
         log.debug("Gerando relatório agrupado: gestão={}, conselheiro={}, dataInicio={}, dataFim={}",
                 idGestao, idConselheiro, dataInicio, dataFim);
 
-        // Converte LocalDate para LocalDateTime (início e fim do dia)
         LocalDateTime inicio = (dataInicio != null) ? dataInicio.atStartOfDay() : null;
         LocalDateTime fim = (dataFim != null) ? dataFim.atTime(LocalTime.MAX) : null;
 
@@ -45,6 +45,7 @@ public class RelatorioService {
 
         if (dadosRaw == null || dadosRaw.isEmpty()) {
             log.debug("Nenhum dado encontrado para os filtros informados.");
+            logJetonService.logRelatorioGerado(idGestao, idConselheiro, idRegra, dataInicio, dataFim, 0);
             return Collections.emptyList();
         }
 
@@ -95,6 +96,9 @@ public class RelatorioService {
 
         relatorio.sort(Comparator.comparing(AtividadeAgrupadaRelatorioDTO::getConselheiro));
         log.info("Relatório gerado com {} registros", relatorio.size());
+
+        logJetonService.logRelatorioGerado(idGestao, idConselheiro, idRegra, dataInicio, dataFim, relatorio.size());
+
         return relatorio;
     }
 }

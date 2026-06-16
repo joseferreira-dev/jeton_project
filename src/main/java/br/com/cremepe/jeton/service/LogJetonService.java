@@ -8,6 +8,9 @@ import br.com.cremepe.jeton.domain.GestaoConselheiro;
 import br.com.cremepe.jeton.domain.NivelAcesso;
 import br.com.cremepe.jeton.domain.PontosSaldo;
 import br.com.cremepe.jeton.domain.Portaria;
+import br.com.cremepe.jeton.domain.Regras;
+import br.com.cremepe.jeton.domain.RegrasConjuntas;
+import br.com.cremepe.jeton.domain.Resolucao;
 import br.com.cremepe.jeton.domain.TipoAnexo;
 import br.com.cremepe.jeton.domain.Usuario;
 import br.com.cremepe.jeton.domain.ViewUserLogin;
@@ -25,8 +28,10 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class LogJetonService {
@@ -588,7 +593,7 @@ public class LogJetonService {
     public void logPortariaExcluida(Portaria portaria) {
         Map<String, Object> dados = new LinkedHashMap<>();
         dados.put("portaria", extrairDadosPortaria(portaria));
-        registrarLogComum("portaria", "EXCLUIR", "Exclusão permanente de portaria", true, dados);
+        registrarLogComum("portaria", "EXCLUIR", "Exclusão de portaria", true, dados);
     }
 
     private Map<String, Object> extrairDadosPortaria(Portaria portaria) {
@@ -607,7 +612,190 @@ public class LogJetonService {
 
     // RegrasService
 
+    // ========== Métodos para RegrasService ==========
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logRegraCriada(Regras regra) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("regra", extrairDadosRegra(regra));
+        registrarLogComum("regras", "CRIAR", "Criação de nova regra de pontuação", true, dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logRegraAtualizada(Regras antiga, Regras nova) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("atualizada", extrairDadosRegra(nova));
+        dados.put("anterior", extrairDadosRegra(antiga));
+        registrarLogComum("regras", "ATUALIZAR", "Atualização de regra de pontuação existente", true, dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logRegraRevogada(Regras regra) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("regra", extrairDadosRegra(regra));
+        registrarLogComum("regras", "REVOGAR", "Revogação de regra de pontuação", true, dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logRegraRestaurada(Regras regra) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("regra", extrairDadosRegra(regra));
+        registrarLogComum("regras", "RESTAURAR", "Restauração de regra revogada (volta a ficar em vigor)", true, dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logRegraExcluida(Regras regra) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("regra", extrairDadosRegra(regra));
+        registrarLogComum("regras", "EXCLUIR", "Exclusão de regra", true, dados);
+    }
+
+    private Map<String, Object> extrairDadosRegra(Regras regra) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("id", regra.getIdRegra());
+        dados.put("nome", regra.getNomeRegra());
+        dados.put("descricao", regra.getDescricao());
+        dados.put("pontos", regra.getPontos());
+        dados.put("pontosLimitesTurno", regra.getPontosLimitesTurno());
+        dados.put("inJudicante", regra.isJudicante() ? "Sim" : "Não");
+        dados.put("inRevogado", regra.isRevogado() ? "Sim" : "Não");
+        dados.put("resolucaoId", regra.getResolucao() != null ? regra.getResolucao().getIdResolucao() : null);
+        dados.put("resolucao",
+                regra.getResolucao() != null
+                        ? "Resolução " + regra.getResolucao().getNumero() + "/" + regra.getResolucao().getAno()
+                        : null);
+        dados.put("portariaId", regra.getPortaria() != null ? regra.getPortaria().getIdPortaria() : null);
+        dados.put("portaria",
+                regra.getPortaria() != null
+                        ? "Portaria " + regra.getPortaria().getNumero() + "/" + regra.getPortaria().getAno()
+                        : null);
+        return dados;
+    }
+
     // RegrasConjuntasService
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logRegraConjuntaCriada(RegrasConjuntas regra) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("regraConjunta", extrairDadosRegraConjunta(regra));
+        registrarLogComum("regras_conjuntas", "CRIAR", "Criação de novo agrupamento de regras (regras conjuntas)", true,
+                dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logRegraConjuntaAtualizada(RegrasConjuntas antiga, RegrasConjuntas nova) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("atualizada", extrairDadosRegraConjunta(nova));
+        dados.put("anterior", extrairDadosRegraConjunta(antiga));
+        registrarLogComum("regras_conjuntas", "ATUALIZAR", "Atualização de agrupamento de regras existente", true,
+                dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logRegraConjuntaExcluida(RegrasConjuntas regra, String regrasVinculadas) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("regraConjunta", extrairDadosRegraConjunta(regra));
+        dados.put("regrasVinculadas", regrasVinculadas);
+        registrarLogComum("regras_conjuntas", "EXCLUIR",
+                "Exclusão de agrupamento de regras (e das associações)", true, dados);
+    }
+
+    private Map<String, Object> extrairDadosRegraConjunta(RegrasConjuntas regra) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("id", regra.getIdRegraConjunta());
+        dados.put("nome", regra.getNomeRegra());
+        dados.put("tipoLimite", regra.getInTipoLimite());
+        dados.put("pontosLimite", regra.getPontosLimite());
+        if (regra.getRegrasAgrupadas() != null && !regra.getRegrasAgrupadas().isEmpty()) {
+            List<Integer> idsRegras = regra.getRegrasAgrupadas().stream()
+                    .map(Regras::getIdRegra)
+                    .collect(Collectors.toList());
+            dados.put("idsRegrasAgrupadas", idsRegras);
+            List<String> nomesRegras = regra.getRegrasAgrupadas().stream()
+                    .map(Regras::getNomeRegra)
+                    .collect(Collectors.toList());
+            dados.put("nomesRegrasAgrupadas", nomesRegras);
+        } else {
+            dados.put("idsRegrasAgrupadas", Collections.emptyList());
+            dados.put("nomesRegrasAgrupadas", Collections.emptyList());
+        }
+        return dados;
+    }
+
+    // RelatorioService
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logRelatorioGerado(Integer idGestao, Integer idConselheiro, Integer idRegra,
+            LocalDate dataInicio, LocalDate dataFim, int totalRegistros) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("idGestao", idGestao);
+        dados.put("idConselheiro", idConselheiro);
+        dados.put("idRegra", idRegra);
+        dados.put("dataInicio", dataInicio != null ? dataInicio.toString() : null);
+        dados.put("dataFim", dataFim != null ? dataFim.toString() : null);
+        dados.put("totalRegistros", totalRegistros);
+        registrarLogComum("relatorio", "GERAR_RELATORIO_ATIVIDADES",
+                "Geração de relatório agrupado de atividades", true, dados);
+    }
+
+    // ResolucaoService
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logResolucaoCriada(Resolucao resolucao) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("resolucao", extrairDadosResolucao(resolucao));
+        registrarLogComum("resolucao", "CRIAR", "Criação de nova resolução", true, dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logResolucaoAtualizada(Resolucao antiga, Resolucao nova) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("atualizada", extrairDadosResolucao(nova));
+        dados.put("anterior", extrairDadosResolucao(antiga));
+        registrarLogComum("resolucao", "ATUALIZAR", "Atualização de resolução existente", true, dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logResolucaoRevogada(Resolucao resolucao) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("resolucao", extrairDadosResolucao(resolucao));
+        registrarLogComum("resolucao", "REVOGAR", "Revogação de resolução", true, dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logResolucaoRestaurada(Resolucao resolucao) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("resolucao", extrairDadosResolucao(resolucao));
+        registrarLogComum("resolucao", "RESTAURAR", "Restauração de resolução revogada (volta a ficar em vigor)", true,
+                dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logResolucaoExcluida(Resolucao resolucao) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("resolucao", extrairDadosResolucao(resolucao));
+        registrarLogComum("resolucao", "EXCLUIR", "Exclusão de resolução", true, dados);
+    }
+
+    private Map<String, Object> extrairDadosResolucao(Resolucao resolucao) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("id", resolucao.getIdResolucao());
+        dados.put("numero", resolucao.getNumero());
+        dados.put("ano", resolucao.getAno());
+        dados.put("dtInicioVigencia",
+                resolucao.getDtInicioVigencia() != null ? resolucao.getDtInicioVigencia().toString() : null);
+        dados.put("dtFimVigencia",
+                resolucao.getDtFimVigencia() != null ? resolucao.getDtFimVigencia().toString() : null);
+        dados.put("linkPublicado", resolucao.getLinkPublicado());
+        dados.put("ementa", resolucao.getEmenta());
+        dados.put("pontosPorJeton", resolucao.getPontosPorJeton());
+        dados.put("maxJetonsDia", resolucao.getMaxJetonsDia());
+        dados.put("maxJetonsPeriodo", resolucao.getMaxJetonsPeriodo());
+        dados.put("maxJetonsMes", resolucao.getMaxJetonsMes());
+        dados.put("valorJeton", resolucao.getValorJeton());
+        dados.put("revogado", resolucao.isRevogado() ? "Sim" : "Não");
+        return dados;
+    }
 
     // TipoAnexoService
 
