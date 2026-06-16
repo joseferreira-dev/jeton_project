@@ -513,7 +513,7 @@ public class JetonService {
             jetonRepository.save(j);
         }
 
-        log.info("Folha fechada definitivamente: gestão '{}', {}/{} - {} atividades fechadas, {} jetons afetados",
+        log.info("Folha fechada: gestão '{}', {}/{} - {} atividades fechadas, {} jetons afetados",
                 nomeGestao, mes, ano, totalAtualizado, jetonsDoMes.size());
         logJetonService.logFolhaHomologada(gestao, mes, ano, totalAtualizado, jetonsDoMes.size());
     }

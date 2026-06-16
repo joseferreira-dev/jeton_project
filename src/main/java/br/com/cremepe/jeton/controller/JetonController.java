@@ -95,7 +95,7 @@ public class JetonController {
         if (gestaoOpt.isEmpty())
             throw new RuntimeException("Gestão não encontrada.");
         jetonService.realizarFechamentoDefinitivoFolha(gestaoOpt.get(), mes, ano);
-        ra.addFlashAttribute("sucesso", "Folha fechada e homologada definitivamente.");
+        ra.addFlashAttribute("sucesso", "Folha fechada e homologada.");
         return "redirect:/jeton";
     }
 

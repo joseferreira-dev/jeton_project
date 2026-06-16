@@ -222,7 +222,7 @@ public class GestaoConselheiroService {
             throw new RuntimeException("Não é possível excluir o vínculo pois existem atividades associadas.");
         }
         logJetonService.logVinculoExcluido(copia);
-        log.info("Vínculo excluído permanentemente: gestão={}, conselheiro={}", idGestao, idPessoa);
+        log.info("Vínculo excluído: gestão={}, conselheiro={}", idGestao, idPessoa);
     }
 
     @Transactional(readOnly = true)

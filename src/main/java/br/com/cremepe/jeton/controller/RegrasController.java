@@ -142,7 +142,7 @@ public class RegrasController {
             HttpSession session,
             RedirectAttributes ra) {
         regrasService.excluir(id);
-        ra.addFlashAttribute("sucesso", "Regra excluída definitivamente.");
+        ra.addFlashAttribute("sucesso", "Regra excluída.");
         return "redirect:/regras";
     }
 

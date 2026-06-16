@@ -100,7 +100,7 @@ public class ResolucaoController {
             HttpSession session,
             RedirectAttributes ra) {
         resolucaoService.excluir(id);
-        ra.addFlashAttribute("sucesso", "Resolução excluída definitivamente.");
+        ra.addFlashAttribute("sucesso", "Resolução excluída.");
         return "redirect:/resolucoes";
     }
 

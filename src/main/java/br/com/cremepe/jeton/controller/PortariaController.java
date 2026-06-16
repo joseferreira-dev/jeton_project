@@ -101,7 +101,7 @@ public class PortariaController {
             HttpSession session,
             RedirectAttributes ra) {
         portariaService.excluir(id);
-        ra.addFlashAttribute("sucesso", "Portaria excluída definitivamente.");
+        ra.addFlashAttribute("sucesso", "Portaria excluída.");
         return "redirect:/portarias";
     }
 
