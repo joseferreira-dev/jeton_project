@@ -16,13 +16,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
     Optional<Usuario> findByPessoaCpf(String cpf);
 
-    @Query("SELECT COUNT(u) > 0 FROM Usuario u WHERE u.pessoa.cpf = :cpf AND u.idUsuarioPessoa != :id")
-    boolean existsByPessoaCpfAndIdUsuarioPessoaNot(@Param("cpf") String cpf, @Param("id") Integer id);
-
     @Query("SELECT u FROM Usuario u WHERE " +
             "(LOWER(u.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR u.pessoa.cpf LIKE CONCAT('%', :cpf, '%')) " +
             "AND (:situacao IS NULL OR :situacao = '' OR u.inSituacao = :situacao)")
-    Page<Usuario> pesquisarPaginado(@Param("termo") String termo,
+    Page<Usuario> findAllByFilters(@Param("termo") String termo,
             @Param("cpf") String cpf,
             @Param("situacao") String situacao,
             Pageable pageable);
@@ -30,20 +27,20 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     @Modifying
     @Transactional
     @Query(value = "DELETE FROM conselheiro WHERE idPessoa = :id", nativeQuery = true)
-    void deletarConselheiroNativo(@Param("id") Integer id);
+    void deleteConselheiroNative(@Param("id") Integer id);
 
     @Modifying
     @Transactional
     @Query(value = "DELETE FROM usuario WHERE idUsuarioPessoa = :id", nativeQuery = true)
-    void deletarUsuarioNativo(@Param("id") Integer id);
+    void deleteUsuarioNative(@Param("id") Integer id);
 
     @Modifying
     @Transactional
     @Query(value = "DELETE FROM pessoa WHERE idPessoa = :id", nativeQuery = true)
-    void deletarPessoaNativa(@Param("id") Integer id);
+    void deletePessoaNative(@Param("id") Integer id);
 
     @Modifying
     @Transactional
     @Query(value = "DELETE FROM usuario_acesso WHERE idUsuarioPessoa = :id", nativeQuery = true)
-    void deletarPermissoesNativo(@Param("id") Integer id);
+    void deletePermissoesNative(@Param("id") Integer id);
 }

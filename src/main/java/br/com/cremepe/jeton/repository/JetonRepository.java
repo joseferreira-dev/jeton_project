@@ -10,15 +10,8 @@ import br.com.cremepe.jeton.domain.Jeton;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 public interface JetonRepository extends JpaRepository<Jeton, Integer> {
-
-    Optional<Jeton> findByConselheiroIdPessoaAndMesAndAno(Integer idPessoa, Integer mes, Integer ano);
-
-    List<Jeton> findByConselheiroIdPessoaAndAnoOrderByMesDesc(Integer idPessoa, Integer ano);
-
-    List<Jeton> findByGestaoIdGestao(Integer idGestao);
 
     List<Jeton> findByConselheiroIdPessoaOrderByAnoDescMesDesc(Integer idPessoa);
 
@@ -37,7 +30,7 @@ public interface JetonRepository extends JpaRepository<Jeton, Integer> {
             "AND (:mes IS NULL OR j.mes = :mes) " +
             "AND (:ano IS NULL OR j.ano = :ano) " +
             "AND (:termo IS NULL OR LOWER(j.conselheiro.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')))")
-    List<Jeton> pesquisarHistorico(@Param("idGestao") Integer idGestao,
+    List<Jeton> findAllByFilters(@Param("idGestao") Integer idGestao,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano,
             @Param("termo") String termo);
@@ -47,7 +40,7 @@ public interface JetonRepository extends JpaRepository<Jeton, Integer> {
             "AND (:mes IS NULL OR j.mes = :mes) " +
             "AND (:ano IS NULL OR j.ano = :ano) " +
             "AND (:termo IS NULL OR LOWER(j.conselheiro.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')))")
-    Page<Jeton> pesquisarHistoricoPaginado(@Param("idGestao") Integer idGestao,
+    Page<Jeton> findAllByFiltersPageable(@Param("idGestao") Integer idGestao,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano,
             @Param("termo") String termo,

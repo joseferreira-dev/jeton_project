@@ -9,13 +9,8 @@ import org.springframework.data.repository.query.Param;
 import br.com.cremepe.jeton.domain.LogJeton;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 public interface LogJetonRepository extends JpaRepository<LogJeton, Integer> {
-
-    List<LogJeton> findByUsuarioIdUsuarioPessoaOrderByDataHoraLogDesc(Integer idUsuario);
-
-    List<LogJeton> findByNomeTabelaAndDataHoraLogBetween(String nomeTabela, LocalDateTime inicio, LocalDateTime fim);
 
     @Query("SELECT l FROM LogJeton l JOIN FETCH l.usuario u JOIN FETCH u.pessoa WHERE " +
             "(:nomeTabela IS NULL OR l.nomeTabela = :nomeTabela) AND " +
@@ -24,7 +19,7 @@ public interface LogJetonRepository extends JpaRepository<LogJeton, Integer> {
             "(:termo IS NULL OR :termo = '' OR " +
             "LOWER(u.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR " +
             "LOWER(l.textoLog) LIKE LOWER(CONCAT('%', :termo, '%')))")
-    Page<LogJeton> pesquisarComFiltros(@Param("nomeTabela") String nomeTabela,
+    Page<LogJeton> findAllByFilters(@Param("nomeTabela") String nomeTabela,
             @Param("dataInicio") LocalDateTime dataInicio,
             @Param("dataFim") LocalDateTime dataFim,
             @Param("termo") String termo,

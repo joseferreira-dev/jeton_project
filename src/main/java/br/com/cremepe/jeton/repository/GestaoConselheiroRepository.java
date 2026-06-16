@@ -32,7 +32,7 @@ public interface GestaoConselheiroRepository extends JpaRepository<GestaoConselh
             "(LOWER(gc.gestao.nomeGestao) LIKE LOWER(CONCAT('%', :termo, '%')) OR " +
             "LOWER(gc.conselheiro.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
             "(:situacao IS NULL OR :situacao = '' OR gc.inSituacao = :situacao)")
-    Page<GestaoConselheiro> pesquisarPaginado(@Param("termo") String termo,
+    Page<GestaoConselheiro> findAllByFilters(@Param("termo") String termo,
             @Param("situacao") String situacao,
             Pageable pageable);
 }

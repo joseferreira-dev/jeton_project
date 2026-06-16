@@ -10,19 +10,14 @@ import br.com.cremepe.jeton.domain.Portaria;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 public interface PortariaRepository extends JpaRepository<Portaria, Integer> {
-
-    Optional<Portaria> findByNumeroAndAno(Integer numero, Integer ano);
-
-    List<Portaria> findByInRevogado(String inRevogado);
 
     @Query("SELECT p FROM Portaria p WHERE " +
             "(:termo IS NULL OR :termo = '' OR CAST(p.numero AS string) LIKE CONCAT('%', :termo, '%') OR CAST(p.ano AS string) LIKE CONCAT('%', :termo, '%')) AND "
             +
             "(:situacao IS NULL OR :situacao = '' OR p.inRevogado = :situacao)")
-    Page<Portaria> pesquisarPaginado(@Param("termo") String termo,
+    Page<Portaria> findAllByFilters(@Param("termo") String termo,
             @Param("situacao") String situacao,
             Pageable pageable);
 
@@ -36,7 +31,7 @@ public interface PortariaRepository extends JpaRepository<Portaria, Integer> {
 
     @Query("SELECT COUNT(p) > 0 FROM Portaria p WHERE p.idPortaria != :idPortaria " +
             "AND ((p.dtInicioVigencia <= :fim AND (p.dtFimVigencia IS NULL OR p.dtFimVigencia >= :inicio)))")
-    boolean existePeriodoSobreposto(@Param("idPortaria") Integer idPortaria,
+    boolean existsPeriodoSobreposto(@Param("idPortaria") Integer idPortaria,
             @Param("inicio") LocalDate inicio,
             @Param("fim") LocalDate fim);
 }

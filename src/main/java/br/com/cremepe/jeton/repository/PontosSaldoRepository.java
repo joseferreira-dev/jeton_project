@@ -23,7 +23,7 @@ public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Intege
             "LEFT JOIN PontosSaldo ps ON ps.conselheiro.idPessoa = c.idPessoa AND ps.inSituacao = 'A' " +
             "WHERE c.idPessoa = :idPessoa " +
             "GROUP BY c.idPessoa, p.nome")
-    Optional<PontosRemanescentesDTO> buscarSaldoPorConselheiro(@Param("idPessoa") Integer idPessoa);
+    Optional<PontosRemanescentesDTO> findSaldoByConselheiro(@Param("idPessoa") Integer idPessoa);
 
     @Query("SELECT new br.com.cremepe.jeton.dto.PontosRemanescentesDTO(" +
             "c.idPessoa, p.nome, " +
@@ -35,41 +35,38 @@ public interface PontosSaldoRepository extends JpaRepository<PontosSaldo, Intege
             "WHERE EXISTS (SELECT 1 FROM Jeton j WHERE j.conselheiro.idPessoa = c.idPessoa) " + // apenas quem tem
                                                                                                 // jetons
             "GROUP BY c.idPessoa, p.nome")
-    List<PontosRemanescentesDTO> buscarSaldosAgrupadosPorConselheiroComJeton();
+    List<PontosRemanescentesDTO> findSaldosAgrupadosByConselheiroWithJeton();
 
     @Query("SELECT ps FROM PontosSaldo ps WHERE ps.conselheiro.idPessoa = :idPessoa " +
             "AND ps.gestao.idGestao = :idGestao AND ps.inSituacao = 'A' AND ps.pontosSobrando > 0 " +
             "ORDER BY ps.dataHora ASC, ps.idPontosSaldo ASC")
-    List<PontosSaldo> buscarSaldosDisponiveisOrdenadosFIFO(@Param("idPessoa") Integer idPessoa,
+    List<PontosSaldo> findSaldosDisponiveisOrderedFIFO(@Param("idPessoa") Integer idPessoa,
             @Param("idGestao") Integer idGestao);
 
     @Query("SELECT COALESCE(SUM(ps.pontosSobrando), 0) FROM PontosSaldo ps " +
             "WHERE ps.conselheiro.idPessoa = :idPessoa AND ps.gestao.idGestao = :idGestao AND ps.inSituacao = 'A'")
-    Integer somarPontosSobrandoAtivos(@Param("idPessoa") Integer idPessoa,
+    Integer sumPontosSobrandoAtivos(@Param("idPessoa") Integer idPessoa,
             @Param("idGestao") Integer idGestao);
 
     @Query("SELECT ps FROM PontosSaldo ps WHERE ps.conselheiro.idPessoa = :idPessoa " +
             "AND ps.atividade IS NOT NULL " +
             "AND MONTH(ps.atividade.dataHoraRegistro) = :mes AND YEAR(ps.atividade.dataHoraRegistro) = :ano")
-    List<PontosSaldo> buscarSaldosDeAtividadesDoMes(@Param("idPessoa") Integer idPessoa,
+    List<PontosSaldo> findSaldosDeAtividadesByMes(@Param("idPessoa") Integer idPessoa,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
 
     boolean existsByConselheiroIdPessoaAndGestaoIdGestaoAndInSituacao(Integer idPessoa, Integer idGestao,
             String inSituacao);
 
-    long countByConselheiroIdPessoaAndGestaoIdGestaoAndInSituacao(Integer idPessoa, Integer idGestao,
-            String inSituacao);
-
     @Query("SELECT COALESCE(SUM(ps.pontosUtilizados), 0) FROM PontosSaldo ps " +
             "WHERE ps.conselheiro.idPessoa = :idPessoa " +
             "AND FUNCTION('DATE', ps.dataHora) = :data " +
             "AND ps.atividade.inTurno = :turno")
-    Integer sumPontosUtilizadosPorConselheiroDataTurno(@Param("idPessoa") Integer idPessoa,
+    Integer sumPontosUtilizadosByConselheiroAndDataAndTurno(@Param("idPessoa") Integer idPessoa,
             @Param("data") LocalDate data,
             @Param("turno") String turno);
 
     @Query("SELECT COALESCE(SUM(ps.pontosSobrando), 0) FROM PontosSaldo ps " +
             "WHERE ps.conselheiro.idPessoa = :idPessoa AND ps.inSituacao = 'A'")
-    Integer somarPontosSobrandoTotal(@Param("idPessoa") Integer idPessoa);
+    Integer sumPontosSobrandoTotal(@Param("idPessoa") Integer idPessoa);
 }

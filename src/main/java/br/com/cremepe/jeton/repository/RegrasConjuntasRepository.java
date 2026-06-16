@@ -8,16 +8,12 @@ import org.springframework.data.repository.query.Param;
 
 import br.com.cremepe.jeton.domain.RegrasConjuntas;
 
-import java.util.List;
-
 public interface RegrasConjuntasRepository extends JpaRepository<RegrasConjuntas, Integer> {
-
-    List<RegrasConjuntas> findByInTipoLimite(String inTipoLimite);
 
     @Query("SELECT rc FROM RegrasConjuntas rc WHERE " +
             "(:termo IS NULL OR :termo = '' OR LOWER(rc.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
             "(:tipoLimite IS NULL OR :tipoLimite = '' OR rc.inTipoLimite = :tipoLimite)")
-    Page<RegrasConjuntas> pesquisarPaginado(@Param("termo") String termo,
+    Page<RegrasConjuntas> findAllByFilters(@Param("termo") String termo,
             @Param("tipoLimite") String tipoLimite,
             Pageable pageable);
 

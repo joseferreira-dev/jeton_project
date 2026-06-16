@@ -18,16 +18,6 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
 
     List<Regras> findByResolucaoIdResolucao(Integer resolucaoId);
 
-    List<Regras> findByResolucaoIdResolucaoAndInRevogado(Integer idResolucao, String inRevogado);
-
-    List<Regras> findByInJudicante(String inJudicante);
-
-    List<Regras> findByInRevogado(String inRevogado);
-
-    List<Regras> findByNomeRegraAndResolucaoIdResolucao(String nomeRegra, Integer idResolucao);
-
-    List<Regras> findByNomeRegraAndPortariaIdPortaria(String nomeRegra, Integer idPortaria);
-
     boolean existsByNomeRegraAndIdRegraNot(String nomeRegra, Integer idRegra);
 
     long countByPortariaIdPortaria(Integer idPortaria);
@@ -54,16 +44,9 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
 
     @Query("SELECT r FROM Regras r WHERE " +
             "(:termo IS NULL OR :termo = '' OR LOWER(r.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
-            "(:situacao IS NULL OR :situacao = '' OR r.inRevogado = :situacao)")
-    Page<Regras> pesquisarPaginado(@Param("termo") String termo,
-            @Param("situacao") String situacao,
-            Pageable pageable);
-
-    @Query("SELECT r FROM Regras r WHERE " +
-            "(:termo IS NULL OR :termo = '' OR LOWER(r.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%'))) AND " +
             "(:situacao IS NULL OR :situacao = '' OR r.inRevogado = :situacao) AND " +
             "(:judicante IS NULL OR :judicante = '' OR r.inJudicante = :judicante)")
-    Page<Regras> pesquisarPaginado(@Param("termo") String termo,
+    Page<Regras> findAllByFilters(@Param("termo") String termo,
             @Param("situacao") String situacao,
             @Param("judicante") String judicante,
             Pageable pageable);
@@ -92,12 +75,4 @@ public interface RegrasRepository extends JpaRepository<Regras, Integer> {
     @Modifying
     @Query("UPDATE Regras r SET r.inRevogado = 'N' WHERE r.resolucao.idResolucao = :idResolucao")
     void restaurarRegrasPorResolucao(@Param("idResolucao") Integer idResolucao);
-
-    @Query("SELECT COALESCE(SUM(ps.pontosUtilizados), 0) FROM PontosSaldo ps " +
-            "WHERE ps.conselheiro.idPessoa = :idPessoa " +
-            "AND FUNCTION('DATE', ps.dataHora) = :data " +
-            "AND ps.atividade.inTurno = :turno")
-    Integer sumPontosUtilizadosPorConselheiroDataTurno(@Param("idPessoa") Integer idPessoa,
-            @Param("data") LocalDate data,
-            @Param("turno") String turno);
 }

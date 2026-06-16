@@ -4,12 +4,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import br.com.cremepe.jeton.domain.TipoAnexo;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface TipoAnexoRepository extends JpaRepository<TipoAnexo, Integer> {
 
     Optional<TipoAnexo> findByNome(String nome);
-
-    List<TipoAnexo> findByExigePublicacao(String exigePublicacao);
 }

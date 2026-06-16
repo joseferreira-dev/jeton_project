@@ -14,16 +14,4 @@ public interface PessoaRepository extends JpaRepository<Pessoa, Integer> {
     Optional<Pessoa> findByEmail(String email);
 
     List<Pessoa> findByInTipoPessoa(String inTipoPessoa);
-
-    boolean existsByCpfAndIdPessoaNot(String cpf, Integer idPessoa);
-
-    boolean existsByEmailAndIdPessoaNot(String email, Integer idPessoa);
-
-    default List<Pessoa> findAllConselheiros() {
-        return findByInTipoPessoa(Pessoa.TIPO_CONSELHEIRO);
-    }
-
-    default List<Pessoa> findAllFuncionarios() {
-        return findByInTipoPessoa(Pessoa.TIPO_FUNCIONARIO);
-    }
 }

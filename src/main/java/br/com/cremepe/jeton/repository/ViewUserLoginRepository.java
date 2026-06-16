@@ -9,6 +9,4 @@ import java.util.Optional;
 public interface ViewUserLoginRepository extends JpaRepository<ViewUserLogin, Integer> {
 
     Optional<ViewUserLogin> findByCpf(String cpf);
-
-    Optional<ViewUserLogin> findByEmail(String email);
 }

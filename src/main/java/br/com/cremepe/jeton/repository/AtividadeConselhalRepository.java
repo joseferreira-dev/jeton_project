@@ -53,7 +53,7 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             "(CAST(:dataInicio AS date) IS NULL OR CAST(a.dataHoraAtividade AS date) >= CAST(:dataInicio AS date)) AND "
             +
             "(CAST(:dataFim AS date) IS NULL OR CAST(a.dataHoraAtividade AS date) <= CAST(:dataFim AS date))")
-    Page<AtividadeConselhal> pesquisarPaginado(
+    Page<AtividadeConselhal> findAllByFilters(
             @Param("termo") String termo,
             @Param("situacao") String situacao,
             @Param("turno") String turno,
@@ -63,9 +63,6 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
             Pageable pageable);
 
     Page<AtividadeConselhal> findByConselheiroIdPessoa(Integer idPessoa, Pageable pageable);
-
-    Page<AtividadeConselhal> findByConselheiroIdPessoaAndGestaoIdGestao(Integer idPessoa, Integer idGestao,
-            Pageable pageable);
 
     @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa AND a.inComputada = 'S' AND MONTH(a.dataHoraRegistro) = :mes AND YEAR(a.dataHoraRegistro) = :ano")
     List<AtividadeConselhal> findComputadasPorConselheiroEMes(@Param("idPessoa") Integer idPessoa,
@@ -92,7 +89,7 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
     @Query("SELECT COUNT(a) FROM AtividadeConselhal a WHERE a.gestao.idGestao = :idGestao " +
             "AND MONTH(a.dataHoraRegistro) = :mes AND YEAR(a.dataHoraRegistro) = :ano " +
             "AND a.inSituacao = 'P'")
-    long contarAtividadesPendentesNoMes(
+    long countAtividadesPendentesNoMes(
             @Param("idGestao") Integer idGestao,
             @Param("mes") Integer mes,
             @Param("ano") Integer ano);
@@ -100,7 +97,7 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
     @Query("SELECT COUNT(a) FROM AtividadeConselhal a WHERE a.gestao.idGestao = :idGestao " +
             "AND a.dataHoraRegistro < :inicioDoMes " +
             "AND a.inSituacao != 'F'")
-    long contarAtividadesAnterioresNaoFechadas(
+    long countAtividadesAnterioresNaoFechadas(
             @Param("idGestao") Integer idGestao,
             @Param("inicioDoMes") LocalDateTime inicioDoMes);
 

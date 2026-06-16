@@ -9,14 +9,10 @@ import org.springframework.data.repository.query.Param;
 import br.com.cremepe.jeton.domain.Gestao;
 
 import java.time.LocalDate;
-import java.util.Optional;
 
 public interface GestaoRepository extends JpaRepository<Gestao, Integer> {
 
-    Optional<Gestao> findByNomeGestao(String nomeGestao);
-
-    @Query("SELECT COUNT(g) > 0 FROM Gestao g WHERE g.nomeGestao = :nome AND (:id IS NULL OR g.idGestao != :id)")
-    boolean existsByNomeGestaoIgnorandoId(@Param("nome") String nome, @Param("id") Integer id);
+    boolean existsByNomeGestaoAndIdGestaoNot(String nome, Integer id);
 
     @Query("SELECT COUNT(g) > 0 FROM Gestao g WHERE (:id IS NULL OR g.idGestao != :id) " +
             "AND g.dtInicio <= :fim AND g.dtFim >= :inicio")
@@ -24,9 +20,5 @@ public interface GestaoRepository extends JpaRepository<Gestao, Integer> {
             @Param("inicio") LocalDate inicio,
             @Param("fim") LocalDate fim);
 
-    @Query("SELECT g FROM Gestao g WHERE g.dtInicio <= CURRENT_DATE AND g.dtFim >= CURRENT_DATE")
-    Optional<Gestao> findAtual();
-
-    @Query("SELECT g FROM Gestao g WHERE LOWER(g.nomeGestao) LIKE LOWER(CONCAT('%', :termo, '%'))")
-    Page<Gestao> pesquisarPaginado(@Param("termo") String termo, Pageable pageable);
+    Page<Gestao> findByNomeGestaoContainingIgnoreCase(String nome, Pageable pageable);
 }
