@@ -43,6 +43,24 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-ver-log');
+        if (!btn) return;
+        e.preventDefault();
+        const texto = btn.getAttribute('data-texto');
+        const pre = document.getElementById('logDetalhesTexto');
+        if (pre) {
+            try {
+                const obj = JSON.parse(texto);
+                pre.textContent = JSON.stringify(obj, null, 2);
+            } catch (err) {
+                pre.textContent = texto;
+            }
+            const modal = new bootstrap.Modal(document.getElementById('modalLogDetalhes'));
+            modal.show();
+        }
+    });
+
     inicializarHomologacao();
     inicializarBotaoRelatorio();
     inicializarFiltroRegrasConjuntas();

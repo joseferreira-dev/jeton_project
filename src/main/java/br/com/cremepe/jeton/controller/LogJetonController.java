@@ -1,5 +1,6 @@
 package br.com.cremepe.jeton.controller;
 
+import br.com.cremepe.jeton.service.LogJetonService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,8 +13,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import br.com.cremepe.jeton.service.LogJetonService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,7 +27,7 @@ public class LogJetonController {
 
     private final LogJetonService logJetonService;
 
-    LogJetonController(LogJetonService logJetonService) {
+    public LogJetonController(LogJetonService logJetonService) {
         this.logJetonService = logJetonService;
     }
 
@@ -39,6 +38,9 @@ public class LogJetonController {
             @RequestParam(value = "nomeTabela", required = false) String nomeTabela,
             @RequestParam(value = "dataInicio", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam(value = "dataFim", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
+            @RequestParam(value = "termo", required = false) String termo,
+            @RequestParam(value = "sort", defaultValue = "dataHoraLog") String sort,
+            @RequestParam(value = "dir", defaultValue = "desc") String dir,
             Model model, HttpSession session) {
 
         if (session.getAttribute("usuarioLogado") == null) {
@@ -52,9 +54,12 @@ public class LogJetonController {
         LocalDateTime inicio = (dataInicio != null) ? dataInicio.atStartOfDay() : null;
         LocalDateTime fim = (dataFim != null) ? dataFim.atTime(LocalTime.MAX) : null;
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "dataHoraLog"));
-        Page<?> paginaLogs = logJetonService.listarComFiltros(nomeTabela, inicio, fim, pageable);
+        Sort.Direction direction = dir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
 
+        Page<?> paginaLogs = logJetonService.listarComFiltros(nomeTabela, inicio, fim, termo, pageable);
+
+        // Mapeamento de tabelas para nomes amigáveis (igual ao original)
         Map<String, String> opcoesTabelas = new TreeMap<>();
         opcoesTabelas.put("acesso_negado", "Acessos Negados");
         opcoesTabelas.put("atividade_conselhal", "Atividade Conselhal");
@@ -79,7 +84,10 @@ public class LogJetonController {
         model.addAttribute("nomeTabela", nomeTabela);
         model.addAttribute("dataInicio", dataInicio);
         model.addAttribute("dataFim", dataFim);
+        model.addAttribute("termo", termo);
         model.addAttribute("size", size);
+        model.addAttribute("sort", sort);
+        model.addAttribute("dir", dir);
         model.addAttribute("opcoesTabelas", opcoesTabelas);
 
         return "log/lista";

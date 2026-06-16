@@ -5,6 +5,7 @@ import br.com.cremepe.jeton.domain.Comprovante;
 import br.com.cremepe.jeton.domain.Conselheiro;
 import br.com.cremepe.jeton.domain.Gestao;
 import br.com.cremepe.jeton.domain.GestaoConselheiro;
+import br.com.cremepe.jeton.domain.LogJeton;
 import br.com.cremepe.jeton.domain.NivelAcesso;
 import br.com.cremepe.jeton.domain.PontosSaldo;
 import br.com.cremepe.jeton.domain.Portaria;
@@ -19,6 +20,8 @@ import br.com.cremepe.jeton.repository.UsuarioRepository;
 import br.com.cremepe.jeton.util.JsonConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +54,12 @@ public class LogJetonService {
         this.usuarioRepository = usuarioRepository;
         this.usuarioLogadoService = usuarioLogadoService;
         this.jsonConverter = jsonConverter;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<LogJeton> listarComFiltros(String nomeTabela, LocalDateTime dataInicio,
+            LocalDateTime dataFim, String termo, Pageable pageable) {
+        return logRepository.pesquisarComFiltros(nomeTabela, dataInicio, dataFim, termo, pageable);
     }
 
     // ========== Método genérico que centraliza a escrita do log ==========
