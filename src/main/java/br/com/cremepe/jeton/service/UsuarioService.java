@@ -6,7 +6,7 @@ import br.com.cremepe.jeton.domain.Usuario;
 import br.com.cremepe.jeton.repository.ConselheiroRepository;
 import br.com.cremepe.jeton.repository.PessoaRepository;
 import br.com.cremepe.jeton.repository.UsuarioRepository;
-import br.com.cremepe.jeton.util.CpfValidator;
+import br.com.cremepe.jeton.util.PessoaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -30,17 +30,20 @@ public class UsuarioService {
     private final ConselheiroRepository conselheiroRepository;
     private final PasswordEncoder passwordEncoder;
     private final LogJetonService logJetonService;
+    private final PessoaValidator pessoaValidator;
 
     public UsuarioService(UsuarioRepository usuarioRepository,
             PessoaRepository pessoaRepository,
             PasswordEncoder passwordEncoder,
             ConselheiroRepository conselheiroRepository,
-            LogJetonService logJetonService) {
+            LogJetonService logJetonService,
+            PessoaValidator pessoaValidator) {
         this.usuarioRepository = usuarioRepository;
         this.pessoaRepository = pessoaRepository;
         this.conselheiroRepository = conselheiroRepository;
         this.passwordEncoder = passwordEncoder;
         this.logJetonService = logJetonService;
+        this.pessoaValidator = pessoaValidator;
     }
 
     @Transactional
@@ -64,38 +67,28 @@ public class UsuarioService {
     }
 
     private Usuario salvar(Usuario usuario, boolean isNovo) {
-        String nome = usuario.getPessoa().getNome();
-        String tipoPessoa = usuario.iseConselheiro() ? "Conselheiro" : "Funcionário";
-        String situacao = usuario.getInSituacao();
-
-        // 1. Prepara CPF
         Pessoa pessoa = usuario.getPessoa();
         if (pessoa == null) {
             throw new RuntimeException("Os dados da pessoa são obrigatórios.");
         }
+
         String cpfLimpo = pessoa.getCpf() != null ? pessoa.getCpf().replaceAll("[^0-9]", "") : "";
         pessoa.setCpf(cpfLimpo);
+        pessoaValidator.validarCpf(cpfLimpo);
+        pessoaValidator.validarCpfUnico(cpfLimpo, isNovo ? null : usuario.getIdUsuarioPessoa());
+        pessoaValidator.validarEmailUnico(pessoa.getEmail(), isNovo ? null : usuario.getIdUsuarioPessoa());
 
-        // 2. Valida CPF
-        if (cpfLimpo.isEmpty() || !CpfValidator.isCpfValido(cpfLimpo)) {
-            throw new RuntimeException("O número de CPF informado é inválido. Verifique os dígitos.");
-        }
-
-        // 3. Verifica duplicidade de CPF
-        validarCpfUnico(cpfLimpo, usuario.getIdUsuarioPessoa());
-
-        // 4. Verifica duplicidade de e-mail
-        validarEmailUnico(pessoa.getEmail(), isNovo ? null : usuario.getIdUsuarioPessoa());
-
-        // 5. Valida CRM se for conselheiro
         if (usuario.iseConselheiro()) {
             if (usuario.getCrm() == null) {
                 throw new RuntimeException("O número do CRM é obrigatório para médicos conselheiros.");
             }
-            validarCrmUnico(usuario.getCrm(), usuario.getIdUsuarioPessoa());
+            pessoaValidator.validarCrmUnico(usuario.getCrm(), isNovo ? null : usuario.getIdUsuarioPessoa());
         }
 
-        // 6. Tratamento de senha
+        // Define tipo de pessoa
+        pessoa.setInTipoPessoa(usuario.iseConselheiro() ? Pessoa.TIPO_CONSELHEIRO : Pessoa.TIPO_FUNCIONARIO);
+
+        // Tratamento de senha
         if (!isNovo) {
             Usuario existente = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
                     .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
@@ -107,24 +100,25 @@ public class UsuarioService {
             usuario.getPessoa().setIdPessoa(usuario.getIdUsuarioPessoa());
         } else {
             usuario.setIdUsuarioPessoa(null);
-            if (usuario.getPessoa() != null)
+            if (usuario.getPessoa() != null) {
                 usuario.getPessoa().setIdPessoa(null);
+            }
             if (usuario.getSenha() == null || usuario.getSenha().trim().isEmpty()) {
                 throw new RuntimeException("A senha é obrigatória para novos usuários.");
             }
             usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
         }
 
-        // 7. Define tipo de pessoa
-        pessoa.setInTipoPessoa(usuario.iseConselheiro() ? Pessoa.TIPO_CONSELHEIRO : Pessoa.TIPO_FUNCIONARIO);
-
-        // 8. Salva usuário (cascade salva pessoa)
+        // Salva usuário (cascade salva pessoa)
         Usuario usuarioSalvo = usuarioRepository.save(usuario);
         log.info("Usuário {}: ID={}, nome='{}', tipo={}, situação={}",
                 isNovo ? "criado" : "atualizado",
-                usuarioSalvo.getIdUsuarioPessoa(), nome, tipoPessoa, situacao);
+                usuarioSalvo.getIdUsuarioPessoa(),
+                pessoa.getNome(),
+                usuario.iseConselheiro() ? "Conselheiro" : "Funcionário",
+                usuarioSalvo.getInSituacao());
 
-        // 9. Gerencia tabela conselheiro (se necessário)
+        // Gerencia tabela conselheiro (se necessário)
         if (usuario.iseConselheiro()) {
             usuarioRepository.flush();
             Integer idPessoa = usuarioSalvo.getIdUsuarioPessoa();
@@ -146,41 +140,16 @@ public class UsuarioService {
         return usuarioSalvo;
     }
 
-    private void validarCpfUnico(String cpf, Integer idAtual) {
-        Optional<Pessoa> existente = pessoaRepository.findByCpf(cpf);
-        if (existente.isPresent()) {
-            if (idAtual == null || !idAtual.equals(existente.get().getIdPessoa())) {
-                throw new RuntimeException("Já existe um cadastro no sistema com este CPF.");
-            }
-        }
-    }
-
-    private void validarCrmUnico(Integer crm, Integer idAtual) {
-        Optional<Conselheiro> existente = conselheiroRepository.findByCrm(crm);
-        if (existente.isPresent() && (idAtual == null || !idAtual.equals(existente.get().getIdPessoa()))) {
-            throw new RuntimeException("Já existe um médico conselheiro cadastrado com o CRM " + crm + ".");
-        }
-    }
-
-    private void validarEmailUnico(String email, Integer idAtual) {
-        if (email == null || email.trim().isEmpty())
-            return;
-
-        if (pessoaRepository.existsByEmailAndIdPessoaNot(email, idAtual != null ? idAtual : 0)) {
-            throw new RuntimeException("Já existe um cadastro no sistema com o e-mail '" + email + "'.");
-        }
-    }
-
     @Transactional
     public void atualizarPerfil(Usuario usuario) {
         Usuario existente = usuarioRepository.findById(usuario.getIdUsuarioPessoa())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado para atualização de perfil"));
         Usuario antigo = copiarUsuario(existente);
 
-        // Valida e atualiza os campos permitidos
+        // Valida e-mail único (se alterado)
         String novoEmail = usuario.getPessoa().getEmail();
         if (novoEmail != null && !novoEmail.equals(existente.getPessoa().getEmail())) {
-            validarEmailUnico(novoEmail, existente.getIdUsuarioPessoa());
+            pessoaValidator.validarEmailUnico(novoEmail, existente.getIdUsuarioPessoa());
         }
 
         Pessoa pessoa = existente.getPessoa();
