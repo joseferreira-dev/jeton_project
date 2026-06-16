@@ -115,7 +115,7 @@ public class PontosSaldoService {
         }
         pontosSaldoRepository.deleteById(id);
         log.info(
-                "Saldo de pontos excluído fisicamente: id={}, conselheiro={}, gestão={}, pontosSobrando={}, situação={}",
+                "Saldo de pontos excluído: id={}, conselheiro={}, gestão={}, pontosSobrando={}, situação={}",
                 id, idConselheiro, idGestao, pontosSobrando, situacao);
         logJetonService.logPontosSaldoExcluido(copia);
     }

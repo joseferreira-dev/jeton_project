@@ -95,7 +95,7 @@ public class ResolucaoController {
         return "redirect:/resolucoes";
     }
 
-    @GetMapping("/deletar/{id}")
+    @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {

@@ -96,8 +96,8 @@ public class PortariaController {
         return "redirect:/portarias";
     }
 
-    @GetMapping("/deletar/{id}")
-    public String deletarFisicamente(@PathVariable("id") Integer id,
+    @GetMapping("/excluir/{id}")
+    public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
         portariaService.excluir(id);

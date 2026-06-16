@@ -137,8 +137,8 @@ public class RegrasController {
         return "redirect:/regras";
     }
 
-    @GetMapping("/deletar/{id}")
-    public String deletar(@PathVariable("id") Integer id,
+    @GetMapping("/excluir/{id}")
+    public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
         regrasService.excluir(id);
