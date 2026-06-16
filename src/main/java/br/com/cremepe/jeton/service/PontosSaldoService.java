@@ -138,7 +138,7 @@ public class PontosSaldoService {
 
     @Transactional(readOnly = true)
     public List<PontosSaldo> buscarSaldosDisponiveis(Integer idPessoa, Integer idGestao) {
-        return pontosSaldoRepository.buscarSaldosDisponiveisOrdenadosFIFO(idPessoa, idGestao);
+        return pontosSaldoRepository.findSaldosDisponiveisOrderedFIFO(idPessoa, idGestao);
     }
 
     @Transactional(readOnly = true)
@@ -148,7 +148,7 @@ public class PontosSaldoService {
     }
 
     public int somarPontosSobrandoTotal(Integer idPessoa) {
-        Integer soma = pontosSaldoRepository.somarPontosSobrandoTotal(idPessoa);
+        Integer soma = pontosSaldoRepository.sumPontosSobrandoTotal(idPessoa);
         return soma != null ? soma : 0;
     }
 

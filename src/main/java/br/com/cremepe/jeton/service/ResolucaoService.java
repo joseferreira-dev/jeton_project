@@ -170,7 +170,7 @@ public class ResolucaoService {
             String sortField, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
-        return repository.pesquisarPaginado(termo, situacao, pageable);
+        return repository.findAllByFilters(termo, situacao, pageable);
     }
 
     private void normalizarResolucao(Resolucao resolucao) {

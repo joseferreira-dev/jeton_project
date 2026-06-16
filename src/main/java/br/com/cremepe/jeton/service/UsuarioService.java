@@ -7,6 +7,9 @@ import br.com.cremepe.jeton.repository.ConselheiroRepository;
 import br.com.cremepe.jeton.repository.PessoaRepository;
 import br.com.cremepe.jeton.repository.UsuarioRepository;
 import br.com.cremepe.jeton.util.PessoaValidator;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -24,6 +27,9 @@ import java.util.Optional;
 public class UsuarioService {
 
     private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private final UsuarioRepository usuarioRepository;
     private final PessoaRepository pessoaRepository;
@@ -176,7 +182,7 @@ public class UsuarioService {
             if (cpfPesquisa.isEmpty())
                 cpfPesquisa = "###";
         }
-        return usuarioRepository.pesquisarPaginado(termo, cpfPesquisa, situacao, pageable);
+        return usuarioRepository.findAllByFilters(termo, cpfPesquisa, situacao, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -196,15 +202,18 @@ public class UsuarioService {
             log.warn("Tentativa de excluir usuário inexistente ID={}", id);
             throw new RuntimeException("Usuário não encontrado para exclusão.");
         }
+
         Usuario usuario = usuarioOpt.get();
+        Usuario copia = copiarUsuario(usuario);
 
-        // Remove associações e registros
-        usuarioRepository.deletarPermissoesNativo(id);
-        usuarioRepository.deletarConselheiroNativo(id);
-        usuarioRepository.deletarUsuarioNativo(id);
-        usuarioRepository.deletarPessoaNativa(id);
+        entityManager.detach(usuario);
 
-        logJetonService.logUsuarioExcluido(usuario);
+        usuarioRepository.deletePermissoesNative(id);
+        usuarioRepository.deleteConselheiroNative(id);
+        usuarioRepository.deleteUsuarioNative(id);
+        usuarioRepository.deletePessoaNative(id);
+
+        logJetonService.logUsuarioExcluido(copia);
     }
 
     private Usuario copiarUsuario(Usuario original) {

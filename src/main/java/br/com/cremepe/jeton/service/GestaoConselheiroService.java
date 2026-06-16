@@ -230,7 +230,7 @@ public class GestaoConselheiroService {
             String sortField, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
-        return gestaoConselheiroRepository.pesquisarPaginado(termo, situacao, pageable);
+        return gestaoConselheiroRepository.findAllByFilters(termo, situacao, pageable);
     }
 
     @Transactional(readOnly = true)

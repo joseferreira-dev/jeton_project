@@ -173,7 +173,7 @@ public class RegrasService {
             int page, int size, String sortField, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
-        return repository.pesquisarPaginado(termo, situacao, judicante, pageable);
+        return repository.findAllByFilters(termo, situacao, judicante, pageable);
     }
 
     @Transactional(readOnly = true)

@@ -30,7 +30,7 @@ public class GestaoValidator {
         }
         String nome = gestao.getNomeGestao().trim();
         Integer idAtual = gestao.getIdGestao();
-        boolean existe = gestaoRepository.existsByNomeGestaoIgnorandoId(nome, idAtual != null ? idAtual : 0);
+        boolean existe = gestaoRepository.existsByNomeGestaoAndIdGestaoNot(nome, idAtual != null ? idAtual : 0);
         if (existe) {
             throw new RuntimeException("Já existe uma gestão cadastrada com o nome '" + nome + "'.");
         }

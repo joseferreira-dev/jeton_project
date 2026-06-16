@@ -40,7 +40,7 @@ public class RelatorioService {
         LocalDateTime inicio = (dataInicio != null) ? dataInicio.atStartOfDay() : null;
         LocalDateTime fim = (dataFim != null) ? dataFim.atTime(LocalTime.MAX) : null;
 
-        List<ViewAtividadeConselhal> dadosRaw = viewRepository.buscarParaRelatorio(
+        List<ViewAtividadeConselhal> dadosRaw = viewRepository.findForReport(
                 idGestao, idConselheiro, inicio, fim);
 
         if (dadosRaw == null || dadosRaw.isEmpty()) {

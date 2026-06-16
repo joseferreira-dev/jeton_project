@@ -34,7 +34,7 @@ public class NormativaValidator {
         }
         LocalDate fimValidacao = (fim != null) ? fim : LocalDate.of(9999, 12, 31);
         Integer idIgnorar = idAtual != null ? idAtual : 0;
-        boolean sobrepoe = portariaRepository.existePeriodoSobreposto(idIgnorar, inicio, fimValidacao);
+        boolean sobrepoe = portariaRepository.existsPeriodoSobreposto(idIgnorar, inicio, fimValidacao);
         if (sobrepoe) {
             throw new RuntimeException(
                     "Já existe uma portaria cadastrada cujo período de vigência coincide com o informado. Verifique as datas.");
@@ -63,7 +63,7 @@ public class NormativaValidator {
         }
         LocalDate fimValidacao = (fim != null) ? fim : LocalDate.of(9999, 12, 31);
         Integer idIgnorar = idAtual != null ? idAtual : 0;
-        boolean sobrepoe = resolucaoRepository.existePeriodoSobreposto(idIgnorar, inicio, fimValidacao);
+        boolean sobrepoe = resolucaoRepository.existsPeriodoSobreposto(idIgnorar, inicio, fimValidacao);
         if (sobrepoe) {
             throw new RuntimeException(
                     "Já existe uma resolução cadastrada cujo período de vigência coincide com o informado. Verifique as datas.");

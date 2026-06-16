@@ -62,7 +62,7 @@ public class LogJetonService {
     @Transactional(readOnly = true)
     public Page<LogJeton> listarComFiltros(String nomeTabela, LocalDateTime dataInicio,
             LocalDateTime dataFim, String termo, Pageable pageable) {
-        return logRepository.pesquisarComFiltros(nomeTabela, dataInicio, dataFim, termo, pageable);
+        return logRepository.findAllByFilters(nomeTabela, dataInicio, dataFim, termo, pageable);
     }
 
     // ========== Método genérico que centraliza a escrita do log ==========

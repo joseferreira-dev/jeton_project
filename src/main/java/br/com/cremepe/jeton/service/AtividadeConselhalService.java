@@ -204,7 +204,7 @@ public class AtividadeConselhalService {
         Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Sort sort = Sort.by(direction, sortField);
         Pageable pageable = (size == 0) ? PageRequest.of(0, Integer.MAX_VALUE, sort) : PageRequest.of(page, size, sort);
-        return atividadeRepository.pesquisarPaginado(termo, situacao, turno, comprovanteFiltro,
+        return atividadeRepository.findAllByFilters(termo, situacao, turno, comprovanteFiltro,
                 dataInicio, dataFim, pageable);
     }
 

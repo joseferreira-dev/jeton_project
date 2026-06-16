@@ -66,7 +66,7 @@ public class JetonService {
 
     @Transactional(readOnly = true)
     public PontosRemanescentesDTO obterSaldoPorConselheiro(Integer idPessoa) {
-        PontosRemanescentesDTO dto = pontosSaldoRepository.buscarSaldoPorConselheiro(idPessoa)
+        PontosRemanescentesDTO dto = pontosSaldoRepository.findSaldoByConselheiro(idPessoa)
                 .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado ou sem jetons"));
 
         // Busca pontos de atividades validadas
@@ -100,7 +100,7 @@ public class JetonService {
 
     @Transactional(readOnly = true)
     public List<PontosRemanescentesDTO> listarSaldosAgrupados() {
-        List<PontosRemanescentesDTO> lista = pontosSaldoRepository.buscarSaldosAgrupadosPorConselheiroComJeton();
+        List<PontosRemanescentesDTO> lista = pontosSaldoRepository.findSaldosAgrupadosByConselheiroWithJeton();
 
         DecimalFormat pontoFormat = new DecimalFormat("#,###");
         DecimalFormat moedaFormat = new DecimalFormat("R$ #,##0.00");
@@ -135,7 +135,7 @@ public class JetonService {
 
     public List<JetonDTO> pesquisarHistorico(Integer idGestao, Integer mes, Integer ano, String termo) {
         String termoBusca = (termo != null && !termo.trim().isEmpty()) ? termo.trim() : null;
-        return jetonRepository.pesquisarHistorico(idGestao, mes, ano, termoBusca)
+        return jetonRepository.findAllByFilters(idGestao, mes, ano, termoBusca)
                 .stream()
                 .map(jetonMapper::toDto)
                 .collect(Collectors.toList());
@@ -145,7 +145,7 @@ public class JetonService {
     public Page<JetonDTO> pesquisarHistoricoPaginado(Integer idGestao, Integer mes, Integer ano, String termo,
             Pageable pageable) {
         String termoBusca = (termo != null && !termo.trim().isEmpty()) ? termo.trim() : null;
-        Page<Jeton> page = jetonRepository.pesquisarHistoricoPaginado(idGestao, mes, ano, termoBusca, pageable);
+        Page<Jeton> page = jetonRepository.findAllByFiltersPageable(idGestao, mes, ano, termoBusca, pageable);
         return page.map(jetonMapper::toDto);
     }
 
@@ -208,7 +208,7 @@ public class JetonService {
         }
 
         // Trava 2: Nenhuma atividade pendente
-        long pendentesNoMes = atividadeRepository.contarAtividadesPendentesNoMes(idGestao, mes, ano);
+        long pendentesNoMes = atividadeRepository.countAtividadesPendentesNoMes(idGestao, mes, ano);
         if (pendentesNoMes > 0) {
             throw new RuntimeException("Cálculo bloqueado: existem " + pendentesNoMes +
                     " atividade(s) pendentes no período. Valide-as ou exclua-as antes de processar.");
@@ -216,7 +216,7 @@ public class JetonService {
 
         // Trava 3: Meses anteriores devem estar fechados
         LocalDateTime inicioDoMes = LocalDate.of(ano, mes, 1).atStartOfDay();
-        long anterioresNaoFechadas = atividadeRepository.contarAtividadesAnterioresNaoFechadas(idGestao, inicioDoMes);
+        long anterioresNaoFechadas = atividadeRepository.countAtividadesAnterioresNaoFechadas(idGestao, inicioDoMes);
         if (anterioresNaoFechadas > 0) {
             throw new RuntimeException("Cálculo bloqueado: existem " + anterioresNaoFechadas +
                     " atividade(s) de meses anteriores ainda não homologadas.");
@@ -248,7 +248,7 @@ public class JetonService {
             Integer mes, Integer ano,
             Resolucao resolucaoTeto, int maxJetonsPermitidos) {
         String nomeConselheiro = conselheiro.getPessoa().getNome();
-        List<PontosSaldo> saldosAntigos = pontosSaldoRepository.buscarSaldosDisponiveisOrdenadosFIFO(
+        List<PontosSaldo> saldosAntigos = pontosSaldoRepository.findSaldosDisponiveisOrderedFIFO(
                 conselheiro.getIdPessoa(), gestao.getIdGestao());
         List<AtividadeConselhal> novasAtividades = atividadeRepository.findHomologadasParaCalculo(
                 conselheiro.getIdPessoa(), mes, ano);
@@ -405,7 +405,8 @@ public class JetonService {
             LocalDate data = LocalDate.parse(partes[0]);
             String turno = partes[1];
 
-            Integer pagosAnterior = pontosSaldoRepository.sumPontosUtilizadosPorConselheiroDataTurno(idPessoa, data,
+            Integer pagosAnterior = pontosSaldoRepository.sumPontosUtilizadosByConselheiroAndDataAndTurno(idPessoa,
+                    data,
                     turno);
             int acumulado = (pagosAnterior != null) ? pagosAnterior : 0;
 
@@ -464,7 +465,7 @@ public class JetonService {
             jetonRepository.delete(j);
         }
 
-        List<PontosSaldo> saldosAtividadesDesteMes = pontosSaldoRepository.buscarSaldosDeAtividadesDoMes(idPessoa, mes,
+        List<PontosSaldo> saldosAtividadesDesteMes = pontosSaldoRepository.findSaldosDeAtividadesByMes(idPessoa, mes,
                 ano);
         pontosSaldoRepository.deleteAll(saldosAtividadesDesteMes);
 
@@ -623,7 +624,7 @@ public class JetonService {
             dto.setSaldoAnterior(saldoAnterior);
             dto.setPontosAcumuladosMes(pontosAcumuladosMes);
 
-            Integer saldoFuturo = pontosSaldoRepository.somarPontosSobrandoAtivos(idPessoa, idGestao);
+            Integer saldoFuturo = pontosSaldoRepository.sumPontosSobrandoAtivos(idPessoa, idGestao);
             dto.setSaldoFuturo(saldoFuturo != null ? saldoFuturo : 0);
 
             List<AtividadeConselhal> atividadesMes = atividadeRepository.findComputadasPorConselheiroEMes(idPessoa, mes,
@@ -735,7 +736,7 @@ public class JetonService {
         int saldoUtilizado = saldoExistente + pontosUtilizadosAtividades;
 
         // Saldo futuro (remanescente)
-        Integer saldoFuturo = pontosSaldoRepository.somarPontosSobrandoAtivos(idPessoa, idGestao);
+        Integer saldoFuturo = pontosSaldoRepository.sumPontosSobrandoAtivos(idPessoa, idGestao);
         int saldoFuturoValue = saldoFuturo != null ? saldoFuturo : 0;
 
         return new RelatorioConselheiroDTO(
