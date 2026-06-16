@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.Resolucao;
 import br.com.cremepe.jeton.repository.RegrasRepository;
 import br.com.cremepe.jeton.repository.ResolucaoRepository;
@@ -25,20 +24,24 @@ public class ResolucaoService {
 
     private final ResolucaoRepository repository;
     private final RegrasRepository regrasRepository;
+    private final LogJetonService logJetonService;
 
-    ResolucaoService(ResolucaoRepository repository, RegrasRepository regrasRepository) {
+    public ResolucaoService(ResolucaoRepository repository,
+            RegrasRepository regrasRepository,
+            LogJetonService logJetonService) {
         this.repository = repository;
         this.regrasRepository = regrasRepository;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "resolucao", acao = "CRIAR", descricao = "Criação de nova resolução", dadosParametros = "{ 'numero': #resolucao.numero, 'ano': #resolucao.ano, 'dtInicioVigencia': #resolucao.dtInicioVigencia, 'dtFimVigencia': #resolucao.dtFimVigencia, 'ementa': #resolucao.ementa, 'pontosPorJeton': #resolucao.pontosPorJeton, 'maxJetonsDia': #resolucao.maxJetonsDia, 'maxJetonsPeriodo': #resolucao.maxJetonsPeriodo, 'maxJetonsMes': #resolucao.maxJetonsMes, 'valorJeton': #resolucao.valorJeton, 'linkPublicado': #resolucao.linkPublicado }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public Resolucao criar(Resolucao resolucao) {
         resolucao.setIdResolucao(null);
-        return salvarResolucao(resolucao, true);
+        Resolucao salva = salvarResolucao(resolucao, true);
+        logJetonService.logResolucaoCriada(salva);
+        return salva;
     }
 
-    @Auditar(tabela = "resolucao", acao = "ATUALIZAR", descricao = "Atualização de resolução existente", dadosParametros = "{ 'id': #resolucao.idResolucao, 'numero': #resolucao.numero, 'ano': #resolucao.ano, 'dtInicioVigencia': #resolucao.dtInicioVigencia, 'dtFimVigencia': #resolucao.dtFimVigencia, 'ementa': #resolucao.ementa, 'pontosPorJeton': #resolucao.pontosPorJeton, 'maxJetonsDia': #resolucao.maxJetonsDia, 'maxJetonsPeriodo': #resolucao.maxJetonsPeriodo, 'maxJetonsMes': #resolucao.maxJetonsMes, 'valorJeton': #resolucao.valorJeton, 'linkPublicado': #resolucao.linkPublicado }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public Resolucao atualizar(Resolucao resolucao) {
         if (resolucao.getIdResolucao() == null) {
@@ -47,7 +50,14 @@ public class ResolucaoService {
         if (!repository.existsById(resolucao.getIdResolucao())) {
             throw new RuntimeException("Resolução não encontrada para atualização.");
         }
-        return salvarResolucao(resolucao, false);
+        // Captura o estado anterior
+        Resolucao antiga = repository.findById(resolucao.getIdResolucao())
+                .orElseThrow(() -> new RuntimeException("Resolução não encontrada."));
+        Resolucao copia = copiarResolucao(antiga);
+
+        Resolucao atualizada = salvarResolucao(resolucao, false);
+        logJetonService.logResolucaoAtualizada(copia, atualizada);
+        return atualizada;
     }
 
     private Resolucao salvarResolucao(Resolucao resolucao, boolean isNovo) {
@@ -114,33 +124,34 @@ public class ResolucaoService {
             resolucao.setValorJeton(java.math.BigDecimal.ZERO);
     }
 
-    @Auditar(tabela = "resolucao", acao = "REVOGAR", descricao = "Revogação de resolução", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void revogar(Integer id) {
         Resolucao resolucao = buscarOuFalhar(id);
         if (resolucao.isRevogado()) {
             throw new RuntimeException("A resolução já está revogada.");
         }
+        Resolucao copia = copiarResolucao(resolucao);
         resolucao.setInRevogado(Resolucao.REVOGADO_SIM);
         repository.save(resolucao);
         regrasRepository.revogarRegrasPorResolucao(id);
         log.info("Resolução revogada: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
+        logJetonService.logResolucaoRevogada(copia);
     }
 
-    @Auditar(tabela = "resolucao", acao = "RESTAURAR", descricao = "Restauração de resolução revogada (volta a ficar em vigor)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void restaurar(Integer id) {
         Resolucao resolucao = buscarOuFalhar(id);
         if (!resolucao.isRevogado()) {
             throw new RuntimeException("A resolução já está em vigor.");
         }
+        Resolucao copia = copiarResolucao(resolucao);
         resolucao.setInRevogado(Resolucao.REVOGADO_NAO);
         repository.save(resolucao);
         regrasRepository.restaurarRegrasPorResolucao(id);
         log.info("Resolução restaurada: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
+        logJetonService.logResolucaoRestaurada(copia);
     }
 
-    @Auditar(tabela = "resolucao", acao = "EXCLUIR", descricao = "Exclusão permanente de resolução", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluir(Integer id) {
         Resolucao resolucao = buscarOuFalhar(id);
@@ -152,8 +163,10 @@ public class ResolucaoService {
             throw new RuntimeException("Não é possível excluir a resolução pois existem " + countRegras +
                     " regra(s) vinculada(s). Revogue-as ou exclua-as antes.");
         }
+        Resolucao copia = copiarResolucao(resolucao);
         repository.deleteById(id);
-        log.info("Resolução excluída fisicamente: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
+        log.info("Resolução excluída: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
+        logJetonService.logResolucaoExcluida(copia);
     }
 
     @Transactional(readOnly = true)
@@ -178,5 +191,23 @@ public class ResolucaoService {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
         return repository.pesquisarPaginado(termo, situacao, pageable);
+    }
+
+    private Resolucao copiarResolucao(Resolucao original) {
+        Resolucao copia = new Resolucao();
+        copia.setIdResolucao(original.getIdResolucao());
+        copia.setNumero(original.getNumero());
+        copia.setAno(original.getAno());
+        copia.setDtInicioVigencia(original.getDtInicioVigencia());
+        copia.setDtFimVigencia(original.getDtFimVigencia());
+        copia.setLinkPublicado(original.getLinkPublicado());
+        copia.setInRevogado(original.getInRevogado());
+        copia.setEmenta(original.getEmenta());
+        copia.setPontosPorJeton(original.getPontosPorJeton());
+        copia.setMaxJetonsDia(original.getMaxJetonsDia());
+        copia.setMaxJetonsPeriodo(original.getMaxJetonsPeriodo());
+        copia.setMaxJetonsMes(original.getMaxJetonsMes());
+        copia.setValorJeton(original.getValorJeton());
+        return copia;
     }
 }
