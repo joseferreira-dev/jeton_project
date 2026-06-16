@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.Regras;
 import br.com.cremepe.jeton.domain.RegrasConjuntas;
 import br.com.cremepe.jeton.repository.RegrasConjuntasRepository;
@@ -14,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -24,19 +24,24 @@ public class RegrasConjuntasService {
     private static final Logger log = LoggerFactory.getLogger(RegrasConjuntasService.class);
 
     private final RegrasConjuntasRepository repository;
+    private final LogJetonService logJetonService;
+    private final RegrasService regrasService;
 
-    RegrasConjuntasService(RegrasConjuntasRepository repository) {
+    public RegrasConjuntasService(RegrasConjuntasRepository repository,
+            LogJetonService logJetonService, RegrasService regrasService) {
         this.repository = repository;
+        this.logJetonService = logJetonService;
+        this.regrasService = regrasService;
     }
 
-    @Auditar(tabela = "regras_conjuntas", acao = "CRIAR", descricao = "Criação de novo agrupamento de regras (regras conjuntas)", dadosParametros = "{ 'nomeRegra': #regra.nomeRegra, 'inTipoLimite': #regra.inTipoLimite, 'pontosLimite': #regra.pontosLimite }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public RegrasConjuntas criar(RegrasConjuntas regra) {
         regra.setIdRegraConjunta(null);
-        return salvar(regra, true);
+        RegrasConjuntas salva = salvar(regra, true);
+        logJetonService.logRegraConjuntaCriada(salva);
+        return salva;
     }
 
-    @Auditar(tabela = "regras_conjuntas", acao = "ATUALIZAR", descricao = "Atualização de agrupamento de regras existente", dadosParametros = "{ 'id': #regra.idRegraConjunta, 'nomeRegra': #regra.nomeRegra, 'inTipoLimite': #regra.inTipoLimite, 'pontosLimite': #regra.pontosLimite }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public RegrasConjuntas atualizar(RegrasConjuntas regra) {
         if (regra.getIdRegraConjunta() == null) {
@@ -45,7 +50,13 @@ public class RegrasConjuntasService {
         if (!repository.existsById(regra.getIdRegraConjunta())) {
             throw new RuntimeException("Regra conjunta não encontrada para atualização.");
         }
-        return salvar(regra, false);
+        RegrasConjuntas antiga = repository.findById(regra.getIdRegraConjunta())
+                .orElseThrow(() -> new RuntimeException("Regra conjunta não encontrada."));
+        RegrasConjuntas copia = copiarRegraConjunta(antiga);
+
+        RegrasConjuntas atualizada = salvar(regra, false);
+        logJetonService.logRegraConjuntaAtualizada(copia, atualizada);
+        return atualizada;
     }
 
     private RegrasConjuntas salvar(RegrasConjuntas regra, boolean isNovo) {
@@ -56,12 +67,18 @@ public class RegrasConjuntasService {
         if (isNovo) {
             regraParaSalvar = regra;
         } else {
+            // Carrega a entidade existente
             regraParaSalvar = repository.findById(regra.getIdRegraConjunta())
                     .orElseThrow(() -> new RuntimeException("Regra conjunta não encontrada para atualização."));
-            // Atualiza os campos permitidos
+            // Atualiza campos simples
             regraParaSalvar.setNomeRegra(regra.getNomeRegra());
             regraParaSalvar.setInTipoLimite(regra.getInTipoLimite());
             regraParaSalvar.setPontosLimite(regra.getPontosLimite());
+            // Atualiza a lista de regras agrupadas
+            regraParaSalvar.getRegrasAgrupadas().clear();
+            if (regra.getRegrasAgrupadas() != null) {
+                regraParaSalvar.getRegrasAgrupadas().addAll(regra.getRegrasAgrupadas());
+            }
         }
 
         RegrasConjuntas salva = repository.save(regraParaSalvar);
@@ -96,13 +113,15 @@ public class RegrasConjuntasService {
         }
     }
 
-    @Auditar(tabela = "regras_conjuntas", acao = "EXCLUIR", descricao = "Exclusão de agrupamento de regras (remove também as associações)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = false, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluir(Integer id) {
         RegrasConjuntas regra = buscarOuFalhar(id);
         String nome = regra.getNomeRegra();
         String tipoLimite = regra.getInTipoLimite();
         Integer pontosLimite = regra.getPontosLimite();
+
+        // Captura cópia para o log
+        RegrasConjuntas copia = copiarRegraConjunta(regra);
 
         // Coleta os nomes das regras associadas antes de remover
         String regrasVinculadas = "";
@@ -119,6 +138,8 @@ public class RegrasConjuntasService {
         repository.deleteById(id);
         log.info("Regra Conjunta excluída: id={}, nome='{}', tipoLimite={}, pontosLimite={}",
                 id, nome, tipoLimite, pontosLimite);
+
+        logJetonService.logRegraConjuntaExcluida(copia, regrasVinculadas);
     }
 
     @Transactional(readOnly = true)
@@ -143,5 +164,17 @@ public class RegrasConjuntasService {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
         return repository.pesquisarPaginado(termo, tipoLimite, pageable);
+    }
+
+    private RegrasConjuntas copiarRegraConjunta(RegrasConjuntas original) {
+        RegrasConjuntas copia = new RegrasConjuntas();
+        copia.setIdRegraConjunta(original.getIdRegraConjunta());
+        copia.setNomeRegra(original.getNomeRegra());
+        copia.setInTipoLimite(original.getInTipoLimite());
+        copia.setPontosLimite(original.getPontosLimite());
+        if (original.getRegrasAgrupadas() != null) {
+            copia.setRegrasAgrupadas(new ArrayList<>(original.getRegrasAgrupadas()));
+        }
+        return copia;
     }
 }
