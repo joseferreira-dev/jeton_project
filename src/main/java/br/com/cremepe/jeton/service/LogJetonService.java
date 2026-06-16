@@ -7,6 +7,7 @@ import br.com.cremepe.jeton.domain.Gestao;
 import br.com.cremepe.jeton.domain.GestaoConselheiro;
 import br.com.cremepe.jeton.domain.NivelAcesso;
 import br.com.cremepe.jeton.domain.PontosSaldo;
+import br.com.cremepe.jeton.domain.Portaria;
 import br.com.cremepe.jeton.domain.TipoAnexo;
 import br.com.cremepe.jeton.domain.Usuario;
 import br.com.cremepe.jeton.domain.ViewUserLogin;
@@ -553,13 +554,62 @@ public class LogJetonService {
 
     // PortariaService
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logPortariaCriada(Portaria portaria) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("portaria", extrairDadosPortaria(portaria));
+        registrarLogComum("portaria", "CRIAR", "Criação de nova portaria", true, dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logPortariaAtualizada(Portaria antiga, Portaria nova) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("atualizada", extrairDadosPortaria(nova));
+        dados.put("anterior", extrairDadosPortaria(antiga));
+        registrarLogComum("portaria", "ATUALIZAR", "Atualização de portaria existente", true, dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logPortariaRevogada(Portaria portaria) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("portaria", extrairDadosPortaria(portaria));
+        registrarLogComum("portaria", "REVOGAR", "Revogação de portaria", true, dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logPortariaRestaurada(Portaria portaria) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("portaria", extrairDadosPortaria(portaria));
+        registrarLogComum("portaria", "RESTAURAR", "Restauração de portaria revogada (volta a ficar em vigor)", true,
+                dados);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logPortariaExcluida(Portaria portaria) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("portaria", extrairDadosPortaria(portaria));
+        registrarLogComum("portaria", "EXCLUIR", "Exclusão permanente de portaria", true, dados);
+    }
+
+    private Map<String, Object> extrairDadosPortaria(Portaria portaria) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("id", portaria.getIdPortaria());
+        dados.put("numero", portaria.getNumero());
+        dados.put("ano", portaria.getAno());
+        dados.put("identificacao", portaria.getNumero() + "/" + portaria.getAno());
+        dados.put("dtInicioVigencia",
+                portaria.getDtInicioVigencia() != null ? portaria.getDtInicioVigencia().toString() : null);
+        dados.put("dtFimVigencia", portaria.getDtFimVigencia() != null ? portaria.getDtFimVigencia().toString() : null);
+        dados.put("linkPublicado", portaria.getLinkPublicado());
+        dados.put("revogado", portaria.isRevogado() ? "Sim" : "Não");
+        return dados;
+    }
+
     // RegrasService
 
     // RegrasConjuntasService
 
     // TipoAnexoService
-
-    // ========== Métodos para TipoAnexoService ==========
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logTipoAnexoCriado(TipoAnexo tipo) {

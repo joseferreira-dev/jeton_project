@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.Portaria;
 import br.com.cremepe.jeton.repository.PortariaRepository;
 import br.com.cremepe.jeton.repository.RegrasRepository;
@@ -25,20 +24,24 @@ public class PortariaService {
 
     private final PortariaRepository repository;
     private final RegrasRepository regrasRepository;
+    private final LogJetonService logJetonService;
 
-    PortariaService(PortariaRepository repository, RegrasRepository regrasRepository) {
+    public PortariaService(PortariaRepository repository,
+            RegrasRepository regrasRepository,
+            LogJetonService logJetonService) {
         this.repository = repository;
         this.regrasRepository = regrasRepository;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "portaria", acao = "CRIAR", descricao = "Criação de nova portaria", dadosParametros = "{ 'numero': #portaria.numero, 'ano': #portaria.ano, 'dtInicioVigencia': #portaria.dtInicioVigencia, 'dtFimVigencia': #portaria.dtFimVigencia, 'linkPublicado': #portaria.linkPublicado }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public Portaria criar(Portaria portaria) {
         portaria.setIdPortaria(null);
-        return salvarPortaria(portaria, true);
+        Portaria salva = salvarPortaria(portaria, true);
+        logJetonService.logPortariaCriada(salva);
+        return salva;
     }
 
-    @Auditar(tabela = "portaria", acao = "ATUALIZAR", descricao = "Atualização de portaria existente", dadosParametros = "{ 'id': #portaria.idPortaria, 'numero': #portaria.numero, 'ano': #portaria.ano, 'dtInicioVigencia': #portaria.dtInicioVigencia, 'dtFimVigencia': #portaria.dtFimVigencia, 'linkPublicado': #portaria.linkPublicado }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public Portaria atualizar(Portaria portaria) {
         if (portaria.getIdPortaria() == null) {
@@ -47,7 +50,14 @@ public class PortariaService {
         if (!repository.existsById(portaria.getIdPortaria())) {
             throw new RuntimeException("Portaria não encontrada para atualização.");
         }
-        return salvarPortaria(portaria, false);
+        // Captura o estado anterior
+        Portaria antiga = repository.findById(portaria.getIdPortaria())
+                .orElseThrow(() -> new RuntimeException("Portaria não encontrada."));
+        Portaria copia = copiarPortaria(antiga);
+
+        Portaria atualizada = salvarPortaria(portaria, false);
+        logJetonService.logPortariaAtualizada(copia, atualizada);
+        return atualizada;
     }
 
     private Portaria salvarPortaria(Portaria portaria, boolean isNovo) {
@@ -100,32 +110,37 @@ public class PortariaService {
         }
     }
 
-    @Auditar(tabela = "portaria", acao = "REVOGAR", descricao = "Revogação de portaria", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void revogar(Integer id) {
         Portaria portaria = buscarOuFalhar(id);
         if (portaria.isRevogado()) {
             throw new RuntimeException("A portaria já está revogada.");
         }
+        Portaria copia = copiarPortaria(portaria);
+
         portaria.setInRevogado(Portaria.REVOGADO_SIM);
         repository.save(portaria);
         regrasRepository.revogarRegrasPorPortaria(id);
+
+        logJetonService.logPortariaRevogada(copia);
         log.info("Portaria revogada: id={}, número={}/{}", id, portaria.getNumero(), portaria.getAno());
     }
 
-    @Auditar(tabela = "portaria", acao = "RESTAURAR", descricao = "Restauração de portaria revogada (volta a ficar em vigor)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void restaurar(Integer id) {
         Portaria portaria = buscarOuFalhar(id);
         if (!portaria.isRevogado()) {
             throw new RuntimeException("A portaria já está em vigor.");
         }
+        Portaria copia = copiarPortaria(portaria);
+
         portaria.setInRevogado(Portaria.REVOGADO_NAO);
         repository.save(portaria);
+
+        logJetonService.logPortariaRestaurada(copia);
         log.info("Portaria restaurada: id={}, número={}/{}", id, portaria.getNumero(), portaria.getAno());
     }
 
-    @Auditar(tabela = "portaria", acao = "EXCLUIR", descricao = "Exclusão permanente de portaria", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluir(Integer id) {
         Portaria portaria = buscarOuFalhar(id);
@@ -137,8 +152,12 @@ public class PortariaService {
             throw new RuntimeException("Não é possível excluir a portaria pois existem " + countRegras +
                     " regra(s) vinculada(s). Revogue-as ou exclua-as antes.");
         }
+
+        Portaria copia = copiarPortaria(portaria);
         repository.deleteById(id);
-        log.info("Portaria excluída fisicamente: id={}, número={}/{}", id, portaria.getNumero(), portaria.getAno());
+
+        logJetonService.logPortariaExcluida(copia);
+        log.info("Portaria excluída: id={}, número={}/{}", id, portaria.getNumero(), portaria.getAno());
     }
 
     @Transactional(readOnly = true)
@@ -163,5 +182,17 @@ public class PortariaService {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
         return repository.pesquisarPaginado(termo, situacao, pageable);
+    }
+
+    private Portaria copiarPortaria(Portaria original) {
+        Portaria copia = new Portaria();
+        copia.setIdPortaria(original.getIdPortaria());
+        copia.setNumero(original.getNumero());
+        copia.setAno(original.getAno());
+        copia.setDtInicioVigencia(original.getDtInicioVigencia());
+        copia.setDtFimVigencia(original.getDtFimVigencia());
+        copia.setLinkPublicado(original.getLinkPublicado());
+        copia.setInRevogado(original.getInRevogado());
+        return copia;
     }
 }
