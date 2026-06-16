@@ -1,6 +1,5 @@
 package br.com.cremepe.jeton.service;
 
-import br.com.cremepe.jeton.annotation.Auditar;
 import br.com.cremepe.jeton.domain.Portaria;
 import br.com.cremepe.jeton.domain.Regras;
 import br.com.cremepe.jeton.domain.Resolucao;
@@ -31,23 +30,28 @@ public class RegrasService {
     private final ResolucaoRepository resolucaoRepository;
     private final PortariaRepository portariaRepository;
     private final AtividadeConselhalRepository atividadeRepository;
+    private final LogJetonService logJetonService;
 
-    RegrasService(RegrasRepository repository, ResolucaoRepository resolucaoRepository,
-            PortariaRepository portariaRepository, AtividadeConselhalRepository atividadeRepository) {
+    public RegrasService(RegrasRepository repository,
+            ResolucaoRepository resolucaoRepository,
+            PortariaRepository portariaRepository,
+            AtividadeConselhalRepository atividadeRepository,
+            LogJetonService logJetonService) {
         this.repository = repository;
         this.resolucaoRepository = resolucaoRepository;
         this.portariaRepository = portariaRepository;
         this.atividadeRepository = atividadeRepository;
+        this.logJetonService = logJetonService;
     }
 
-    @Auditar(tabela = "regras", acao = "CRIAR", descricao = "Criação de nova regra de pontuação", dadosParametros = "{ 'nomeRegra': #regra.nomeRegra, 'pontos': #regra.pontos, 'pontosLimitesTurno': #regra.pontosLimitesTurno, 'inJudicante': #regra.inJudicante, 'idResolucao': #regra.resolucao?.idResolucao, 'idPortaria': #regra.portaria?.idPortaria }", dadosRetorno = "#result", capturarEstadoAnterior = false, auditarExcecao = true)
     @Transactional
     public Regras criar(Regras regra) {
-        regra.setIdRegra(null); // força criação
-        return salvarRegra(regra, true);
+        regra.setIdRegra(null);
+        Regras salva = salvarRegra(regra, true);
+        logJetonService.logRegraCriada(salva);
+        return salva;
     }
 
-    @Auditar(tabela = "regras", acao = "ATUALIZAR", descricao = "Atualização de regra de pontuação existente", dadosParametros = "{ 'id': #regra.idRegra, 'nomeRegra': #regra.nomeRegra, 'pontos': #regra.pontos, 'pontosLimitesTurno': #regra.pontosLimitesTurno, 'inJudicante': #regra.inJudicante, 'idResolucao': #regra.resolucao?.idResolucao, 'idPortaria': #regra.portaria?.idPortaria }", dadosRetorno = "#result", capturarEstadoAnterior = true, auditarExcecao = true)
     @Transactional
     public Regras atualizar(Regras regra) {
         if (regra.getIdRegra() == null) {
@@ -56,7 +60,14 @@ public class RegrasService {
         if (!repository.existsById(regra.getIdRegra())) {
             throw new RuntimeException("Regra não encontrada para atualização.");
         }
-        return salvarRegra(regra, false);
+        // Captura o estado anterior
+        Regras antiga = repository.findById(regra.getIdRegra())
+                .orElseThrow(() -> new RuntimeException("Regra não encontrada."));
+        Regras copia = copiarRegra(antiga);
+
+        Regras atualizada = salvarRegra(regra, false);
+        logJetonService.logRegraAtualizada(copia, atualizada);
+        return atualizada;
     }
 
     private Regras salvarRegra(Regras regra, boolean isNovo) {
@@ -133,31 +144,32 @@ public class RegrasService {
             regra.setNomeRegra(regra.getNomeRegra().trim());
     }
 
-    @Auditar(tabela = "regras", acao = "REVOGAR", descricao = "Revogação de regra de pontuação", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void revogar(Integer id) {
         Regras regra = buscarOuFalhar(id);
         if (regra.isRevogado()) {
             throw new RuntimeException("A regra já está revogada.");
         }
+        Regras copia = copiarRegra(regra);
         regra.setInRevogado(Regras.REVOGADO_SIM);
         repository.save(regra);
         log.info("Regra revogada: id={}, nome={}", id, regra.getNomeRegra());
+        logJetonService.logRegraRevogada(copia);
     }
 
-    @Auditar(tabela = "regras", acao = "RESTAURAR", descricao = "Restauração de regra revogada (volta a ficar em vigor)", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void restaurar(Integer id) {
         Regras regra = buscarOuFalhar(id);
         if (!regra.isRevogado()) {
             throw new RuntimeException("A regra já está em vigor.");
         }
+        Regras copia = copiarRegra(regra);
         regra.setInRevogado(Regras.REVOGADO_NAO);
         repository.save(regra);
         log.info("Regra restaurada: id={}, nome={}", id, regra.getNomeRegra());
+        logJetonService.logRegraRestaurada(copia);
     }
 
-    @Auditar(tabela = "regras", acao = "EXCLUIR", descricao = "Exclusão permanente de regra", dadosParametros = "{ 'id': #id }", capturarEstadoAnterior = true, auditarExcecao = true, incluirRetorno = false)
     @Transactional
     public void excluir(Integer id) {
         Regras regra = buscarOuFalhar(id);
@@ -169,8 +181,10 @@ public class RegrasService {
             throw new RuntimeException("Não é possível excluir a regra pois existem " + countAtividades +
                     " atividade(s) vinculada(s) a ela. Revogue-a ou use 'Revogar' em vez disso.");
         }
+        Regras copia = copiarRegra(regra);
         repository.deleteById(id);
         log.info("Regra excluída: id={}, nome={}", id, regra.getNomeRegra());
+        logJetonService.logRegraExcluida(copia);
     }
 
     @Transactional(readOnly = true)
@@ -245,5 +259,19 @@ public class RegrasService {
             return repository.findAll();
         }
         return repository.findByResolucaoIdResolucao(resolucaoId);
+    }
+
+    private Regras copiarRegra(Regras original) {
+        Regras copia = new Regras();
+        copia.setIdRegra(original.getIdRegra());
+        copia.setNomeRegra(original.getNomeRegra());
+        copia.setDescricao(original.getDescricao());
+        copia.setPontos(original.getPontos());
+        copia.setInRevogado(original.getInRevogado());
+        copia.setPontosLimitesTurno(original.getPontosLimitesTurno());
+        copia.setInJudicante(original.getInJudicante());
+        copia.setResolucao(original.getResolucao());
+        copia.setPortaria(original.getPortaria());
+        return copia;
     }
 }
