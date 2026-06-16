@@ -25,7 +25,7 @@ public class GestaoConselheiroService {
     private final ConselheiroRepository conselheiroRepository;
     private final AtividadeConselhalRepository atividadeRepository;
     private final PessoaRepository pessoaRepository;
-    private final LogJetonService logJetonService; // <-- INJETADO
+    private final LogJetonService logJetonService;
 
     public GestaoConselheiroService(GestaoConselheiroRepository gestaoConselheiroRepository,
             ConselheiroRepository conselheiroRepository,

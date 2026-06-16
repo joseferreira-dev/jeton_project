@@ -24,7 +24,7 @@ public class PermissaoService {
     private final UsuarioAcessoRepository usuarioAcessoRepository;
     private final UsuarioRepository usuarioRepository;
     private final NivelAcessoRepository nivelAcessoRepository;
-    private final LogJetonService logJetonService; // <-- INJETADO
+    private final LogJetonService logJetonService;
 
     public PermissaoService(UsuarioAcessoRepository usuarioAcessoRepository,
             UsuarioRepository usuarioRepository,

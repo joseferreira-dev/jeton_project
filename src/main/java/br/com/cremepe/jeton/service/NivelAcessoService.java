@@ -19,7 +19,7 @@ public class NivelAcessoService {
 
     private final NivelAcessoRepository repository;
     private final UsuarioAcessoRepository usuarioAcessoRepository;
-    private final LogJetonService logJetonService; // <-- INJETADO
+    private final LogJetonService logJetonService;
 
     public NivelAcessoService(NivelAcessoRepository repository,
             UsuarioAcessoRepository usuarioAcessoRepository,

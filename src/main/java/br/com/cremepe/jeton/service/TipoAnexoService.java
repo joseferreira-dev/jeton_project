@@ -19,7 +19,7 @@ public class TipoAnexoService {
 
     private final TipoAnexoRepository repository;
     private final ComprovanteRepository comprovanteRepository;
-    private final LogJetonService logJetonService; // <-- INJETADO
+    private final LogJetonService logJetonService;
 
     public TipoAnexoService(TipoAnexoRepository repository,
             ComprovanteRepository comprovanteRepository,
