@@ -3,7 +3,7 @@ package br.com.cremepe.jeton.service;
 import br.com.cremepe.jeton.domain.Regras;
 import br.com.cremepe.jeton.domain.RegrasConjuntas;
 import br.com.cremepe.jeton.repository.RegrasConjuntasRepository;
-
+import br.com.cremepe.jeton.util.RegraValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -26,12 +26,16 @@ public class RegrasConjuntasService {
     private final RegrasConjuntasRepository repository;
     private final LogJetonService logJetonService;
     private final RegrasService regrasService;
+    private final RegraValidator regraValidator;
 
     public RegrasConjuntasService(RegrasConjuntasRepository repository,
-            LogJetonService logJetonService, RegrasService regrasService) {
+            LogJetonService logJetonService,
+            RegrasService regrasService,
+            RegraValidator regraValidator) {
         this.repository = repository;
         this.logJetonService = logJetonService;
         this.regrasService = regrasService;
+        this.regraValidator = regraValidator;
     }
 
     @Transactional
@@ -60,8 +64,23 @@ public class RegrasConjuntasService {
     }
 
     private RegrasConjuntas salvar(RegrasConjuntas regra, boolean isNovo) {
-        validarNomeUnico(regra, isNovo ? null : regra.getIdRegraConjunta());
-        normalizarFlags(regra);
+        // Validações
+        regraValidator.validarNomeRegraConjuntaUnico(regra.getNomeRegra(), isNovo ? null : regra.getIdRegraConjunta());
+        regraValidator.validarPontosLimitePositivo(regra.getPontosLimite());
+        regraValidator.validarRegrasAgrupadasNaoVazias(regra);
+
+        // Normaliza flags
+        if (regra.getNomeRegra() != null) {
+            regra.setNomeRegra(regra.getNomeRegra().trim());
+        }
+        if (regra.getInTipoLimite() == null || regra.getInTipoLimite().trim().isEmpty()) {
+            regra.setInTipoLimite(RegrasConjuntas.TIPO_LIMITE_DIARIO);
+        } else {
+            regra.setInTipoLimite(regra.getInTipoLimite().toUpperCase());
+        }
+        if (regra.getPontosLimite() == null) {
+            regra.setPontosLimite(0);
+        }
 
         RegrasConjuntas regraParaSalvar;
         if (isNovo) {
@@ -89,38 +108,9 @@ public class RegrasConjuntasService {
         return salva;
     }
 
-    private void validarNomeUnico(RegrasConjuntas regra, Integer idAtual) {
-        String nome = regra.getNomeRegra();
-        if (nome == null || nome.trim().isEmpty())
-            return;
-        boolean existe = repository.existsByNomeRegraAndIdRegraConjuntaNot(nome.trim(), idAtual != null ? idAtual : 0);
-        if (existe) {
-            throw new RuntimeException("Já existe uma regra conjunta cadastrada com o nome '" + nome + "'.");
-        }
-    }
-
-    private void normalizarFlags(RegrasConjuntas regra) {
-        if (regra.getNomeRegra() != null) {
-            regra.setNomeRegra(regra.getNomeRegra().trim());
-        }
-        if (regra.getInTipoLimite() == null || regra.getInTipoLimite().trim().isEmpty()) {
-            regra.setInTipoLimite(RegrasConjuntas.TIPO_LIMITE_DIARIO);
-        } else {
-            regra.setInTipoLimite(regra.getInTipoLimite().toUpperCase());
-        }
-        if (regra.getPontosLimite() == null) {
-            regra.setPontosLimite(0);
-        }
-    }
-
     @Transactional
     public void excluir(Integer id) {
         RegrasConjuntas regra = buscarOuFalhar(id);
-        String nome = regra.getNomeRegra();
-        String tipoLimite = regra.getInTipoLimite();
-        Integer pontosLimite = regra.getPontosLimite();
-
-        // Captura cópia para o log
         RegrasConjuntas copia = copiarRegraConjunta(regra);
 
         // Coleta os nomes das regras associadas antes de remover
@@ -137,7 +127,7 @@ public class RegrasConjuntasService {
 
         repository.deleteById(id);
         log.info("Regra Conjunta excluída: id={}, nome='{}', tipoLimite={}, pontosLimite={}",
-                id, nome, tipoLimite, pontosLimite);
+                id, copia.getNomeRegra(), copia.getInTipoLimite(), copia.getPontosLimite());
 
         logJetonService.logRegraConjuntaExcluida(copia, regrasVinculadas);
     }

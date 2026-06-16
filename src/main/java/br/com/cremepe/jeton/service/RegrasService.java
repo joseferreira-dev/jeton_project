@@ -7,7 +7,7 @@ import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repository.PortariaRepository;
 import br.com.cremepe.jeton.repository.RegrasRepository;
 import br.com.cremepe.jeton.repository.ResolucaoRepository;
-
+import br.com.cremepe.jeton.util.RegraValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -31,17 +31,20 @@ public class RegrasService {
     private final PortariaRepository portariaRepository;
     private final AtividadeConselhalRepository atividadeRepository;
     private final LogJetonService logJetonService;
+    private final RegraValidator regraValidator;
 
     public RegrasService(RegrasRepository repository,
             ResolucaoRepository resolucaoRepository,
             PortariaRepository portariaRepository,
             AtividadeConselhalRepository atividadeRepository,
-            LogJetonService logJetonService) {
+            LogJetonService logJetonService,
+            RegraValidator regraValidator) {
         this.repository = repository;
         this.resolucaoRepository = resolucaoRepository;
         this.portariaRepository = portariaRepository;
         this.atividadeRepository = atividadeRepository;
         this.logJetonService = logJetonService;
+        this.regraValidator = regraValidator;
     }
 
     @Transactional
@@ -60,7 +63,6 @@ public class RegrasService {
         if (!repository.existsById(regra.getIdRegra())) {
             throw new RuntimeException("Regra não encontrada para atualização.");
         }
-        // Captura o estado anterior
         Regras antiga = repository.findById(regra.getIdRegra())
                 .orElseThrow(() -> new RuntimeException("Regra não encontrada."));
         Regras copia = copiarRegra(antiga);
@@ -71,61 +73,27 @@ public class RegrasService {
     }
 
     private Regras salvarRegra(Regras regra, boolean isNovo) {
-        // Carrega a Resolução gerenciada
-        Resolucao resolucaoManaged = carregarResolucaoGerenciada(regra.getResolucao());
+        if (regra.getResolucao() == null || regra.getResolucao().getIdResolucao() == null) {
+            throw new RuntimeException("A resolução é obrigatória. Selecione uma resolução válida.");
+        }
+        Resolucao resolucaoManaged = resolucaoRepository.findById(regra.getResolucao().getIdResolucao())
+                .orElseThrow(() -> new RuntimeException(
+                        "Resolução não encontrada com ID: " + regra.getResolucao().getIdResolucao()));
         regra.setResolucao(resolucaoManaged);
 
-        // Carrega a Portaria gerenciada (se existir)
         if (regra.getPortaria() != null && regra.getPortaria().getIdPortaria() != null) {
-            Portaria portariaManaged = carregarPortariaGerenciada(regra.getPortaria().getIdPortaria());
+            Portaria portariaManaged = portariaRepository.findById(regra.getPortaria().getIdPortaria())
+                    .orElseThrow(() -> new RuntimeException(
+                            "Portaria não encontrada com ID: " + regra.getPortaria().getIdPortaria()));
             regra.setPortaria(portariaManaged);
         } else {
             regra.setPortaria(null);
         }
 
-        validarPortaria(regra);
-        validarDuplicidade(regra);
-        normalizarFlags(regra);
+        regraValidator.validarNomeRegraUnico(regra.getNomeRegra(), isNovo ? null : regra.getIdRegra());
+        regraValidator.validarPortariaNaoRevogada(regra.getPortaria());
 
-        Regras salva = repository.save(regra);
-        log.info("Regra {}: id={}, nome='{}', pontos={}, limiteTurno={}, judicante={}, revogado={}",
-                isNovo ? "criada" : "atualizada",
-                salva.getIdRegra(), salva.getNomeRegra(), salva.getPontos(),
-                salva.getPontosLimitesTurno(), salva.getInJudicante(), salva.getInRevogado());
-        return salva;
-    }
-
-    private Resolucao carregarResolucaoGerenciada(Resolucao resolucao) {
-        if (resolucao == null || resolucao.getIdResolucao() == null) {
-            throw new RuntimeException("A resolução é obrigatória. Selecione uma resolução válida.");
-        }
-        return resolucaoRepository.findById(resolucao.getIdResolucao())
-                .orElseThrow(
-                        () -> new RuntimeException("Resolução não encontrada com ID: " + resolucao.getIdResolucao()));
-    }
-
-    private Portaria carregarPortariaGerenciada(Integer idPortaria) {
-        if (idPortaria == null)
-            return null;
-        return portariaRepository.findById(idPortaria)
-                .orElseThrow(() -> new RuntimeException("Portaria não encontrada com ID: " + idPortaria));
-    }
-
-    private void validarPortaria(Regras regra) {
-        if (regra.getPortaria() != null && regra.getPortaria().isRevogado()) {
-            throw new RuntimeException("Não é possível vincular a regra a uma portaria revogada.");
-        }
-    }
-
-    private void validarDuplicidade(Regras regra) {
-        Integer idAtual = regra.getIdRegra() != null ? regra.getIdRegra() : 0;
-        boolean existe = repository.existsByNomeRegraAndIdRegraNot(regra.getNomeRegra(), idAtual);
-        if (existe) {
-            throw new RuntimeException("Já existe uma regra cadastrada com o nome '" + regra.getNomeRegra() + "'.");
-        }
-    }
-
-    private void normalizarFlags(Regras regra) {
+        // Normaliza flags
         if (regra.getInRevogado() == null || regra.getInRevogado().trim().isEmpty()) {
             regra.setInRevogado(Regras.REVOGADO_NAO);
         } else {
@@ -142,14 +110,19 @@ public class RegrasService {
             regra.setPontosLimitesTurno(0);
         if (regra.getNomeRegra() != null)
             regra.setNomeRegra(regra.getNomeRegra().trim());
+
+        Regras salva = repository.save(regra);
+        log.info("Regra {}: id={}, nome='{}', pontos={}, limiteTurno={}, judicante={}, revogado={}",
+                isNovo ? "criada" : "atualizada",
+                salva.getIdRegra(), salva.getNomeRegra(), salva.getPontos(),
+                salva.getPontosLimitesTurno(), salva.getInJudicante(), salva.getInRevogado());
+        return salva;
     }
 
     @Transactional
     public void revogar(Integer id) {
         Regras regra = buscarOuFalhar(id);
-        if (regra.isRevogado()) {
-            throw new RuntimeException("A regra já está revogada.");
-        }
+        regraValidator.validarRegraNaoRevogada(regra);
         Regras copia = copiarRegra(regra);
         regra.setInRevogado(Regras.REVOGADO_SIM);
         repository.save(regra);
@@ -160,9 +133,7 @@ public class RegrasService {
     @Transactional
     public void restaurar(Integer id) {
         Regras regra = buscarOuFalhar(id);
-        if (!regra.isRevogado()) {
-            throw new RuntimeException("A regra já está em vigor.");
-        }
+        regraValidator.validarRegraRevogada(regra);
         Regras copia = copiarRegra(regra);
         regra.setInRevogado(Regras.REVOGADO_NAO);
         repository.save(regra);
@@ -173,14 +144,8 @@ public class RegrasService {
     @Transactional
     public void excluir(Integer id) {
         Regras regra = buscarOuFalhar(id);
-        if (!regra.isRevogado()) {
-            throw new RuntimeException("Para excluir, a regra deve estar revogada primeiro.");
-        }
         long countAtividades = atividadeRepository.countByRegraIdRegra(id);
-        if (countAtividades > 0) {
-            throw new RuntimeException("Não é possível excluir a regra pois existem " + countAtividades +
-                    " atividade(s) vinculada(s) a ela. Revogue-a ou use 'Revogar' em vez disso.");
-        }
+        regraValidator.validarExclusaoRegra(regra, countAtividades);
         Regras copia = copiarRegra(regra);
         repository.deleteById(id);
         log.info("Regra excluída: id={}, nome={}", id, regra.getNomeRegra());
