@@ -527,7 +527,7 @@ public class JetonService {
         String nomeGestao = jeton.getGestao().getNomeGestao();
 
         jetonRepository.deleteById(id);
-        log.info("Jeton excluído fisicamente: ID {} - conselheiro '{}', gestão '{}', {}/{}",
+        log.info("Jeton excluído: ID {} - conselheiro '{}', gestão '{}', {}/{}",
                 id, nomeConselheiro, nomeGestao, jeton.getMes(), jeton.getAno());
         logJetonService.logJetonExcluido(id, nomeConselheiro, nomeGestao, jeton.getMes(), jeton.getAno());
     }
