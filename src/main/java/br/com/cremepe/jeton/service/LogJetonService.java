@@ -45,15 +45,18 @@ public class LogJetonService {
     private final UsuarioRepository usuarioRepository;
     private final UsuarioLogadoService usuarioLogadoService;
     private final JsonConverter jsonConverter;
+    private final AsyncLogWriter asyncLogWriter;
 
     public LogJetonService(LogJetonRepository logRepository,
             UsuarioRepository usuarioRepository,
             UsuarioLogadoService usuarioLogadoService,
-            JsonConverter jsonConverter) {
+            JsonConverter jsonConverter,
+            AsyncLogWriter asyncLogWriter) {
         this.logRepository = logRepository;
         this.usuarioRepository = usuarioRepository;
         this.usuarioLogadoService = usuarioLogadoService;
         this.jsonConverter = jsonConverter;
+        this.asyncLogWriter = asyncLogWriter;
     }
 
     @Transactional(readOnly = true)
@@ -65,9 +68,9 @@ public class LogJetonService {
     // ========== Método genérico que centraliza a escrita do log ==========
 
     private void registrarLogComum(String nomeTabela, String acao, String descricao, boolean sucesso,
-            Map<String, Object> dadosEspecificos) {
+            Map<String, Object> dadosEspecificos, Integer idUsuarioFornecido) {
         try {
-            Integer idUsuario = obterIdUsuarioLogado();
+            Integer idUsuario = idUsuarioFornecido != null ? idUsuarioFornecido : obterIdUsuarioLogado();
             if (idUsuario == null) {
                 log.warn("Tentativa de registrar log sem usuário logado. Ação: {}, Tabela: {}", acao, nomeTabela);
                 return;
@@ -91,26 +94,33 @@ public class LogJetonService {
             }
 
             String textoLog = jsonConverter.toJson(logCompleto);
-            registrarLog(nomeTabela, idUsuario, textoLog);
+            asyncLogWriter.writeLog(nomeTabela, idUsuario, textoLog);
         } catch (Exception e) {
             log.error("Falha ao registrar log de auditoria", e);
         }
     }
 
-    // ========== Método original (mantido para compatibilidade) ==========
+    private void registrarLogComum(String nomeTabela, String acao, String descricao, boolean sucesso,
+            Map<String, Object> dadosEspecificos) {
+        registrarLogComum(nomeTabela, acao, descricao, sucesso, dadosEspecificos, null);
+    }
+
+    // Login/Logout
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void registrarLog(String nomeTabela, Integer idUsuario, String textoLog) {
-        if (idUsuario == null)
-            return;
-        var usuario = usuarioRepository.getReferenceById(idUsuario);
-        var logJeton = new br.com.cremepe.jeton.domain.LogJeton();
-        logJeton.setNomeTabela(nomeTabela);
-        logJeton.setUsuario(usuario);
-        logJeton.setDataHoraLog(LocalDateTime.now());
-        logJeton.setTextoLog(textoLog);
-        logRepository.save(logJeton);
-        log.debug("Log registrado: tabela={}, usuario={}", nomeTabela, idUsuario);
+    public void logLogin(Integer idUsuario, String nomeUsuario) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("usuarioId", idUsuario);
+        dados.put("usuarioNome", nomeUsuario);
+        registrarLogComum("login", "LOGIN", "Login bem-sucedido", true, dados, idUsuario);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logLogout(Integer idUsuario, String nomeUsuario) {
+        Map<String, Object> dados = new LinkedHashMap<>();
+        dados.put("usuarioId", idUsuario);
+        dados.put("usuarioNome", nomeUsuario);
+        registrarLogComum("login", "LOGOUT", "Logout do sistema", true, dados, idUsuario);
     }
 
     // AtividadeConselhalService
@@ -164,13 +174,9 @@ public class LogJetonService {
                 atividade.getDataHoraAtividade() != null ? atividade.getDataHoraAtividade().toString() : null);
         dados.put("dataHoraRegistro",
                 atividade.getDataHoraRegistro() != null ? atividade.getDataHoraRegistro().toString() : null);
-        dados.put("turno", atividade.getInTurno() != null && atividade.getInTurno() == "M" ? "Manhã"
-                : atividade.getInTurno() == "T" ? "Tarde" : atividade.getInTurno() == "N" ? "Noite" : null);
-        dados.put("situacao", atividade.getInSituacao() == "P" ? "Pendente"
-                : atividade.getInSituacao() == "F" ? "Fechada" : atividade.getInSituacao() == "C" ? "Computada" : null);
-        dados.put("computada",
-                atividade.getInComputada() != null && atividade.getInComputada() == "S" ? "Sim"
-                        : atividade.getInComputada() == "N" ? "Não" : null);
+        dados.put("turno", atividade.getInTurno() != null ? atividade.getInTurno() : null);
+        dados.put("situacao", atividade.getInSituacao() != null ? atividade.getInSituacao() : null);
+        dados.put("computada", atividade.getInComputada() != null ? atividade.getInComputada() : null);
         return dados;
     }
 
@@ -263,8 +269,7 @@ public class LogJetonService {
         dados.put("email", conselheiro.getPessoa() != null ? conselheiro.getPessoa().getEmail() : null);
         dados.put("cpf", conselheiro.getPessoa() != null ? conselheiro.getPessoa().getCpf() : null);
         dados.put("crm", conselheiro.getCrm());
-        dados.put("situacao", conselheiro.getInSituacao() != null && conselheiro.getInSituacao() == "A" ? "Ativo"
-                : conselheiro.getInSituacao() == "I" ? "Inativo" : null);
+        dados.put("situacao", conselheiro.getInSituacao() != null ? conselheiro.getInSituacao() : null);
         return dados;
     }
 
@@ -449,8 +454,6 @@ public class LogJetonService {
 
     // NivelAcessoService
 
-    // ========== Métodos para NivelAcessoService ==========
-
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logNivelAcessoCriado(NivelAcesso nivel) {
         Map<String, Object> dados = new LinkedHashMap<>();
@@ -524,8 +527,6 @@ public class LogJetonService {
     }
 
     // PontosSaldoService
-
-    // ========== Métodos para PontosSaldoService ==========
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logPontosSaldoCriado(PontosSaldo pontos) {
@@ -615,13 +616,11 @@ public class LogJetonService {
                 portaria.getDtInicioVigencia() != null ? portaria.getDtInicioVigencia().toString() : null);
         dados.put("dtFimVigencia", portaria.getDtFimVigencia() != null ? portaria.getDtFimVigencia().toString() : null);
         dados.put("linkPublicado", portaria.getLinkPublicado());
-        dados.put("revogado", portaria.isRevogado() ? "Sim" : "Não");
+        dados.put("revogado", portaria.getInRevogado() != null ? portaria.getInRevogado() : null);
         return dados;
     }
 
     // RegrasService
-
-    // ========== Métodos para RegrasService ==========
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logRegraCriada(Regras regra) {
@@ -802,7 +801,7 @@ public class LogJetonService {
         dados.put("maxJetonsPeriodo", resolucao.getMaxJetonsPeriodo());
         dados.put("maxJetonsMes", resolucao.getMaxJetonsMes());
         dados.put("valorJeton", resolucao.getValorJeton());
-        dados.put("revogado", resolucao.isRevogado() ? "Sim" : "Não");
+        dados.put("revogado", resolucao.isRevogado() ? resolucao.getInRevogado() : null);
         return dados;
     }
 
@@ -835,7 +834,7 @@ public class LogJetonService {
         Map<String, Object> dados = new LinkedHashMap<>();
         dados.put("id", tipo.getIdTipo());
         dados.put("nome", tipo.getNome());
-        dados.put("exigePublicacao", tipo.isExigePublicacao() ? "Sim" : "Não");
+        dados.put("exigePublicacao", tipo.isExigePublicacao() ? tipo.getExigePublicacao() : null);
         return dados;
     }
 
