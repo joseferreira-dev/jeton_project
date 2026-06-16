@@ -3,7 +3,7 @@ package br.com.cremepe.jeton.service;
 import br.com.cremepe.jeton.domain.Resolucao;
 import br.com.cremepe.jeton.repository.RegrasRepository;
 import br.com.cremepe.jeton.repository.ResolucaoRepository;
-
+import br.com.cremepe.jeton.util.NormativaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -13,7 +13,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,19 +24,33 @@ public class ResolucaoService {
     private final ResolucaoRepository repository;
     private final RegrasRepository regrasRepository;
     private final LogJetonService logJetonService;
+    private final NormativaValidator normativaValidator;
 
     public ResolucaoService(ResolucaoRepository repository,
             RegrasRepository regrasRepository,
-            LogJetonService logJetonService) {
+            LogJetonService logJetonService,
+            NormativaValidator normativaValidator) {
         this.repository = repository;
         this.regrasRepository = regrasRepository;
         this.logJetonService = logJetonService;
+        this.normativaValidator = normativaValidator;
     }
 
     @Transactional
     public Resolucao criar(Resolucao resolucao) {
         resolucao.setIdResolucao(null);
-        Resolucao salva = salvarResolucao(resolucao, true);
+        normalizarResolucao(resolucao);
+        normativaValidator.validarResolucao(
+                resolucao.getNumero(),
+                resolucao.getAno(),
+                resolucao.getDtInicioVigencia(),
+                resolucao.getDtFimVigencia(),
+                null);
+
+        Resolucao salva = repository.save(resolucao);
+        log.info("Resolução criada: id={}, número={}/{}, vigência={} até {}, revogado={}",
+                salva.getIdResolucao(), salva.getNumero(), salva.getAno(),
+                salva.getDtInicioVigencia(), salva.getDtFimVigencia(), salva.getInRevogado());
         logJetonService.logResolucaoCriada(salva);
         return salva;
     }
@@ -50,78 +63,39 @@ public class ResolucaoService {
         if (!repository.existsById(resolucao.getIdResolucao())) {
             throw new RuntimeException("Resolução não encontrada para atualização.");
         }
-        // Captura o estado anterior
+
         Resolucao antiga = repository.findById(resolucao.getIdResolucao())
                 .orElseThrow(() -> new RuntimeException("Resolução não encontrada."));
         Resolucao copia = copiarResolucao(antiga);
 
-        Resolucao atualizada = salvarResolucao(resolucao, false);
+        normalizarResolucao(resolucao);
+        normativaValidator.validarResolucao(
+                resolucao.getNumero(),
+                resolucao.getAno(),
+                resolucao.getDtInicioVigencia(),
+                resolucao.getDtFimVigencia(),
+                resolucao.getIdResolucao());
+
+        antiga.setNumero(resolucao.getNumero());
+        antiga.setAno(resolucao.getAno());
+        antiga.setDtInicioVigencia(resolucao.getDtInicioVigencia());
+        antiga.setDtFimVigencia(resolucao.getDtFimVigencia());
+        antiga.setLinkPublicado(resolucao.getLinkPublicado());
+        antiga.setInRevogado(resolucao.getInRevogado());
+        antiga.setEmenta(resolucao.getEmenta());
+        antiga.setPontosPorJeton(resolucao.getPontosPorJeton());
+        antiga.setMaxJetonsDia(resolucao.getMaxJetonsDia());
+        antiga.setMaxJetonsPeriodo(resolucao.getMaxJetonsPeriodo());
+        antiga.setMaxJetonsMes(resolucao.getMaxJetonsMes());
+        antiga.setValorJeton(resolucao.getValorJeton());
+
+        Resolucao atualizada = repository.save(antiga);
+        log.info("Resolução atualizada: id={}, número={}/{}, vigência={} até {}, revogado={}",
+                atualizada.getIdResolucao(), atualizada.getNumero(), atualizada.getAno(),
+                atualizada.getDtInicioVigencia(), atualizada.getDtFimVigencia(), atualizada.getInRevogado());
+
         logJetonService.logResolucaoAtualizada(copia, atualizada);
         return atualizada;
-    }
-
-    private Resolucao salvarResolucao(Resolucao resolucao, boolean isNovo) {
-        validarUnicidade(resolucao);
-        validarSobreposicao(resolucao);
-        normalizarFlags(resolucao);
-
-        Resolucao salva = repository.save(resolucao);
-        log.info("Resolução {}: id={}, número={}/{}, vigência={} até {}, revogado={}",
-                isNovo ? "criada" : "atualizada",
-                salva.getIdResolucao(), salva.getNumero(), salva.getAno(),
-                salva.getDtInicioVigencia(), salva.getDtFimVigencia(), salva.getInRevogado());
-        return salva;
-    }
-
-    private void validarUnicidade(Resolucao resolucao) {
-        Integer idAtual = resolucao.getIdResolucao();
-        Integer numero = resolucao.getNumero();
-        Integer ano = resolucao.getAno();
-        if (numero == null || ano == null)
-            return;
-        boolean existe = repository.existsByNumeroAndAnoAndIdResolucaoNot(numero, ano, idAtual != null ? idAtual : 0);
-        if (existe) {
-            throw new RuntimeException("Já existe uma resolução cadastrada com o número " + numero + "/" + ano);
-        }
-    }
-
-    private void validarSobreposicao(Resolucao resolucao) {
-        LocalDate inicio = resolucao.getDtInicioVigencia();
-        LocalDate fim = resolucao.getDtFimVigencia();
-        if (inicio == null)
-            return;
-        LocalDate fimValidacao = (fim != null) ? fim : LocalDate.of(9999, 12, 31);
-        Integer idResolucao = (resolucao.getIdResolucao() != null) ? resolucao.getIdResolucao() : 0;
-        boolean sobrepoe = repository.existePeriodoSobreposto(idResolucao, inicio, fimValidacao);
-        if (sobrepoe) {
-            throw new RuntimeException(
-                    "Já existe uma resolução cadastrada cujo período de vigência coincide com o informado. Verifique as datas.");
-        }
-    }
-
-    private void normalizarFlags(Resolucao resolucao) {
-        if (resolucao.getInRevogado() == null || resolucao.getInRevogado().trim().isEmpty()) {
-            resolucao.setInRevogado(Resolucao.REVOGADO_NAO);
-        } else {
-            resolucao.setInRevogado(resolucao.getInRevogado().toUpperCase());
-        }
-        if (resolucao.getLinkPublicado() != null) {
-            resolucao.setLinkPublicado(resolucao.getLinkPublicado().trim());
-        }
-        if (resolucao.getEmenta() != null) {
-            resolucao.setEmenta(resolucao.getEmenta().trim());
-        }
-        // Garante que valores numéricos não sejam nulos
-        if (resolucao.getPontosPorJeton() == null)
-            resolucao.setPontosPorJeton(3);
-        if (resolucao.getMaxJetonsDia() == null)
-            resolucao.setMaxJetonsDia(3);
-        if (resolucao.getMaxJetonsPeriodo() == null)
-            resolucao.setMaxJetonsPeriodo(1);
-        if (resolucao.getMaxJetonsMes() == null)
-            resolucao.setMaxJetonsMes(22);
-        if (resolucao.getValorJeton() == null)
-            resolucao.setValorJeton(java.math.BigDecimal.ZERO);
     }
 
     @Transactional
@@ -131,11 +105,13 @@ public class ResolucaoService {
             throw new RuntimeException("A resolução já está revogada.");
         }
         Resolucao copia = copiarResolucao(resolucao);
+
         resolucao.setInRevogado(Resolucao.REVOGADO_SIM);
         repository.save(resolucao);
         regrasRepository.revogarRegrasPorResolucao(id);
-        log.info("Resolução revogada: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
+
         logJetonService.logResolucaoRevogada(copia);
+        log.info("Resolução revogada: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
     }
 
     @Transactional
@@ -145,11 +121,13 @@ public class ResolucaoService {
             throw new RuntimeException("A resolução já está em vigor.");
         }
         Resolucao copia = copiarResolucao(resolucao);
+
         resolucao.setInRevogado(Resolucao.REVOGADO_NAO);
         repository.save(resolucao);
         regrasRepository.restaurarRegrasPorResolucao(id);
-        log.info("Resolução restaurada: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
+
         logJetonService.logResolucaoRestaurada(copia);
+        log.info("Resolução restaurada: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
     }
 
     @Transactional
@@ -163,10 +141,12 @@ public class ResolucaoService {
             throw new RuntimeException("Não é possível excluir a resolução pois existem " + countRegras +
                     " regra(s) vinculada(s). Revogue-as ou exclua-as antes.");
         }
+
         Resolucao copia = copiarResolucao(resolucao);
         repository.deleteById(id);
-        log.info("Resolução excluída: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
+
         logJetonService.logResolucaoExcluida(copia);
+        log.info("Resolução excluída: id={}, número={}/{}", id, resolucao.getNumero(), resolucao.getAno());
     }
 
     @Transactional(readOnly = true)
@@ -191,6 +171,35 @@ public class ResolucaoService {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
         return repository.pesquisarPaginado(termo, situacao, pageable);
+    }
+
+    private void normalizarResolucao(Resolucao resolucao) {
+        if (resolucao.getInRevogado() == null || resolucao.getInRevogado().trim().isEmpty()) {
+            resolucao.setInRevogado(Resolucao.REVOGADO_NAO);
+        } else {
+            resolucao.setInRevogado(resolucao.getInRevogado().toUpperCase());
+        }
+        if (resolucao.getLinkPublicado() != null) {
+            resolucao.setLinkPublicado(resolucao.getLinkPublicado().trim());
+        }
+        if (resolucao.getEmenta() != null) {
+            resolucao.setEmenta(resolucao.getEmenta().trim());
+        }
+        if (resolucao.getPontosPorJeton() == null) {
+            resolucao.setPontosPorJeton(3);
+        }
+        if (resolucao.getMaxJetonsDia() == null) {
+            resolucao.setMaxJetonsDia(3);
+        }
+        if (resolucao.getMaxJetonsPeriodo() == null) {
+            resolucao.setMaxJetonsPeriodo(1);
+        }
+        if (resolucao.getMaxJetonsMes() == null) {
+            resolucao.setMaxJetonsMes(22);
+        }
+        if (resolucao.getValorJeton() == null) {
+            resolucao.setValorJeton(java.math.BigDecimal.ZERO);
+        }
     }
 
     private Resolucao copiarResolucao(Resolucao original) {

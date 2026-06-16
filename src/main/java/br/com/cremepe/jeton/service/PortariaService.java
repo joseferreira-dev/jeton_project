@@ -3,7 +3,7 @@ package br.com.cremepe.jeton.service;
 import br.com.cremepe.jeton.domain.Portaria;
 import br.com.cremepe.jeton.repository.PortariaRepository;
 import br.com.cremepe.jeton.repository.RegrasRepository;
-
+import br.com.cremepe.jeton.util.NormativaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -13,7 +13,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,19 +24,33 @@ public class PortariaService {
     private final PortariaRepository repository;
     private final RegrasRepository regrasRepository;
     private final LogJetonService logJetonService;
+    private final NormativaValidator normativaValidator;
 
     public PortariaService(PortariaRepository repository,
             RegrasRepository regrasRepository,
-            LogJetonService logJetonService) {
+            LogJetonService logJetonService,
+            NormativaValidator normativaValidator) {
         this.repository = repository;
         this.regrasRepository = regrasRepository;
         this.logJetonService = logJetonService;
+        this.normativaValidator = normativaValidator;
     }
 
     @Transactional
     public Portaria criar(Portaria portaria) {
         portaria.setIdPortaria(null);
-        Portaria salva = salvarPortaria(portaria, true);
+        normalizarPortaria(portaria);
+        normativaValidator.validarPortaria(
+                portaria.getNumero(),
+                portaria.getAno(),
+                portaria.getDtInicioVigencia(),
+                portaria.getDtFimVigencia(),
+                null);
+
+        Portaria salva = repository.save(portaria);
+        log.info("Portaria criada: id={}, número={}/{}, vigência={} até {}, revogado={}",
+                salva.getIdPortaria(), salva.getNumero(), salva.getAno(),
+                salva.getDtInicioVigencia(), salva.getDtFimVigencia(), salva.getInRevogado());
         logJetonService.logPortariaCriada(salva);
         return salva;
     }
@@ -50,64 +63,33 @@ public class PortariaService {
         if (!repository.existsById(portaria.getIdPortaria())) {
             throw new RuntimeException("Portaria não encontrada para atualização.");
         }
-        // Captura o estado anterior
+
         Portaria antiga = repository.findById(portaria.getIdPortaria())
                 .orElseThrow(() -> new RuntimeException("Portaria não encontrada."));
         Portaria copia = copiarPortaria(antiga);
 
-        Portaria atualizada = salvarPortaria(portaria, false);
+        normalizarPortaria(portaria);
+        normativaValidator.validarPortaria(
+                portaria.getNumero(),
+                portaria.getAno(),
+                portaria.getDtInicioVigencia(),
+                portaria.getDtFimVigencia(),
+                portaria.getIdPortaria());
+
+        antiga.setNumero(portaria.getNumero());
+        antiga.setAno(portaria.getAno());
+        antiga.setDtInicioVigencia(portaria.getDtInicioVigencia());
+        antiga.setDtFimVigencia(portaria.getDtFimVigencia());
+        antiga.setLinkPublicado(portaria.getLinkPublicado());
+        antiga.setInRevogado(portaria.getInRevogado());
+
+        Portaria atualizada = repository.save(antiga);
+        log.info("Portaria atualizada: id={}, número={}/{}, vigência={} até {}, revogado={}",
+                atualizada.getIdPortaria(), atualizada.getNumero(), atualizada.getAno(),
+                atualizada.getDtInicioVigencia(), atualizada.getDtFimVigencia(), atualizada.getInRevogado());
+
         logJetonService.logPortariaAtualizada(copia, atualizada);
         return atualizada;
-    }
-
-    private Portaria salvarPortaria(Portaria portaria, boolean isNovo) {
-        validarUnicidade(portaria);
-        validarSobreposicao(portaria);
-        normalizarFlags(portaria);
-
-        Portaria salva = repository.save(portaria);
-        log.info("Portaria {}: id={}, número={}/{}, vigência={} até {}, revogado={}",
-                isNovo ? "criada" : "atualizada",
-                salva.getIdPortaria(), salva.getNumero(), salva.getAno(),
-                salva.getDtInicioVigencia(), salva.getDtFimVigencia(), salva.getInRevogado());
-        return salva;
-    }
-
-    private void validarUnicidade(Portaria portaria) {
-        Integer idAtual = portaria.getIdPortaria();
-        Integer numero = portaria.getNumero();
-        Integer ano = portaria.getAno();
-        if (numero == null || ano == null)
-            return;
-        boolean existe = repository.existsByNumeroAndAnoAndIdPortariaNot(numero, ano, idAtual != null ? idAtual : 0);
-        if (existe) {
-            throw new RuntimeException("Já existe uma portaria cadastrada com o número " + numero + "/" + ano);
-        }
-    }
-
-    private void validarSobreposicao(Portaria portaria) {
-        LocalDate inicio = portaria.getDtInicioVigencia();
-        LocalDate fim = portaria.getDtFimVigencia();
-        if (inicio == null)
-            return;
-        LocalDate fimValidacao = (fim != null) ? fim : LocalDate.of(9999, 12, 31);
-        Integer idPortaria = (portaria.getIdPortaria() != null) ? portaria.getIdPortaria() : 0;
-        boolean sobrepoe = repository.existePeriodoSobreposto(idPortaria, inicio, fimValidacao);
-        if (sobrepoe) {
-            throw new RuntimeException(
-                    "Já existe uma portaria cadastrada cujo período de vigência coincide com o informado. Verifique as datas.");
-        }
-    }
-
-    private void normalizarFlags(Portaria portaria) {
-        if (portaria.getInRevogado() == null || portaria.getInRevogado().trim().isEmpty()) {
-            portaria.setInRevogado(Portaria.REVOGADO_NAO);
-        } else {
-            portaria.setInRevogado(portaria.getInRevogado().toUpperCase());
-        }
-        if (portaria.getLinkPublicado() != null) {
-            portaria.setLinkPublicado(portaria.getLinkPublicado().trim());
-        }
     }
 
     @Transactional
@@ -182,6 +164,17 @@ public class PortariaService {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = (size == 0) ? Pageable.unpaged(sort) : PageRequest.of(page, size, sort);
         return repository.pesquisarPaginado(termo, situacao, pageable);
+    }
+
+    private void normalizarPortaria(Portaria portaria) {
+        if (portaria.getInRevogado() == null || portaria.getInRevogado().trim().isEmpty()) {
+            portaria.setInRevogado(Portaria.REVOGADO_NAO);
+        } else {
+            portaria.setInRevogado(portaria.getInRevogado().toUpperCase());
+        }
+        if (portaria.getLinkPublicado() != null) {
+            portaria.setLinkPublicado(portaria.getLinkPublicado().trim());
+        }
     }
 
     private Portaria copiarPortaria(Portaria original) {
