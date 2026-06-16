@@ -1,9 +1,8 @@
 package br.com.cremepe.jeton.service;
 
 import br.com.cremepe.jeton.domain.TipoAnexo;
-import br.com.cremepe.jeton.repository.ComprovanteRepository;
 import br.com.cremepe.jeton.repository.TipoAnexoRepository;
-
+import br.com.cremepe.jeton.util.ArquivoValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,15 +17,15 @@ public class TipoAnexoService {
     private static final Logger log = LoggerFactory.getLogger(TipoAnexoService.class);
 
     private final TipoAnexoRepository repository;
-    private final ComprovanteRepository comprovanteRepository;
     private final LogJetonService logJetonService;
+    private final ArquivoValidator arquivoValidator;
 
     public TipoAnexoService(TipoAnexoRepository repository,
-            ComprovanteRepository comprovanteRepository,
-            LogJetonService logJetonService) {
+            LogJetonService logJetonService,
+            ArquivoValidator arquivoValidator) {
         this.repository = repository;
-        this.comprovanteRepository = comprovanteRepository;
         this.logJetonService = logJetonService;
+        this.arquivoValidator = arquivoValidator;
     }
 
     @Transactional
@@ -45,7 +44,7 @@ public class TipoAnexoService {
         if (!repository.existsById(tipoAnexo.getIdTipo())) {
             throw new RuntimeException("Tipo de anexo não encontrado para atualização.");
         }
-        // Captura o estado anterior
+
         TipoAnexo antigo = repository.findById(tipoAnexo.getIdTipo())
                 .orElseThrow(() -> new RuntimeException("Tipo de anexo não encontrado."));
         TipoAnexo copia = copiarTipoAnexo(antigo);
@@ -56,15 +55,12 @@ public class TipoAnexoService {
     }
 
     private TipoAnexo salvar(TipoAnexo tipoAnexo, boolean isNovo) {
-        // Normaliza nome
         if (tipoAnexo.getNome() != null) {
             tipoAnexo.setNome(tipoAnexo.getNome().trim());
         }
-        // Se for criação, valida nome único; se for atualização, valida ignorando o
-        // próprio ID
-        validarNomeUnico(tipoAnexo, isNovo ? null : tipoAnexo.getIdTipo());
 
-        // Garante que exigePublicacao tenha valor padrão se não informado
+        arquivoValidator.validarNomeUnicoTipoAnexo(tipoAnexo, isNovo);
+
         if (tipoAnexo.getExigePublicacao() == null || tipoAnexo.getExigePublicacao().trim().isEmpty()) {
             tipoAnexo.setExigePublicacao(TipoAnexo.EXIGE_PUBLICACAO_NAO);
         } else {
@@ -75,19 +71,7 @@ public class TipoAnexoService {
         log.info("Tipo de anexo {}: id={}, nome={}, exigePublicacao={}",
                 isNovo ? "criado" : "atualizado",
                 salvo.getIdTipo(), salvo.getNome(), salvo.getExigePublicacao());
-
         return salvo;
-    }
-
-    private void validarNomeUnico(TipoAnexo tipoAnexo, Integer idAtual) {
-        String nome = tipoAnexo.getNome();
-        if (nome == null || nome.trim().isEmpty())
-            return;
-
-        Optional<TipoAnexo> existente = repository.findByNome(nome.trim());
-        if (existente.isPresent() && !existente.get().getIdTipo().equals(idAtual)) {
-            throw new RuntimeException("Já existe um tipo de anexo cadastrado com o nome '" + nome + "'.");
-        }
     }
 
     @Transactional
@@ -100,12 +84,8 @@ public class TipoAnexoService {
         TipoAnexo tipo = tipoOpt.get();
         TipoAnexo copia = copiarTipoAnexo(tipo);
 
-        // Verifica se existem comprovantes usando este tipo
-        long count = comprovanteRepository.findByTipoAnexoIdTipo(id).size();
-        if (count > 0) {
-            throw new RuntimeException("Não é possível excluir este tipo de anexo pois existem " + count +
-                    " comprovante(s) vinculado(s) a ele.");
-        }
+        // Valida se pode excluir
+        arquivoValidator.validarExclusaoTipoAnexo(id);
 
         repository.deleteById(id);
         log.info("Tipo de anexo excluído: id={}, nome={}", id, tipo.getNome());

@@ -4,7 +4,7 @@ import br.com.cremepe.jeton.domain.Comprovante;
 import br.com.cremepe.jeton.domain.TipoAnexo;
 import br.com.cremepe.jeton.repository.ComprovanteRepository;
 import br.com.cremepe.jeton.repository.TipoAnexoRepository;
-
+import br.com.cremepe.jeton.util.ArquivoValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -24,21 +24,25 @@ public class ComprovanteService {
     private final TipoAnexoRepository tipoAnexoRepository;
     private final FileStorageService fileStorageService;
     private final LogJetonService logJetonService;
+    private final ArquivoValidator arquivoValidator;
 
     public ComprovanteService(ComprovanteRepository comprovanteRepository,
             TipoAnexoRepository tipoAnexoRepository,
             FileStorageService fileStorageService,
-            LogJetonService logJetonService) {
+            LogJetonService logJetonService,
+            ArquivoValidator arquivoValidator) {
         this.comprovanteRepository = comprovanteRepository;
         this.tipoAnexoRepository = tipoAnexoRepository;
         this.fileStorageService = fileStorageService;
         this.logJetonService = logJetonService;
+        this.arquivoValidator = arquivoValidator;
     }
 
     @Transactional
     public Comprovante criar(MultipartFile file, Integer idTipoAnexo, String descricaoUsuario) {
-        validarArquivo(file);
-        YearMonth dataAtual = obterDataAtual();
+        arquivoValidator.validarArquivo(file);
+
+        YearMonth dataAtual = YearMonth.now();
         int ano = dataAtual.getYear();
         int mes = dataAtual.getMonthValue();
 
@@ -52,7 +56,7 @@ public class ComprovanteService {
         comprovante.setTipoAnexo(tipo);
         comprovante.setNomeComprovante(descricaoUsuario.trim());
         comprovante.setNomeArquivo(nomeArquivoGerado);
-        comprovante.setContentType(obterContentTypeValido(file.getContentType()));
+        comprovante.setContentType(arquivoValidator.obterContentTypeValido(file.getContentType()));
         comprovante.setMes(mes);
         comprovante.setAno(ano);
 
@@ -77,37 +81,6 @@ public class ComprovanteService {
             log.info("Comprovante excluído: ID={}, nome='{}', arquivo={}", id, comp.getNomeComprovante(),
                     comp.getNomeArquivo());
         });
-    }
-
-    private YearMonth obterDataAtual() {
-        return YearMonth.now();
-    }
-
-    private void validarArquivo(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new RuntimeException("Arquivo vazio ou nulo.");
-        }
-        String originalName = file.getOriginalFilename();
-        if (originalName == null || originalName.isBlank()) {
-            throw new RuntimeException("Nome do arquivo inválido.");
-        }
-        if (file.getSize() > 10 * 1024 * 1024) {
-            throw new RuntimeException("Arquivo excede o tamanho máximo permitido (10 MB).");
-        }
-        String extension = originalName.substring(originalName.lastIndexOf('.') + 1).toLowerCase();
-        if (!extension.matches("pdf|jpg|jpeg|png")) {
-            throw new RuntimeException("Formato de arquivo não permitido. Use PDF, JPG ou PNG.");
-        }
-    }
-
-    private String obterContentTypeValido(String contentType) {
-        if (contentType == null)
-            return Comprovante.CONTENT_TYPE_FALLBACK;
-        if (contentType.equalsIgnoreCase("application/pdf"))
-            return Comprovante.CONTENT_TYPE_PDF;
-        if (contentType.startsWith("image/"))
-            return Comprovante.CONTENT_TYPE_IMAGE;
-        return Comprovante.CONTENT_TYPE_FALLBACK;
     }
 
     @Transactional(readOnly = true)

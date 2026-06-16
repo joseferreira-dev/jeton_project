@@ -3,6 +3,9 @@ package br.com.cremepe.jeton.service;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+
+import br.com.cremepe.jeton.util.ArquivoValidator;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,9 +38,11 @@ public class FileStorageService {
     private String ftpPass;
 
     private final LogJetonService logJetonService;
+    private final ArquivoValidator arquivoValidator;
 
-    public FileStorageService(LogJetonService logJetonService) {
+    public FileStorageService(LogJetonService logJetonService, ArquivoValidator arquivoValidator) {
         this.logJetonService = logJetonService;
+        this.arquivoValidator = arquivoValidator;
     }
 
     public String salvarArquivoNoFtp(MultipartFile file, Integer ano, Integer mes) {
@@ -49,9 +54,7 @@ public class FileStorageService {
         }
         String fileName = UUID.randomUUID().toString() + extension;
 
-        if (fileName.contains("..")) {
-            throw new RuntimeException("Caminho inválido: " + fileName);
-        }
+        arquivoValidator.validarNomeArquivo(fileName);
 
         String resultado = executarOperacaoFtp((channelSftp) -> {
             String remoteDir = BASE_FTP_PATH + "/" + ano + "/" + mes;
