@@ -2,7 +2,7 @@ package br.com.cremepe.jeton.service;
 
 import br.com.cremepe.jeton.domain.Gestao;
 import br.com.cremepe.jeton.repository.GestaoRepository;
-
+import br.com.cremepe.jeton.util.GestaoValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -22,18 +22,20 @@ public class GestaoService {
 
     private final GestaoRepository gestaoRepository;
     private final LogJetonService logJetonService;
+    private final GestaoValidator gestaoValidator;
 
     public GestaoService(GestaoRepository gestaoRepository,
-            LogJetonService logJetonService) {
+            LogJetonService logJetonService,
+            GestaoValidator gestaoValidator) {
         this.gestaoRepository = gestaoRepository;
         this.logJetonService = logJetonService;
+        this.gestaoValidator = gestaoValidator;
     }
 
     @Transactional
     public Gestao criar(Gestao gestao) {
-        validarDatas(gestao);
-        validarNomeUnico(gestao);
-        validarSobreposicao(gestao);
+        gestao.setIdGestao(null);
+        gestaoValidator.validarGestao(gestao);
 
         Gestao salva = gestaoRepository.save(gestao);
         log.info("Gestão criada: ID={}, nome='{}', período={} até {}",
@@ -46,13 +48,14 @@ public class GestaoService {
 
     @Transactional
     public Gestao atualizar(Gestao gestao) {
-        Gestao existente = buscarGestaoOuFalhar(gestao.getIdGestao());
+        if (gestao.getIdGestao() == null) {
+            throw new RuntimeException("ID da gestão não informado para atualização.");
+        }
 
+        Gestao existente = buscarGestaoOuFalhar(gestao.getIdGestao());
         Gestao copia = copiarGestao(existente);
 
-        validarDatas(gestao);
-        validarNomeUnico(gestao);
-        validarSobreposicao(gestao);
+        gestaoValidator.validarGestao(gestao);
 
         existente.setNomeGestao(gestao.getNomeGestao());
         existente.setDtInicio(gestao.getDtInicio());
@@ -72,40 +75,12 @@ public class GestaoService {
         Gestao existente = buscarGestaoOuFalhar(id);
         Gestao copia = copiarGestao(existente);
 
-        gestaoRepository.deleteById(existente.getIdGestao());
+        gestaoRepository.deleteById(id);
         log.info("Gestão excluída: ID={}, nome='{}', período={} até {}",
                 existente.getIdGestao(), existente.getNomeGestao(),
                 existente.getDtInicio(), existente.getDtFim());
 
         logJetonService.logGestaoExcluida(copia);
-    }
-
-    private void validarDatas(Gestao gestao) {
-        if (gestao.getDtInicio() == null || gestao.getDtFim() == null) {
-            throw new RuntimeException("As datas de início e fim são obrigatórias.");
-        }
-        if (!gestao.getDtFim().isAfter(gestao.getDtInicio())) {
-            throw new RuntimeException("A data de fim deve ser posterior à data de início.");
-        }
-    }
-
-    private void validarNomeUnico(Gestao gestao) {
-        if (gestao.getNomeGestao() != null && !gestao.getNomeGestao().trim().isEmpty()) {
-            boolean existe = gestaoRepository.existsByNomeGestaoIgnorandoId(
-                    gestao.getNomeGestao().trim(), gestao.getIdGestao());
-            if (existe) {
-                throw new RuntimeException(
-                        "Já existe uma gestão cadastrada com o nome '" + gestao.getNomeGestao() + "'.");
-            }
-        }
-    }
-
-    private void validarSobreposicao(Gestao gestao) {
-        boolean sobrepoe = gestaoRepository.existsPeriodoSobreposto(
-                gestao.getIdGestao(), gestao.getDtInicio(), gestao.getDtFim());
-        if (sobrepoe) {
-            throw new RuntimeException("O período selecionado coincide com uma gestão já cadastrada.");
-        }
     }
 
     @Transactional(readOnly = true)
