@@ -6,13 +6,13 @@ import br.com.cremepe.jeton.repository.AtividadeConselhalRepository;
 import br.com.cremepe.jeton.repository.ComprovanteRepository;
 import br.com.cremepe.jeton.repository.GestaoConselheiroRepository;
 import br.com.cremepe.jeton.repository.GestaoRepository;
+import br.com.cremepe.jeton.util.AtividadeValidator;
 import br.com.cremepe.jeton.util.TurnoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,6 +30,7 @@ public class AtividadeLoteService {
     private final ConselheiroService conselheiroService;
     private final RegrasService regrasService;
     private final LogJetonService logJetonService;
+    private final AtividadeValidator atividadeValidator;
 
     public AtividadeLoteService(AtividadeConselhalRepository atividadeRepository,
             GestaoConselheiroRepository gestaoConselheiroRepository,
@@ -38,7 +39,8 @@ public class AtividadeLoteService {
             RegrasService regrasService,
             ConselheiroService conselheiroService,
             ComprovanteRepository comprovanteRepository,
-            LogJetonService logJetonService) {
+            LogJetonService logJetonService,
+            AtividadeValidator atividadeValidator) {
         this.atividadeRepository = atividadeRepository;
         this.comprovanteRepository = comprovanteRepository;
         this.gestaoConselheiroRepository = gestaoConselheiroRepository;
@@ -47,16 +49,18 @@ public class AtividadeLoteService {
         this.regrasService = regrasService;
         this.conselheiroService = conselheiroService;
         this.logJetonService = logJetonService;
+        this.atividadeValidator = atividadeValidator;
     }
 
     @Transactional
     public List<AtividadeConselhal> criar(LoteAtividadeDTO dto) {
-        Gestao gestao = gestaoRepository.findById(dto.getIdGestao())
-                .orElseThrow(() -> new RuntimeException("Gestão não encontrada"));
+        atividadeValidator.validarDataHoraObrigatoria(dto.getDataHoraAtividade());
+
+        Gestao gestao = atividadeValidator.validarGestaoExistente(dto.getIdGestao());
+        atividadeValidator.validarDataDentroDoMandato(dto.getDataHoraAtividade().toLocalDate(), gestao.getIdGestao());
+
         Regras regra = regrasService.buscarOuFalhar(dto.getIdRegra());
         LocalDateTime dataHora = dto.getDataHoraAtividade();
-        validarDataDentroDoMandato(dataHora.toLocalDate(), gestao);
-
         String turno = TurnoUtils.calcularTurno(dataHora.getHour());
 
         Comprovante comprovante = null;
@@ -70,12 +74,7 @@ public class AtividadeLoteService {
             Conselheiro conselheiro = conselheiroService.buscarPorId(idPessoa)
                     .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado: " + idPessoa));
 
-            boolean vinculado = gestaoConselheiroRepository.existsByGestaoAndConselheiro(gestao.getIdGestao(),
-                    idPessoa);
-            if (!vinculado) {
-                throw new RuntimeException("Conselheiro " + conselheiro.getPessoa().getNome() +
-                        " não está vinculado à gestão selecionada.");
-            }
+            atividadeValidator.validarVinculoConselheiroGestao(idPessoa, gestao.getIdGestao());
 
             AtividadeConselhal atividade = new AtividadeConselhal();
             atividade.setGestao(gestao);
@@ -109,6 +108,15 @@ public class AtividadeLoteService {
             throw new RuntimeException("Nenhuma atividade encontrada para o comprovante informado.");
         }
 
+        atividadeValidator.validarDataHoraObrigatoria(dto.getDataHoraAtividade());
+
+        Gestao gestao = atividadeValidator.validarGestaoExistente(dto.getIdGestao());
+        atividadeValidator.validarDataDentroDoMandato(dto.getDataHoraAtividade().toLocalDate(), gestao.getIdGestao());
+
+        Regras regra = regrasService.buscarOuFalhar(dto.getIdRegra());
+        LocalDateTime dataHora = dto.getDataHoraAtividade();
+        String turno = TurnoUtils.calcularTurno(dataHora.getHour());
+
         List<Integer> idsAtuais = atividadesAtuais.stream()
                 .map(a -> a.getConselheiro().getIdPessoa())
                 .collect(Collectors.toList());
@@ -120,13 +128,6 @@ public class AtividadeLoteService {
         idsRemover.removeAll(idsNovosSet);
         Set<Integer> idsAdicionar = new HashSet<>(idsNovosSet);
         idsAdicionar.removeAll(idsAtuaisSet);
-
-        Gestao gestao = gestaoRepository.findById(dto.getIdGestao())
-                .orElseThrow(() -> new RuntimeException("Gestão não encontrada"));
-        Regras regra = regrasService.buscarOuFalhar(dto.getIdRegra());
-        LocalDateTime dataHora = dto.getDataHoraAtividade();
-        validarDataDentroDoMandato(dataHora.toLocalDate(), gestao);
-        String turno = TurnoUtils.calcularTurno(dataHora.getHour());
 
         Comprovante comprovanteAtual = comprovanteRepository.findById(idComprovante)
                 .orElseThrow(() -> new RuntimeException("Comprovante não encontrado"));
@@ -143,10 +144,7 @@ public class AtividadeLoteService {
 
         // Atualiza dados comuns nas atividades existentes
         for (AtividadeConselhal at : atividadesAtuais) {
-            if (AtividadeConselhal.SITUACAO_FECHADA.equals(at.getInSituacao())) {
-                throw new RuntimeException(
-                        "Atividade ID " + at.getIdAtividade() + " está fechada e não pode ser editada.");
-            }
+            atividadeValidator.validarAtividadeNaoFechada(at);
             at.setGestao(gestao);
             at.setRegra(regra);
             at.setDataHoraAtividade(dataHora);
@@ -168,12 +166,7 @@ public class AtividadeLoteService {
             Conselheiro conselheiro = conselheiroService.buscarPorId(idPessoa)
                     .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado: " + idPessoa));
 
-            boolean vinculado = gestaoConselheiroRepository.existsByGestaoAndConselheiro(gestao.getIdGestao(),
-                    idPessoa);
-            if (!vinculado) {
-                throw new RuntimeException("Conselheiro " + conselheiro.getPessoa().getNome() +
-                        " não está vinculado à gestão selecionada.");
-            }
+            atividadeValidator.validarVinculoConselheiroGestao(idPessoa, gestao.getIdGestao());
 
             AtividadeConselhal nova = new AtividadeConselhal();
             nova.setGestao(gestao);
@@ -213,13 +206,5 @@ public class AtividadeLoteService {
     @Transactional(readOnly = true)
     public long contarAtividadesPorComprovante(Integer idComprovante) {
         return atividadeRepository.countByComprovanteIdComprovante(idComprovante);
-    }
-
-    private void validarDataDentroDoMandato(LocalDate dataAtividade, Gestao gestao) {
-        if (dataAtividade.isBefore(gestao.getDtInicio()) || dataAtividade.isAfter(gestao.getDtFim())) {
-            throw new RuntimeException("A data da atividade (" + dataAtividade +
-                    ") não está dentro do período da Gestão (" + gestao.getDtInicio() + " a " + gestao.getDtFim()
-                    + ").");
-        }
     }
 }

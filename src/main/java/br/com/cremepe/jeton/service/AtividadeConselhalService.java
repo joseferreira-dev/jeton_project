@@ -2,6 +2,7 @@ package br.com.cremepe.jeton.service;
 
 import br.com.cremepe.jeton.domain.*;
 import br.com.cremepe.jeton.repository.*;
+import br.com.cremepe.jeton.util.AtividadeValidator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +30,7 @@ public class AtividadeConselhalService {
     private final GestaoConselheiroRepository gestaoConselheiroRepository;
     private final ComprovanteService comprovanteService;
     private final LogJetonService logJetonService;
+    private final AtividadeValidator atividadeValidator;
 
     AtividadeConselhalService(
             AtividadeConselhalRepository atividadeRepository,
@@ -37,13 +38,15 @@ public class AtividadeConselhalService {
             GestaoRepository gestaoRepository,
             GestaoConselheiroRepository gestaoConselheiroRepository,
             ComprovanteService comprovanteService,
-            LogJetonService logJetonService) {
+            LogJetonService logJetonService,
+            AtividadeValidator atividadeValidator) {
         this.atividadeRepository = atividadeRepository;
         this.comprovanteRepository = comprovanteRepository;
         this.gestaoRepository = gestaoRepository;
         this.gestaoConselheiroRepository = gestaoConselheiroRepository;
         this.comprovanteService = comprovanteService;
         this.logJetonService = logJetonService;
+        this.atividadeValidator = atividadeValidator;
     }
 
     @Transactional
@@ -51,9 +54,13 @@ public class AtividadeConselhalService {
             MultipartFile file,
             Integer idTipoAnexo,
             String nomeComprovanteUsuario) {
-        validarAtividadeNaoFechada(atividade.getIdAtividade());
-        Gestao gestao = validarGestaoEVinculo(atividade);
-        validarDataDentroDoMandato(atividade.getDataHoraAtividade().toLocalDate(), gestao);
+        atividadeValidator.validarDataHoraObrigatoria(atividade.getDataHoraAtividade());
+
+        Gestao gestao = atividadeValidator.validarGestaoExistente(atividade.getGestao().getIdGestao());
+        atividadeValidator.validarVinculoConselheiroGestao(atividade.getConselheiro().getIdPessoa(),
+                gestao.getIdGestao());
+        atividadeValidator.validarDataDentroDoMandato(atividade.getDataHoraAtividade().toLocalDate(),
+                gestao.getIdGestao());
 
         atividade.setDataHoraRegistro(LocalDateTime.now());
         if (atividade.getInSituacao() == null || atividade.getInSituacao().isEmpty()) {
@@ -83,11 +90,10 @@ public class AtividadeConselhalService {
         AtividadeConselhal existente = atividadeRepository.findById(atividade.getIdAtividade())
                 .orElseThrow(() -> new RuntimeException("Atividade não encontrada para edição"));
 
-        AtividadeConselhal copiaAnterior = copiarAtividade(existente);
+        atividadeValidator.validarAtividadeNaoFechada(existente);
+        atividadeValidator.validarDataHoraObrigatoria(atividade.getDataHoraAtividade());
 
-        if (AtividadeConselhal.SITUACAO_FECHADA.equals(existente.getInSituacao())) {
-            throw new RuntimeException("Operação negada: Esta atividade está fechada em folha.");
-        }
+        AtividadeConselhal copiaAnterior = copiarAtividade(existente);
 
         if (idComprovanteAntigo != null) {
             atividadeRepository.desvincularComprovante(atividade.getIdAtividade());
@@ -114,8 +120,11 @@ public class AtividadeConselhalService {
             atividade.setQtdAtividade(1);
         }
 
-        Gestao gestao = validarGestaoEVinculo(atividade);
-        validarDataDentroDoMandato(atividade.getDataHoraAtividade().toLocalDate(), gestao);
+        Gestao gestao = atividadeValidator.validarGestaoExistente(atividade.getGestao().getIdGestao());
+        atividadeValidator.validarVinculoConselheiroGestao(atividade.getConselheiro().getIdPessoa(),
+                gestao.getIdGestao());
+        atividadeValidator.validarDataDentroDoMandato(atividade.getDataHoraAtividade().toLocalDate(),
+                gestao.getIdGestao());
 
         AtividadeConselhal salva = atividadeRepository.save(atividade);
 
@@ -136,9 +145,7 @@ public class AtividadeConselhalService {
     @Transactional
     public void validar(Integer id) {
         AtividadeConselhal atividade = buscarAtividadeOuLancarExcecao(id);
-        if (AtividadeConselhal.SITUACAO_FECHADA.equals(atividade.getInSituacao())) {
-            throw new RuntimeException("Operação negada: Esta atividade está fechada em folha.");
-        }
+        atividadeValidator.validarAtividadeNaoFechada(atividade);
         atividade.setInSituacao(AtividadeConselhal.SITUACAO_VALIDADA);
         atividadeRepository.save(atividade);
         logJetonService.logAtividadeValidada(id);
@@ -148,13 +155,8 @@ public class AtividadeConselhalService {
     @Transactional
     public void desvalidar(Integer id) {
         AtividadeConselhal atividade = buscarAtividadeOuLancarExcecao(id);
-        if (AtividadeConselhal.SITUACAO_FECHADA.equals(atividade.getInSituacao())) {
-            throw new RuntimeException("Operação negada: Esta atividade está fechada em folha.");
-        }
-        if (AtividadeConselhal.COMPUTADA_SIM.equals(atividade.getInComputada())) {
-            throw new RuntimeException(
-                    "Operação negada: Esta atividade já foi computada em um processamento financeiro.");
-        }
+        atividadeValidator.validarAtividadeNaoFechada(atividade);
+        atividadeValidator.validarAtividadeNaoComputada(atividade);
         atividade.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
         atividadeRepository.save(atividade);
         logJetonService.logAtividadeDesvalidada(id);
@@ -164,13 +166,8 @@ public class AtividadeConselhalService {
     @Transactional
     public void excluir(Integer id) {
         AtividadeConselhal atividade = buscarAtividadeOuLancarExcecao(id);
+        atividadeValidator.validarExclusaoPermitida(atividade);
         AtividadeConselhal copia = copiarAtividade(atividade);
-
-        if (AtividadeConselhal.SITUACAO_FECHADA.equals(atividade.getInSituacao())
-                || AtividadeConselhal.COMPUTADA_SIM.equals(atividade.getInComputada())) {
-            throw new RuntimeException(
-                    "Operação negada: Esta atividade não pode ser excluída pois já foi processada (computada ou fechada).");
-        }
 
         Integer idComprovante = null;
         if (atividade.getComprovante() != null) {
@@ -230,38 +227,6 @@ public class AtividadeConselhalService {
     private Comprovante criarComprovante(MultipartFile file, Integer idTipoAnexo,
             String nomeComprovanteUsuario) {
         return comprovanteService.criar(file, idTipoAnexo, nomeComprovanteUsuario);
-    }
-
-    private void validarAtividadeNaoFechada(Integer idAtividade) {
-        if (idAtividade == null)
-            return;
-        AtividadeConselhal existente = atividadeRepository.findById(idAtividade)
-                .orElseThrow(() -> new RuntimeException("Atividade não encontrada no sistema."));
-        if (AtividadeConselhal.SITUACAO_FECHADA.equals(existente.getInSituacao())) {
-            throw new RuntimeException(
-                    "Operação negada: Esta atividade já foi processada e FECHADA na folha de pagamento e não pode ser modificada.");
-        }
-    }
-
-    private Gestao validarGestaoEVinculo(AtividadeConselhal atividade) {
-        Gestao gestao = gestaoRepository.findById(atividade.getGestao().getIdGestao())
-                .orElseThrow(() -> new RuntimeException("A gestão informada não foi encontrada no sistema."));
-
-        boolean vinculado = gestaoConselheiroRepository.findByIdIdGestao(gestao.getIdGestao()).stream()
-                .anyMatch(v -> v.getConselheiro().getIdPessoa().equals(atividade.getConselheiro().getIdPessoa()));
-        if (!vinculado) {
-            throw new RuntimeException("O médico selecionado não possui vínculo ativo com a Gestão informada.");
-        }
-        return gestao;
-    }
-
-    private void validarDataDentroDoMandato(LocalDate dataAtividade, Gestao gestao) {
-        if (dataAtividade.isBefore(gestao.getDtInicio()) || dataAtividade.isAfter(gestao.getDtFim())) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-            throw new RuntimeException("A data da atividade (" + dataAtividade.format(formatter) +
-                    ") não é permitida. Ela deve estar dentro do período da Gestão selecionada (" +
-                    gestao.getDtInicio().format(formatter) + " a " + gestao.getDtFim().format(formatter) + ").");
-        }
     }
 
     private AtividadeConselhal buscarAtividadeOuLancarExcecao(Integer id) {
