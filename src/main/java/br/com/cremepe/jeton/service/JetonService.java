@@ -141,6 +141,14 @@ public class JetonService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public Page<JetonDTO> pesquisarHistoricoPaginado(Integer idGestao, Integer mes, Integer ano, String termo,
+            Pageable pageable) {
+        String termoBusca = (termo != null && !termo.trim().isEmpty()) ? termo.trim() : null;
+        Page<Jeton> page = jetonRepository.pesquisarHistoricoPaginado(idGestao, mes, ano, termoBusca, pageable);
+        return page.map(jetonMapper::toDto);
+    }
+
     public List<AtividadeVinculadaDTO> listarAtividadesAgrupadasPorConselheiro(
             Integer idPessoa, Integer idGestao, Integer mes, Integer ano) {
 

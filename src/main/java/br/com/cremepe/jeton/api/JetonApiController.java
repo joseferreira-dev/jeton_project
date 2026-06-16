@@ -54,12 +54,8 @@ public class JetonApiController {
             @RequestParam(required = false) Integer mes,
             @RequestParam(required = false) Integer ano,
             @RequestParam(required = false) String termo,
-            @PageableDefault(size = 10, sort = "ano,mes") Pageable pageable) {
-        List<JetonDTO> lista = jetonService.pesquisarHistorico(idGestao, mes, ano, termo);
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), lista.size());
-        Page<JetonDTO> page = new org.springframework.data.domain.PageImpl<>(
-                lista.subList(start, end), pageable, lista.size());
+            @PageableDefault(size = 10, sort = { "ano", "mes" }) Pageable pageable) {
+        Page<JetonDTO> page = jetonService.pesquisarHistoricoPaginado(idGestao, mes, ano, termo, pageable);
         return ResponseEntity.ok(page);
     }
 
