@@ -6,7 +6,7 @@ import br.com.cremepe.jeton.domain.Usuario;
 import br.com.cremepe.jeton.repository.ConselheiroRepository;
 import br.com.cremepe.jeton.repository.PessoaRepository;
 import br.com.cremepe.jeton.repository.UsuarioRepository;
-import br.com.cremepe.jeton.util.CpfValidador;
+import br.com.cremepe.jeton.util.CpfValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -77,7 +77,7 @@ public class UsuarioService {
         pessoa.setCpf(cpfLimpo);
 
         // 2. Valida CPF
-        if (cpfLimpo.isEmpty() || !CpfValidador.isCpfValido(cpfLimpo)) {
+        if (cpfLimpo.isEmpty() || !CpfValidator.isCpfValido(cpfLimpo)) {
             throw new RuntimeException("O número de CPF informado é inválido. Verifique os dígitos.");
         }
 

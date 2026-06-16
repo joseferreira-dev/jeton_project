@@ -1,6 +1,6 @@
 package br.com.cremepe.jeton.util;
 
-public class CpfValidador {
+public class CpfValidator {
 
     public static boolean isCpfValido(String cpf) {
         if (cpf == null || cpf.length() != 11) {
