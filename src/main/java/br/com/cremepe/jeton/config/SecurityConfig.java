@@ -42,7 +42,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers("/api/**"))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.png", "/favicon.ico").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.png", "/favicon.ico",
+                                "/webjars/**")
+                        .permitAll()
                         .requestMatchers("/login", "/autenticar", "/sair", "/bloqueio", "/bloqueio/status").permitAll()
                         .requestMatchers("/conselheiro/**").hasRole("CONSELHEIRO")
                         .requestMatchers("/", "/index", "/conselheiro/**").authenticated()
