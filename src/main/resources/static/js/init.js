@@ -1,90 +1,141 @@
 /**
- * Inicialização global – registra event listeners e chama inits
+ * Ponto de entrada – inicialização global e delegação de eventos
  */
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    // 1. Captura tokens CSRF (já definidos em csrf.js)
+    // ========== CSRF ==========
     const metaToken = document.querySelector('meta[name="_csrf"]');
     const metaHeader = document.querySelector('meta[name="_csrf_header"]');
     if (metaToken) window.csrfToken = metaToken.content;
     if (metaHeader) window.csrfHeader = metaHeader.content;
 
-    // 2. Tooltips do Bootstrap
+    // ========== TOOLTIPS ==========
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
     tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
 
-    // 3. Configura modal de confirmação global (btn-confirm)
+    // ========== MODAL CONFIRMAÇÃO GLOBAL ==========
     configurarModalConfirmacaoGlobal();
 
-    // 4. Event delegation para botões de exclusão (.btn-excluir)
+    // ========== DELEGAÇÃO DE EVENTOS POR DATA-ROLE ==========
     document.addEventListener('click', function (e) {
-        const btn = e.target.closest('.btn-excluir');
-        if (!btn) return;
-        e.preventDefault();
-        const baseUrl = btn.getAttribute('data-url');
-        const id = btn.getAttribute('data-id');
-        const nome = btn.getAttribute('data-nome');
-        const extra = btn.getAttribute('data-extra');
-        if (baseUrl && id) {
-            prepararExclusao(baseUrl, id, nome, extra);
+        const target = e.target.closest('[data-role]');
+        if (!target) return;
+
+        const role = target.getAttribute('data-role');
+
+        switch (role) {
+
+            case 'ver-detalhes':
+                e.preventDefault();
+                verDetalhes(target);
+                break;
+
+            case 'ver-comprovante':
+                e.preventDefault();
+                verComprovante(target);
+                break;
+
+            case 'abrir-relatorio':
+                e.preventDefault();
+                abrirRelatorioJeton(target);
+                break;
+
+            case 'abrir-atividades':
+                e.preventDefault();
+                abrirModalAtividades(target);
+                break;
+
+            case 'confirmar-acao':
+                e.preventDefault();
+                const url = target.getAttribute('data-url');
+                const mensagem = target.getAttribute('data-mensagem') || 'Tem certeza?';
+                const isDesvalidar = target.getAttribute('data-desvalidar') === 'true';
+                const cor = target.getAttribute('data-cor');
+                confirmarAcao(url, mensagem, isDesvalidar, cor);
+                break;
+
+            case 'excluir':
+                e.preventDefault();
+                const baseUrl = target.getAttribute('data-url');
+                const id = target.getAttribute('data-id');
+                const nome = target.getAttribute('data-nome');
+                const extra = target.getAttribute('data-extra');
+                if (baseUrl && id) {
+                    prepararExclusao(baseUrl, id, nome, extra);
+                }
+                break;
+
+            case 'resetar-filtros':
+                e.preventDefault();
+                if (typeof resetarFiltrosAtividadeForm === 'function') {
+                    resetarFiltrosAtividadeForm();
+                }
+                break;
+
+            case 'resetar-lote':
+                e.preventDefault();
+                if (typeof window._resetarLote === 'function') {
+                    window._resetarLote();
+                }
+                break;
+
+            default:
+                console.warn('data-role não reconhecido:', role);
         }
     });
 
-    // 5. Event delegation para alternar status (.btn-alternar-status)
-    document.addEventListener('click', function (e) {
-        const btn = e.target.closest('.btn-alternar-status');
-        if (!btn) return;
-        e.preventDefault();
-        const url = btn.getAttribute('data-url');
-        const mensagem = btn.getAttribute('data-mensagem');
-        const isDesvalidar = btn.getAttribute('data-desvalidar') === 'true';
-        if (url) {
-            confirmarAcao(url, mensagem, isDesvalidar);
+    // ========== DELEGAÇÃO PARA MUDANÇA EM SELECTS (onchange) ==========
+    document.addEventListener('change', function (e) {
+        const target = e.target;
+
+        // data-role="atualizar-conselheiros" (geralmente no selectGestao)
+        if (target.matches('[data-role="atualizar-conselheiros"]')) {
+            const idParaSelecionar = document.getElementById('selectConselheiro')?.value || null;
+            atualizarConselheiros(idParaSelecionar);
+        }
+
+        // data-role="atualizar-regras" (geralmente no input dataAtividade)
+        if (target.matches('[data-role="atualizar-regras"]')) {
+            const idRegraAtual = document.getElementById('selectRegra')?.value || null;
+            atualizarRegrasPorData(idRegraAtual);
+            atualizarTurnoVisual();
         }
     });
 
-    // 6. Event delegation para ver detalhes do log (.btn-ver-log)
-    document.addEventListener('click', function (e) {
-        const btn = e.target.closest('.btn-ver-log');
-        if (!btn) return;
-        e.preventDefault();
-        const texto = btn.getAttribute('data-texto');
-        const pre = document.getElementById('logDetalhesTexto');
-        if (pre) {
-            try {
-                const obj = JSON.parse(texto);
-                pre.textContent = JSON.stringify(obj, null, 2);
-            } catch (err) {
-                pre.textContent = texto;
-            }
-            const modal = new bootstrap.Modal(document.getElementById('modalLogDetalhes'));
-            modal.show();
-        }
-    });
-
-    // 7. Inicializações específicas
+    // ========== INICIALIZADORES ESPECÍFICOS ==========
     inicializarHomologacao();
     inicializarBotaoRelatorio();
-    inicializarFiltroRegrasConjuntas();    // (função ainda em app.js? moveremos depois)
     inicializarFormularioAtividade();
     inicializarSpinnerFormularioAtividade();
     atualizarBotaoBloqueio();
+    inicializarFiltroRegrasConjuntas();
 
-    // 8. Toggle CRM no formulário de usuário
+    // Inicializa lote se estiver na página de criação
+    if (document.getElementById('formLote') && document.getElementById('selectGestao')) {
+        // Se existir um campo oculto com ID do comprovante, é edição
+        if (document.querySelector('input[name="idComprovante"]')) {
+            inicializarLoteEdicao();
+        } else {
+            inicializarLoteCriacao();
+        }
+    }
+
+    // Toggle CRM no formulário de usuário
     if (document.getElementById('checkConselheiro')) {
         toggleCrm();
     }
 
+    // Inicializa relatório Chart.js se existir
+    if (document.getElementById('chartConselheiros')) {
+        inicializarRelatorioGraficos();
+    }
 });
 
 // =========================================================================
-// FUNÇÕES AUXILIARES (ainda não movidas para módulo)
+// FUNÇÕES AUXILIARES DE INIT (ainda não movidas)
 // =========================================================================
 
-/**
- * Configura o modal de confirmação global (btn-confirm)
- */
 function configurarModalConfirmacaoGlobal() {
     const botoesConfirm = document.querySelectorAll('.btn-confirm');
     if (botoesConfirm.length === 0) return;
@@ -140,9 +191,6 @@ function configurarModalConfirmacaoGlobal() {
     });
 }
 
-/**
- * Inicializa o spinner no formulário de atividade
- */
 function inicializarSpinnerFormularioAtividade() {
     const form = document.getElementById('formAtividade');
     if (!form) return;
@@ -154,9 +202,6 @@ function inicializarSpinnerFormularioAtividade() {
     }
 }
 
-/**
- * Inicializa o filtro de Regras Conjuntas (a ser movido)
- */
 function inicializarFiltroRegrasConjuntas() {
     const selectResolucao = document.getElementById('selectResolucaoFiltro');
     const selectRegras = document.getElementById('selectRegras');
@@ -189,7 +234,6 @@ function inicializarFiltroRegrasConjuntas() {
                         selectRegras.appendChild(option);
                     });
                 }
-
                 if (idsParaSelecionar && idsParaSelecionar.length > 0) {
                     idsParaSelecionar.forEach(id => {
                         const option = Array.from(selectRegras.options).find(opt => opt.value == id);

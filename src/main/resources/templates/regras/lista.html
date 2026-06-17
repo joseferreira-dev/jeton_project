@@ -120,23 +120,29 @@
                                 </td>
                                 <td class="text-center pe-4">
                                     <a th:href="@{'/regras/editar/' + ${r.idRegra}}"
-                                        class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                        class="btn btn-sm btn-outline-primary me-1">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
 
-                                    <a href="#" class="btn btn-sm btn-outline-danger me-1"
-                                        th:onclick="'confirmarAcao(\'/regras/excluir/' + ${r.idRegra} + '\', \'Deseja EXCLUIR permanentemente esta regra? Essa ação só será permitida se não houver nenhuma atividade lançada utilizando esta regra.\', false, \'btn-danger\')'">
+                                    <a href="#" class="btn btn-sm btn-outline-danger me-1" data-role="confirmar-acao"
+                                        th:data-url="'/regras/excluir/' + ${r.idRegra}"
+                                        data-mensagem="Deseja EXCLUIR permanentemente esta regra? Essa ação só será permitida se não houver nenhuma atividade lançada utilizando esta regra."
+                                        data-cor="btn-danger">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </a>
 
                                     <a th:if="${r.inRevogado == 'N'}" href="#"
-                                        class="btn btn-sm btn-outline-danger me-1"
-                                        th:onclick="'confirmarAcao(\'/regras/revogar/' + ${r.idRegra} + '\', \'Tem certeza que deseja REVOGAR esta regra? Ela deixará de aparecer para novos lançamentos de atividades conselhais.\', false, \'btn-danger\')'">
+                                        class="btn btn-sm btn-outline-danger me-1" data-role="confirmar-acao"
+                                        th:data-url="'/regras/revogar/' + ${r.idRegra}"
+                                        data-mensagem="Tem certeza que deseja REVOGAR esta regra? Ela deixará de aparecer para novos lançamentos de atividades conselhais."
+                                        data-cor="btn-danger">
                                         <i class="fa-solid fa-ban"></i>
                                     </a>
 
                                     <a th:if="${r.inRevogado == 'S'}" href="#" class="btn btn-sm btn-outline-success"
-                                        th:onclick="'confirmarAcao(\'/regras/restaurar/' + ${r.idRegra} + '\', \'Tem certeza que deseja RESTAURAR esta regra para o estado Vigente?\', false, \'btn-success\')'">
+                                        data-role="confirmar-acao" th:data-url="'/regras/restaurar/' + ${r.idRegra}"
+                                        data-mensagem="Tem certeza que deseja RESTAURAR esta regra para o estado Vigente?"
+                                        data-cor="btn-success">
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </a>
                                 </td>

@@ -185,47 +185,50 @@
 
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-info" th:data-id="${a.idAtividade}"
-                                            th:data-turno="${a.inTurno}" th:data-regranome="${a.regra.nomeRegra}"
+                                        <button type="button" class="btn btn-outline-info" data-role="ver-detalhes"
+                                            th:data-id="${a.idAtividade}" th:data-turno="${a.inTurno}"
+                                            th:data-regranome="${a.regra.nomeRegra}"
                                             th:data-regradesc="${a.regra.descricao}"
                                             th:data-regrapontos="${a.regra.pontos}"
                                             th:data-dataatv="${#temporals.format(a.dataHoraAtividade, 'dd/MM/yyyy HH:mm')}"
-                                            th:data-datareg="${#temporals.format(a.dataHoraRegistro, 'dd/MM/yyyy HH:mm')}"
-                                            onclick="verDetalhes(this)" title="Ver Detalhes">
+                                            th:data-datareg="${#temporals.format(a.dataHoraRegistro, 'dd/MM/yyyy HH:mm')}">
                                             <i class="fa-solid fa-eye"></i>
                                         </button>
 
                                         <button th:if="${a.comprovante != null}" type="button"
-                                            class="btn btn-outline-secondary"
+                                            class="btn btn-outline-secondary" data-role="ver-comprovante"
                                             th:data-id="${a.comprovante.idComprovante}"
-                                            th:data-nome="${a.comprovante.nomeComprovante}"
-                                            onclick="verComprovante(this)" title="Ver Comprovante">
+                                            th:data-nome="${a.comprovante.nomeComprovante}">
                                             <i class="fa-solid fa-paperclip"></i>
                                         </button>
 
                                         <th:block th:if="${a.inSituacao != 'F'}">
-                                            <th:block th:if="${a.inSituacao == 'P'}">
-                                                <button type="button" class="btn btn-outline-success"
-                                                    th:onclick="|confirmarAcao('/atividades/validar/${a.idAtividade}', 'Deseja realmente validar esta atividade?', false)|"
-                                                    title="Validar Atividade">
-                                                    <i class="fa-solid fa-check"></i>
-                                                </button>
-                                            </th:block>
+                                            <button th:if="${a.inSituacao == 'P'}" type="button"
+                                                class="btn btn-outline-success" data-role="confirmar-acao"
+                                                th:data-url="'/atividades/validar/' + ${a.idAtividade}"
+                                                data-mensagem="Deseja realmente validar esta atividade?"
+                                                data-desvalidar="false">
+                                                <i class="fa-solid fa-check"></i>
+                                            </button>
 
-                                            <th:block th:if="${a.inSituacao == 'C'}">
-                                                <button type="button" class="btn btn-outline-warning"
-                                                    th:onclick="|confirmarAcao('/atividades/desvalidar/${a.idAtividade}', 'Deseja realmente desvalidar esta atividade?', true)|"
-                                                    title="Desvalidar Atividade">
-                                                    <i class="fa-solid fa-xmark"></i>
-                                                </button>
-                                            </th:block>
+                                            <button th:if="${a.inSituacao == 'C'}" type="button"
+                                                class="btn btn-outline-warning" data-role="confirmar-acao"
+                                                th:data-url="'/atividades/desvalidar/' + ${a.idAtividade}"
+                                                data-mensagem="Deseja realmente desvalidar esta atividade?"
+                                                data-desvalidar="true">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
 
                                             <a th:href="@{/atividades/editar/{id}(id=${a.idAtividade})}"
-                                                class="btn btn-outline-primary" title="Editar">
+                                                class="btn btn-outline-primary">
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </a>
+
                                             <button type="button" class="btn btn-outline-danger"
-                                                th:onclick="|confirmarAcao('/atividades/excluir/${a.idAtividade}', 'Deseja excluir permanentemente esta atividade?', false, 'btn-danger')|">
+                                                data-role="confirmar-acao"
+                                                th:data-url="'/atividades/excluir/' + ${a.idAtividade}"
+                                                data-mensagem="Deseja excluir permanentemente esta atividade?"
+                                                data-desvalidar="false" data-cor="btn-danger">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
                                         </th:block>

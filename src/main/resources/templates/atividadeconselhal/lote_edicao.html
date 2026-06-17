@@ -37,7 +37,8 @@
                         <!-- Gestão -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Gestão Referente</label>
-                            <select class="form-select" name="idGestao" id="selectGestao" required>
+                            <select class="form-select" name="idGestao" id="selectGestao"
+                                data-role="atualizar-conselheiros" required>
                                 <option value="">-- Selecione a Gestão Primeiro --</option>
                                 <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}" th:text="${g.nomeGestao}"
                                     th:selected="${g.idGestao == atividadeReferencia.gestao.idGestao}"></option>
@@ -56,7 +57,7 @@
                         <div class="col-md-3">
                             <label class="form-label fw-bold">Turno</label>
                             <input type="text" class="form-control" id="turnoVisual" value="Automático (via Horário)"
-                                disabled>
+                                data-role="atualizar-regras" disabled>
                             <small class="text-muted" style="font-size: 0.70rem;">M (06h00-11h59) | T (12h00-17h59) | N
                                 (18h00-23h59)</small>
                         </div>
@@ -95,7 +96,7 @@
                         </div>
 
                         <div class="col-md-2 d-flex align-items-end">
-                            <button type="button" class="btn btn-outline-secondary w-100" onclick="resetarFiltros()"><i
+                            <button type="button" class="btn btn-outline-secondary w-100" data-role="resetar-lote"><i
                                     class="fa-solid fa-eraser me-1"></i> Limpar</button>
                         </div>
 
@@ -103,7 +104,8 @@
                         <div class="col-md-12">
                             <label class="form-label fw-bold text-cremepe">Regra Enquadrada (Atividade
                                 Específica)</label>
-                            <select class="form-select border-primary" name="idRegra" id="selectRegra" required>
+                            <select class="form-select border-primary" name="idRegra" id="selectRegra"
+                                data-role="exibir-guia" required>
                                 <option value="">-- Escolha a documentação acima para desbloquear as regras --</option>
                             </select>
                         </div>
@@ -182,106 +184,10 @@
         </div>
 
         <script th:inline="javascript">
-            /*<![CDATA[*/
-            // IDs dos conselheiros atuais e ID da regra atual
-            const idsAtuaisLote = /*[[${idsConselheirosAtuais}]]*/[];
-            const idRegraAtual = /*[[${atividadeReferencia.regra.idRegra}]]*/ null;
-
-            // Elementos
-            const selectGestao = document.getElementById('selectGestao');
-            const selectConselheiros = document.getElementById('selectConselheiros');
-            const listaSelecionadosDiv = document.getElementById('listaSelecionados');
-            const dataAtividade = document.getElementById('dataAtividade');
-
-            // Função para atualizar a lista de selecionados
-            function atualizarListaSelecionados() {
-                const selectedOptions = Array.from(selectConselheiros.selectedOptions);
-                if (selectedOptions.length === 0) {
-                    listaSelecionadosDiv.innerHTML = '<span class="text-muted">Nenhum selecionado</span>';
-                    return;
-                }
-                let html = '<ul class="list-unstyled mb-0">';
-                selectedOptions.forEach(opt => {
-                    html += `<li><i class="fa-solid fa-user-check text-success me-1"></i> ${opt.text}</li>`;
-                });
-                html += '</ul>';
-                listaSelecionadosDiv.innerHTML = html;
-            }
-
-            // Carrega conselheiros com base na gestão
-            function carregarConselheiros() {
-                const gestaoId = selectGestao.value;
-                if (!gestaoId) {
-                    selectConselheiros.innerHTML = '<option value="">-- Selecione a gestão primeiro --</option>';
-                    selectConselheiros.disabled = true;
-                    atualizarListaSelecionados();
-                    return;
-                }
-                fetch(`/api/conselheiros/conselheiros-por-gestao?gestaoId=${gestaoId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        selectConselheiros.innerHTML = '';
-                        if (data && data.length > 0) {
-                            data.forEach(c => {
-                                const option = document.createElement('option');
-                                option.value = c.id;
-                                option.text = c.nome;
-                                if (idsAtuaisLote && idsAtuaisLote.includes(c.id)) {
-                                    option.selected = true;
-                                }
-                                selectConselheiros.appendChild(option);
-                            });
-                            selectConselheiros.disabled = false;
-                        } else {
-                            selectConselheiros.innerHTML = '<option value="">Nenhum conselheiro vinculado</option>';
-                            selectConselheiros.disabled = true;
-                        }
-                        atualizarListaSelecionados();
-                    })
-                    .catch(err => console.error("Erro ao carregar conselheiros:", err));
-            }
-
-            // Limpar filtros (normativas e regra)
-            function resetarFiltros() {
-                document.getElementById('nomeResolucaoVisual').value = '';
-                document.getElementById('idResolucaoHidden').value = '';
-                document.getElementById('nomePortariaVisual').value = '';
-                document.getElementById('idPortariaHidden').value = '';
-                const selectRegra = document.getElementById('selectRegra');
-                if (selectRegra) {
-                    selectRegra.innerHTML = '<option value="">-- Escolha a documentação acima para desbloquear as regras --</option>';
-                    selectRegra.disabled = true;
-                }
-                document.getElementById('boxGuia').style.display = 'none';
-            }
-
-            // Eventos
-            selectGestao.addEventListener('change', carregarConselheiros);
-            selectConselheiros.addEventListener('change', atualizarListaSelecionados);
-            dataAtividade.addEventListener('change', function () {
-                // Usa a função global do app.js para carregar regras e pré-selecionar a regra atual
-                if (typeof window.atualizarRegrasPorData === 'function') {
-                    window.atualizarRegrasPorData(idRegraAtual);
-                }
-                if (typeof window.atualizarTurnoVisual === 'function') {
-                    window.atualizarTurnoVisual();
-                }
-            });
-
-            // Inicialização
-            if (selectGestao.value) carregarConselheiros();
-            if (dataAtividade.value) {
-                if (typeof window.atualizarRegrasPorData === 'function') {
-                    window.atualizarRegrasPorData(idRegraAtual);
-                }
-                if (typeof window.atualizarTurnoVisual === 'function') {
-                    window.atualizarTurnoVisual();
-                }
-            }
-
-            // Expõe a função resetarFiltros globalmente (para o onclick do botão)
-            window.resetarFiltros = resetarFiltros;
-            /*]]>*/
+            window.loteConfig = {
+                idsAtuais: /*[[${idsConselheirosAtuais}]]*/[],
+                idRegraAtual: /*[[${atividadeReferencia.regra.idRegra}]]*/ null
+            };
         </script>
     </div>
 </body>

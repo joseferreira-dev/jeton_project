@@ -116,22 +116,29 @@
                                 </td>
                                 <td class="text-center pe-4">
                                     <a th:href="@{'/portarias/editar/' + ${p.idPortaria}}"
-                                        class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                        class="btn btn-sm btn-outline-primary me-1">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
 
-                                    <a href="#" class="btn btn-sm btn-outline-danger me-1"
-                                        th:onclick="'confirmarAcao(\'/portarias/excluir/' + ${p.idPortaria} + '\', \'Deseja EXCLUIR permanentemente esta Portaria? Apenas possível se não houver regras vinculadas.\', false, \'btn-danger\')'">
+                                    <a href="#" class="btn btn-sm btn-outline-danger me-1" data-role="confirmar-acao"
+                                        th:data-url="'/portarias/excluir/' + ${p.idPortaria}"
+                                        data-mensagem="Deseja EXCLUIR permanentemente esta Portaria? Apenas possível se não houver regras vinculadas."
+                                        data-cor="btn-danger">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </a>
 
                                     <a th:if="${p.inRevogado == 'N'}" href="#" class="btn btn-sm btn-outline-danger"
-                                        th:onclick="'confirmarAcao(\'/portarias/revogar/' + ${p.idPortaria} + '\', \'Tem certeza que deseja REVOGAR esta Portaria? Ela deixará de ser listada para novos cadastros.\', false, \'btn-danger\')'">
+                                        data-role="confirmar-acao" th:data-url="'/portarias/revogar/' + ${p.idPortaria}"
+                                        data-mensagem="Tem certeza que deseja REVOGAR esta Portaria? Ela deixará de ser listada para novos cadastros."
+                                        data-cor="btn-danger">
                                         <i class="fa-solid fa-ban"></i>
                                     </a>
 
                                     <a th:if="${p.inRevogado == 'S'}" href="#" class="btn btn-sm btn-outline-success"
-                                        th:onclick="'confirmarAcao(\'/portarias/restaurar/' + ${p.idPortaria} + '\', \'Tem certeza que deseja RESTAURAR esta Portaria para o estado Em Vigor?\', false, \'btn-success\')'">
+                                        data-role="confirmar-acao"
+                                        th:data-url="'/portarias/restaurar/' + ${p.idPortaria}"
+                                        data-mensagem="Tem certeza que deseja RESTAURAR esta Portaria para o estado Em Vigor?"
+                                        data-cor="btn-success">
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </a>
                                 </td>
