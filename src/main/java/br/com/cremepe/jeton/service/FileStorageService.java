@@ -36,7 +36,7 @@ public class FileStorageService {
     @Value("${ftp.locaweb.user}")
     private String ftpUser;
 
-    // @Value("${ftp.locaweb.pass}")
+    @Value("${ftp.locaweb.pass}")
     private String ftpPass;
 
     private final LogJetonService logJetonService;
