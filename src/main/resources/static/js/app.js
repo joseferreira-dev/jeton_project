@@ -349,8 +349,7 @@ async function verComprovante(btn) {
             modalBody.innerHTML = `
                 <div class="alert alert-warning m-3">
                     <i class="fa-solid fa-triangle-exclamation me-2"></i>
-                    Tipo de arquivo não suportado para visualização direta.
-                    <a href="${url}" download target="_blank" class="alert-link">Clique aqui para baixar</a>.
+                    Tipo de arquivo não suportado.
                 </div>
             `;
         }

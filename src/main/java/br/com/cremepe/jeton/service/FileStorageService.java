@@ -2,8 +2,8 @@ package br.com.cremepe.jeton.service;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-
 import br.com.cremepe.jeton.util.ArquivoValidator;
 
 import org.slf4j.Logger;
@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,7 +36,7 @@ public class FileStorageService {
     @Value("${ftp.locaweb.user}")
     private String ftpUser;
 
-    @Value("${ftp.locaweb.pass}")
+    // @Value("${ftp.locaweb.pass}")
     private String ftpPass;
 
     private final LogJetonService logJetonService;
@@ -45,6 +47,8 @@ public class FileStorageService {
         this.arquivoValidator = arquivoValidator;
     }
 
+    @Retryable(value = { JSchException.class,
+            RuntimeException.class }, maxAttempts = 3, backoff = @Backoff(delay = 2000, multiplier = 2))
     public String salvarArquivoNoFtp(MultipartFile file, Integer ano, Integer mes) {
         String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
         String extension = "";
@@ -55,6 +59,8 @@ public class FileStorageService {
         String fileName = UUID.randomUUID().toString() + extension;
 
         arquivoValidator.validarNomeArquivo(fileName);
+
+        log.info("Iniciando upload do arquivo {} para FTP (ano={}, mes={})", fileName, ano, mes);
 
         String resultado = executarOperacaoFtp((channelSftp) -> {
             String remoteDir = BASE_FTP_PATH + "/" + ano + "/" + mes;
@@ -70,7 +76,11 @@ public class FileStorageService {
         return resultado;
     }
 
+    @Retryable(value = { JSchException.class,
+            RuntimeException.class }, maxAttempts = 3, backoff = @Backoff(delay = 2000, multiplier = 2))
     public Resource carregarArquivo(String fileName, Integer ano, Integer mes) {
+        log.info("Iniciando download do arquivo {} do FTP (ano={}, mes={})", fileName, ano, mes);
+
         return executarOperacaoFtp((channelSftp) -> {
             String remoteFilePath = BASE_FTP_PATH + "/" + ano + "/" + mes + "/" + fileName;
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -80,7 +90,11 @@ public class FileStorageService {
         });
     }
 
+    @Retryable(value = { JSchException.class,
+            RuntimeException.class }, maxAttempts = 3, backoff = @Backoff(delay = 2000, multiplier = 2))
     public void excluirArquivo(String fileName, Integer ano, Integer mes) {
+        log.info("Iniciando exclusão do arquivo {} do FTP (ano={}, mes={})", fileName, ano, mes);
+
         executarOperacaoFtp((channelSftp) -> {
             String remoteFilePath = BASE_FTP_PATH + "/" + ano + "/" + mes + "/" + fileName;
             try {
@@ -88,7 +102,12 @@ public class FileStorageService {
                 log.info("Arquivo removido do FTP: {}", remoteFilePath);
                 logJetonService.logExcluirArquivo(fileName, ano, mes);
             } catch (Exception e) {
-                log.warn("Falha ao remover arquivo (pode já ter sido excluído): {}", e.getMessage());
+                if (e.getMessage().contains("No such file")) {
+                    log.warn("Arquivo já foi removido anteriormente: {}", remoteFilePath);
+                } else {
+                    log.error("Falha ao remover arquivo {}: {}", remoteFilePath, e.getMessage());
+                    throw new RuntimeException("Erro ao remover arquivo do FTP: " + e.getMessage(), e);
+                }
             }
             return null;
         });
@@ -113,6 +132,9 @@ public class FileStorageService {
             channelSftp.connect(15000);
 
             return operation.execute(channelSftp);
+        } catch (JSchException e) {
+            log.error("Erro de conexão SFTP (tentativa será repetida): {}", e.getMessage());
+            throw new RuntimeException(e);
         } catch (Exception e) {
             log.error("Erro na operação SFTP", e);
             throw new RuntimeException("Falha na operação FTP: " + e.getMessage(), e);
@@ -141,12 +163,14 @@ public class FileStorageService {
             try {
                 channelSftp.disconnect();
             } catch (Exception ignored) {
+                log.debug("Erro ao desconectar SFTP (ignorado)");
             }
         }
         if (session != null && session.isConnected()) {
             try {
                 session.disconnect();
             } catch (Exception ignored) {
+                log.debug("Erro ao desconectar sessão (ignorado)");
             }
         }
     }
