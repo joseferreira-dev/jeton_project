@@ -1,14 +1,43 @@
 /**
- * Ponto de entrada – inicialização global e delegação de eventos
+ * Ponto de entrada do módulo ES
  */
+
+import { initCsrf } from './csrf.js';
+import { setButtonLoading, formatDateBr } from './utils.js';
+import {
+    confirmarAcao,
+    prepararExclusao,
+    verDetalhes,
+    verComprovante
+} from './modals.js';
+import {
+    atualizarConselheiros,
+    atualizarRegrasPorData,
+    exibirGuiaRegra,
+    toggleCrm,
+    atualizarTurnoVisual,
+    inicializarFormularioAtividade,
+    resetarFiltrosAtividadeForm,
+    inicializarLoteCriacao,
+    inicializarLoteEdicao
+} from './form-helpers.js';
+import {
+    inicializarHomologacao,
+    inicializarBotaoRelatorio,
+    abrirModalAtividades,
+    abrirRelatorioJeton
+} from './jeton.js';
+import { atualizarBotaoBloqueio, confirmarBloqueio } from './bloqueio.js';
+import { inicializarRelatorioGraficos } from './report.js';
 
 document.addEventListener('DOMContentLoaded', function () {
 
     // ========== CSRF ==========
     const metaToken = document.querySelector('meta[name="_csrf"]');
     const metaHeader = document.querySelector('meta[name="_csrf_header"]');
-    if (metaToken) window.csrfToken = metaToken.content;
-    if (metaHeader) window.csrfHeader = metaHeader.content;
+    if (metaToken && metaHeader) {
+        initCsrf(metaToken.content, metaHeader.content);
+    }
 
     // ========== TOOLTIPS ==========
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
@@ -25,27 +54,22 @@ document.addEventListener('DOMContentLoaded', function () {
         const role = target.getAttribute('data-role');
 
         switch (role) {
-
             case 'ver-detalhes':
                 e.preventDefault();
                 verDetalhes(target);
                 break;
-
             case 'ver-comprovante':
                 e.preventDefault();
                 verComprovante(target);
                 break;
-
             case 'abrir-relatorio':
                 e.preventDefault();
                 abrirRelatorioJeton(target);
                 break;
-
             case 'abrir-atividades':
                 e.preventDefault();
                 abrirModalAtividades(target);
                 break;
-
             case 'confirmar-acao':
                 e.preventDefault();
                 const url = target.getAttribute('data-url');
@@ -54,7 +78,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 const cor = target.getAttribute('data-cor');
                 confirmarAcao(url, mensagem, isDesvalidar, cor);
                 break;
-
             case 'excluir':
                 e.preventDefault();
                 const baseUrl = target.getAttribute('data-url');
@@ -65,21 +88,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     prepararExclusao(baseUrl, id, nome, extra);
                 }
                 break;
-
             case 'resetar-filtros':
                 e.preventDefault();
-                if (typeof resetarFiltrosAtividadeForm === 'function') {
-                    resetarFiltrosAtividadeForm();
-                }
+                resetarFiltrosAtividadeForm();
                 break;
-
             case 'resetar-lote':
                 e.preventDefault();
                 if (typeof window._resetarLote === 'function') {
                     window._resetarLote();
                 }
                 break;
-
             default:
                 console.warn('data-role não reconhecido:', role);
         }
@@ -89,17 +107,32 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('change', function (e) {
         const target = e.target;
 
-        // data-role="atualizar-conselheiros" (geralmente no selectGestao)
         if (target.matches('[data-role="atualizar-conselheiros"]')) {
             const idParaSelecionar = document.getElementById('selectConselheiro')?.value || null;
             atualizarConselheiros(idParaSelecionar);
         }
 
-        // data-role="atualizar-regras" (geralmente no input dataAtividade)
         if (target.matches('[data-role="atualizar-regras"]')) {
             const idRegraAtual = document.getElementById('selectRegra')?.value || null;
             atualizarRegrasPorData(idRegraAtual);
             atualizarTurnoVisual();
+        }
+    });
+
+    // Handler para bloqueio
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-role="bloquear"]');
+        if (btn) {
+            e.preventDefault();
+            const result = confirmarBloqueio();
+        }
+    });
+
+    // Handler para toggle CRM
+    document.addEventListener('change', function (e) {
+        const target = e.target;
+        if (target.matches('[data-role="toggle-crm"]')) {
+            toggleCrm();
         }
     });
 
@@ -111,9 +144,8 @@ document.addEventListener('DOMContentLoaded', function () {
     atualizarBotaoBloqueio();
     inicializarFiltroRegrasConjuntas();
 
-    // Inicializa lote se estiver na página de criação
+    // Inicializa lote
     if (document.getElementById('formLote') && document.getElementById('selectGestao')) {
-        // Se existir um campo oculto com ID do comprovante, é edição
         if (document.querySelector('input[name="idComprovante"]')) {
             inicializarLoteEdicao();
         } else {
@@ -121,19 +153,19 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Toggle CRM no formulário de usuário
+    // Toggle CRM
     if (document.getElementById('checkConselheiro')) {
         toggleCrm();
     }
 
-    // Inicializa relatório Chart.js se existir
+    // Inicializa relatório Chart.js
     if (document.getElementById('chartConselheiros')) {
         inicializarRelatorioGraficos();
     }
 });
 
 // =========================================================================
-// FUNÇÕES AUXILIARES DE INIT (ainda não movidas)
+// FUNÇÕES AUXILIARES DE INIT (mantidas aqui)
 // =========================================================================
 
 function configurarModalConfirmacaoGlobal() {

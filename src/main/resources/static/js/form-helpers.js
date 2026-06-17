@@ -3,11 +3,136 @@
  * Inclui lógica para formulários de atividade (simples, lote criação, lote edição)
  */
 
-// =========================================================================
-// FORMULÁRIO DE ATIVIDADES (Individual)
-// =========================================================================
+export function atualizarConselheiros(idParaSelecionar) {
+    const gestaoId = document.getElementById('selectGestao')?.value;
+    const selectConselheiro = document.getElementById('selectConselheiro');
+    if (!selectConselheiro) return;
 
-function inicializarFormularioAtividade() {
+    if (!gestaoId) {
+        selectConselheiro.innerHTML = '<option value="">-- Aguardando Gestão --</option>';
+        selectConselheiro.disabled = true;
+        return;
+    }
+
+    fetch(`/api/conselheiros/conselheiros-por-gestao?gestaoId=${gestaoId}`)
+        .then(response => response.json())
+        .then(data => {
+            selectConselheiro.innerHTML = '<option value="">-- Selecione o Médico --</option>';
+            if (data && data.length > 0) {
+                data.forEach(c => {
+                    const selected = (idParaSelecionar && idParaSelecionar == c.id) ? 'selected' : '';
+                    selectConselheiro.innerHTML += `<option value="${c.id}" ${selected}>${c.nome}</option>`;
+                });
+                selectConselheiro.disabled = false;
+            } else {
+                selectConselheiro.innerHTML = '<option value="">-- Nenhum médico vinculado a esta gestão --</option>';
+                selectConselheiro.disabled = true;
+            }
+        })
+        .catch(err => console.error("Erro ao carregar conselheiros:", err));
+}
+
+export function atualizarRegrasPorData(idRegraParaSelecionar) {
+    const dataValue = document.getElementById('dataAtividade')?.value;
+    const selectRegra = document.getElementById('selectRegra');
+    if (!dataValue || !selectRegra) return;
+
+    selectRegra.innerHTML = '<option value="">Carregando regras da época...</option>';
+
+    fetch(`/api/regras/regras-por-data?data=${dataValue}`)
+        .then(response => response.json())
+        .then(data => {
+            const nomeResolucao = document.getElementById('nomeResolucaoVisual');
+            const idResolucaoHidden = document.getElementById('idResolucaoHidden');
+            const nomePortaria = document.getElementById('nomePortariaVisual');
+            const idPortariaHidden = document.getElementById('idPortariaHidden');
+
+            if (nomeResolucao) nomeResolucao.value = data.nomeResolucao || "Nenhuma encontrada";
+            if (idResolucaoHidden) idResolucaoHidden.value = data.idResolucao || "";
+            if (nomePortaria) nomePortaria.value = data.nomePortaria || "Nenhuma encontrada";
+            if (idPortariaHidden) idPortariaHidden.value = data.idPortaria || "";
+
+            selectRegra.innerHTML = '<option value="">-- Selecione a Regra Enquadrada --</option>';
+            if (data.regras && data.regras.length > 0) {
+                window.regrasCache = data.regras;
+                data.regras.forEach(r => {
+                    const selected = (idRegraParaSelecionar && idRegraParaSelecionar == r.id) ? 'selected' : '';
+                    selectRegra.innerHTML += `<option value="${r.id}" ${selected}>${r.nome} (${r.pontos} pts)</option>`;
+                });
+                selectRegra.disabled = false;
+                if (idRegraParaSelecionar) {
+                    setTimeout(() => exibirGuiaRegra(), 100);
+                }
+            } else {
+                selectRegra.innerHTML = '<option value="">Nenhuma regra cadastrada para as normativas deste período</option>';
+                selectRegra.disabled = true;
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao buscar regras por data:', error);
+            selectRegra.innerHTML = '<option value="">Erro ao carregar regras</option>';
+        });
+}
+
+export function exibirGuiaRegra() {
+    const id = document.getElementById('selectRegra')?.value;
+    const box = document.getElementById('boxGuia');
+    if (!box) return;
+
+    if (id && window.regrasCache) {
+        const regra = window.regrasCache.find(r => r.id == id);
+        if (regra) {
+            const descricaoSpan = document.getElementById('guiaDescricao');
+            const pontosSpan = document.getElementById('guiaPontos');
+            if (descricaoSpan) descricaoSpan.innerText = regra.descricao || '';
+            if (pontosSpan) pontosSpan.innerText = regra.pontos;
+            box.style.display = 'block';
+            return;
+        }
+    }
+    box.style.display = 'none';
+}
+
+export function atualizarTurnoVisual() {
+    const inputData = document.getElementById('dataAtividade');
+    const turnoVisual = document.getElementById('turnoVisual');
+    if (!inputData || !turnoVisual) return;
+
+    const dataHora = inputData.value;
+    if (dataHora) {
+        const hora = new Date(dataHora).getHours();
+        let turnoTexto = "Automático";
+        let cor = "initial";
+        if (hora >= 6 && hora < 12) { turnoTexto = "Manhã (M)"; cor = "#0d6efd"; }
+        else if (hora >= 12 && hora < 18) { turnoTexto = "Tarde (T)"; cor = "#fd7e14"; }
+        else { turnoTexto = "Noite (N)"; cor = "#6c757d"; }
+        turnoVisual.value = turnoTexto;
+        turnoVisual.style.color = cor;
+        turnoVisual.style.fontWeight = "bold";
+    } else {
+        turnoVisual.value = "Automático (via Horário)";
+        turnoVisual.style.color = "initial";
+        turnoVisual.style.fontWeight = "normal";
+    }
+}
+
+export function toggleCrm() {
+    const checkbox = document.getElementById('checkConselheiro');
+    const divCrm = document.getElementById('divCrm');
+    const inputCrm = document.getElementById('inputCrm');
+    if (!checkbox || !divCrm || !inputCrm) return;
+
+    if (checkbox.checked) {
+        divCrm.style.display = 'block';
+        inputCrm.required = true;
+    } else {
+        divCrm.style.display = 'none';
+        inputCrm.required = false;
+        inputCrm.value = '';
+    }
+}
+
+export function inicializarFormularioAtividade() {
     const selectGestao = document.getElementById('selectGestao');
     const selectConselheiro = document.getElementById('selectConselheiro');
     const dataAtividade = document.getElementById('dataAtividade');
@@ -31,7 +156,7 @@ function inicializarFormularioAtividade() {
     }
 }
 
-function resetarFiltrosAtividadeForm() {
+export function resetarFiltrosAtividadeForm() {
     const nomeResolucao = document.getElementById('nomeResolucaoVisual');
     const idResolucaoHidden = document.getElementById('idResolucaoHidden');
     const nomePortaria = document.getElementById('nomePortariaVisual');
@@ -51,11 +176,7 @@ function resetarFiltrosAtividadeForm() {
     if (boxGuia) boxGuia.style.display = 'none';
 }
 
-// =========================================================================
-// LOTE DE ATIVIDADES – CRIAÇÃO
-// =========================================================================
-
-function inicializarLoteCriacao() {
+export function inicializarLoteCriacao() {
     const selectGestao = document.getElementById('selectGestao');
     const selectConselheiros = document.getElementById('selectConselheiros');
     const listaSelecionadosDiv = document.getElementById('listaSelecionados');
@@ -64,7 +185,6 @@ function inicializarLoteCriacao() {
 
     if (!selectGestao) return;
 
-    // Atualiza lista visual de selecionados
     function atualizarListaSelecionados() {
         const selectedOptions = Array.from(selectConselheiros.selectedOptions);
         if (selectedOptions.length === 0) {
@@ -79,7 +199,6 @@ function inicializarLoteCriacao() {
         listaSelecionadosDiv.innerHTML = html;
     }
 
-    // Carrega conselheiros por gestão
     function carregarConselheiros() {
         const gestaoId = selectGestao.value;
         if (!gestaoId) {
@@ -109,7 +228,6 @@ function inicializarLoteCriacao() {
             .catch(err => console.error("Erro ao carregar conselheiros:", err));
     }
 
-    // Carrega regras por data
     function carregarRegrasPorData() {
         const data = dataAtividade.value;
         if (!data) {
@@ -185,7 +303,6 @@ function inicializarLoteCriacao() {
         document.getElementById('boxGuia').style.display = 'none';
     }
 
-    // Registra eventos
     selectGestao.addEventListener('change', carregarConselheiros);
     selectConselheiros.addEventListener('change', atualizarListaSelecionados);
     dataAtividade.addEventListener('change', () => {
@@ -194,22 +311,16 @@ function inicializarLoteCriacao() {
     });
     selectRegra.addEventListener('change', exibirGuiaRegra);
 
-    // Carrega inicial se já houver valores
     if (selectGestao.value) carregarConselheiros();
     if (dataAtividade.value) {
         carregarRegrasPorData();
         atualizarTurno();
     }
 
-    // Expõe reset para o botão (data-role="resetar-lote")
     window._resetarLote = resetarFiltros;
 }
 
-// =========================================================================
-// LOTE DE ATIVIDADES – EDIÇÃO
-// =========================================================================
-
-function inicializarLoteEdicao() {
+export function inicializarLoteEdicao() {
     const config = window.loteConfig || { idsAtuais: [], idRegraAtual: null };
     const idsAtuaisLote = config.idsAtuais || [];
     const idRegraAtual = config.idRegraAtual || null;
@@ -290,7 +401,6 @@ function inicializarLoteEdicao() {
         }
     });
 
-    // Inicializa
     if (selectGestao.value) carregarConselheiros();
     if (dataAtividade.value) {
         if (typeof window.atualizarRegrasPorData === 'function') {
@@ -303,146 +413,3 @@ function inicializarLoteEdicao() {
 
     window._resetarLote = resetarFiltros;
 }
-
-// =========================================================================
-// FUNÇÕES GERAIS DE FORMULÁRIO
-// =========================================================================
-
-function atualizarConselheiros(idParaSelecionar) {
-    const gestaoId = document.getElementById('selectGestao')?.value;
-    const selectConselheiro = document.getElementById('selectConselheiro');
-    if (!selectConselheiro) return;
-
-    if (!gestaoId) {
-        selectConselheiro.innerHTML = '<option value="">-- Aguardando Gestão --</option>';
-        selectConselheiro.disabled = true;
-        return;
-    }
-
-    fetch(`/api/conselheiros/conselheiros-por-gestao?gestaoId=${gestaoId}`)
-        .then(response => response.json())
-        .then(data => {
-            selectConselheiro.innerHTML = '<option value="">-- Selecione o Médico --</option>';
-            if (data && data.length > 0) {
-                data.forEach(c => {
-                    const selected = (idParaSelecionar && idParaSelecionar == c.id) ? 'selected' : '';
-                    selectConselheiro.innerHTML += `<option value="${c.id}" ${selected}>${c.nome}</option>`;
-                });
-                selectConselheiro.disabled = false;
-            } else {
-                selectConselheiro.innerHTML = '<option value="">-- Nenhum médico vinculado a esta gestão --</option>';
-                selectConselheiro.disabled = true;
-            }
-        })
-        .catch(err => console.error("Erro ao carregar conselheiros:", err));
-}
-
-function atualizarRegrasPorData(idRegraParaSelecionar) {
-    const dataValue = document.getElementById('dataAtividade')?.value;
-    const selectRegra = document.getElementById('selectRegra');
-    if (!dataValue || !selectRegra) return;
-
-    selectRegra.innerHTML = '<option value="">Carregando regras da época...</option>';
-
-    fetch(`/api/regras/regras-por-data?data=${dataValue}`)
-        .then(response => response.json())
-        .then(data => {
-            const nomeResolucao = document.getElementById('nomeResolucaoVisual');
-            const idResolucaoHidden = document.getElementById('idResolucaoHidden');
-            const nomePortaria = document.getElementById('nomePortariaVisual');
-            const idPortariaHidden = document.getElementById('idPortariaHidden');
-
-            if (nomeResolucao) nomeResolucao.value = data.nomeResolucao || "Nenhuma encontrada";
-            if (idResolucaoHidden) idResolucaoHidden.value = data.idResolucao || "";
-            if (nomePortaria) nomePortaria.value = data.nomePortaria || "Nenhuma encontrada";
-            if (idPortariaHidden) idPortariaHidden.value = data.idPortaria || "";
-
-            selectRegra.innerHTML = '<option value="">-- Selecione a Regra Enquadrada --</option>';
-            if (data.regras && data.regras.length > 0) {
-                window.regrasCache = data.regras;
-                data.regras.forEach(r => {
-                    const selected = (idRegraParaSelecionar && idRegraParaSelecionar == r.id) ? 'selected' : '';
-                    selectRegra.innerHTML += `<option value="${r.id}" ${selected}>${r.nome} (${r.pontos} pts)</option>`;
-                });
-                selectRegra.disabled = false;
-                if (idRegraParaSelecionar) {
-                    setTimeout(exibirGuiaRegra, 100);
-                }
-            } else {
-                selectRegra.innerHTML = '<option value="">Nenhuma regra cadastrada para as normativas deste período</option>';
-                selectRegra.disabled = true;
-            }
-        })
-        .catch(error => {
-            console.error('Erro ao buscar regras por data:', error);
-            selectRegra.innerHTML = '<option value="">Erro ao carregar regras</option>';
-        });
-}
-
-function exibirGuiaRegra() {
-    const id = document.getElementById('selectRegra')?.value;
-    const box = document.getElementById('boxGuia');
-    if (!box) return;
-
-    if (id && window.regrasCache) {
-        const regra = window.regrasCache.find(r => r.id == id);
-        if (regra) {
-            const descricaoSpan = document.getElementById('guiaDescricao');
-            const pontosSpan = document.getElementById('guiaPontos');
-            if (descricaoSpan) descricaoSpan.innerText = regra.descricao || '';
-            if (pontosSpan) pontosSpan.innerText = regra.pontos;
-            box.style.display = 'block';
-            return;
-        }
-    }
-    box.style.display = 'none';
-}
-
-function atualizarTurnoVisual() {
-    const inputData = document.getElementById('dataAtividade');
-    const turnoVisual = document.getElementById('turnoVisual');
-    if (!inputData || !turnoVisual) return;
-
-    const dataHora = inputData.value;
-    if (dataHora) {
-        const hora = new Date(dataHora).getHours();
-        let turnoTexto = "Automático";
-        let cor = "initial";
-        if (hora >= 6 && hora < 12) { turnoTexto = "Manhã (M)"; cor = "#0d6efd"; }
-        else if (hora >= 12 && hora < 18) { turnoTexto = "Tarde (T)"; cor = "#fd7e14"; }
-        else { turnoTexto = "Noite (N)"; cor = "#6c757d"; }
-        turnoVisual.value = turnoTexto;
-        turnoVisual.style.color = cor;
-        turnoVisual.style.fontWeight = "bold";
-    } else {
-        turnoVisual.value = "Automático (via Horário)";
-        turnoVisual.style.color = "initial";
-        turnoVisual.style.fontWeight = "normal";
-    }
-}
-
-function toggleCrm() {
-    const checkbox = document.getElementById('checkConselheiro');
-    const divCrm = document.getElementById('divCrm');
-    const inputCrm = document.getElementById('inputCrm');
-    if (!checkbox || !divCrm || !inputCrm) return;
-
-    if (checkbox.checked) {
-        divCrm.style.display = 'block';
-        inputCrm.required = true;
-    } else {
-        divCrm.style.display = 'none';
-        inputCrm.required = false;
-        inputCrm.value = '';
-    }
-}
-
-window.atualizarConselheiros = atualizarConselheiros;
-window.atualizarRegrasPorData = atualizarRegrasPorData;
-window.exibirGuiaRegra = exibirGuiaRegra;
-window.toggleCrm = toggleCrm;
-window.atualizarTurnoVisual = atualizarTurnoVisual;
-window.inicializarFormularioAtividade = inicializarFormularioAtividade;
-window.resetarFiltrosAtividadeForm = resetarFiltrosAtividadeForm;
-window.inicializarLoteCriacao = inicializarLoteCriacao;
-window.inicializarLoteEdicao = inicializarLoteEdicao;

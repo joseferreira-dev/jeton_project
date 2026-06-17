@@ -104,8 +104,10 @@
                                     </a>
 
                                     <!-- Excluir -->
-                                    <a href="#" class="btn btn-sm btn-outline-danger"
-                                        th:onclick="'confirmarAcao(\'/regras-conjuntas/excluir/' + ${rc.idRegraConjunta} + '\', \'Deseja EXCLUIR esta regra conjunta? Apenas possível se não houver regras vinculadas.\', false, \'btn-danger\')'">
+                                    <a href="#" class="btn btn-sm btn-outline-danger" data-role="confirmar-acao"
+                                        th:data-url="'/regras-conjuntas/excluir/' + ${rc.idRegraConjunta}"
+                                        data-mensagem="Deseja EXCLUIR esta regra conjunta? Apenas possível se não houver regras vinculadas."
+                                        data-cor="btn-danger">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </a>
                                 </td>

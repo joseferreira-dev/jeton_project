@@ -162,7 +162,7 @@
                     <form th:action="@{/bloqueio/alternar}" method="post" style="display: inline;" id="formBloqueio"
                         th:if="${session.usuarioLogado != null and (session.usuarioLogado.hasPermissao('S') or session.usuarioLogado.hasPermissao('B'))}">
                         <button type="submit" id="btnBloqueio" class="btn btn-sm btn-outline-light"
-                            onclick="return confirmarBloqueio()">
+                            data-role="bloquear">
                             <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
                         </button>
                     </form>
@@ -237,14 +237,7 @@
     </div>
 
     <script th:src="@{/webjars/bootstrap/5.3.2/js/bootstrap.bundle.min.js}"></script>
-    <script th:src="@{/js/csrf.js}"></script>
-    <script th:src="@{/js/utils.js}"></script>
-    <script th:src="@{/js/modals.js}"></script>
-    <script th:src="@{/js/form-helpers.js}"></script>
-    <script th:src="@{/js/jeton.js}"></script>
-    <script th:src="@{/js/bloqueio.js}"></script>
-    <script th:src="@{/js/report.js}"></script>
-    <script th:src="@{/js/init.js}"></script>
+    <script type="module" th:src="@{/js/main.js}"></script>
 </body>
 
 </html>

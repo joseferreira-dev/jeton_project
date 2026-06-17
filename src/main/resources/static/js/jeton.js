@@ -2,15 +2,12 @@
  * Funcionalidades específicas do módulo Jeton
  */
 
-// =========================================================================
-// PROCESSAMENTO DE FOLHA
-// =========================================================================
+import { setButtonLoading } from './utils.js';
 
-function inicializarHomologacao() {
+export function inicializarHomologacao() {
     const form = document.getElementById('formProcessamento');
     if (!form) return;
 
-    // Botão "Calcular"
     const btnCalcular = form.querySelector('button[type="submit"]:not([formaction])');
     if (btnCalcular) {
         form.addEventListener('submit', function (e) {
@@ -21,7 +18,6 @@ function inicializarHomologacao() {
         });
     }
 
-    // Botão "Homologar"
     const btnHomologar = document.getElementById('btnHomologar');
     if (!btnHomologar) return;
 
@@ -58,10 +54,7 @@ function inicializarHomologacao() {
     }
 }
 
-/**
- * Botão "Baixar Detalhamento"
- */
-function inicializarBotaoRelatorio() {
+export function inicializarBotaoRelatorio() {
     const btnBaixar = document.getElementById('btnBaixarRelatorio');
     if (!btnBaixar) return;
 
@@ -94,7 +87,6 @@ function inicializarBotaoRelatorio() {
     btnBaixar.addEventListener('click', handler);
     window._baixarHandler = handler;
 
-    // Botões Excel/PDF
     const btnExcel = document.getElementById('btnExcelRelatorio');
     const btnPdf = document.getElementById('btnPdfRelatorio');
 
@@ -138,11 +130,7 @@ function inicializarBotaoRelatorio() {
     }
 }
 
-// =========================================================================
-// MODAIS DE COMPOSIÇÃO DO JETON
-// =========================================================================
-
-function abrirModalAtividades(btn) {
+export function abrirModalAtividades(btn) {
     const idPessoa = btn.getAttribute('data-pessoa');
     const idGestao = btn.getAttribute('data-gestao');
     const mes = btn.getAttribute('data-mes');
@@ -179,7 +167,7 @@ function abrirModalAtividades(btn) {
         });
 }
 
-function abrirRelatorioJeton(btn) {
+export function abrirRelatorioJeton(btn) {
     const idPessoa = btn.getAttribute('data-pessoa');
     const idGestao = btn.getAttribute('data-gestao');
     const mes = btn.getAttribute('data-mes');
@@ -230,8 +218,3 @@ function abrirRelatorioJeton(btn) {
             }
         });
 }
-
-window.inicializarHomologacao = inicializarHomologacao;
-window.inicializarBotaoRelatorio = inicializarBotaoRelatorio;
-window.abrirModalAtividades = abrirModalAtividades;
-window.abrirRelatorioJeton = abrirRelatorioJeton;

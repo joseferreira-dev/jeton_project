@@ -142,9 +142,9 @@
                                 <td class="text-center no-print">
                                     <div class="btn-group gap-1">
                                         <button type="button" class="btn btn-sm btn-outline-primary"
-                                            th:data-pessoa="${j.idConselheiro}" th:data-gestao="${j.idGestao}"
-                                            th:data-mes="${j.mes}" th:data-ano="${j.ano}"
-                                            th:data-nome="${j.nomeConselheiro}" onclick="abrirRelatorioJeton(this)">
+                                            data-role="abrir-relatorio" th:data-pessoa="${j.conselheiro.idPessoa}"
+                                            th:data-gestao="${j.gestao.idGestao}" th:data-mes="${j.mes}"
+                                            th:data-ano="${j.ano}" th:data-nome="${j.conselheiro.pessoa.nome}">
                                             <i class="fa-solid fa-magnifying-glass"></i> Origem
                                         </button>
                                         <th:block th:if="${j.situacao == 'E'}">

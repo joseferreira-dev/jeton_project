@@ -2,12 +2,7 @@
  * Módulo de relatórios – Chart.js
  */
 
-function inicializarRelatorioGraficos() {
-    // A função só deve rodar se os dados existirem (passados pelo Thymeleaf)
-    // Os dados são injetados via th:inline="javascript" no template, mas
-    // podemos acessá-los via variáveis globais ou buscar do DOM.
-
-    // Verifica se os dados foram passados como variável global pelo template
+export function inicializarRelatorioGraficos() {
     if (typeof window._dadosRelatorio === 'undefined') {
         console.warn('Dados do relatório não encontrados');
         return;
@@ -16,7 +11,6 @@ function inicializarRelatorioGraficos() {
     const dadosRelatorio = window._dadosRelatorio;
     if (!dadosRelatorio || dadosRelatorio.length === 0) return;
 
-    // Função para extrair primeiro e segundo nome
     function obterPrimeiroESegundoNome(nomeCompleto) {
         if (!nomeCompleto) return "";
         const partes = nomeCompleto.trim().split(/\s+/);
@@ -26,13 +20,11 @@ function inicializarRelatorioGraficos() {
     const labelsMedicos = dadosRelatorio.map(item => obterPrimeiroESegundoNome(item.conselheiro));
     const totaisAtividades = dadosRelatorio.map(item => Object.values(item.regras).reduce((a, b) => a + b, 0));
 
-    // Colunas de regras
     const colunasRegras = Object.keys(dadosRelatorio[0].regras);
     const totaisPorRegra = colunasRegras.map(col =>
         dadosRelatorio.reduce((acc, item) => acc + (item.regras[col] || 0), 0)
     );
 
-    // Gráfico 1: Conselheiros (Barra)
     new Chart(document.getElementById('chartConselheiros').getContext('2d'), {
         type: 'bar',
         data: {
@@ -63,7 +55,6 @@ function inicializarRelatorioGraficos() {
         }
     });
 
-    // Gráfico 2: Regras (Pizza)
     new Chart(document.getElementById('chartRegras').getContext('2d'), {
         type: 'pie',
         data: {
@@ -91,5 +82,3 @@ function inicializarRelatorioGraficos() {
         }
     });
 }
-
-window.inicializarRelatorioGraficos = inicializarRelatorioGraficos;

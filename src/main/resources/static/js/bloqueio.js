@@ -2,7 +2,7 @@
  * Bloqueio do sistema
  */
 
-function atualizarBotaoBloqueio() {
+export function atualizarBotaoBloqueio() {
     const btn = document.getElementById('btnBloqueio');
     if (!btn) return;
 
@@ -27,7 +27,7 @@ function atualizarBotaoBloqueio() {
         });
 }
 
-function confirmarBloqueio() {
+export function confirmarBloqueio() {
     const btn = document.getElementById('btnBloqueio');
     const isBloqueando = btn.innerHTML.includes('Bloquear');
     const modalElement = document.getElementById('modalConfirmacaoBloqueio');
@@ -65,6 +65,3 @@ function confirmarBloqueio() {
     modal.show();
     return false;
 }
-
-window.atualizarBotaoBloqueio = atualizarBotaoBloqueio;
-window.confirmarBloqueio = confirmarBloqueio;

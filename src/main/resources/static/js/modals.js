@@ -2,19 +2,9 @@
  * Modais e confirmações
  */
 
-// =========================================================================
-// FUNÇÕES DE CONFIRMAÇÃO E EXCLUSÃO (genéricas)
-// =========================================================================
+import { submitPost } from './csrf.js';
 
-/**
- * Exibe modal de confirmação para ações (validar, desvalidar, excluir, etc.)
- * Agora usa POST com CSRF
- * @param {string} url
- * @param {string} mensagem
- * @param {boolean} isDesvalidar
- * @param {string} corPersonalizada
- */
-function confirmarAcao(url, mensagem, isDesvalidar, corPersonalizada) {
+export function confirmarAcao(url, mensagem, isDesvalidar, corPersonalizada) {
     const modalElement = document.getElementById('modalConfirmacao');
     if (!modalElement) {
         if (confirm(mensagem)) {
@@ -61,14 +51,7 @@ function confirmarAcao(url, mensagem, isDesvalidar, corPersonalizada) {
     modal.show();
 }
 
-/**
- * Prepara a exclusão de um registro (genérico)
- * @param {string} baseUrl
- * @param {string|number} id
- * @param {string} nome
- * @param {string} campoExtra
- */
-function prepararExclusao(baseUrl, id, nome, campoExtra) {
+export function prepararExclusao(baseUrl, id, nome, campoExtra) {
     const modalElement = document.getElementById('modalExclusao');
     if (!modalElement) {
         if (confirm(`Deseja excluir permanentemente ${nome}?`)) {
@@ -98,15 +81,7 @@ function prepararExclusao(baseUrl, id, nome, campoExtra) {
     modal.show();
 }
 
-// =========================================================================
-// MODAIS DE DETALHES E COMPROVANTES
-// =========================================================================
-
-/**
- * Exibe modal com detalhes de uma atividade
- * @param {HTMLElement} btn
- */
-function verDetalhes(btn) {
+export function verDetalhes(btn) {
     const id = btn.getAttribute('data-id');
     const turnoVal = btn.getAttribute('data-turno');
     const regraNome = btn.getAttribute('data-regranome');
@@ -137,11 +112,7 @@ function verDetalhes(btn) {
     }
 }
 
-/**
- * Carrega e exibe um comprovante em modal
- * @param {HTMLElement} btn
- */
-async function verComprovante(btn) {
+export async function verComprovante(btn) {
     const id = btn.getAttribute('data-id');
     const nome = btn.getAttribute('data-nome');
 
@@ -203,8 +174,3 @@ async function verComprovante(btn) {
         `;
     }
 }
-
-window.confirmarAcao = confirmarAcao;
-window.prepararExclusao = prepararExclusao;
-window.verDetalhes = verDetalhes;
-window.verComprovante = verComprovante;
