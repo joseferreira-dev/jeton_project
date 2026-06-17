@@ -22,7 +22,7 @@ export const API = {
     JETONS_RELATORIO_CONSELHEIRO: (pessoa, gestao, mes, ano) =>
         `/api/jetons/relatorio-conselheiro/${pessoa}/gestao/${gestao}/mes/${mes}/ano/${ano}`,
     JETONS_RELATORIO_EXPORT: (gestao, mes, ano, formato) =>
-        `/jetons/relatorio?idGestao=${gestao}&mes=${mes}&ano=${ano}&formato=${formato}`,
+        `/jeton/relatorio?idGestao=${gestao}&mes=${mes}&ano=${ano}&formato=${formato}`,
 
     // Comprovantes
     COMPROVANTE_DOWNLOAD: (id) => `/comprovantes/download/${id}`,

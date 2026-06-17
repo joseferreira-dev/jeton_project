@@ -17,7 +17,8 @@
                 <i class="fa-solid fa-gears me-2"></i> Executar Fecho de Folha Mensal
             </div>
             <div class="card-body p-4">
-                <form th:action="@{/jeton/processar}" method="post" id="formProcessamento">
+                <form th:action="@{/jeton/processar}" method="post" id="formProcessamento" data-loading="true"
+                    data-loading-message="Calculando a folha...">
                     <div class="row g-3 align-items-end">
                         <div class="col-md-5">
                             <label class="form-label fw-bold">Gestão Ativa</label>

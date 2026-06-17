@@ -17,7 +17,8 @@
 
         <div class="card shadow-sm">
             <form th:action="@{/gestao-conselheiros/vincular/salvar}" method="post">
-                <input type="hidden" name="idGestao" th:value="${gestao.idGestao}">
+                <input type="hidden" name="idGestao" th:value="${gestao.idGestao}" data-loading="true"
+                    data-loading-message="Atualizando vínculos...">>
 
                 <div class="card-body">
                     <div class="table-responsive">

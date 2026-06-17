@@ -4,21 +4,9 @@
 
 import { API } from './config.js';
 
-import { setButtonLoading } from './utils.js';
-
 export function inicializarHomologacao() {
     const form = document.getElementById('formProcessamento');
     if (!form) return;
-
-    const btnCalcular = form.querySelector('button[type="submit"]:not([formaction])');
-    if (btnCalcular) {
-        form.addEventListener('submit', function (e) {
-            const clickedButton = document.activeElement;
-            if (clickedButton && clickedButton.type === 'submit' && clickedButton === btnCalcular) {
-                setButtonLoading(btnCalcular, true);
-            }
-        });
-    }
 
     const btnHomologar = document.getElementById('btnHomologar');
     if (!btnHomologar) return;
@@ -48,7 +36,6 @@ export function inicializarHomologacao() {
             const modal = bootstrap.Modal.getInstance(modalEl);
             if (modal) modal.hide();
 
-            setButtonLoading(btnHomologar, true);
             form.action = '/jeton/fechar-definitivo';
             form.method = 'post';
             form.submit();
@@ -122,7 +109,7 @@ export function inicializarBotaoRelatorio() {
             const mes = selectMes ? selectMes.value : '';
             const ano = inputAno ? inputAno.value : '';
             if (idGestao && mes && ano) {
-                window.location.href = API.JETONS_RELATORIO_EXPORT(idGestao, mes, ano, 'excel');
+                window.location.href = API.JETONS_RELATORIO_EXPORT(idGestao, mes, ano, 'pdf');
             }
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormatosRelatorio'));
             if (modal) modal.hide();

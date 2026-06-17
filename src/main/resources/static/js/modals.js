@@ -4,6 +4,7 @@
 
 import { submitPost } from './csrf.js';
 import { API } from './config.js';
+import { showLoading, hideLoading } from './loading-overlay.js';
 
 export function confirmarAcao(url, mensagem, isDesvalidar, corPersonalizada) {
     const modalElement = document.getElementById('modalConfirmacao');
@@ -52,6 +53,11 @@ export function confirmarAcao(url, mensagem, isDesvalidar, corPersonalizada) {
     }
 
     modal.show();
+    linkConfirmacao.onclick = function (e) {
+        e.preventDefault();
+        showLoading('Confirmando ação...');
+        submitPost(url);
+    };
 }
 
 export function prepararExclusao(baseUrl, id, nome, campoExtra) {
@@ -82,6 +88,11 @@ export function prepararExclusao(baseUrl, id, nome, campoExtra) {
 
     const modal = new bootstrap.Modal(modalElement);
     modal.show();
+    btnConfirmar.onclick = function (e) {
+        e.preventDefault();
+        showLoading('Excluindo registro...');
+        submitPost(baseUrl + id);
+    };
 }
 
 export function verDetalhes(btn) {

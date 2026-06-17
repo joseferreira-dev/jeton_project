@@ -3,10 +3,7 @@
  */
 
 import { initCsrf } from './csrf.js';
-import {
-    setButtonLoading,
-    formatDateBr
-} from './utils.js';
+import { formatDateBr } from './utils.js';
 import {
     confirmarAcao,
     prepararExclusao,
@@ -43,6 +40,11 @@ import {
     showInfo, initFlashToasts
 } from './toast.js';
 import { API } from './config.js';
+import {
+    showLoading,
+    hideLoading,
+    fetchWithLoading
+} from './loading-overlay.js';
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -139,6 +141,19 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (form.hasAttribute('data-loading')) {
+            const message = form.getAttribute('data-loading-message') || 'Processando...';
+            showLoading(message);
+            setTimeout(() => {
+                if (document.body.contains(form) && document.getElementById('globalLoadingOverlay')) {
+                    hideLoading();
+                }
+            }, 3000);
+        }
+    });
+
     // ========== DELEGAÇÃO PARA MUDANÇA EM SELECTS (onchange) ==========
     document.addEventListener('change', function (e) {
         const target = e.target;
@@ -176,7 +191,6 @@ document.addEventListener('DOMContentLoaded', function () {
     inicializarHomologacao();
     inicializarBotaoRelatorio();
     inicializarFormularioAtividade();
-    inicializarSpinnerFormularioAtividade();
     atualizarBotaoBloqueio();
     inicializarFiltroRegrasConjuntas();
     initFlashToasts();
@@ -260,17 +274,6 @@ function configurarModalConfirmacaoGlobal() {
     });
 }
 
-function inicializarSpinnerFormularioAtividade() {
-    const form = document.getElementById('formAtividade');
-    if (!form) return;
-    const btnSubmit = form.querySelector('button[type="submit"]');
-    if (btnSubmit) {
-        form.addEventListener('submit', function () {
-            setButtonLoading(btnSubmit, true);
-        });
-    }
-}
-
 function inicializarFiltroRegrasConjuntas() {
     const selectResolucao = document.getElementById('selectResolucaoFiltro');
     const selectRegras = document.getElementById('selectRegras');
@@ -330,3 +333,7 @@ function inicializarFiltroRegrasConjuntas() {
     }
     carregarRegras(null, idsIniciais);
 }
+
+window.showLoading = showLoading;
+window.hideLoading = hideLoading;
+window.fetchWithLoading = fetchWithLoading;

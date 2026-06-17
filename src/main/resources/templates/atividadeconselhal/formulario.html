@@ -18,7 +18,8 @@
         <div class="card shadow-sm">
             <div class="card-body p-4">
                 <form th:action="@{/atividades/salvar}" th:object="${atividade}" method="post"
-                    enctype="multipart/form-data" id="formAtividade">
+                    enctype="multipart/form-data" id="formAtividade" data-loading="true"
+                    data-loading-message="Salvando atividade...">
                     <input type="hidden" th:field="*{idAtividade}">
                     <input type="hidden" th:field="*{dataHoraRegistro}">
                     <input type="hidden" th:field="*{inSituacao}">
@@ -30,7 +31,8 @@
                                 data-role="atualizar-conselheiros" required>
                                 <option value="">-- Selecione a Gestão Primeiro --</option>
                                 <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}"
-                                    th:text="${g.nomeGestao}"></option>
+                                    th:text="${g.nomeGestao}">
+                                </option>
                             </select>
                         </div>
 

@@ -17,7 +17,8 @@
 
         <div class="card shadow-sm">
             <div class="card-body p-4">
-                <form th:action="@{/atividades/lote/salvar}" method="post" enctype="multipart/form-data" id="formLote">
+                <form th:action="@{/atividades/lote/salvar}" method="post" enctype="multipart/form-data" id="formLote"
+                    data-loading="true" data-loading-message="Criando atividades em lote...">
                     <div class="row g-4">
                         <!-- Gestão -->
                         <div class="col-md-6">
@@ -26,7 +27,8 @@
                                 data-role="atualizar-conselheiros" required>
                                 <option value="">-- Selecione a Gestão Primeiro --</option>
                                 <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}"
-                                    th:text="${g.nomeGestao}"></option>
+                                    th:text="${g.nomeGestao}">
+                                </option>
                             </select>
                         </div>
 
