@@ -2,6 +2,8 @@
  * Funcionalidades específicas do módulo Jeton
  */
 
+import { API } from './config.js';
+
 import { setButtonLoading } from './utils.js';
 
 export function inicializarHomologacao() {
@@ -100,7 +102,7 @@ export function inicializarBotaoRelatorio() {
             const mes = selectMes ? selectMes.value : '';
             const ano = inputAno ? inputAno.value : '';
             if (idGestao && mes && ano) {
-                window.location.href = `/jetons/relatorio?idGestao=${idGestao}&mes=${mes}&ano=${ano}&formato=excel`;
+                window.location.href = API.JETONS_RELATORIO_EXPORT(idGestao, mes, ano, 'excel');
             }
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormatosRelatorio'));
             if (modal) modal.hide();
@@ -120,7 +122,7 @@ export function inicializarBotaoRelatorio() {
             const mes = selectMes ? selectMes.value : '';
             const ano = inputAno ? inputAno.value : '';
             if (idGestao && mes && ano) {
-                window.location.href = `/jetons/relatorio?idGestao=${idGestao}&mes=${mes}&ano=${ano}&formato=pdf`;
+                window.location.href = API.JETONS_RELATORIO_EXPORT(idGestao, mes, ano, 'excel');
             }
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalFormatosRelatorio'));
             if (modal) modal.hide();
@@ -144,7 +146,7 @@ export function abrirModalAtividades(btn) {
     const modal = new bootstrap.Modal(document.getElementById('modalAtividades'));
     modal.show();
 
-    fetch(`/api/jetons/atividades/conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
+    fetch(API.JETONS_ATIVIDADES(idPessoa, idGestao, mes, ano))
         .then(response => response.json())
         .then(dados => {
             tbody.innerHTML = '';
@@ -187,7 +189,7 @@ export function abrirRelatorioJeton(btn) {
     const modal = new bootstrap.Modal(document.getElementById('modalRelatorio'));
     modal.show();
 
-    fetch(`/api/jetons/relatorio-conselheiro/${idPessoa}/gestao/${idGestao}/mes/${mes}/ano/${ano}`)
+    fetch(API.JETONS_RELATORIO_CONSELHEIRO(idPessoa, idGestao, mes, ano))
         .then(response => response.json())
         .then(dados => {
             document.getElementById('saldoExistente').innerText = dados.saldoExistente || 0;

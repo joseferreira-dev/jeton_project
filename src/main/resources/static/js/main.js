@@ -29,6 +29,7 @@ import {
 } from './jeton.js';
 import { atualizarBotaoBloqueio, confirmarBloqueio } from './bloqueio.js';
 import { inicializarRelatorioGraficos } from './report.js';
+import { API } from './config.js';
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -247,7 +248,9 @@ function inicializarFiltroRegrasConjuntas() {
     }
 
     function carregarRegras(resolucaoId, idsParaSelecionar) {
-        const url = resolucaoId ? `/regras/regras-por-resolucao?resolucaoId=${resolucaoId}` : '/regras/regras-por-resolucao';
+        const url = resolucaoId
+            ? `${API.REGRAS_POR_RESOLUCAO}?resolucaoId=${resolucaoId}`
+            : API.REGRAS_POR_RESOLUCAO;
         fetch(url)
             .then(response => response.json())
             .then(data => {

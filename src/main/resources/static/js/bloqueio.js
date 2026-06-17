@@ -2,11 +2,13 @@
  * Bloqueio do sistema
  */
 
+import { API } from './config.js';
+
 export function atualizarBotaoBloqueio() {
     const btn = document.getElementById('btnBloqueio');
     if (!btn) return;
 
-    fetch('/bloqueio/status')
+    fetch(API.BLOQUEIO_STATUS)
         .then(response => response.json())
         .then(data => {
             if (data.bloqueado) {

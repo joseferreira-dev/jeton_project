@@ -3,6 +3,7 @@
  */
 
 import { submitPost } from './csrf.js';
+import { API } from './config.js';
 
 export function confirmarAcao(url, mensagem, isDesvalidar, corPersonalizada) {
     const modalElement = document.getElementById('modalConfirmacao');
@@ -133,7 +134,7 @@ export async function verComprovante(btn) {
     modal.show();
 
     try {
-        const response = await fetch(`/comprovantes/download/${id}`);
+        const response = await fetch(API.COMPROVANTE_DOWNLOAD(id));
         if (!response.ok) throw new Error('Erro ao carregar arquivo');
 
         const contentType = response.headers.get('content-type');

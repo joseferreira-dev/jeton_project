@@ -2,6 +2,7 @@
  * Funções auxiliares para formulários
  * Inclui lógica para formulários de atividade (simples, lote criação, lote edição)
  */
+import { API } from './config.js';
 
 export function atualizarConselheiros(idParaSelecionar) {
     const gestaoId = document.getElementById('selectGestao')?.value;
@@ -14,7 +15,7 @@ export function atualizarConselheiros(idParaSelecionar) {
         return;
     }
 
-    fetch(`/api/conselheiros/conselheiros-por-gestao?gestaoId=${gestaoId}`)
+    fetch(`${API.CONSELHEIROS_POR_GESTAO}?gestaoId=${gestaoId}`)
         .then(response => response.json())
         .then(data => {
             selectConselheiro.innerHTML = '<option value="">-- Selecione o Médico --</option>';
@@ -39,7 +40,7 @@ export function atualizarRegrasPorData(idRegraParaSelecionar) {
 
     selectRegra.innerHTML = '<option value="">Carregando regras da época...</option>';
 
-    fetch(`/api/regras/regras-por-data?data=${dataValue}`)
+    fetch(`${API.REGRAS_POR_DATA}?data=${dataValue}`)
         .then(response => response.json())
         .then(data => {
             const nomeResolucao = document.getElementById('nomeResolucaoVisual');
@@ -207,7 +208,7 @@ export function inicializarLoteCriacao() {
             atualizarListaSelecionados();
             return;
         }
-        fetch(`/api/conselheiros/conselheiros-por-gestao?gestaoId=${gestaoId}`)
+        fetch(`${API.CONSELHEIROS_POR_GESTAO}?gestaoId=${gestaoId}`)
             .then(response => response.json())
             .then(data => {
                 selectConselheiros.innerHTML = '';
@@ -355,7 +356,7 @@ export function inicializarLoteEdicao() {
             atualizarListaSelecionados();
             return;
         }
-        fetch(`/api/conselheiros/conselheiros-por-gestao?gestaoId=${gestaoId}`)
+        fetch(`${API.CONSELHEIROS_POR_GESTAO}?gestaoId=${gestaoId}`)
             .then(response => response.json())
             .then(data => {
                 selectConselheiros.innerHTML = '';
