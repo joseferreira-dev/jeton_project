@@ -10,6 +10,8 @@ export function confirmarAcao(url, mensagem, isDesvalidar, corPersonalizada) {
     if (!modalElement) {
         if (confirm(mensagem)) {
             submitPost(url);
+        } else {
+            showInfo('Ação cancelada', 'Cancelado');
         }
         return;
     }

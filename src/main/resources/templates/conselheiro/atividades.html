@@ -14,16 +14,6 @@
             </a>
         </div>
 
-        <!-- Mensagens flash -->
-        <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show">
-            <i class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show">
-            <i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-
         <!-- Filtros (data e situação) -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-body">
@@ -90,7 +80,7 @@
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
                                         <button th:if="${a.inSituacao == 'P'}" type="button"
-                                            class="btn btn-outline-danger btn-excluir"
+                                            class="btn btn-outline-danger" data-role="excluir"
                                             data-url="/conselheiro/atividades/excluir/" th:data-id="${a.idAtividade}"
                                             th:data-nome="${a.regra.nomeRegra}">
                                             <i class="fa-solid fa-trash"></i>

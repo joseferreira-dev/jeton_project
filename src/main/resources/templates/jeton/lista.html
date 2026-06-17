@@ -12,13 +12,6 @@
                 (Jetons)</h2>
         </div>
 
-        <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show"><i
-                class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span><button type="button"
-                class="btn-close" data-bs-dismiss="alert"></button></div>
-        <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show"><i
-                class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button"
-                class="btn-close" data-bs-dismiss="alert"></button></div>
-
         <div class="card shadow-sm border-success mb-4">
             <div class="card-header bg-success text-white fw-bold">
                 <i class="fa-solid fa-gears me-2"></i> Executar Fecho de Folha Mensal
@@ -114,10 +107,11 @@
                                     Nenhum processamento financeiro encontrado para os parâmetros selecionados.
                                 </td>
                             </tr>
+
                             <tr th:each="j : ${listaJetons}">
                                 <td>
-                                    <span class="fw-bold text-dark"
-                                        th:text="${j.nomeConselheiro}">Conselheiro</span><br>
+                                    <span class="fw-bold text-dark" th:text="${j.nomeConselheiro}">Conselheiro</span>
+                                    <br>
                                     <small class="text-muted">
                                         <i class="fa-solid fa-file-invoice-dollar me-1"></i>
                                         Gestão: <span th:text="${j.nomeGestao}"></span>
@@ -127,9 +121,13 @@
                                     <span class="badge bg-secondary px-2 py-1"
                                         th:text="${j.mes + '/' + j.ano}">07/2026</span>
                                 </td>
-                                <td class="text-center fw-bold text-primary" th:text="${j.totalJeton}">0</td>
-                                <td class="text-end fw-bold text-success"
-                                    th:text="${'R$ ' + #numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}">R$ 0,00
+                                <td class="text-center fw-bold text-primary">
+                                    <span th:text="${j.totalJeton}">0</span>
+                                </td>
+                                <td class="text-end fw-bold text-success">
+                                    <span
+                                        th:text="${'R$ ' + #numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}">R$
+                                        0,00</span>
                                 </td>
                                 <td class="text-center">
                                     <span th:if="${j.situacao == 'A'}" class="badge bg-warning text-dark fw-bold">
@@ -139,14 +137,16 @@
                                         <i class="fa-solid fa-lock me-1"></i> Homologado (Folha)
                                     </span>
                                 </td>
+
                                 <td class="text-center no-print">
                                     <div class="btn-group gap-1">
                                         <button type="button" class="btn btn-sm btn-outline-primary"
-                                            data-role="abrir-relatorio" th:data-pessoa="${j.conselheiro.idPessoa}"
-                                            th:data-gestao="${j.gestao.idGestao}" th:data-mes="${j.mes}"
-                                            th:data-ano="${j.ano}" th:data-nome="${j.conselheiro.pessoa.nome}">
+                                            data-role="abrir-relatorio" th:data-pessoa="${j.idConselheiro}"
+                                            th:data-gestao="${j.idGestao}" th:data-mes="${j.mes}" th:data-ano="${j.ano}"
+                                            th:data-nome="${j.nomeConselheiro}">
                                             <i class="fa-solid fa-magnifying-glass"></i> Origem
                                         </button>
+
                                         <th:block th:if="${j.situacao == 'E'}">
                                             <button class="btn btn-sm btn-light" disabled><i
                                                     class="fa-solid fa-ban"></i> Trancado</button>
@@ -160,6 +160,7 @@
             </div>
         </div>
 
+        <!-- Modais -->
         <div class="modal fade" id="modalHomologacao" tabindex="-1" aria-labelledby="modalHomologacaoLabel"
             aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">

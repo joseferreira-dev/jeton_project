@@ -15,11 +15,6 @@
             </h2>
         </div>
 
-        <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-
         <div class="card shadow-sm">
             <div class="card-body p-4">
                 <form th:action="@{${urlAcao}}" th:object="${gestao}" method="post">

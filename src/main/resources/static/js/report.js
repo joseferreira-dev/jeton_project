@@ -4,7 +4,7 @@
 
 export function inicializarRelatorioGraficos() {
     if (typeof window._dadosRelatorio === 'undefined') {
-        console.warn('Dados do relatório não encontrados');
+        showWarning('Dados do relatório não encontrados.', 'Aviso');
         return;
     }
 

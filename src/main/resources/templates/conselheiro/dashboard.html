@@ -17,11 +17,6 @@
             </span>
         </div>
 
-        <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-
         <!-- Mensagem se nunca vinculado -->
         <div th:if="${nuncaVinculado}" class="alert alert-warning">
             <i class="fa-solid fa-triangle-exclamation me-2"></i> <span th:text="${mensagem}"></span>

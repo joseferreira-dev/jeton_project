@@ -3,7 +3,10 @@
  */
 
 import { initCsrf } from './csrf.js';
-import { setButtonLoading, formatDateBr } from './utils.js';
+import {
+    setButtonLoading,
+    formatDateBr
+} from './utils.js';
 import {
     confirmarAcao,
     prepararExclusao,
@@ -27,8 +30,18 @@ import {
     abrirModalAtividades,
     abrirRelatorioJeton
 } from './jeton.js';
-import { atualizarBotaoBloqueio, confirmarBloqueio } from './bloqueio.js';
+import {
+    atualizarBotaoBloqueio,
+    confirmarBloqueio
+} from './bloqueio.js';
 import { inicializarRelatorioGraficos } from './report.js';
+import {
+    showToast,
+    showSuccess,
+    showError,
+    showWarning,
+    showInfo, initFlashToasts
+} from './toast.js';
 import { API } from './config.js';
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -89,6 +102,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     prepararExclusao(baseUrl, id, nome, extra);
                 }
                 break;
+            case 'alternar-status':
+                e.preventDefault();
+                const urlAlt = target.getAttribute('data-url');
+                const mensagemAlt = target.getAttribute('data-mensagem') || 'Deseja alterar o status?';
+                const isDesvalidarAlt = target.getAttribute('data-desvalidar') === 'true';
+                confirmarAcao(urlAlt, mensagemAlt, isDesvalidarAlt);
+                break;
             case 'resetar-filtros':
                 e.preventDefault();
                 resetarFiltrosAtividadeForm();
@@ -97,6 +117,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 e.preventDefault();
                 if (typeof window._resetarLote === 'function') {
                     window._resetarLote();
+                }
+                break;
+            case 'ver-log':
+                e.preventDefault();
+                const texto = target.getAttribute('data-texto');
+                const pre = document.getElementById('logDetalhesTexto');
+                if (pre) {
+                    try {
+                        const obj = JSON.parse(texto);
+                        pre.textContent = JSON.stringify(obj, null, 2);
+                    } catch (err) {
+                        pre.textContent = texto;
+                    }
+                    const modal = new bootstrap.Modal(document.getElementById('modalLogDetalhes'));
+                    modal.show();
                 }
                 break;
             default:
@@ -144,6 +179,7 @@ document.addEventListener('DOMContentLoaded', function () {
     inicializarSpinnerFormularioAtividade();
     atualizarBotaoBloqueio();
     inicializarFiltroRegrasConjuntas();
+    initFlashToasts();
 
     // Inicializa lote
     if (document.getElementById('formLote') && document.getElementById('selectGestao')) {

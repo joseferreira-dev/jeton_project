@@ -15,13 +15,6 @@
                 Vincular Médico</a>
         </div>
 
-        <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show"><i
-                class="fa-solid fa-check-circle me-1"></i> <span th:text="${sucesso}"></span><button type="button"
-                class="btn-close" data-bs-dismiss="alert"></button></div>
-        <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show"><i
-                class="fa-solid fa-triangle-exclamation me-1"></i> <span th:text="${erro}"></span><button type="button"
-                class="btn-close" data-bs-dismiss="alert"></button></div>
-
         <form th:action="@{/gestao-conselheiros}" method="get" class="mb-4">
             <input type="hidden" name="sort" th:value="${sort}">
             <input type="hidden" name="dir" th:value="${dir}">
@@ -101,7 +94,7 @@
                                     <span th:if="${gc.inSituacao == 'I'}" class="badge bg-secondary">Inativo</span>
                                 </td>
                                 <td class="text-center pe-4">
-                                    <button type="button" class="btn btn-sm me-1 btn-alternar-status"
+                                    <button type="button" class="btn btn-sm me-1" data-role="alternar-status"
                                         th:classappend="${gc.inSituacao == 'A'} ? 'btn-outline-warning' : 'btn-outline-success'"
                                         th:data-url="@{'/gestao-conselheiros/alternar-status/' + ${gc.gestao.idGestao} + '/' + ${gc.conselheiro.idPessoa}}"
                                         th:data-mensagem="${gc.inSituacao == 'A' ? 'Deseja INATIVAR o conselheiro nesta gestão?' : 'Deseja ATIVAR o conselheiro nesta gestão? Ele será inativado em quaisquer outras gestões ativas.'}"
@@ -110,11 +103,11 @@
                                         <i class="fa-solid fa-power-off"></i>
                                     </button>
 
-                                    <button type="button" class="btn btn-sm btn-outline-danger btn-excluir"
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-role="excluir"
                                         data-url="/gestao-conselheiros/excluir/"
                                         th:data-id="${gc.gestao.idGestao + '/' + gc.conselheiro.idPessoa}"
                                         th:data-nome="${gc.conselheiro.pessoa.nome}"
-                                        th:data-extra="${gc.gestao.nomeGestao}" title="Excluir Permanentemente">
+                                        th:data-extra="${gc.gestao.nomeGestao}">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                 </td>

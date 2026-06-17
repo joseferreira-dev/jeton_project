@@ -236,8 +236,21 @@
         </div>
     </div>
 
+    <!-- Mensagens Flash (ocultas, usadas para converter em toasts) -->
+    <div style="display: none;">
+        <span id="flashSuccess" th:text="${sucesso}"></span>
+        <span id="flashError" th:text="${erro}"></span>
+        <span id="flashWarning" th:text="${aviso}"></span>
+        <span id="flashInfo" th:text="${info}"></span>
+    </div>
     <script th:src="@{/webjars/bootstrap/5.3.2/js/bootstrap.bundle.min.js}"></script>
     <script type="module" th:src="@{/js/main.js}"></script>
+    <!-- Inicialização adicional para toasts -->
+    <script type="module">
+        import { initFlashToasts } from '/js/toast.js';
+        // Executa após o DOM carregar
+        document.addEventListener('DOMContentLoaded', initFlashToasts);
+    </script>
 </body>
 
 </html>

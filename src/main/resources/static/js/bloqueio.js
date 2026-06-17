@@ -40,7 +40,14 @@ export function confirmarBloqueio() {
         const mensagem = isBloqueando
             ? 'Deseja BLOQUEAR o sistema? Os demais usuários ficarão impedidos de executar ações.'
             : 'Deseja LIBERAR o sistema? Todos os usuários voltarão a ter acesso normal.';
-        return confirm(mensagem);
+        if (!modalElement) {
+            if (confirm(mensagem)) {
+                // continua
+            } else {
+                showInfo('Ação cancelada', 'Cancelado');
+            }
+            return;
+        }
     }
 
     if (isBloqueando) {

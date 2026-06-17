@@ -75,7 +75,7 @@ export function inicializarBotaoRelatorio() {
                 const modal = new bootstrap.Modal(modalAlerta);
                 modal.show();
             } else {
-                alert('Preencha todos os campos (Gestão, Mês e Ano).');
+                showWarning('Preencha todos os campos (Gestão, Mês e Ano).', 'Campos obrigatórios');
             }
             return;
         }
