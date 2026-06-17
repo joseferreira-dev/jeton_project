@@ -3,6 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jeton - Cremepe</title>
 
@@ -151,9 +153,11 @@
                     <a th:href="@{/usuarios/perfil}" class="btn btn-sm btn-outline-light">
                         <i class="fa-solid fa-user-circle me-1"></i> Meu Perfil
                     </a>
-                    <a th:href="@{/sair}" class="btn btn-sm btn-outline-light">
-                        <i class="fa-solid fa-right-from-bracket me-1"></i> Sair
-                    </a>
+                    <form th:action="@{/sair}" method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-sm btn-outline-light">
+                            <i class="fa-solid fa-right-from-bracket me-1"></i> Sair
+                        </button>
+                    </form>
                     <!-- Botão de bloqueio do sistema -->
                     <form th:action="@{/bloqueio/alternar}" method="post" style="display: inline;" id="formBloqueio"
                         th:if="${session.usuarioLogado != null and (session.usuarioLogado.hasPermissao('S') or session.usuarioLogado.hasPermissao('B'))}">

@@ -99,7 +99,7 @@ public class JetonController {
         return "redirect:/jeton";
     }
 
-    @GetMapping("/estornar/{id}")
+    @PostMapping("/estornar/{id}")
     public String estornarJeton(@PathVariable("id") Integer idJeton, HttpSession session, RedirectAttributes ra) {
         if (naoAutenticado(session))
             return "redirect:/login";

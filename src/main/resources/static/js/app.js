@@ -2,11 +2,38 @@
  * JETON - Funções JavaScript Globais
  */
 
-// =========================================================================
 // INICIALIZAÇÃO GLOBAL
-// =========================================================================
+
+// Variáveis globais para o token CSRF
+let csrfToken = null;
+let csrfHeader = null;
+
+/**
+ * Submete uma requisição POST para a URL informada, incluindo o token CSRF
+ * @param {string} url - URL de destino
+ */
+function submitPost(url) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    if (csrfToken) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = '_csrf';
+        input.value = csrfToken;
+        form.appendChild(input);
+    }
+    document.body.appendChild(form);
+    form.submit();
+}
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Captura os tokens CSRF das meta tags
+    const metaToken = document.querySelector('meta[name="_csrf"]');
+    const metaHeader = document.querySelector('meta[name="_csrf_header"]');
+    if (metaToken) csrfToken = metaToken.content;
+    if (metaHeader) csrfHeader = metaHeader.content;
+
     // Inicializa todos os tooltips do Bootstrap
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -138,14 +165,18 @@ function configurarModalConfirmacaoGlobal() {
 
 /**
  * Exibe modal de confirmação para ações comuns (validar, desvalidar, etc.)
- * @param {string} url - URL para onde redirecionar após confirmação
+ * Agora usa POST com CSRF em vez de GET
+ * @param {string} url - URL para onde enviar a requisição POST
  * @param {string} mensagem - Texto da mensagem de confirmação
  * @param {boolean} isDesvalidar - Se true, muda o estilo do botão para warning
+ * @param {string} corPersonalizada - Classe CSS personalizada para o botão (opcional)
  */
 function confirmarAcao(url, mensagem, isDesvalidar, corPersonalizada) {
     const modalElement = document.getElementById('modalConfirmacao');
     if (!modalElement) {
-        if (confirm(mensagem)) window.location.href = url;
+        if (confirm(mensagem)) {
+            submitPost(url);
+        }
         return;
     }
 
@@ -155,11 +186,18 @@ function confirmarAcao(url, mensagem, isDesvalidar, corPersonalizada) {
     const modalHeader = document.getElementById('modalConfirmacaoHeader');
 
     if (textoConfirmacao) textoConfirmacao.innerText = mensagem;
-    if (linkConfirmacao) linkConfirmacao.setAttribute('href', url);
+    if (linkConfirmacao) {
+        // Remove o href e converte em um botão que chama submitPost
+        linkConfirmacao.removeAttribute('href');
+        linkConfirmacao.onclick = function (e) {
+            e.preventDefault();
+            submitPost(url);
+            modal.hide();
+        };
+    }
 
     // Define classes com base nos parâmetros
     if (corPersonalizada) {
-        // Usa a cor personalizada (ex: 'btn-danger')
         if (linkConfirmacao) linkConfirmacao.className = `btn ${corPersonalizada} px-4`;
         if (modalHeader) {
             if (corPersonalizada === 'btn-danger')
@@ -170,7 +208,6 @@ function confirmarAcao(url, mensagem, isDesvalidar, corPersonalizada) {
                 modalHeader.className = 'modal-header bg-success text-white';
         }
     } else {
-        // Comportamento original
         if (isDesvalidar) {
             if (linkConfirmacao) linkConfirmacao.className = "btn btn-warning px-4 text-white";
             if (modalHeader) modalHeader.className = "modal-header bg-warning text-white";
@@ -185,6 +222,7 @@ function confirmarAcao(url, mensagem, isDesvalidar, corPersonalizada) {
 
 /**
  * Prepara a exclusão de um registro (genérico)
+ * Agora usa POST com CSRF em vez de GET
  * @param {string} baseUrl - URL base do recurso (ex: '/conselheiros/excluir/')
  * @param {number|string} id - ID do registro
  * @param {string} nome - Nome descritivo (exibido no modal)
@@ -193,9 +231,8 @@ function confirmarAcao(url, mensagem, isDesvalidar, corPersonalizada) {
 function prepararExclusao(baseUrl, id, nome, campoExtra) {
     const modalElement = document.getElementById('modalExclusao');
     if (!modalElement) {
-        // Fallback
         if (confirm(`Deseja excluir permanentemente ${nome}?`)) {
-            window.location.href = baseUrl + id;
+            submitPost(baseUrl + id);
         }
         return;
     }
@@ -208,7 +245,13 @@ function prepararExclusao(baseUrl, id, nome, campoExtra) {
 
     const btnConfirmar = document.getElementById('btnConfirmarExclusao');
     if (btnConfirmar) {
-        btnConfirmar.setAttribute('href', baseUrl + id);
+        btnConfirmar.removeAttribute('href');
+        btnConfirmar.onclick = function (e) {
+            e.preventDefault();
+            submitPost(baseUrl + id);
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
+        };
     }
 
     const modal = new bootstrap.Modal(modalElement);

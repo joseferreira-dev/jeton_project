@@ -140,7 +140,7 @@ public class AtividadeConselhalController {
         return "redirect:/atividades";
     }
 
-    @GetMapping("/validar/{id}")
+    @PostMapping("/validar/{id}")
     public String validar(@PathVariable("id") Integer id, RedirectAttributes ra) {
         atividadeService.validar(id);
         ra.addFlashAttribute("sucesso",
@@ -148,14 +148,14 @@ public class AtividadeConselhalController {
         return "redirect:/atividades";
     }
 
-    @GetMapping("/desvalidar/{id}")
+    @PostMapping("/desvalidar/{id}")
     public String desvalidar(@PathVariable("id") Integer id, RedirectAttributes ra) {
         atividadeService.desvalidar(id);
         ra.addFlashAttribute("sucesso", "Atividade retornada ao status Pendente.");
         return "redirect:/atividades";
     }
 
-    @GetMapping("/excluir/{id}")
+    @PostMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         atividadeService.excluir(id);
         ra.addFlashAttribute("sucesso", "Atividade removida com sucesso!");

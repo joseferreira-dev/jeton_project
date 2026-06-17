@@ -78,7 +78,7 @@ public class PortariaController {
         return "redirect:/portarias";
     }
 
-    @GetMapping("/revogar/{id}")
+    @PostMapping("/revogar/{id}")
     public String revogar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
@@ -87,7 +87,7 @@ public class PortariaController {
         return "redirect:/portarias";
     }
 
-    @GetMapping("/restaurar/{id}")
+    @PostMapping("/restaurar/{id}")
     public String restaurar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
@@ -96,7 +96,7 @@ public class PortariaController {
         return "redirect:/portarias";
     }
 
-    @GetMapping("/excluir/{id}")
+    @PostMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {

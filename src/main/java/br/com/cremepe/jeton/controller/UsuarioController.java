@@ -131,7 +131,7 @@ public class UsuarioController extends BaseController {
         return "redirect:/usuarios";
     }
 
-    @GetMapping("/excluir/{id}")
+    @PostMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         usuarioService.excluir(id);
         ra.addFlashAttribute("sucesso", "Utilizador removido com sucesso!");

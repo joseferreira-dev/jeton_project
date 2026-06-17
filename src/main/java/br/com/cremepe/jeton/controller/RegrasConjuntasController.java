@@ -104,7 +104,7 @@ public class RegrasConjuntasController {
         return "redirect:/regras-conjuntas";
     }
 
-    @GetMapping("/excluir/{id}")
+    @PostMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {

@@ -77,7 +77,7 @@ public class ResolucaoController {
         return "redirect:/resolucoes";
     }
 
-    @GetMapping("/revogar/{id}")
+    @PostMapping("/revogar/{id}")
     public String revogar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
@@ -86,7 +86,7 @@ public class ResolucaoController {
         return "redirect:/resolucoes";
     }
 
-    @GetMapping("/restaurar/{id}")
+    @PostMapping("/restaurar/{id}")
     public String restaurar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
@@ -95,7 +95,7 @@ public class ResolucaoController {
         return "redirect:/resolucoes";
     }
 
-    @GetMapping("/excluir/{id}")
+    @PostMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {

@@ -81,7 +81,7 @@ public class GestaoController {
         return "redirect:/gestoes";
     }
 
-    @GetMapping("/excluir/{id}")
+    @PostMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, RedirectAttributes ra) {
         gestaoService.excluir(id);
         ra.addFlashAttribute("sucesso", "Gestão removida com sucesso!");

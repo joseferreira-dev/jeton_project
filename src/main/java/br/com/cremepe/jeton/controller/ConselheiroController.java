@@ -83,7 +83,7 @@ public class ConselheiroController {
         return "redirect:/conselheiros";
     }
 
-    @GetMapping("/excluir/{id}")
+    @PostMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         conselheiroService.excluir(id);
         ra.addFlashAttribute("sucesso", "Conselheiro removido com sucesso!");

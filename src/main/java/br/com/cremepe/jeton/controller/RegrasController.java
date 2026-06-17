@@ -119,7 +119,7 @@ public class RegrasController {
         return "redirect:/regras";
     }
 
-    @GetMapping("/revogar/{id}")
+    @PostMapping("/revogar/{id}")
     public String revogar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
@@ -128,7 +128,7 @@ public class RegrasController {
         return "redirect:/regras";
     }
 
-    @GetMapping("/restaurar/{id}")
+    @PostMapping("/restaurar/{id}")
     public String restaurar(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {
@@ -137,7 +137,7 @@ public class RegrasController {
         return "redirect:/regras";
     }
 
-    @GetMapping("/excluir/{id}")
+    @PostMapping("/excluir/{id}")
     public String excluir(@PathVariable("id") Integer id,
             HttpSession session,
             RedirectAttributes ra) {

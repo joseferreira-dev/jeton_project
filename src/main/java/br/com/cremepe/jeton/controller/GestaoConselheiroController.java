@@ -74,7 +74,7 @@ public class GestaoConselheiroController {
         return "gestaoconselheiro/formulario";
     }
 
-    @GetMapping("/alternar-status/{idGestao}/{idPessoa}")
+    @PostMapping("/alternar-status/{idGestao}/{idPessoa}")
     public String alternarStatus(@PathVariable("idGestao") Integer idGestao,
             @PathVariable("idPessoa") Integer idPessoa,
             RedirectAttributes ra, HttpSession session) {
@@ -112,7 +112,7 @@ public class GestaoConselheiroController {
         return "redirect:/gestao-conselheiros";
     }
 
-    @GetMapping("/excluir/{idGestao}/{idPessoa}")
+    @PostMapping("/excluir/{idGestao}/{idPessoa}")
     public String excluir(@PathVariable("idGestao") Integer idGestao,
             @PathVariable("idPessoa") Integer idPessoa,
             HttpSession session,

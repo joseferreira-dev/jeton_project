@@ -216,7 +216,7 @@ public class ConselheiroPortalController {
         return "redirect:/conselheiro/atividades";
     }
 
-    @GetMapping("/atividades/excluir/{id}")
+    @PostMapping("/atividades/excluir/{id}")
     public String excluirAtividade(@PathVariable Integer id, HttpSession session, RedirectAttributes ra) {
         if (!isConselheiro(session))
             return "redirect:/login";
