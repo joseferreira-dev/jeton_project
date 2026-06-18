@@ -74,29 +74,35 @@ const validators = {
         return null;
     },
 
-    number(value) {
+    number(value, field) {
         if (!value) return null;
-        if (isNaN(value) || value.trim() === '') return MESSAGES.number;
+        const cleanValue = field ? getCleanValue(field) : value;
+        const normalized = String(cleanValue).replace(/[^\d.]/g, '');
+        if (isNaN(normalized) || normalized.trim() === '') return MESSAGES.number;
+        return null;
+    },
+
+    min(value, param, field) {
+        if (!value) return null;
+        const cleanValue = field ? getCleanValue(field) : value;
+        const normalized = String(cleanValue).replace(/[^\d.]/g, '');
+        const num = parseFloat(normalized);
+        if (isNaN(num) || num < param) return MESSAGES.min(param);
+        return null;
+    },
+
+    max(value, param, field) {
+        if (!value) return null;
+        const cleanValue = field ? getCleanValue(field) : value;
+        const normalized = String(cleanValue).replace(/[^\d.]/g, '');
+        const num = parseFloat(normalized);
+        if (isNaN(num) || num > param) return MESSAGES.max(param);
         return null;
     },
 
     integer(value) {
         if (!value) return null;
         if (!/^-?\d+$/.test(value)) return MESSAGES.integer;
-        return null;
-    },
-
-    min(value, param) {
-        if (!value) return null;
-        const num = parseFloat(value);
-        if (isNaN(num) || num < param) return MESSAGES.min(param);
-        return null;
-    },
-
-    max(value, param) {
-        if (!value) return null;
-        const num = parseFloat(value);
-        if (isNaN(num) || num > param) return MESSAGES.max(param);
         return null;
     },
 
@@ -188,9 +194,9 @@ export function validateField(field, showFeedback = true) {
 
         let error;
         if (param !== null) {
-            error = validator(value, param);
+            error = validator(value, param, field);
         } else {
-            error = validator(value);
+            error = validator(value, field);
         }
 
         if (error) {
@@ -236,6 +242,13 @@ function clearFeedback(field) {
     if (feedback) {
         feedback.style.display = 'none';
     }
+}
+
+function getCleanValue(field) {
+    if (field._imask) {
+        return field._imask.unmaskedValue;
+    }
+    return field.value;
 }
 
 // ============================================================================

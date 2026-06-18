@@ -17,6 +17,7 @@ import { API } from './config.js';
 import { showLoading, hideLoading, fetchWithLoading } from './loading-overlay.js';
 import { initValidation, validateForm } from './validation.js';
 import { initNavigationGuard, watchFormChanges, resetNavigationGuard } from './navigation-guard.js';
+import { initMasks, getRawValue } from './masks.js';
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -166,6 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
     atualizarBotaoBloqueio();
     inicializarFiltroRegrasConjuntas();
     initFlashToasts();
+    initMasks();
 
     // Inicializa lote
     if (document.getElementById('formLote') && document.getElementById('selectGestao')) {
