@@ -18,6 +18,7 @@ import { showLoading, hideLoading, fetchWithLoading } from './loading-overlay.js
 import { initValidation, validateForm } from './validation.js';
 import { initNavigationGuard, watchFormChanges, resetNavigationGuard } from './navigation-guard.js';
 import { initMasks, getRawValue } from './masks.js';
+import { initFileUploads } from './file-upload.js';
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -168,6 +169,7 @@ document.addEventListener('DOMContentLoaded', function () {
     inicializarFiltroRegrasConjuntas();
     initFlashToasts();
     initMasks();
+    initFileUploads();
 
     // Inicializa lote
     if (document.getElementById('formLote') && document.getElementById('selectGestao')) {

@@ -120,7 +120,7 @@
                                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-paperclip me-2"></i>Anexar
                                         Comprovante (Obrigatório para Jeton)</h6>
                                     <div class="row g-3">
-                                        <div class="col-md-12">
+                                        <div class="col-md-8">
                                             <label class="form-label small fw-bold">Nome do Comprovante (Descrição para
                                                 o sistema)</label>
                                             <input type="text" class="form-control form-control-sm"
@@ -138,17 +138,21 @@
                                                 </option>
                                             </select>
                                         </div>
-                                        <div class="col-md-8">
+                                        <div class="col-md-12">
                                             <label class="form-label small fw-bold">Ficheiro (PDF ou Imagem)</label>
-                                            <input type="file" class="form-control form-select-sm" name="file"
-                                                accept=".pdf,image/*">
+                                            <div class="file-upload-container">
+                                                <input type="file" class="form-control form-control-sm" name="file"
+                                                    accept=".pdf,image/*" data-role="file-upload">
+                                                <!-- O preview será inserido aqui via JS -->
+                                            </div>
                                         </div>
                                     </div>
                                     <div th:if="${atividade.comprovante != null}" class="mt-3">
                                         <span class="badge bg-success">
                                             <i class="fa-solid fa-file-circle-check me-1"></i>
-                                            Ficheiro atual: <span th:text="${atividade.comprovante.nomeArquivo}"></span>
+                                            Arquivo atual: <span th:text="${atividade.comprovante.nomeArquivo}"></span>
                                         </span>
+                                        <small class="text-muted ms-2">(Substitua selecionando um novo arquivo)</small>
                                     </div>
                                 </div>
                             </div>

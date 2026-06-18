@@ -236,6 +236,23 @@ button:disabled {
     opacity: 1;
 }
 
+.file-preview .file-info {
+    font-size: 0.9rem;
+}
+
+.file-preview .file-visual-container {
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 8px;
+    background: #f8f9fa;
+    margin-top: 6px;
+}
+
+.file-preview .file-visual-container img {
+    max-height: 200px;
+    width: auto;
+}
+
 
 /* Responsividade */
 @media (max-width: 991.98px) {
@@ -267,6 +284,4 @@ button:disabled {
     .content-body {
         padding: 1.25rem 1rem;
     }
-
-
 }
