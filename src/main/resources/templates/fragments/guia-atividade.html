@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+</head>
+
+<body>
+
+    <!-- ============================================================
+     GUIA DE VERIFICAÇÃO DA ATIVIDADE
+     Uso: <div th:replace="~{fragments/guia-atividade :: guia}"></div>
+     Espera que os elementos 'selectRegra', 'guiaDescricao' e 'guiaPontos'
+     existam na página.
+============================================================ -->
+
+    <th:block th:fragment="guia">
+        <div class="col-md-12" id="boxGuia" style="display: none;">
+            <div class="alert alert-success border-0 shadow-sm mb-0">
+                <h6 class="fw-bold text-success"><i class="fa-solid fa-circle-info me-2"></i>Guia de
+                    Verificação da Atividade</h6>
+                <hr class="my-2">
+                <div class="row">
+                    <div class="col-md-9">
+                        <small class="d-block text-muted fw-bold">Descrição da Atividade:</small>
+                        <span id="guiaDescricao"></span>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <small class="d-block text-muted fw-bold">Pontuação:</small>
+                        <span class="badge bg-success fs-6" id="guiaPontos">0</span> pontos
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+</body>
+
+</html>
