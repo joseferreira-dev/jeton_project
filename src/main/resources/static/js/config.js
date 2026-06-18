@@ -12,6 +12,10 @@ export const API = {
     // Conselheiros
     CONSELHEIROS_POR_GESTAO: '/api/conselheiros/conselheiros-por-gestao',
 
+    // Vinculos
+    GESTAO_VINCULADOS: (idGestao) => `/api/gestao-conselheiros/gestao/${idGestao}/vinculados`,
+    GESTAO_BUSCAR_NAO_VINCULADOS: (idGestao, termo) => `/api/gestao-conselheiros/buscar-nao-vinculados?idGestao=${idGestao}&termo=${encodeURIComponent(termo)}`,
+
     // Regras
     REGRAS_POR_DATA: '/api/regras/regras-por-data',
     REGRAS_POR_RESOLUCAO: '/api/regras/resolucao',

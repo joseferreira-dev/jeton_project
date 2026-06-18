@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import br.com.cremepe.jeton.domain.Conselheiro;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ConselheiroRepository extends JpaRepository<Conselheiro, Integer> {
@@ -22,5 +23,13 @@ public interface ConselheiroRepository extends JpaRepository<Conselheiro, Intege
             "AND (:situacao IS NULL OR :situacao = '' OR c.inSituacao = :situacao)")
     Page<Conselheiro> findAllByFilters(@Param("termo") String termo,
             @Param("situacao") String situacao,
+            Pageable pageable);
+
+    @Query("SELECT c FROM Conselheiro c " +
+            "WHERE (LOWER(c.pessoa.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR CAST(c.crm AS string) LIKE CONCAT('%', :termo, '%')) "
+            +
+            "AND c.idPessoa NOT IN :idsVinculados")
+    Page<Conselheiro> findNaoVinculados(@Param("termo") String termo,
+            @Param("idsVinculados") List<Integer> idsVinculados,
             Pageable pageable);
 }

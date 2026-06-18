@@ -190,6 +190,21 @@ public class ConselheiroService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<Conselheiro> listarNaoVinculados(Integer idGestao, String termo) {
+        List<Integer> idsVinculados = gestaoConselheiroRepository.findByGestaoIdGestao(idGestao)
+                .stream()
+                .map(gc -> gc.getId().getIdPessoa())
+                .collect(Collectors.toList());
+
+        Pageable pageable = PageRequest.of(0, 20, Sort.by("pessoa.nome"));
+        Page<Conselheiro> page = conselheiroRepository.findNaoVinculados(
+                termo != null ? termo : "",
+                idsVinculados.isEmpty() ? List.of(0) : idsVinculados,
+                pageable);
+        return page.getContent();
+    }
+
     private Conselheiro copiarConselheiro(Conselheiro original) {
         Conselheiro copia = new Conselheiro();
         copia.setIdPessoa(original.getIdPessoa());

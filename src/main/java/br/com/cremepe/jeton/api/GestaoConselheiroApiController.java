@@ -1,32 +1,41 @@
 package br.com.cremepe.jeton.api;
 
+import br.com.cremepe.jeton.domain.Conselheiro;
 import br.com.cremepe.jeton.domain.GestaoConselheiro;
 import br.com.cremepe.jeton.dto.ConselheiroDTO;
 import br.com.cremepe.jeton.dto.GestaoConselheiroDTO;
 import br.com.cremepe.jeton.dto.GestaoDTO;
+import br.com.cremepe.jeton.dto.VinculoConselheiroDTO;
 import br.com.cremepe.jeton.mapper.ConselheiroMapper;
 import br.com.cremepe.jeton.mapper.GestaoConselheiroMapper;
 import br.com.cremepe.jeton.mapper.GestaoMapper;
+import br.com.cremepe.jeton.service.ConselheiroService;
 import br.com.cremepe.jeton.service.GestaoConselheiroService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/gestao-conselheiros")
 @PreAuthorize("isAuthenticated()")
 public class GestaoConselheiroApiController {
 
+    private final ConselheiroService conselheiroService;
     private final GestaoConselheiroService gestaoConselheiroService;
     private final GestaoConselheiroMapper gestaoConselheiroMapper;
     private final ConselheiroMapper conselheiroMapper;
     private final GestaoMapper gestaoMapper;
 
-    GestaoConselheiroApiController(GestaoConselheiroService gestaoConselheiroService,
-            ConselheiroMapper conselheiroMapper, GestaoConselheiroMapper gestaoConselheiroMapper,
+    GestaoConselheiroApiController(
+            ConselheiroService conselheiroService,
+            GestaoConselheiroService gestaoConselheiroService,
+            ConselheiroMapper conselheiroMapper,
+            GestaoConselheiroMapper gestaoConselheiroMapper,
             GestaoMapper gestaoMapper) {
+        this.conselheiroService = conselheiroService;
         this.gestaoConselheiroService = gestaoConselheiroService;
         this.gestaoConselheiroMapper = gestaoConselheiroMapper;
         this.conselheiroMapper = conselheiroMapper;
@@ -76,6 +85,39 @@ public class GestaoConselheiroApiController {
                 .map(gestaoMapper::toDto)
                 .toList();
         return ResponseEntity.ok(gestoes);
+    }
+
+    @GetMapping("/gestao/{idGestao}/vinculados")
+    @PreAuthorize("hasAuthority('G') or hasAuthority('S')")
+    public ResponseEntity<List<VinculoConselheiroDTO>> listarVinculadosComStatus(@PathVariable Integer idGestao) {
+        List<GestaoConselheiro> vinculos = gestaoConselheiroService.listarPorGestao(idGestao);
+        List<Integer> idsComAtividades = gestaoConselheiroService.findConselheirosComAtividadesNaGestao(idGestao);
+
+        List<VinculoConselheiroDTO> dtos = vinculos.stream().map(vc -> {
+            Conselheiro c = vc.getConselheiro();
+            boolean temAtividade = idsComAtividades.contains(c.getIdPessoa());
+            return new VinculoConselheiroDTO(
+                    c.getIdPessoa(),
+                    c.getPessoa().getNome(),
+                    c.getCrm(),
+                    temAtividade,
+                    vc.getInSituacao());
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/buscar-nao-vinculados")
+    @PreAuthorize("hasAuthority('G') or hasAuthority('S')")
+    public ResponseEntity<List<ConselheiroDTO>> buscarNaoVinculados(
+            @RequestParam Integer idGestao,
+            @RequestParam(required = false) String termo) {
+
+        List<Conselheiro> naoVinculados = conselheiroService.listarNaoVinculados(idGestao, termo);
+        List<ConselheiroDTO> dtos = naoVinculados.stream()
+                .map(conselheiroMapper::toDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/existe")
