@@ -4,48 +4,19 @@
 
 import { initCsrf } from './csrf.js';
 import { formatDateBr } from './utils.js';
+import { confirmarAcao, prepararExclusao, verDetalhes, verComprovante } from './modals.js';
 import {
-    confirmarAcao,
-    prepararExclusao,
-    verDetalhes,
-    verComprovante
-} from './modals.js';
-import {
-    atualizarConselheiros,
-    atualizarRegrasPorData,
-    exibirGuiaRegra,
-    toggleCrm,
-    atualizarTurnoVisual,
-    inicializarFormularioAtividade,
-    resetarFiltrosAtividadeForm,
-    inicializarLoteCriacao,
-    inicializarLoteEdicao
+    atualizarConselheiros, atualizarRegrasPorData, exibirGuiaRegra, toggleCrm, atualizarTurnoVisual,
+    inicializarFormularioAtividade, resetarFiltrosAtividadeForm, inicializarLoteCriacao, inicializarLoteEdicao
 } from './form-helpers.js';
-import {
-    inicializarHomologacao,
-    inicializarBotaoRelatorio,
-    abrirModalAtividades,
-    abrirRelatorioJeton
-} from './jeton.js';
-import {
-    atualizarBotaoBloqueio,
-    confirmarBloqueio
-} from './bloqueio.js';
+import { inicializarHomologacao, inicializarBotaoRelatorio, abrirModalAtividades, abrirRelatorioJeton } from './jeton.js';
+import { atualizarBotaoBloqueio, confirmarBloqueio } from './bloqueio.js';
 import { inicializarRelatorioGraficos } from './report.js';
-import {
-    showToast,
-    showSuccess,
-    showError,
-    showWarning,
-    showInfo, initFlashToasts
-} from './toast.js';
+import { showToast, showSuccess, showError, showWarning, showInfo, initFlashToasts } from './toast.js';
 import { API } from './config.js';
-import {
-    showLoading,
-    hideLoading,
-    fetchWithLoading
-} from './loading-overlay.js';
+import { showLoading, hideLoading, fetchWithLoading } from './loading-overlay.js';
 import { initValidation, validateForm } from './validation.js';
+import { initNavigationGuard, watchFormChanges, resetNavigationGuard } from './navigation-guard.js';
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -237,6 +208,13 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     });
+
+    // ========== NAVEGAÇÃO COM CONFIRMAÇÃO ==========
+    // Inicializa o guardião de navegação
+    initNavigationGuard('Há alterações não salvas. Tem certeza que deseja sair?');
+
+    // Observa mudanças em todos os formulários
+    watchFormChanges();
 });
 
 // =========================================================================

@@ -1,6 +1,7 @@
 /**
  * CSRF - Gerenciamento do token e submissão POST
  */
+import { resetNavigationGuard } from './navigation-guard.js';
 
 let csrfToken = null;
 let csrfHeader = null;
@@ -11,6 +12,7 @@ export function initCsrf(token, header) {
 }
 
 export function submitPost(url) {
+    resetNavigationGuard();
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = url;
