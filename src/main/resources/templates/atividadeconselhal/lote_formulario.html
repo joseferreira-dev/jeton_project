@@ -20,23 +20,23 @@
                 <form th:action="@{/atividades/lote/salvar}" method="post" enctype="multipart/form-data" id="formLote"
                     data-loading="true" data-loading-message="Criando atividades em lote...">
                     <div class="row g-4">
-                        <!-- Gestão -->
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Gestão Referente</label>
+                            <label class="form-label fw-bold">Gestão</label>
                             <select class="form-select" name="idGestao" id="selectGestao"
-                                data-role="atualizar-conselheiros" data-validate="required" required>
-                                <option value="">-- Selecione a Gestão Primeiro --</option>
+                                data-role="atualizar-conselheiros" data-validate="required" required
+                                title="Selecione a gestão à qual esta atividade está vinculada">
+                                <option value="">Selecione a Gestão Primeiro</option>
                                 <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}"
                                     th:text="${g.nomeGestao}">
                                 </option>
                             </select>
                         </div>
 
-                        <!-- Data e Turno -->
                         <div class="col-md-3">
                             <label class="form-label fw-bold">Data e Horário da Atividade</label>
                             <input type="datetime-local" class="form-control" name="dataHoraAtividade"
-                                id="dataAtividade" data-validate="required datetime" required>
+                                id="dataAtividade" data-validate="required datetime" required
+                                title="Data e horário em que a atividade foi realizada">
                         </div>
 
                         <div class="col-md-3">
@@ -47,25 +47,24 @@
                                 (18h00-23h59)</small>
                         </div>
 
-                        <!-- Conselheiros (select múltiplo) e lista dinâmica ao lado -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Conselheiros (selecione um ou mais)</label>
                             <select class="form-select" name="idsConselheiros" id="selectConselheiros" multiple
-                                size="12" required disabled data-validate="required">
-                                <option value="">-- Aguardando Gestão --</option>
+                                size="12" required disabled data-validate="required"
+                                title="Selecione os conselheiros que exerceram a atividade">
+                                <option value="">Aguardando Gestão</option>
                             </select>
-                            <small class="text-muted">Segure Ctrl (ou Cmd) para selecionar vários.</small>
+                            <small class="text-muted">Segure Ctrl para selecionar vários.</small>
                         </div>
 
                         <div class="col-md-6" id="divSelecionadosLote">
-                            <label class="form-label fw-bold">Conselheiros selecionados:</label>
+                            <label class="form-label fw-bold">Conselheiros selecionados</label>
                             <div id="listaSelecionados" class="border rounded p-2 bg-light"
                                 style="min-height: 266px; max-height: 266px; overflow-y: auto;">
                                 <span class="text-muted">Nenhum selecionado</span>
                             </div>
                         </div>
 
-                        <!-- Resolução e Portaria (identificadas pela data) -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Resolução Aplicada (Identificada por Data)</label>
                             <input type="text" class="form-control" id="nomeResolucaoVisual" readonly
@@ -80,69 +79,47 @@
                             <input type="hidden" name="idPortaria" id="idPortariaHidden">
                         </div>
 
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="button" class="btn btn-outline-secondary w-100" data-role="resetar-lote"><i
-                                    class="fa-solid fa-eraser me-1"></i> Limpar</button>
-                        </div>
-
-                        <!-- Regra Enquadrada -->
                         <div class="col-md-12">
-                            <label class="form-label fw-bold text-cremepe">Regra Enquadrada (Atividade
+                            <label class="form-label fw-bold">Regra Enquadrada (Atividade
                                 Específica)</label>
-                            <select class="form-select border-primary" name="idRegra" id="selectRegra" required disabled
-                                data-validate="required">
-                                <option value="">-- Escolha a documentação acima para desbloquear as regras --</option>
+                            <select class="form-select" name="idRegra" id="selectRegra" required disabled
+                                data-validate="required" title="Selecione a regra que melhor enquadra a atividade">
+                                <option value="">Escolha a documentação acima para desbloquear as regras</option>
                             </select>
                         </div>
 
-                        <!-- Guia da Regra -->
-                        <div class="col-md-12" id="boxGuia" style="display: none;">
-                            <div class="alert alert-info border-0 shadow-sm mb-0">
-                                <h6 class="fw-bold text-primary"><i class="fa-solid fa-circle-info me-2"></i>Guia de
-                                    Verificação da Atividade</h6>
-                                <hr class="my-2">
-                                <div class="row">
-                                    <div class="col-md-9">
-                                        <small class="d-block text-muted fw-bold">Descrição da Atividade:</small>
-                                        <span id="guiaDescricao"></span>
-                                    </div>
-                                    <div class="col-md-3 text-end">
-                                        <small class="d-block text-muted fw-bold">Pontuação:</small>
-                                        <span class="badge bg-primary fs-6" id="guiaPontos">0</span> pontos
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <div th:replace="~{fragments/guia-atividade :: guia}"></div>
                     </div>
 
-                    <!-- Comprovante -->
                     <div class="row g-4 mt-2">
                         <div class="col-md-12">
                             <div class="card bg-light border-dashed">
                                 <div class="card-body">
                                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-paperclip me-2"></i>Anexar
-                                        Comprovante (Obrigatório para Jeton)</h6>
+                                        Comprovante</h6>
                                     <div class="row g-3">
                                         <div class="col-md-8">
-                                            <label class="form-label small fw-bold">Nome do Comprovante (Descrição para
-                                                o sistema)</label>
+                                            <label class="form-label small fw-bold">Nome do Comprovante</label>
                                             <input type="text" class="form-control form-control-sm"
                                                 name="nomeComprovanteUsuario"
-                                                placeholder="Ex: Certidão de comparecimento - Reunião X">
+                                                placeholder="Ex: Ata de Reunião (18/05/26)"
+                                                title="Dê um nome descritivo ao comprovante para identificação futura">
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label small fw-bold">Tipo de Documento</label>
-                                            <select class="form-select form-select-sm" name="idTipoAnexo">
-                                                <option value="">-- Selecione o Tipo --</option>
+                                            <select class="form-select form-select-sm" name="idTipoAnexo"
+                                                title="Selecione o tipo de documento anexado (PDF, imagem, etc.)">
+                                                <option value="">Selecione o Tipo</option>
                                                 <option th:each="t : ${listaTiposAnexo}" th:value="${t.idTipo}"
                                                     th:text="${t.nome}"></option>
                                             </select>
                                         </div>
                                         <div class="col-md-12">
-                                            <label class="form-label small fw-bold">Ficheiro (PDF ou Imagem)</label>
+                                            <label class="form-label small fw-bold">Arquivo (PDF ou Imagem)</label>
                                             <div class="file-upload-container">
                                                 <input type="file" class="form-control form-control-sm" name="file"
-                                                    accept=".pdf,image/*" data-role="file-upload">
+                                                    accept=".pdf,image/*" data-role="file-upload"
+                                                    title="Envie o comprovante em formato PDF ou imagem (JPG, PNG)">
                                             </div>
                                         </div>
                                     </div>
@@ -154,7 +131,7 @@
                     <div class="mt-5 border-top pt-4 d-flex justify-content-between align-items-center">
                         <div>
                             <a th:href="@{/atividades}" class="btn btn-outline-secondary me-2">Cancelar</a>
-                            <button type="submit" class="btn btn-cremepe px-4">Criar em Lote</button>
+                            <button type="submit" class="btn btn-cremepe px-4">Salvar Atividades</button>
                         </div>
                     </div>
                 </form>

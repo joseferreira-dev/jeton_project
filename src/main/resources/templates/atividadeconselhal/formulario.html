@@ -10,8 +10,7 @@
         <div class="mb-4">
             <h2 class="h4 text-cremepe fw-bold">
                 <i class="fa-solid fa-clipboard-check me-2"></i>
-                <span
-                    th:text="${atividade.idAtividade == null ? 'Registar Nova Atividade' : 'Validar / Editar Atividade'}"></span>
+                <span th:text="${atividade.idAtividade == null ? 'Registrar Atividade' : 'Editar Atividade'}"></span>
             </h2>
         </div>
 
@@ -25,37 +24,40 @@
                     <input type="hidden" th:field="*{inSituacao}">
 
                     <div class="row g-4">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Gestão Referente</label>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Gestão</label>
                             <select class="form-select" th:field="*{gestao.idGestao}" id="selectGestao"
-                                data-role="atualizar-conselheiros" data-validate="required" required>
-                                <option value="">-- Selecione a Gestão Primeiro --</option>
+                                data-role="atualizar-conselheiros" data-validate="required" required
+                                title="Selecione a gestão à qual esta atividade está vinculada">
+                                <option value="">Selecione a Gestão Primeiro</option>
                                 <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}"
                                     th:text="${g.nomeGestao}">
                                 </option>
                             </select>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Conselheiro</label>
                             <select class="form-select" th:field="*{conselheiro.idPessoa}" id="selectConselheiro"
-                                required th:disabled="${atividade.idAtividade == null}" data-validate="required">
-                                <option value="">-- Aguardando Gestão --</option>
+                                required th:disabled="${atividade.idAtividade == null}" data-validate="required"
+                                title="Escolha o médico conselheiro que exerceu a atividade">
+                                <option value="">Aguardando Gestão</option>
                                 <option th:if="${atividade.conselheiro != null}"
                                     th:value="${atividade.conselheiro.idPessoa}"
                                     th:text="${atividade.conselheiro.pessoa?.nome}" selected></option>
                             </select>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Data e Horário da Atividade</label>
                             <input type="datetime-local" class="form-control" name="dataAtividadePura"
                                 id="dataAtividade"
                                 th:value="${atividade.dataHoraAtividade != null ? #temporals.format(atividade.dataHoraAtividade, 'yyyy-MM-dd''T''HH:mm') : ''}"
-                                data-role="atualizar-regras" data-validate="required datetime" required>
+                                data-role="atualizar-regras" data-validate="required datetime" required
+                                title="Data e horário em que a atividade foi realizada">
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Turno</label>
                             <input type="text" class="form-control" id="turnoVisual" value="Automático (via Horário)"
                                 disabled>
@@ -63,54 +65,33 @@
                                 (18h00-23h59)</small>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Resolução Aplicada (Identificada por Data)</label>
                             <input type="text" class="form-control" id="nomeResolucaoVisual" readonly
                                 placeholder="Selecione a data para identificar">
                             <input type="hidden" th:field="*{regra.resolucao.idResolucao}" id="idResolucaoHidden">
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Portaria Aplicada (Identificada por Data)</label>
                             <input type="text" class="form-control" id="nomePortariaVisual" readonly
                                 placeholder="Selecione a data para identificar">
                             <input type="hidden" th:field="*{regra.portaria.idPortaria}" id="idPortariaHidden">
                         </div>
 
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="button" class="btn btn-outline-secondary w-100" data-role="resetar-filtros"><i
-                                    class="fa-solid fa-eraser me-1"></i> Limpar</button>
-                        </div>
-
                         <div class="col-md-12">
-                            <label class="form-label fw-bold text-cremepe">Regra Enquadrada (Atividade
+                            <label class="form-label fw-bold">Regra Enquadrada (Atividade
                                 Específica)</label>
-                            <select class="form-select border-primary" th:field="*{regra.idRegra}" id="selectRegra"
+                            <select class="form-select" th:field="*{regra.idRegra}" id="selectRegra"
                                 data-role="exibir-guia" required th:disabled="${atividade.idAtividade == null}"
-                                data-validate="required">
-                                <option value="">-- Escolha a documentação acima para desbloquear as regras --</option>
+                                data-validate="required" title="Selecione a regra que melhor enquadra a atividade">
+                                <option value="">Escolha a documentação acima para desbloquear as regras</option>
                                 <option th:if="${atividade.regra != null}" th:value="${atividade.regra.idRegra}"
                                     th:text="${atividade.regra.nomeRegra}" selected></option>
                             </select>
                         </div>
 
-                        <div class="col-md-12" id="boxGuia" style="display: none;">
-                            <div class="alert alert-info border-0 shadow-sm mb-0">
-                                <h6 class="fw-bold text-primary"><i class="fa-solid fa-circle-info me-2"></i>Guia de
-                                    Verificação da Atividade</h6>
-                                <hr class="my-2">
-                                <div class="row">
-                                    <div class="col-md-9">
-                                        <small class="d-block text-muted fw-bold">Descrição da Atividade:</small>
-                                        <span id="guiaDescricao"></span>
-                                    </div>
-                                    <div class="col-md-3 text-end">
-                                        <small class="d-block text-muted fw-bold">Pontuação:</small>
-                                        <span class="badge bg-primary fs-6" id="guiaPontos">0</span> pontos
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <div th:replace="~{fragments/guia-atividade :: guia}"></div>
                     </div>
 
                     <div class="row g-4 mt-2">
@@ -118,20 +99,21 @@
                             <div class="card bg-light border-dashed">
                                 <div class="card-body">
                                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-paperclip me-2"></i>Anexar
-                                        Comprovante (Obrigatório para Jeton)</h6>
+                                        Comprovante</h6>
                                     <div class="row g-3">
                                         <div class="col-md-8">
-                                            <label class="form-label small fw-bold">Nome do Comprovante (Descrição para
-                                                o sistema)</label>
+                                            <label class="form-label small fw-bold">Nome do Comprovante</label>
                                             <input type="text" class="form-control form-control-sm"
                                                 name="nomeComprovanteUsuario"
                                                 th:value="${atividade.comprovante != null ? atividade.comprovante.nomeComprovante : ''}"
-                                                placeholder="Ex: Certidão de comparecimento - Reunião X">
+                                                placeholder="Ex: Ata de Reunião (18/05/26)"
+                                                title="Dê um nome descritivo ao comprovante para identificação futura">
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label small fw-bold">Tipo de Documento</label>
-                                            <select class="form-select form-select-sm" name="idTipoAnexo">
-                                                <option value="">-- Selecione o Tipo --</option>
+                                            <select class="form-select form-select-sm" name="idTipoAnexo"
+                                                title="Selecione o tipo de documento anexado (PDF, imagem, etc.)">
+                                                <option value="">Selecione o Tipo</option>
                                                 <option th:each="t : ${listaTiposAnexo}" th:value="${t.idTipo}"
                                                     th:text="${t.nome}"
                                                     th:selected="${atividade.comprovante != null && atividade.comprovante.tipoAnexo != null ? atividade.comprovante.tipoAnexo.idTipo == t.idTipo : false}">
@@ -139,11 +121,11 @@
                                             </select>
                                         </div>
                                         <div class="col-md-12">
-                                            <label class="form-label small fw-bold">Ficheiro (PDF ou Imagem)</label>
+                                            <label class="form-label small fw-bold">Arquivo (PDF ou Imagem)</label>
                                             <div class="file-upload-container">
                                                 <input type="file" class="form-control form-control-sm" name="file"
-                                                    accept=".pdf,image/*" data-role="file-upload">
-                                                <!-- O preview será inserido aqui via JS -->
+                                                    accept=".pdf,image/*" data-role="file-upload"
+                                                    title="Envie o comprovante em formato PDF ou imagem (JPG, PNG)">
                                             </div>
                                         </div>
                                     </div>

@@ -15,24 +15,23 @@
                 <a th:href="@{/atividades/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Registar
                     Atividade</a>
                 <a th:href="@{/atividades/lote/novo}" class="btn btn-cremepe"><i
-                        class="fa-solid fa-layer-group me-1"></i> Criar em Lote</a>
+                        class="fa-solid fa-layer-group me-1"></i> Registrar Atividades em Lote</a>
             </div>
         </div>
 
-        <!-- Filtros (mantidos iguais) -->
-        <form th:action="@{/atividades}" method="get" class="mb-4">
+        <form th:action="@{/atividades}" method="get" class="mb-4" data-guard-ignore>
             <div class="card shadow-sm border-success mb-4">
                 <div class="card-header bg-success text-white fw-bold">
-                    <i class="fa-solid fa-filter me-2"></i> Filtrar Atividades Conselhais
+                    <i class="fa-solid fa-filter me-2"></i> Filtrar Atividades
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold small text-muted">Pesquisar (Nome ou Regra)</label>
                             <input type="text" name="termo" class="form-control" placeholder="Digite para buscar..."
                                 th:value="${termo}">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Situação</label>
                             <select name="situacao" class="form-select" onchange="this.form.submit()">
                                 <option value="">Todas</option>
@@ -41,7 +40,7 @@
                                 <option value="F" th:selected="${situacao == 'F'}">Fechadas (Folha)</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Turno</label>
                             <select name="turno" class="form-select" onchange="this.form.submit()">
                                 <option value="">Todos</option>
@@ -51,7 +50,7 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label fw-bold small text-muted">Anexo / Comprovante</label>
+                            <label class="form-label fw-bold small text-muted">Comprovante</label>
                             <select name="comprovanteFiltro" class="form-select" onchange="this.form.submit()">
                                 <option value="">Todos os registos</option>
                                 <option value="S" th:selected="${comprovanteFiltro == 'S'}">Apenas com Comprovante
@@ -60,7 +59,7 @@
                                 </option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Exibir</label>
                             <select name="size" class="form-select" onchange="this.form.submit()">
                                 <option value="10" th:selected="${size == 10}">10 registros</option>
@@ -89,7 +88,6 @@
             </div>
         </form>
 
-        <!-- Tabela de atividades -->
         <div class="card shadow-sm mb-4">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -111,7 +109,7 @@
                                 <th>
                                     <a th:href="@{/atividades(page=0, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, sort='regra.nomeRegra', dir=${sort == 'regra.nomeRegra' and dir == 'asc' ? 'desc' : 'asc'})}"
                                         class="text-dark text-decoration-none">
-                                        Normativa (P / R)
+                                        Normativa
                                         <i class="fa-solid fa-sort text-muted ms-1"
                                             th:if="${sort != 'regra.nomeRegra'}"></i>
                                         <i class="fa-solid fa-sort-up ms-1"
@@ -184,14 +182,16 @@
                                             th:data-regradesc="${a.regra.descricao}"
                                             th:data-regrapontos="${a.regra.pontos}"
                                             th:data-dataatv="${#temporals.format(a.dataHoraAtividade, 'dd/MM/yyyy HH:mm')}"
-                                            th:data-datareg="${#temporals.format(a.dataHoraRegistro, 'dd/MM/yyyy HH:mm')}">
+                                            th:data-datareg="${#temporals.format(a.dataHoraRegistro, 'dd/MM/yyyy HH:mm')}"
+                                            title="Visualizar detalhes da atividade">
                                             <i class="fa-solid fa-eye"></i>
                                         </button>
 
                                         <button th:if="${a.comprovante != null}" type="button"
                                             class="btn btn-outline-secondary" data-role="ver-comprovante"
                                             th:data-id="${a.comprovante.idComprovante}"
-                                            th:data-nome="${a.comprovante.nomeComprovante}">
+                                            th:data-nome="${a.comprovante.nomeComprovante}"
+                                            title="Visualizar comprovante anexado">
                                             <i class="fa-solid fa-paperclip"></i>
                                         </button>
 
@@ -200,7 +200,8 @@
                                                 class="btn btn-outline-success" data-role="confirmar-acao"
                                                 th:data-url="'/atividades/validar/' + ${a.idAtividade}"
                                                 data-mensagem="Deseja realmente validar esta atividade?"
-                                                data-desvalidar="false">
+                                                data-desvalidar="false"
+                                                title="Validar esta atividade (torna-se elegível para processamento)">
                                                 <i class="fa-solid fa-check"></i>
                                             </button>
 
@@ -208,12 +209,13 @@
                                                 class="btn btn-outline-warning" data-role="confirmar-acao"
                                                 th:data-url="'/atividades/desvalidar/' + ${a.idAtividade}"
                                                 data-mensagem="Deseja realmente desvalidar esta atividade?"
-                                                data-desvalidar="true">
+                                                data-desvalidar="true"
+                                                title="Desvalidar atividade (retorna a pendente)">
                                                 <i class="fa-solid fa-xmark"></i>
                                             </button>
 
                                             <a th:href="@{/atividades/editar/{id}(id=${a.idAtividade})}"
-                                                class="btn btn-outline-primary">
+                                                class="btn btn-outline-primary" title="Editar atividade">
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </a>
 
@@ -221,7 +223,8 @@
                                                 data-role="confirmar-acao"
                                                 th:data-url="'/atividades/excluir/' + ${a.idAtividade}"
                                                 data-mensagem="Deseja excluir permanentemente esta atividade?"
-                                                data-desvalidar="false" data-cor="btn-danger">
+                                                data-desvalidar="false" data-cor="btn-danger"
+                                                title="Excluir permanentemente esta atividade">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
                                         </th:block>
@@ -283,7 +286,6 @@
             </div>
         </div>
 
-        <!-- Modais (mantidos iguais) -->
         <div class="modal fade" id="modalDetalhes" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content border-0 shadow">
