@@ -35,7 +35,7 @@
                         <label class="form-label fw-bold">Data e Horário da Atividade *</label>
                         <input type="datetime-local" class="form-control" name="dataAtividadePura" id="dataAtividade"
                             th:value="${atividade.dataHoraAtividade != null ? #temporals.format(atividade.dataHoraAtividade, 'yyyy-MM-dd') + 'T' + #temporals.format(atividade.dataHoraAtividade, 'HH:mm') : ''}"
-                            required>
+                            data-validate="required datetime" required>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-bold">Turno</label>
@@ -43,7 +43,8 @@
                     </div>
                     <div class="col-md-12">
                         <label class="form-label fw-bold">Regra Enquadrada *</label>
-                        <select class="form-select" th:field="*{regra.idRegra}" id="selectRegra" required>
+                        <select class="form-select" th:field="*{regra.idRegra}" id="selectRegra"
+                            data-validate="required" required>
                             <option value="">-- Selecione a data para carregar as regras --</option>
                         </select>
                         <small class="text-muted">As regras disponíveis dependem da data escolhida.</small>

@@ -14,7 +14,7 @@ export const API = {
 
     // Regras
     REGRAS_POR_DATA: '/api/regras/regras-por-data',
-    REGRAS_POR_RESOLUCAO: '/api/regras/regras-por-resolucao',
+    REGRAS_POR_RESOLUCAO: '/api/regras/resolucao',
 
     // Jetons
     JETONS_ATIVIDADES: (pessoa, gestao, mes, ano) =>

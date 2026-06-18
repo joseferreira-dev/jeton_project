@@ -28,7 +28,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Gestão Referente</label>
                             <select class="form-select" th:field="*{gestao.idGestao}" id="selectGestao"
-                                data-role="atualizar-conselheiros" required>
+                                data-role="atualizar-conselheiros" data-validate="required" required>
                                 <option value="">-- Selecione a Gestão Primeiro --</option>
                                 <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}"
                                     th:text="${g.nomeGestao}">
@@ -39,7 +39,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Conselheiro</label>
                             <select class="form-select" th:field="*{conselheiro.idPessoa}" id="selectConselheiro"
-                                required th:disabled="${atividade.idAtividade == null}">
+                                required th:disabled="${atividade.idAtividade == null}" data-validate="required">
                                 <option value="">-- Aguardando Gestão --</option>
                                 <option th:if="${atividade.conselheiro != null}"
                                     th:value="${atividade.conselheiro.idPessoa}"
@@ -52,7 +52,7 @@
                             <input type="datetime-local" class="form-control" name="dataAtividadePura"
                                 id="dataAtividade"
                                 th:value="${atividade.dataHoraAtividade != null ? #temporals.format(atividade.dataHoraAtividade, 'yyyy-MM-dd''T''HH:mm') : ''}"
-                                data-role="atualizar-regras" required>
+                                data-role="atualizar-regras" data-validate="required datetime" required>
                         </div>
 
                         <div class="col-md-3">
@@ -86,7 +86,8 @@
                             <label class="form-label fw-bold text-cremepe">Regra Enquadrada (Atividade
                                 Específica)</label>
                             <select class="form-select border-primary" th:field="*{regra.idRegra}" id="selectRegra"
-                                data-role="exibir-guia" required th:disabled="${atividade.idAtividade == null}">
+                                data-role="exibir-guia" required th:disabled="${atividade.idAtividade == null}"
+                                data-validate="required">
                                 <option value="">-- Escolha a documentação acima para desbloquear as regras --</option>
                                 <option th:if="${atividade.regra != null}" th:value="${atividade.regra.idRegra}"
                                     th:text="${atividade.regra.nomeRegra}" selected></option>

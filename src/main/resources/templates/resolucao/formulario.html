@@ -27,12 +27,13 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">N.º da Resolução</label>
-                                    <input type="number" class="form-control" th:field="*{numero}" required min="1">
+                                    <input type="number" class="form-control" th:field="*{numero}"
+                                        data-validate="required integer min:1" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Ano</label>
-                                    <input type="number" class="form-control" th:field="*{ano}" required min="2000"
-                                        max="2100">
+                                    <input type="number" class="form-control" th:field="*{ano}"
+                                        data-validate="required integer min:2000 max:2100" required>
                                 </div>
                             </div>
                             <div class="row g-3 mb-3">
@@ -40,20 +41,21 @@
                                     <label class="form-label fw-bold">Início da Vigência</label>
                                     <input type="date" class="form-control"
                                         th:value="${#temporals.format(resolucao.dtInicioVigencia, 'yyyy-MM-dd')}"
-                                        name="dtInicioVigencia" required>
+                                        name="dtInicioVigencia" data-validate="required date" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Fim da Vigência</label>
                                     <input type="date" class="form-control"
                                         th:value="${#temporals.format(resolucao.dtFimVigencia, 'yyyy-MM-dd')}"
-                                        name="dtFimVigencia">
+                                        name="dtFimVigencia" data-validate="date">
                                     <div class="form-text" style="font-size: 0.75rem;">Deixe vazio se for indeterminado.
                                     </div>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Ementa (Descrição curta)</label>
-                                <textarea class="form-control" th:field="*{ementa}" rows="3" required></textarea>
+                                <textarea class="form-control" th:field="*{ementa}" rows="3"
+                                    data-validate="required minlength:3" required></textarea>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Link de Publicação (Opcional)</label>
@@ -64,35 +66,34 @@
                 </div>
 
                 <div class="col-md-7">
-                    <div class="card shadow-sm h-100 border-primary">
-                        <div class="card-header fw-bold"><i class="fa-solid fa-gears me-2"></i>Parâmetros do Motor de
-                            Cálculo</div>
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header fw-bold"><i class="fa-solid fa-gears me-2"></i>Parâmetros</div>
                         <div class="card-body">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold text-primary">Valor do Jeton (R$)</label>
+                                    <label class="form-label fw-bold">Valor do Jeton (R$)</label>
                                     <input type="number" step="0.01" class="form-control" th:field="*{valorJeton}"
-                                        required min="0.01">
+                                        data-validate="required number min:0.01" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold text-info">Quantos Pontos = 1 Jeton?</label>
-                                    <input type="number" class="form-control" th:field="*{pontosPorJeton}" required
-                                        min="1" placeholder="Ex: 3">
+                                    <label class="form-label fw-bold">Quantos Pontos = 1 Jeton?</label>
+                                    <input type="number" class="form-control" th:field="*{pontosPorJeton}"
+                                        data-validate="required integer min:1" required>
                                 </div>
                                 <div class="col-md-4 mt-4">
-                                    <label class="form-label fw-bold text-danger">Máx. Jetons/Dia</label>
-                                    <input type="number" class="form-control" th:field="*{maxJetonsDia}" required
-                                        min="1">
+                                    <label class="form-label fw-bold">Máx. Jetons/Dia</label>
+                                    <input type="number" class="form-control" th:field="*{maxJetonsDia}"
+                                        data-validate="required integer min:1" required>
                                 </div>
                                 <div class="col-md-4 mt-4">
-                                    <label class="form-label fw-bold text-danger">Máx. Jetons/Período</label>
-                                    <input type="number" class="form-control" th:field="*{maxJetonsPeriodo}" required
-                                        min="1" title="Período contínuo (Ex: manhã + tarde)">
+                                    <label class="form-label fw-bold">Máx. Jetons/Período</label>
+                                    <input type="number" class="form-control" th:field="*{maxJetonsPeriodo}"
+                                        data-validate="required integer min:1" required>
                                 </div>
                                 <div class="col-md-4 mt-4">
-                                    <label class="form-label fw-bold text-danger">Máx. Jetons/Mês</label>
+                                    <label class="form-label fw-bold">Máx. Jetons/Mês</label>
                                     <input type="number" class="form-control border-danger" th:field="*{maxJetonsMes}"
-                                        required min="1" title="Teto máximo absoluto do mês">
+                                        data-validate="required integer min:1" required>
                                 </div>
                             </div>
                         </div>

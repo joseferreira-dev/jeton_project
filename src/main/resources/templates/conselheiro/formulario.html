@@ -25,7 +25,8 @@
                     <div class="row g-3">
                         <div class="col-md-8">
                             <label class="form-label fw-bold">Nome Completo do Médico</label>
-                            <input type="text" class="form-control" th:field="*{pessoa.nome}" required>
+                            <input type="text" class="form-control" th:field="*{pessoa.nome}"
+                                data-validate="required minlength:3 maxlength:70" required>
                         </div>
 
                         <div class="col-md-4">
@@ -33,31 +34,31 @@
                             <div class="input-group">
                                 <span class="input-group-text">PE</span>
                                 <input type="text" class="form-control" th:field="*{crm}" placeholder="Apenas números"
-                                    required>
+                                    data-validate="required crm" required>
                             </div>
                         </div>
 
                         <div class="col-md-4">
                             <label class="form-label fw-bold">E-mail</label>
-                            <input type="email" class="form-control" th:field="*{pessoa.email}">
+                            <input type="email" class="form-control" th:field="*{pessoa.email}" data-validate="email">
                         </div>
 
                         <div class="col-md-3">
                             <label class="form-label fw-bold">CPF</label>
                             <input type="text" class="form-control" th:field="*{pessoa.cpf}"
-                                placeholder="Apenas números" required>
+                                placeholder="Apenas números" data-validate="required cpf" required>
                         </div>
 
                         <div class="col-md-3">
                             <label class="form-label fw-bold">Senha de Acesso</label>
                             <input type="password" class="form-control" th:field="*{senhaAcesso}"
                                 th:placeholder="${conselheiro.idPessoa == null ? 'Defina a senha' : 'Deixe em branco para manter'}"
-                                th:required="${conselheiro.idPessoa == null}">
+                                th:required="${conselheiro.idPessoa == null}" data-validate="minlength:6">
                         </div>
 
                         <div class="col-md-2">
                             <label class="form-label fw-bold">Situação</label>
-                            <select class="form-select" th:field="*{inSituacao}">
+                            <select class="form-select" th:field="*{inSituacao}" data-validate="required">
                                 <option value="A">Ativo</option>
                                 <option value="I">Inativo</option>
                             </select>

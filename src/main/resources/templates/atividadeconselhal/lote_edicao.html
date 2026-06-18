@@ -34,7 +34,7 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Gestão Referente</label>
                         <select class="form-select" name="idGestao" id="selectGestao" data-role="atualizar-conselheiros"
-                            required>
+                            data-validate="required" required>
                             <option value="">-- Selecione a Gestão Primeiro --</option>
                             <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}" th:text="${g.nomeGestao}"
                                 th:selected="${g.idGestao == atividadeReferencia.gestao.idGestao}"></option>
@@ -46,7 +46,7 @@
                         <label class="form-label fw-bold">Data e Horário da Atividade</label>
                         <input type="datetime-local" class="form-control" name="dataHoraAtividade" id="dataAtividade"
                             th:value="${#temporals.format(atividadeReferencia.dataHoraAtividade, 'yyyy-MM-dd''T''HH:mm')}"
-                            required>
+                            data-validate="required datetime" required>
                     </div>
 
                     <div class="col-md-3">
@@ -61,7 +61,7 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Conselheiros (selecione um ou mais)</label>
                         <select class="form-select" name="idsConselheiros" id="selectConselheiros" multiple size="12"
-                            required>
+                            required data-validate="required">
                             <option value="">-- Aguardando Gestão --</option>
                         </select>
                         <small class="text-muted">Segure Ctrl (ou Cmd) para selecionar vários.</small>
@@ -100,7 +100,7 @@
                         <label class="form-label fw-bold text-cremepe">Regra Enquadrada (Atividade
                             Específica)</label>
                         <select class="form-select border-primary" name="idRegra" id="selectRegra"
-                            data-role="exibir-guia" required>
+                            data-role="exibir-guia" data-validate="required" required>
                             <option value="">-- Escolha a documentação acima para desbloquear as regras --</option>
                         </select>
                     </div>

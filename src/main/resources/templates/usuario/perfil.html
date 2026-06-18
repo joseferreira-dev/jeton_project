@@ -26,12 +26,14 @@
                     <div class="row g-3">
                         <div class="col-md-12">
                             <label class="form-label fw-bold">Nome Completo</label>
-                            <input type="text" class="form-control" th:field="*{pessoa.nome}" required>
+                            <input type="text" class="form-control" th:field="*{pessoa.nome}"
+                                data-validate="required minlength:3 maxlength:70" required>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label fw-bold">E-mail</label>
-                            <input type="email" class="form-control" th:field="*{pessoa.email}" required>
+                            <input type="email" class="form-control" th:field="*{pessoa.email}"
+                                data-validate="required email" required>
                         </div>
 
                         <div class="col-md-6">
@@ -42,7 +44,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Nova Senha</label>
                             <input type="password" class="form-control" th:field="*{senha}"
-                                placeholder="Deixe em branco para manter a atual">
+                                placeholder="Deixe em branco para manter a atual" data-validate="minlength:6">
                             <small class="text-muted">Preencha apenas se desejar alterar a senha.</small>
                         </div>
 

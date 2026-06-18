@@ -27,18 +27,20 @@
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Nome do Agrupamento</label>
                                 <input type="text" class="form-control" th:field="*{nomeRegra}"
-                                    placeholder="Ex: Teto Vistorias + CTs" required>
+                                    placeholder="Ex: Teto Vistorias + CTs"
+                                    data-validate="required minlength:3 maxlength:50" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold text-danger">Teto Máximo (Pontos Limite)</label>
-                                <input type="number" step="0.5" class="form-control" th:field="*{pontosLimite}" required
-                                    min="0.5" placeholder="Ex: 5.0">
+                                <label class="form-label fw-bold">Teto Máximo (Pontos Limite)</label>
+                                <input type="number" step="0.5" class="form-control" th:field="*{pontosLimite}"
+                                    placeholder="Ex: 5.0" data-validate="required number min:0.5" required>
                                 <small class="text-muted">As atividades selecionadas não poderão ultrapassar este
                                     somatório.</small>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Este limite aplica-se por:</label>
-                                <select class="form-select" th:field="*{inTipoLimite}" required>
+                                <select class="form-select" th:field="*{inTipoLimite}" data-validate="required"
+                                    required>
                                     <option value="D">Diário (Por Dia)</option>
                                     <option value="T">Por Turno (Manhã/Tarde/Noite)</option>
                                     <option value="M">Mensal (Por Mês)</option>
@@ -55,9 +57,8 @@
                         </div>
                         <div class="card-body d-flex flex-column">
                             <div class="mb-3">
-                                <label class="form-label fw-bold text-primary">Filtrar por Resolução</label>
+                                <label class="form-label fw-bold">Filtrar por Resolução</label>
                                 <select class="form-select" id="selectResolucaoFiltro">
-                                    <option value="">Todas as Resoluções</option>
                                     <option th:each="r : ${listaResolucoes}" th:value="${r.idResolucao}"
                                         th:text="${'Resolução ' + r.numero + '/' + r.ano}"></option>
                                 </select>
@@ -65,10 +66,10 @@
                                     disponíveis.</small>
                             </div>
 
-                            <label class="form-label fw-bold text-primary mb-2">Regras (Segure CTRL ou CMD para
+                            <label class="form-label fw-bold mb-2">Regras (Segure CTRL ou CMD para
                                 selecionar várias):</label>
                             <select multiple class="form-select flex-grow-1" style="min-height: 250px;"
-                                name="regrasAgrupadas" id="selectRegras">
+                                name="regrasAgrupadas" id="selectRegras" data-validate="required">
                                 <!-- opções preenchidas via JS -->
                             </select>
 

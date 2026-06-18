@@ -45,6 +45,7 @@ import {
     hideLoading,
     fetchWithLoading
 } from './loading-overlay.js';
+import { initValidation, validateForm } from './validation.js';
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -213,6 +214,29 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('chartConselheiros')) {
         inicializarRelatorioGraficos();
     }
+
+    // ========== VALIDAÇÃO DE FORMULÁRIO ==========
+    initValidation();
+
+    // Adiciona validação antes do submit para formulários com data-validate
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (form.querySelector('[data-validate]')) {
+            if (!validateForm(form)) {
+                e.preventDefault();
+                // Foca no primeiro campo inválido
+                const firstInvalid = form.querySelector('.is-invalid');
+                if (firstInvalid) {
+                    firstInvalid.focus();
+                }
+                // Exibe um toast de aviso (opcional)
+                if (typeof showWarning === 'function') {
+                    showWarning('Corrija os campos destacados antes de continuar.', 'Validação');
+                }
+                return false;
+            }
+        }
+    });
 });
 
 // =========================================================================
@@ -279,7 +303,30 @@ function inicializarFiltroRegrasConjuntas() {
     const selectRegras = document.getElementById('selectRegras');
     const hiddenIds = document.getElementById('regrasSelecionadasIds');
 
-    if (!selectResolucao || !selectRegras) return;
+    if (!selectResolucao || !selectRegras) {
+        console.warn('Elementos do filtro de regras conjuntas não encontrados.');
+        return;
+    }
+
+    // 1. Ordenar opções do select de resoluções por valor (ID) decrescente
+    const placeholder = selectResolucao.querySelector('option[value=""]');
+    const options = Array.from(selectResolucao.options).filter(opt => opt.value !== '');
+    options.sort((a, b) => parseInt(b.value) - parseInt(a.value));
+
+    // Limpa e reinsere as opções ordenadas
+    selectResolucao.innerHTML = '';
+    if (placeholder) {
+        selectResolucao.appendChild(placeholder);
+    }
+    options.forEach(opt => selectResolucao.appendChild(opt));
+
+    // 2. Se nenhuma opção estiver selecionada, seleciona a primeira (mais recente)
+    if (!selectResolucao.value) {
+        const firstOption = selectResolucao.querySelector('option:not([disabled])');
+        if (firstOption && firstOption.value) {
+            firstOption.selected = true;
+        }
+    }
 
     function parseIdsString(str) {
         if (!str || str.trim() === '') return [];
@@ -288,50 +335,70 @@ function inicializarFiltroRegrasConjuntas() {
 
     function carregarRegras(resolucaoId, idsParaSelecionar) {
         const url = resolucaoId
-            ? `${API.REGRAS_POR_RESOLUCAO}?resolucaoId=${resolucaoId}`
+            ? `${API.REGRAS_POR_RESOLUCAO}/${resolucaoId}`
             : API.REGRAS_POR_RESOLUCAO;
+
+        selectRegras.innerHTML = '<option value="" disabled>Carregando regras...</option>';
+        selectRegras.disabled = true;
+
         fetch(url)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
             .then(data => {
-                const selectedValues = Array.from(selectRegras.selectedOptions).map(opt => opt.value);
                 selectRegras.innerHTML = '';
-                if (data.length === 0) {
+                if (!data || data.length === 0) {
                     const option = document.createElement('option');
                     option.text = 'Nenhuma regra encontrada';
                     option.disabled = true;
                     selectRegras.appendChild(option);
-                } else {
-                    data.forEach(regra => {
-                        const option = document.createElement('option');
-                        option.value = regra.id;
-                        option.text = `${regra.nome} (${regra.pontos} pts) ${regra.revogado === 'S' ? '[REVOGADA]' : ''}`;
-                        selectRegras.appendChild(option);
-                    });
+                    selectRegras.disabled = true;
+                    return;
                 }
+
+                data.forEach(regra => {
+                    const option = document.createElement('option');
+                    option.value = regra.id;
+                    const revogado = regra.inRevogado === 'S' ? ' [REVOGADA]' : '';
+                    option.text = `${regra.nome} (${regra.pontos} pts)${revogado}`;
+                    selectRegras.appendChild(option);
+                });
+
                 if (idsParaSelecionar && idsParaSelecionar.length > 0) {
-                    idsParaSelecionar.forEach(id => {
-                        const option = Array.from(selectRegras.options).find(opt => opt.value == id);
-                        if (option) option.selected = true;
-                    });
-                } else if (selectedValues.length > 0) {
-                    selectedValues.forEach(val => {
-                        const option = Array.from(selectRegras.options).find(opt => opt.value == val);
-                        if (option) option.selected = true;
+                    Array.from(selectRegras.options).forEach(opt => {
+                        if (idsParaSelecionar.includes(parseInt(opt.value))) {
+                            opt.selected = true;
+                        }
                     });
                 }
+
+                selectRegras.disabled = false;
             })
-            .catch(err => console.error('Erro ao carregar regras:', err));
+            .catch(error => {
+                console.error('Erro ao carregar regras:', error);
+                selectRegras.innerHTML = '<option value="" disabled>Erro ao carregar regras</option>';
+                selectRegras.disabled = true;
+                if (typeof showError === 'function') {
+                    showError('Não foi possível carregar as regras. Tente novamente.', 'Erro');
+                }
+            });
     }
 
+    // 3. Evento de mudança da resolução
     selectResolucao.addEventListener('change', function () {
-        carregarRegras(this.value);
+        const resolucaoId = this.value ? parseInt(this.value) : null;
+        const selectedIds = Array.from(selectRegras.selectedOptions).map(opt => parseInt(opt.value));
+        carregarRegras(resolucaoId, selectedIds);
     });
 
+    // 4. Carregamento inicial com a resolução já selecionada
     let idsIniciais = [];
     if (hiddenIds && hiddenIds.value) {
         idsIniciais = parseIdsString(hiddenIds.value);
     }
-    carregarRegras(null, idsIniciais);
+    const resolucaoInicial = selectResolucao.value ? parseInt(selectResolucao.value) : null;
+    carregarRegras(resolucaoInicial, idsIniciais);
 }
 
 window.showLoading = showLoading;

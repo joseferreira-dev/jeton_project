@@ -31,7 +31,8 @@
                         <div class="col-md-5">
                             <label class="form-label fw-bold">Selecione a Gestão</label>
                             <select class="form-select" th:field="*{gestao.idGestao}"
-                                th:disabled="${gestaoConselheiro.id?.idGestao != null}" required>
+                                th:disabled="${gestaoConselheiro.id?.idGestao != null}" data-validate="required"
+                                required>
                                 <option value="">-- Escolha --</option>
                                 <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}"
                                     th:text="${g.nomeGestao}"></option>
@@ -41,7 +42,8 @@
                         <div class="col-md-5">
                             <label class="form-label fw-bold">Selecione o Conselheiro</label>
                             <select class="form-select" th:field="*{conselheiro.idPessoa}"
-                                th:disabled="${gestaoConselheiro.id?.idPessoa != null}" required>
+                                th:disabled="${gestaoConselheiro.id?.idPessoa != null}" data-validate="required"
+                                required>
                                 <option value="">-- Escolha --</option>
                                 <option th:each="c : ${listaConselheiros}" th:value="${c.idPessoa}"
                                     th:text="${c.pessoa.nome + ' (CRM: ' + c.crm + ')'}"></option>
@@ -50,8 +52,8 @@
 
                         <div class="col-md-2">
                             <label class="form-label fw-bold">Situação</label>
-                            <select class="form-select" th:field="*{inSituacao}">
-                                <option value="A">Ativo na Gestão</option>
+                            <select class="form-select" th:field="*{inSituacao}" data-validate="required">
+                                <option value="A">Ativo</option>
                                 <option value="I">Inativo</option>
                             </select>
                         </div>
