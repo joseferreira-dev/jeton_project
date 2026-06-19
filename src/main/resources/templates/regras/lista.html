@@ -10,10 +10,10 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-list-check me-2"></i> Gestão de Regras de
                 Pontuação</h2>
-            <a th:href="@{/regras/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Nova Regra</a>
+            <a th:href="@{/regras/novo}" class="btn btn-success"><i class="fa-solid fa-plus me-1"></i> Nova Regra</a>
         </div>
 
-        <form th:action="@{/regras}" method="get" class="mb-4">
+        <form th:action="@{/regras}" method="get" class="mb-4" data-guard-ignore>
             <input type="hidden" name="sort" th:value="${sort}">
             <input type="hidden" name="dir" th:value="${dir}">
 
@@ -23,12 +23,12 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold small text-muted">Pesquisar (Nome ou Descrição)</label>
                             <input type="text" name="termo" th:value="${termo}" class="form-control"
                                 placeholder="Nome ou Descrição da regra...">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label fw-bold small text-muted">Estado</label>
                             <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
                                 <option value="">Todos os Estados</option>
@@ -36,12 +36,12 @@
                                 <option value="S" th:selected="${situacao == 'S'}">Revogadas (Inativas)</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label fw-bold small text-muted">Atividade Judicante</label>
                             <select name="judicante" id="judicante" class="form-select" onchange="this.form.submit()">
                                 <option value="">Todas as Atividades</option>
-                                <option value="S" th:selected="${judicante == 'S'}">Apenas Judicantes</option>
-                                <option value="N" th:selected="${judicante == 'N'}">Apenas Não Judicantes</option>
+                                <option value="S" th:selected="${judicante == 'S'}">Judicantes</option>
+                                <option value="N" th:selected="${judicante == 'N'}">Não Judicantes</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -70,7 +70,7 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 align-middle">
-                        <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
+                        <thead class="table-light">
                             <tr>
                                 <th class="ps-4">
                                     <a th:href="@{/regras(page=0, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort='nomeRegra', dir=${sort == 'nomeRegra' and dir == 'asc' ? 'desc' : 'asc'})}"
@@ -113,14 +113,14 @@
                                 </td>
                                 <td class="text-center pe-4">
                                     <a th:href="@{'/regras/editar/' + ${r.idRegra}}"
-                                        class="btn btn-sm btn-outline-primary me-1">
+                                        class="btn btn-sm btn-outline-primary me-1" title="Editar regra">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
 
                                     <a href="#" class="btn btn-sm btn-outline-danger me-1" data-role="confirmar-acao"
                                         th:data-url="'/regras/excluir/' + ${r.idRegra}"
                                         data-mensagem="Deseja EXCLUIR permanentemente esta regra? Essa ação só será permitida se não houver nenhuma atividade lançada utilizando esta regra."
-                                        data-cor="btn-danger">
+                                        data-cor="btn-danger" title="Excluir regra">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </a>
 
@@ -128,14 +128,14 @@
                                         class="btn btn-sm btn-outline-danger me-1" data-role="confirmar-acao"
                                         th:data-url="'/regras/revogar/' + ${r.idRegra}"
                                         data-mensagem="Tem certeza que deseja REVOGAR esta regra? Ela deixará de aparecer para novos lançamentos de atividades conselhais."
-                                        data-cor="btn-danger">
+                                        data-cor="btn-danger" title="Revogar regra">
                                         <i class="fa-solid fa-ban"></i>
                                     </a>
 
                                     <a th:if="${r.inRevogado == 'S'}" href="#" class="btn btn-sm btn-outline-success"
                                         data-role="confirmar-acao" th:data-url="'/regras/restaurar/' + ${r.idRegra}"
                                         data-mensagem="Tem certeza que deseja RESTAURAR esta regra para o estado Vigente?"
-                                        data-cor="btn-success">
+                                        data-cor="btn-success" title="Restaurar regra (volta a estar em vigor)">
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </a>
                                 </td>
