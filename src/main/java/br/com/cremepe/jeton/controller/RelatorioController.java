@@ -1,5 +1,7 @@
 package br.com.cremepe.jeton.controller;
 
+import br.com.cremepe.jeton.domain.Conselheiro;
+import br.com.cremepe.jeton.domain.Gestao;
 import br.com.cremepe.jeton.service.ConselheiroService;
 import br.com.cremepe.jeton.service.GestaoService;
 import br.com.cremepe.jeton.service.RelatorioService;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.List;
 
 @Controller
 @RequestMapping("/relatorios")
@@ -38,7 +42,15 @@ public class RelatorioController {
         }
 
         model.addAttribute("listaRelatorio", java.util.Collections.emptyList());
-        carregarFiltros(model);
+
+        List<Conselheiro> conselheiros = conselheiroService.listarTodos();
+        conselheiros.sort(Comparator.comparing(c -> c.getPessoa().getNome()));
+        model.addAttribute("listaConselheiros", conselheiros);
+
+        List<Gestao> gestoes = gestaoService.listarTodos();
+        gestoes.sort(Comparator.comparing(Gestao::getNomeGestao));
+        model.addAttribute("listaGestoes", gestoes);
+
         return "relatorio/atividade_agrupada";
     }
 

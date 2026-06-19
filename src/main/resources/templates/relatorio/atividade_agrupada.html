@@ -27,7 +27,7 @@
                 <form th:action="@{/relatorios/atividades/gerar}" method="get" data-guard-ignore>
                     <div class="row g-3 align-items-end">
 
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold small text-muted">Gestão</label>
                             <select class="form-select" name="idGestao" id="selectGestao"
                                 data-role="atualizar-conselheiros-relatorio" required>
@@ -38,7 +38,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold small text-muted">Conselheiro (Opcional)</label>
                             <select class="form-select" name="idConselheiro">
                                 <option value="">Todos os Conselheiros</option>
@@ -48,12 +48,12 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label fw-bold small text-muted">Data Inicial (Opcional)</label>
                             <input type="date" class="form-control" name="dataInicio" th:value="${dataInicio}">
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label fw-bold small text-muted">Data Final (Opcional)</label>
                             <input type="date" class="form-control" name="dataFim" th:value="${dataFim}">
                         </div>
