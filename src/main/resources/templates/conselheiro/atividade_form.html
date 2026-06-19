@@ -19,166 +19,104 @@
             <div class="card-body p-4">
                 <form th:action="@{/conselheiro/atividades/salvar}" th:object="${atividade}" method="post"
                     enctype="multipart/form-data" id="formAtividade" data-loading="true"
-                    data-loading-message="Salvando atividade..."></form>>
-                <!-- campos ocultos -->
-                <input type="hidden" th:field="*{idAtividade}">
-                <input type="hidden" th:field="*{dataHoraRegistro}">
-                <input type="hidden" th:field="*{inSituacao}">
-                <input type="hidden" th:field="*{gestao.idGestao}">
-                <input type="hidden" th:field="*{conselheiro.idPessoa}">
-                <!-- guarda o ID da regra atual para preseleção -->
-                <input type="hidden" id="currentRegraId"
-                    th:value="${atividade.regra != null ? atividade.regra.idRegra : ''}">
+                    data-loading-message="Salvando atividade...">
+                    <input type="hidden" th:field="*{idAtividade}">
+                    <input type="hidden" th:field="*{dataHoraRegistro}">
+                    <input type="hidden" th:field="*{inSituacao}">
+                    <input type="hidden" th:field="*{gestao.idGestao}">
+                    <input type="hidden" th:field="*{conselheiro.idPessoa}">
 
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Data e Horário da Atividade *</label>
-                        <input type="datetime-local" class="form-control" name="dataAtividadePura" id="dataAtividade"
-                            th:value="${atividade.dataHoraAtividade != null ? #temporals.format(atividade.dataHoraAtividade, 'yyyy-MM-dd') + 'T' + #temporals.format(atividade.dataHoraAtividade, 'HH:mm') : ''}"
-                            data-validate="required datetime" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold">Turno</label>
-                        <input type="text" class="form-control bg-light" id="turnoVisual" value="Automático" disabled>
-                    </div>
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold">Regra Enquadrada *</label>
-                        <select class="form-select" th:field="*{regra.idRegra}" id="selectRegra"
-                            data-validate="required" required>
-                            <option value="">-- Selecione a data para carregar as regras --</option>
-                        </select>
-                        <small class="text-muted">As regras disponíveis dependem da data escolhida.</small>
-                        <div id="regrasLoading" class="mt-2 text-info small" style="display: none;">
-                            <i class="fa-solid fa-spinner fa-spin"></i> Carregando regras...
+                    <input type="hidden" id="currentRegraId"
+                        th:value="${atividade.regra != null ? atividade.regra.idRegra : ''}">
+
+                    <div class="row g-4">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Data e Horário da Atividade *</label>
+                            <input type="datetime-local" class="form-control" name="dataAtividadePura"
+                                id="dataAtividade"
+                                th:value="${atividade.dataHoraAtividade != null ? #temporals.format(atividade.dataHoraAtividade, 'yyyy-MM-dd') + 'T' + #temporals.format(atividade.dataHoraAtividade, 'HH:mm') : ''}"
+                                data-validate="required datetime" required
+                                title="Data e horário em que a atividade foi realizada">
                         </div>
-                        <div id="regrasError" class="mt-2 text-danger small" style="display: none;"></div>
-                    </div>
-                </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Turno</label>
+                            <input type="text" class="form-control bg-light" id="turnoVisual" value="Automático"
+                                disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Regra Enquadrada *</label>
+                            <select class="form-select" th:field="*{regra.idRegra}" id="selectRegra"
+                                data-validate="required" required
+                                title="Selecione a regra que melhor enquadra sua atividade">
+                                <option value="">Selecione a data para carregar as regras</option>
+                            </select>
+                            <small class="text-muted">As regras disponíveis dependem da data escolhida.</small>
+                            <div id="regrasLoading" class="mt-2 text-info small" style="display: none;">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Carregando regras...
+                            </div>
+                            <div id="regrasError" class="mt-2 text-danger small" style="display: none;"></div>
+                        </div>
 
-                <div class="row g-4 mt-2">
-                    <div class="col-md-12">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h6 class="fw-bold mb-3"><i class="fa-solid fa-paperclip me-2"></i>Anexar
-                                    Comprovante (opcional)</h6>
-                                <div class="row g-3">
-                                    <div class="col-md-12">
-                                        <label class="form-label small fw-bold">Nome do Comprovante</label>
-                                        <input type="text" class="form-control" name="nomeComprovanteUsuario"
-                                            th:value="${atividade.comprovante != null ? atividade.comprovante.nomeComprovante : ''}"
-                                            placeholder="Ex: Certidão de comparecimento - Reunião X">
+                        <div th:replace="~{fragments/guia-atividade :: guia}"></div>
+                    </div>
+
+                    <div class="row g-4 mt-2">
+                        <div class="col-md-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-paperclip me-2"></i>Anexar
+                                        Comprovante</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-8">
+                                            <label class="form-label small fw-bold">Nome do Comprovante</label>
+                                            <input type="text" class="form-control form-control-sm"
+                                                name="nomeComprovanteUsuario"
+                                                th:value="${atividade.comprovante != null ? atividade.comprovante.nomeComprovante : ''}"
+                                                placeholder="Ex: Ata de Reunião (18/05/26)"
+                                                title="Dê um nome descritivo ao comprovante para identificação futura">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Tipo de Documento</label>
+                                            <select class="form-select form-select-sm" name="idTipoAnexo"
+                                                title="Selecione o tipo de documento anexado (PDF, imagem, etc.)">
+                                                <option value="">Selecione o Tipo</option>
+                                                <option th:each="t : ${listaTiposAnexo}" th:value="${t.idTipo}"
+                                                    th:text="${t.nome}"
+                                                    th:selected="${atividade.comprovante != null && atividade.comprovante.tipoAnexo != null ? atividade.comprovante.tipoAnexo.idTipo == t.idTipo : false}">
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label small fw-bold">Arquivo (PDF ou imagem)</label>
+                                            <div class="file-upload-container">
+                                                <input type="file" class="form-control form-control-sm" name="file"
+                                                    accept=".pdf,image/*" data-role="file-upload"
+                                                    title="Envie o comprovante em formato PDF ou imagem (JPG, PNG)">
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Tipo de Documento</label>
-                                        <select class="form-select" name="idTipoAnexo">
-                                            <option value="">-- Selecione --</option>
-                                            <option th:each="t : ${listaTiposAnexo}" th:value="${t.idTipo}"
-                                                th:text="${t.nome}"
-                                                th:selected="${atividade.comprovante != null && atividade.comprovante.tipoAnexo != null ? atividade.comprovante.tipoAnexo.idTipo == t.idTipo : false}">
-                                            </option>
-                                        </select>
+                                    <div th:if="${atividade.comprovante != null}" class="mt-3">
+                                        <span class="badge bg-success">
+                                            <i class="fa-solid fa-file-circle-check me-1"></i>
+                                            Arquivo atual: <span th:text="${atividade.comprovante.nomeArquivo}"></span>
+                                            <small class="text-muted ms-2">(Substitua selecionando um novo
+                                                arquivo)</small>
+                                        </span>
                                     </div>
-                                    <div class="col-md-8">
-                                        <label class="form-label small fw-bold">Arquivo (PDF ou imagem)</label>
-                                        <input type="file" class="form-control" name="file" accept=".pdf,image/*">
-                                    </div>
-                                </div>
-                                <div th:if="${atividade.comprovante != null}" class="mt-3">
-                                    <span class="badge bg-success">
-                                        <i class="fa-solid fa-file-circle-check me-1"></i>
-                                        Anexo atual: <span th:text="${atividade.comprovante.nomeArquivo}"></span>
-                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="mt-5 border-top pt-4 d-flex justify-content-between">
-                    <a th:href="@{/conselheiro/atividades}" class="btn btn-outline-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-cremepe px-4">Salvar Atividade</button>
-                </div>
+                    <div class="mt-5 border-top pt-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <a th:href="@{/conselheiro/atividades}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-success px-4">Salvar Atividade</button>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
-
-        <script>
-            const dataInput = document.getElementById('dataAtividade');
-            const selectRegra = document.getElementById('selectRegra');
-            const turnoVisual = document.getElementById('turnoVisual');
-            const loadingDiv = document.getElementById('regrasLoading');
-            const errorDiv = document.getElementById('regrasError');
-            const currentRegraId = document.getElementById('currentRegraId').value;
-
-            async function carregarRegrasPorData() {
-                const data = dataInput.value;
-                if (!data) {
-                    selectRegra.innerHTML = '<option value="">-- Selecione a data para carregar as regras --</option>';
-                    selectRegra.disabled = true;
-                    return;
-                }
-                loadingDiv.style.display = 'block';
-                errorDiv.style.display = 'none';
-                try {
-                    const response = await fetch(`/api/regras/regras-por-data?data=${data}`);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                    const result = await response.json();
-                    if (result.erro) {
-                        throw new Error(result.erro);
-                    }
-                    selectRegra.innerHTML = '<option value="">-- Selecione a Regra --</option>';
-                    if (result.regras && result.regras.length > 0) {
-                        result.regras.forEach(r => {
-                            const option = document.createElement('option');
-                            option.value = r.id;
-                            option.text = `${r.nome} (${r.pontos} pts)`;
-                            if (currentRegraId && currentRegraId == r.id) {
-                                option.selected = true;
-                            }
-                            selectRegra.appendChild(option);
-                        });
-                        selectRegra.disabled = false;
-                    } else {
-                        selectRegra.innerHTML = '<option value="">Nenhuma regra disponível para esta data</option>';
-                        selectRegra.disabled = true;
-                    }
-                } catch (err) {
-                    console.error('Erro ao carregar regras:', err);
-                    errorDiv.innerText = 'Erro ao carregar regras. Tente novamente mais tarde.';
-                    errorDiv.style.display = 'block';
-                    selectRegra.innerHTML = '<option value="">Erro ao carregar regras</option>';
-                    selectRegra.disabled = true;
-                } finally {
-                    loadingDiv.style.display = 'none';
-                }
-            }
-
-            function atualizarTurno() {
-                const dataHora = dataInput.value;
-                if (dataHora) {
-                    const hora = new Date(dataHora).getHours();
-                    let turno = '';
-                    if (hora >= 6 && hora < 12) turno = 'Manhã (M)';
-                    else if (hora >= 12 && hora < 18) turno = 'Tarde (T)';
-                    else turno = 'Noite (N)';
-                    turnoVisual.value = turno;
-                } else {
-                    turnoVisual.value = 'Automático';
-                }
-            }
-
-            dataInput.addEventListener('change', () => {
-                carregarRegrasPorData();
-                atualizarTurno();
-            });
-            // Carregar regras se já houver data (edição)
-            if (dataInput.value) {
-                carregarRegrasPorData();
-                atualizarTurno();
-            }
-        </script>
     </div>
 </body>
 

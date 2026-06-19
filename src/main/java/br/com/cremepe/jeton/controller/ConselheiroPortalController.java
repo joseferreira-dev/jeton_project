@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,8 +21,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/conselheiro")
@@ -31,16 +34,23 @@ public class ConselheiroPortalController {
     private final AtividadeConselhalService atividadeService;
     private final JetonService jetonService;
     private final GestaoConselheiroService gestaoConselheiroService;
+    private final GestaoService gestaoService;
     private final ConselheiroService conselheiroService;
     private final TipoAnexoService tipoAnexoService;
     private final PontosSaldoService pontosSaldoService;
 
-    ConselheiroPortalController(AtividadeConselhalService atividadeService, JetonService jetonService,
-            GestaoConselheiroService gestaoConselheiroService, ConselheiroService conselheiroService,
-            TipoAnexoService tipoAnexoService, PontosSaldoService pontosSaldoService) {
+    ConselheiroPortalController(
+            AtividadeConselhalService atividadeService,
+            JetonService jetonService,
+            GestaoConselheiroService gestaoConselheiroService,
+            GestaoService gestaoService,
+            ConselheiroService conselheiroService,
+            TipoAnexoService tipoAnexoService,
+            PontosSaldoService pontosSaldoService) {
         this.atividadeService = atividadeService;
         this.jetonService = jetonService;
         this.gestaoConselheiroService = gestaoConselheiroService;
+        this.gestaoService = gestaoService;
         this.conselheiroService = conselheiroService;
         this.tipoAnexoService = tipoAnexoService;
         this.pontosSaldoService = pontosSaldoService;
@@ -113,9 +123,14 @@ public class ConselheiroPortalController {
     public String listarAtividades(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) LocalDate dataInicio,
-            @RequestParam(required = false) LocalDate dataFim,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
             @RequestParam(required = false) String situacao,
+            @RequestParam(required = false) String turno,
+            @RequestParam(required = false) String comprovanteFiltro,
+            @RequestParam(required = false) String termo,
+            @RequestParam(required = false, defaultValue = "dataHoraAtividade") String sort,
+            @RequestParam(required = false, defaultValue = "desc") String dir,
             Model model,
             HttpSession session) {
 
@@ -123,11 +138,25 @@ public class ConselheiroPortalController {
             return "redirect:/login";
 
         Integer idConselheiro = getIdConselheiroLogado(session);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "dataHoraAtividade"));
+
+        LocalDateTime inicio = dataInicio != null ? dataInicio.atStartOfDay() : null;
+        LocalDateTime fim = dataFim != null ? dataFim.atTime(LocalTime.MAX) : null;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(dir), sort));
         Page<AtividadeConselhal> pagina = atividadeService.listarPorConselheiroComFiltros(
-                idConselheiro, dataInicio, dataFim, situacao, pageable);
+                idConselheiro, inicio, fim, situacao, turno, comprovanteFiltro, termo, pageable);
 
         model.addAttribute("paginaAtividades", pagina);
+        model.addAttribute("dataInicio", dataInicio);
+        model.addAttribute("dataFim", dataFim);
+        model.addAttribute("situacao", situacao);
+        model.addAttribute("turno", turno);
+        model.addAttribute("comprovanteFiltro", comprovanteFiltro);
+        model.addAttribute("termo", termo);
+        model.addAttribute("sort", sort);
+        model.addAttribute("dir", dir);
+        model.addAttribute("size", size);
+
         return "conselheiro/atividades";
     }
 
@@ -234,19 +263,36 @@ public class ConselheiroPortalController {
         return "redirect:/conselheiro/atividades";
     }
 
+    @GetMapping("/perfil")
+    public String perfil() {
+        return "redirect:/usuarios/perfil";
+    }
+
     @GetMapping("/pagamentos")
-    public String listarPagamentos(Model model, HttpSession session) {
+    public String listarPagamentos(
+            @RequestParam(required = false) Integer idGestao,
+            @RequestParam(required = false) Integer mes,
+            @RequestParam(required = false) Integer ano,
+            Model model,
+            HttpSession session) {
+
         if (!isConselheiro(session))
             return "redirect:/login";
 
         Integer idConselheiro = getIdConselheiroLogado(session);
-        List<JetonDTO> pagamentos = jetonService.listarPorConselheiro(idConselheiro);
-        model.addAttribute("pagamentos", pagamentos);
-        return "conselheiro/pagamentos";
-    }
 
-    @GetMapping("/perfil")
-    public String perfil() {
-        return "redirect:/usuarios/perfil";
+        List<JetonDTO> pagamentos = jetonService.pesquisarHistorico(idGestao, mes, ano, null)
+                .stream()
+                .filter(j -> j.idConselheiro().equals(idConselheiro))
+                .collect(Collectors.toList());
+
+        model.addAttribute("pagamentos", pagamentos);
+
+        model.addAttribute("listaGestoes", gestaoService.listarTodos());
+        model.addAttribute("idGestaoSelecionada", idGestao);
+        model.addAttribute("mesSelecionado", mes);
+        model.addAttribute("anoSelecionado", ano);
+
+        return "conselheiro/pagamentos";
     }
 }

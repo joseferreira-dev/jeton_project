@@ -34,6 +34,7 @@ public class ConselheiroService {
     private final PessoaRepository pessoaRepository;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PermissaoService permissaoService;
     private final UsuarioService usuarioService;
     private final LogJetonService logJetonService;
     private final PessoaValidator pessoaValidator;
@@ -43,6 +44,7 @@ public class ConselheiroService {
             PessoaRepository pessoaRepository,
             UsuarioRepository usuarioRepository,
             PasswordEncoder passwordEncoder,
+            PermissaoService permissaoService,
             UsuarioService usuarioService,
             LogJetonService logJetonService,
             PessoaValidator pessoaValidator) {
@@ -51,6 +53,7 @@ public class ConselheiroService {
         this.pessoaRepository = pessoaRepository;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.permissaoService = permissaoService;
         this.usuarioService = usuarioService;
         this.logJetonService = logJetonService;
         this.pessoaValidator = pessoaValidator;
@@ -142,8 +145,18 @@ public class ConselheiroService {
             throw new RuntimeException("A senha é obrigatória para criar o acesso no sistema.");
         }
 
-        usuarioRepository.save(usuario);
-        log.debug("Usuário sincronizado para conselheiro ID={}", conselheiro.getIdPessoa());
+        Usuario usuarioSalvo = usuarioRepository.save(usuario);
+
+        if (isNovo) {
+            permissaoService.concederPermissao(usuarioSalvo.getIdUsuarioPessoa(), "C");
+            log.debug("Permissão 'C' concedida automaticamente para conselheiro ID {}",
+                    usuarioSalvo.getIdUsuarioPessoa());
+        } else {
+            if (!permissaoService.hasPermissao(usuarioSalvo.getIdUsuarioPessoa(), "C")) {
+                permissaoService.concederPermissao(usuarioSalvo.getIdUsuarioPessoa(), "C");
+                log.debug("Permissão 'C' concedida a conselheiro existente ID {}", usuarioSalvo.getIdUsuarioPessoa());
+            }
+        }
     }
 
     @Transactional

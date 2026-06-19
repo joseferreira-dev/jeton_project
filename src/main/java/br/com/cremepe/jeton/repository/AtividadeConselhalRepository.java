@@ -137,11 +137,20 @@ public interface AtividadeConselhalRepository extends JpaRepository<AtividadeCon
     @Query("SELECT a FROM AtividadeConselhal a WHERE a.conselheiro.idPessoa = :idPessoa " +
             "AND (:dataInicio IS NULL OR a.dataHoraAtividade >= :dataInicio) " +
             "AND (:dataFim IS NULL OR a.dataHoraAtividade <= :dataFim) " +
-            "AND (:situacao IS NULL OR :situacao = '' OR a.inSituacao = :situacao)")
-    Page<AtividadeConselhal> findByConselheiroAndFiltros(@Param("idPessoa") Integer idPessoa,
-            @Param("dataInicio") LocalDate dataInicio,
-            @Param("dataFim") LocalDate dataFim,
+            "AND (:situacao IS NULL OR :situacao = '' OR a.inSituacao = :situacao) " +
+            "AND (:turno IS NULL OR :turno = '' OR a.inTurno = :turno) " +
+            "AND (:comprovanteFiltro IS NULL OR :comprovanteFiltro = '' OR " +
+            "    (:comprovanteFiltro = 'S' AND a.comprovante IS NOT NULL) OR " +
+            "    (:comprovanteFiltro = 'N' AND a.comprovante IS NULL)) " +
+            "AND (:termo IS NULL OR :termo = '' OR LOWER(a.regra.nomeRegra) LIKE LOWER(CONCAT('%', :termo, '%')))")
+    Page<AtividadeConselhal> findByConselheiroAndFiltros(
+            @Param("idPessoa") Integer idPessoa,
+            @Param("dataInicio") LocalDateTime dataInicio,
+            @Param("dataFim") LocalDateTime dataFim,
             @Param("situacao") String situacao,
+            @Param("turno") String turno,
+            @Param("comprovanteFiltro") String comprovanteFiltro,
+            @Param("termo") String termo,
             Pageable pageable);
 
     @Query("SELECT SUM(a.qtdAtividade * a.regra.pontos) FROM AtividadeConselhal a " +

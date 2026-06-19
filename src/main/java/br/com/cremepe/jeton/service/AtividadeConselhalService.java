@@ -214,9 +214,18 @@ public class AtividadeConselhalService {
     }
 
     @Transactional(readOnly = true)
-    public Page<AtividadeConselhal> listarPorConselheiroComFiltros(Integer idPessoa, LocalDate dataInicio,
-            LocalDate dataFim, String situacao, Pageable pageable) {
-        return atividadeRepository.findByConselheiroAndFiltros(idPessoa, dataInicio, dataFim, situacao, pageable);
+    public Page<AtividadeConselhal> listarPorConselheiroComFiltros(
+            Integer idPessoa,
+            LocalDateTime dataInicio,
+            LocalDateTime dataFim,
+            String situacao,
+            String turno,
+            String comprovanteFiltro,
+            String termo,
+            Pageable pageable) {
+
+        return atividadeRepository.findByConselheiroAndFiltros(
+                idPessoa, dataInicio, dataFim, situacao, turno, comprovanteFiltro, termo, pageable);
     }
 
     @Transactional(readOnly = true)

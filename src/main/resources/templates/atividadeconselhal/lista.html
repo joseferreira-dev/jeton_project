@@ -183,7 +183,7 @@
                                             th:data-regrapontos="${a.regra.pontos}"
                                             th:data-dataatv="${#temporals.format(a.dataHoraAtividade, 'dd/MM/yyyy HH:mm')}"
                                             th:data-datareg="${#temporals.format(a.dataHoraRegistro, 'dd/MM/yyyy HH:mm')}"
-                                            title="Visualizar detalhes da atividade">
+                                            title="Visualizar detalhes">
                                             <i class="fa-solid fa-eye"></i>
                                         </button>
 
@@ -210,7 +210,7 @@
                                                 th:data-url="'/atividades/desvalidar/' + ${a.idAtividade}"
                                                 data-mensagem="Deseja realmente desvalidar esta atividade?"
                                                 data-desvalidar="true"
-                                                title="Desvalidar atividade (retorna a pendente)">
+                                                title="Desvalidar atividade (retorna ao estado de pendente)">
                                                 <i class="fa-solid fa-xmark"></i>
                                             </button>
 
@@ -223,8 +223,7 @@
                                                 data-role="confirmar-acao"
                                                 th:data-url="'/atividades/excluir/' + ${a.idAtividade}"
                                                 data-mensagem="Deseja excluir permanentemente esta atividade?"
-                                                data-desvalidar="false" data-cor="btn-danger"
-                                                title="Excluir permanentemente esta atividade">
+                                                data-desvalidar="false" data-cor="btn-danger" title="Excluir atividade">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
                                         </th:block>

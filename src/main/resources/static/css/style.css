@@ -253,6 +253,16 @@ button:disabled {
     width: auto;
 }
 
+.tooltip-inner {
+    background-color: #005438;
+    color: #fff;
+    font-size: 0.85rem;
+}
+
+.bs-tooltip-auto[data-popper-placement^=top] .tooltip-arrow::before,
+.bs-tooltip-top .tooltip-arrow::before {
+    border-top-color: #005438;
+}
 
 /* Responsividade */
 @media (max-width: 991.98px) {

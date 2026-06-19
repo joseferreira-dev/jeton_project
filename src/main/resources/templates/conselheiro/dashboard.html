@@ -17,151 +17,155 @@
             </span>
         </div>
 
-        <!-- Mensagem se nunca vinculado -->
         <div th:if="${nuncaVinculado}" class="alert alert-warning">
             <i class="fa-solid fa-triangle-exclamation me-2"></i> <span th:text="${mensagem}"></span>
         </div>
 
-        <!-- Conteúdo principal -->
         <div th:unless="${nuncaVinculado}">
-            <!-- Indicador de gestão ativa (opcional) -->
             <div th:if="${not temGestaoAtiva}" class="alert alert-info">
                 <i class="fa-solid fa-info-circle me-2"></i> Você não possui uma gestão ativa no momento, mas seus dados
                 históricos estão disponíveis.
             </div>
 
-            <!-- Cards de métricas -->
             <div class="row g-4 mb-4">
                 <div class="col-md-3">
-                    <div class="card shadow-sm border-0 h-100" style="border-bottom: 4px solid #007a51;">
-                        <div class="card-body">
-                            <h6 class="text-muted fw-bold text-uppercase mb-2">Saldo de Pontos</h6>
-                            <h3 class="mb-0 fw-bold text-dark" th:text="${saldoTotalPontos}">0</h3>
-                            <small class="text-muted">Total disponível</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card shadow-sm border-0 h-100" style="border-bottom: 4px solid #f59e0b;">
+                    <div class="card shadow-sm border-0 h-100">
                         <div class="card-body">
                             <h6 class="text-muted fw-bold text-uppercase mb-2">Atividades Pendentes</h6>
-                            <h3 class="mb-0 fw-bold text-dark" th:text="${atividadesPendentes}">0</h3>
-                            <small class="text-muted">Aguardando validação</small>
+                            <h3 class="mb-0 fw-bold text-success" th:text="${atividadesPendentes}">0</h3>
+                            <small class="text-muted">Quantidade de atividades aguardando validação</small>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card shadow-sm border-0 h-100" style="border-bottom: 4px solid #3b82f6;">
+                    <div class="card shadow-sm border-0 h-100">
                         <div class="card-body">
                             <h6 class="text-muted fw-bold text-uppercase mb-2">Total de Atividades</h6>
-                            <h3 class="mb-0 fw-bold text-dark" th:text="${atividadesTotais}">0</h3>
-                            <small class="text-muted">Desde o início</small>
+                            <h3 class="mb-0 fw-bold text-success" th:text="${atividadesTotais}">0</h3>
+                            <small class="text-muted">Quantidade de atividades cadastradas</small>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card shadow-sm border-0 h-100" style="border-bottom: 4px solid #10b981;">
+                    <div class="card shadow-sm border-0 h-100">
                         <div class="card-body">
-                            <h6 class="text-muted fw-bold text-uppercase mb-2">Total Recebido</h6>
+                            <h6 class="text-muted fw-bold text-uppercase mb-2">Saldo de Pontos</h6>
+                            <h3 class="mb-0 fw-bold text-success" th:text="${saldoTotalPontos}">0</h3>
+                            <small class="text-muted">Quantidade de pontos de atividades validadas e ainda não
+                                utilizados para geração de jetons</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body">
+                            <h6 class="text-muted fw-bold text-uppercase mb-2">Somatório Folhas Fechadas</h6>
                             <h3 class="mb-0 fw-bold text-success"
                                 th:text="${'R$ ' + #numbers.formatDecimal(totalRecebido, 1, 'POINT', 2, 'COMMA')}">R$
                                 0,00</h3>
-                            <small class="text-muted">Soma de todos os jetons homologados</small>
+                            <small class="text-muted">Somatório de todas as folhas de pagamento fechadas</small>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Botão Nova Atividade em destaque -->
             <div class="text-center mb-4">
-                <a th:href="@{/conselheiro/atividades/nova}" class="btn btn-cremepe btn-lg px-5 py-3 shadow"
+                <a th:href="@{/conselheiro/atividades/nova}" class="btn btn-success btn-lg px-5 py-3 shadow"
                     th:classappend="${not temGestaoAtiva} ? 'disabled' : ''" style="font-size: 1.2rem;">
                     <i class="fa-solid fa-plus-circle fa-lg me-2"></i> Registrar Nova Atividade
                 </a>
             </div>
 
-            <!-- Últimas atividades -->
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold"><i class="fa-solid fa-clock-rotate-left me-2"></i>Últimas Atividades</h6>
-                    <a th:href="@{/conselheiro/atividades}" class="btn btn-sm btn-success">Ver todas</a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Data/Hora</th>
-                                    <th>Regra</th>
-                                    <th>Pontos</th>
-                                    <th>Situação</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:each="a : ${ultimasAtividades}">
-                                    <td th:text="${#temporals.format(a.dataHoraAtividade, 'dd/MM/yyyy HH:mm')}"></td>
-                                    <td th:text="${a.regra.nomeRegra}"></td>
-                                    <td th:text="${a.regra.pontos * a.qtdAtividade}"></td>
-                                    <td>
-                                        <span th:if="${a.inSituacao == 'P'}"
-                                            class="badge bg-warning text-dark">Pendente</span>
-                                        <span th:if="${a.inSituacao == 'C'}" class="badge bg-success">Validada</span>
-                                        <span th:if="${a.inSituacao == 'F'}" class="badge bg-secondary">Fechada</span>
-                                    </td>
-                                    <td>
-                                        <a th:if="${a.inSituacao == 'P'}"
-                                            th:href="@{/conselheiro/atividades/editar/{id}(id=${a.idAtividade})}"
-                                            class="btn btn-sm btn-outline-primary" title="Editar">
-                                            <i class="fa-solid fa-pen-to-square"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                <tr th:if="${#lists.isEmpty(ultimasAtividades)}">
-                                    <td colspan="5" class="text-center py-4 text-muted">Nenhuma atividade registrada.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div
+                            class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-clock-rotate-left me-2"></i>Últimas
+                                Atividades Cadastradas</h6>
+                            <a th:href="@{/conselheiro/atividades}" class="btn btn-sm btn-success">Ver todas</a>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Data/Hora</th>
+                                            <th>Regra</th>
+                                            <th>Pontos</th>
+                                            <th>Situação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="a : ${ultimasAtividades}">
+                                            <td>
+                                                <div th:text="${#temporals.format(a.dataHoraAtividade, 'dd/MM/yyyy')}">
+                                                </div>
+                                                <div class="small text-muted"
+                                                    th:text="${#temporals.format(a.dataHoraAtividade, 'HH:mm')}"></div>
+                                            </td>
+                                            <td th:text="${a.regra.nomeRegra}"></td>
+                                            <td th:text="${a.regra.pontos * a.qtdAtividade}"></td>
+                                            <td>
+                                                <span th:if="${a.inSituacao == 'P'}"
+                                                    class="badge bg-warning text-dark">Pendente</span>
+                                                <span th:if="${a.inSituacao == 'C'}"
+                                                    class="badge bg-success">Validada</span>
+                                                <span th:if="${a.inSituacao == 'F'}"
+                                                    class="badge bg-secondary">Fechada</span>
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(ultimasAtividades)}">
+                                            <td colspan="4" class="text-center py-4 text-muted">Nenhuma atividade
+                                                registrada.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Últimos pagamentos -->
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold"><i class="fa-solid fa-coins me-2"></i>Últimos Pagamentos</h6>
-                    <a th:href="@{/conselheiro/pagamentos}" class="btn btn-sm btn-success">Ver todos</a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Competência</th>
-                                    <th>Jetons</th>
-                                    <th>Valor</th>
-                                    <th>Situação</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:each="j : ${ultimosPagamentos}">
-                                    <td th:text="${j.mes + '/' + j.ano}"></td>
-                                    <td th:text="${j.totalJeton}"></td>
-                                    <td th:text="'R$ ' + ${#numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}">
-                                    </td>
-                                    <td>
-                                        <span th:if="${j.situacao == 'E'}" class="badge bg-success">Homologado</span>
-                                        <span th:if="${j.situacao == 'A'}"
-                                            class="badge bg-warning text-dark">Processado</span>
-                                    </td>
-                                </tr>
-                                <tr th:if="${#lists.isEmpty(ultimosPagamentos)}">
-                                    <td colspan="4" class="text-center py-4 text-muted">Nenhum pagamento registrado.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div
+                            class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-coins me-2"></i>Últimas Folhas Fechadas</h6>
+                            <a th:href="@{/conselheiro/pagamentos}" class="btn btn-sm btn-success">Ver todos</a>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Competência</th>
+                                            <th>Jetons</th>
+                                            <th>Valor</th>
+                                            <th>Situação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="j : ${ultimosPagamentos}">
+                                            <td th:text="${j.mes + '/' + j.ano}"></td>
+                                            <td th:text="${j.totalJeton}"></td>
+                                            <td
+                                                th:text="'R$ ' + ${#numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}">
+                                            </td>
+                                            <td>
+                                                <span th:if="${j.situacao == 'E'}"
+                                                    class="badge bg-success">Homologado</span>
+                                                <span th:if="${j.situacao == 'A'}"
+                                                    class="badge bg-warning text-dark">Processado</span>
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(ultimosPagamentos)}">
+                                            <td colspan="4" class="text-center py-4 text-muted">Nenhum pagamento
+                                                registrado.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

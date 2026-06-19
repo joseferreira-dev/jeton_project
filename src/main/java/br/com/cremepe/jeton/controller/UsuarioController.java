@@ -23,7 +23,6 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/usuarios")
-@PreAuthorize("hasAuthority('U') or hasAuthority('S')")
 public class UsuarioController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(UsuarioController.class);
@@ -45,6 +44,7 @@ public class UsuarioController extends BaseController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('U') or hasAuthority('S')")
     public String listar(
             @RequestParam(value = "termo", required = false, defaultValue = "") String termo,
             @RequestParam(value = "situacao", required = false, defaultValue = "") String situacao,
@@ -68,6 +68,7 @@ public class UsuarioController extends BaseController {
     }
 
     @GetMapping("/novo")
+    @PreAuthorize("hasAuthority('U') or hasAuthority('S')")
     public String prepararNovo(Model model, HttpSession session) {
         if (naoAutenticado(session))
             return "redirect:/login";
@@ -77,6 +78,7 @@ public class UsuarioController extends BaseController {
     }
 
     @GetMapping("/editar/{id}")
+    @PreAuthorize("hasAuthority('U') or hasAuthority('S')")
     public String prepararEditar(@PathVariable("id") Integer id, Model model, HttpSession session) {
         if (naoAutenticado(session))
             return "redirect:/login";
@@ -94,6 +96,7 @@ public class UsuarioController extends BaseController {
     }
 
     @PostMapping("/salvar")
+    @PreAuthorize("hasAuthority('U') or hasAuthority('S')")
     public String salvar(@Valid @ModelAttribute("usuario") Usuario usuario,
             @RequestParam(value = "niveisAcesso", required = false) List<String> niveisAcessoSelecionados,
             HttpSession session,
@@ -132,6 +135,7 @@ public class UsuarioController extends BaseController {
     }
 
     @PostMapping("/excluir/{id}")
+    @PreAuthorize("hasAuthority('U') or hasAuthority('S')")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         usuarioService.excluir(id);
         ra.addFlashAttribute("sucesso", "Utilizador removido com sucesso!");
@@ -152,6 +156,7 @@ public class UsuarioController extends BaseController {
     }
 
     @GetMapping("/perfil")
+    @PreAuthorize("isAuthenticated()")
     public String perfil(HttpSession session, Model model) {
         ViewUserLogin usuarioLogado = getUsuarioLogado(session);
         if (usuarioLogado == null) {
@@ -171,6 +176,7 @@ public class UsuarioController extends BaseController {
     }
 
     @PostMapping("/perfil/salvar")
+    @PreAuthorize("isAuthenticated()")
     public String salvarPerfil(@Valid @ModelAttribute("usuario") Usuario usuario,
             HttpSession session,
             RedirectAttributes ra) {
@@ -181,20 +187,16 @@ public class UsuarioController extends BaseController {
         Integer idLogado = usuarioLogado.getIdPessoa();
         usuario.setIdUsuarioPessoa(idLogado);
 
-        // Busca o usuário original para preservar dados não editáveis
         Usuario existente = usuarioService.buscarPorId(idLogado)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        // Mantém a situação e o tipo de pessoa originais
         usuario.setInSituacao(existente.getInSituacao());
         if (usuario.getPessoa() != null) {
             usuario.getPessoa().setInTipoPessoa(existente.getPessoa().getInTipoPessoa());
             usuario.getPessoa().setIdPessoa(idLogado);
-            // Mantém o CPF (não deve ser alterado pelo perfil)
             usuario.getPessoa().setCpf(existente.getPessoa().getCpf());
         }
 
-        // Impede que conselheiros alterem o CRM
         if (isConselheiro(session)) {
             usuario.setCrm(null);
             usuario.seteConselheiro(true);

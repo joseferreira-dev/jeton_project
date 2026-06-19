@@ -7,116 +7,304 @@
 
 <body>
     <div layout:fragment="conteudo">
+
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-clipboard-list me-2"></i> Minhas Atividades</h2>
-            <a th:href="@{/conselheiro/atividades/nova}" class="btn btn-cremepe">
+            <a th:href="@{/conselheiro/atividades/nova}" class="btn btn-success">
                 <i class="fa-solid fa-plus me-1"></i> Nova Atividade
             </a>
         </div>
 
-        <!-- Filtros (data e situação) -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body">
-                <form method="get" th:action="@{/conselheiro/atividades}" class="row g-3 align-items-end">
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small">Data Inicial</label>
-                        <input type="date" name="dataInicio" th:value="${param.dataInicio}" class="form-control">
+        <form th:action="@{/conselheiro/atividades}" method="get" class="mb-4" data-guard-ignore>
+            <div class="card shadow-sm border-success mb-4">
+                <div class="card-header bg-success text-white fw-bold">
+                    <i class="fa-solid fa-filter me-2"></i> Filtrar Atividades
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Pesquisar (Regra)</label>
+                            <input type="text" name="termo" class="form-control" placeholder="Digite o nome da regra..."
+                                th:value="${termo}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Situação</label>
+                            <select name="situacao" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todas</option>
+                                <option value="P" th:selected="${situacao == 'P'}">Pendentes</option>
+                                <option value="C" th:selected="${situacao == 'C'}">Validadas</option>
+                                <option value="F" th:selected="${situacao == 'F'}">Fechadas (Folha)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Turno</label>
+                            <select name="turno" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                <option value="M" th:selected="${turno == 'M'}">Manhã</option>
+                                <option value="T" th:selected="${turno == 'T'}">Tarde</option>
+                                <option value="N" th:selected="${turno == 'N'}">Noite</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Comprovante</label>
+                            <select name="comprovanteFiltro" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                <option value="S" th:selected="${comprovanteFiltro == 'S'}">Apenas com Comprovante
+                                </option>
+                                <option value="N" th:selected="${comprovanteFiltro == 'N'}">Apenas sem Comprovante
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Exibir</label>
+                            <select name="size" class="form-select" onchange="this.form.submit()">
+                                <option value="10" th:selected="${size == 10}">10 registros</option>
+                                <option value="20" th:selected="${size == 20}">20 registros</option>
+                                <option value="50" th:selected="${size == 50}">50 registros</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Data Inicial</label>
+                            <input type="date" name="dataInicio" class="form-control" th:value="${dataInicio}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Data Final</label>
+                            <input type="date" name="dataFim" class="form-control" th:value="${dataFim}">
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold small">Data Final</label>
-                        <input type="date" name="dataFim" th:value="${param.dataFim}" class="form-control">
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
+                        <a th:href="@{/conselheiro/atividades}" class="btn btn-outline-secondary fw-bold px-4">
+                            <i class="fa-solid fa-eraser me-1"></i> Limpar Filtros
+                        </a>
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i> Aplicar Filtro
+                        </button>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">Situação</label>
-                        <select name="situacao" class="form-select">
-                            <option value="">Todas</option>
-                            <option value="P" th:selected="${param.situacao == 'P'}">Pendente</option>
-                            <option value="C" th:selected="${param.situacao == 'C'}">Validada</option>
-                            <option value="F" th:selected="${param.situacao == 'F'}">Fechada</option>
-                        </select>
-                    </div>
-                    <div class="col-md-1">
-                        <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter"></i></button>
-                    </div>
-                </form>
+                </div>
             </div>
-        </div>
+        </form>
 
-        <!-- Tabela de atividades -->
-        <div class="card shadow-sm">
+        <div class="card shadow-sm mb-4">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover mb-0 align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th>Data/Hora</th>
-                                <th>Regra</th>
+                                <th class="ps-4">
+                                    <a th:href="@{/conselheiro/atividades(page=0, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, comprovanteFiltro=${comprovanteFiltro}, dataInicio=${dataInicio}, dataFim=${dataFim}, sort='regra.nomeRegra', dir=${sort == 'regra.nomeRegra' and dir == 'asc' ? 'desc' : 'asc'})}"
+                                        class="text-dark text-decoration-none">
+                                        Atividade
+                                        <i class="fa-solid fa-sort text-muted ms-1"
+                                            th:if="${sort != 'regra.nomeRegra'}"></i>
+                                        <i class="fa-solid fa-sort-up ms-1"
+                                            th:if="${sort == 'regra.nomeRegra' and dir == 'asc'}"></i>
+                                        <i class="fa-solid fa-sort-down ms-1"
+                                            th:if="${sort == 'regra.nomeRegra' and dir == 'desc'}"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a th:href="@{/conselheiro/atividades(page=0, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, comprovanteFiltro=${comprovanteFiltro}, dataInicio=${dataInicio}, dataFim=${dataFim}, sort='dataHoraAtividade', dir=${sort == 'dataHoraAtividade' and dir == 'asc' ? 'desc' : 'asc'})}"
+                                        class="text-dark text-decoration-none">
+                                        Data e Turno
+                                        <i class="fa-solid fa-sort text-muted ms-1"
+                                            th:if="${sort != 'dataHoraAtividade'}"></i>
+                                        <i class="fa-solid fa-sort-up ms-1"
+                                            th:if="${sort == 'dataHoraAtividade' and dir == 'asc'}"></i>
+                                        <i class="fa-solid fa-sort-down ms-1"
+                                            th:if="${sort == 'dataHoraAtividade' and dir == 'desc'}"></i>
+                                    </a>
+                                </th>
+                                <th>Normativa</th>
                                 <th>Pontos</th>
-                                <th>Situação</th>
-                                <th class="text-center">Ações</th>
+                                <th>Status</th>
+                                <th class="text-center pe-4">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:each="a : ${paginaAtividades.content}">
-                                <td th:text="${#temporals.format(a.dataHoraAtividade, 'dd/MM/yyyy HH:mm')}"></td>
-                                <td th:text="${a.regra.nomeRegra}"></td>
-                                <td th:text="${a.regra.pontos * a.qtdAtividade}"></td>
-                                <td>
-                                    <span th:if="${a.inSituacao == 'P'}"
-                                        class="badge bg-warning text-dark">Pendente</span>
-                                    <span th:if="${a.inSituacao == 'C'}" class="badge bg-success">Validada</span>
-                                    <span th:if="${a.inSituacao == 'F'}" class="badge bg-secondary">Fechada</span>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-cremepe" th:text="${a.regra?.nomeRegra}">Regra</div>
                                 </td>
-                                <td class="text-center">
+                                <td>
+                                    <div th:text="${#temporals.format(a.dataHoraAtividade, 'dd/MM/yyyy HH:mm')}">Data
+                                    </div>
+                                    <div class="small mt-1">
+                                        <span th:if="${a.inTurno == 'M'}"><i
+                                                class="fa-solid fa-sun text-warning me-1"></i> Manhã</span>
+                                        <span th:if="${a.inTurno == 'T'}"><i
+                                                class="fa-solid fa-cloud-sun text-info me-1"></i> Tarde</span>
+                                        <span th:if="${a.inTurno == 'N'}"><i
+                                                class="fa-solid fa-moon text-secondary me-1"></i> Noite</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="small">
+                                        <span th:if="${a.regra?.portaria != null}"
+                                            th:text="'Portaria ' + ${a.regra.portaria.numero} + '/' + ${a.regra.portaria.ano}"></span>
+                                        <br th:if="${a.regra?.portaria != null and a.regra?.resolucao != null}">
+                                        <span th:if="${a.regra?.resolucao != null}"
+                                            th:text="'Resolução ' + ${a.regra.resolucao.numero} + '/' + ${a.regra.resolucao.ano}"></span>
+                                    </div>
+                                </td>
+                                <td class="fw-bold text-primary" th:text="${a.regra?.pontos * a.qtdAtividade}">0</td>
+                                <td>
+                                    <span th:if="${a.inSituacao == 'P'}" class="badge bg-warning text-dark">
+                                        <i class="fa-solid fa-clock me-1"></i> Pendente
+                                    </span>
+                                    <span th:if="${a.inSituacao == 'C'}" class="badge bg-success">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Validada
+                                    </span>
+                                    <span th:if="${a.inSituacao == 'F'}" class="badge bg-secondary">
+                                        <i class="fa-solid fa-lock me-1"></i> Fechada (Folha)
+                                    </span>
+                                </td>
+                                <td class="text-center pe-4">
                                     <div class="btn-group btn-group-sm">
-                                        <a th:if="${a.comprovante != null}"
-                                            th:href="@{/comprovantes/download/{id}(id=${a.comprovante.idComprovante})}"
-                                            class="btn btn-outline-secondary" target="_blank" title="Ver comprovante">
+                                        <button type="button" class="btn btn-outline-info" data-role="ver-detalhes"
+                                            th:data-id="${a.idAtividade}" th:data-turno="${a.inTurno}"
+                                            th:data-regranome="${a.regra.nomeRegra}"
+                                            th:data-regradesc="${a.regra.descricao}"
+                                            th:data-regrapontos="${a.regra.pontos}"
+                                            th:data-dataatv="${#temporals.format(a.dataHoraAtividade, 'dd/MM/yyyy HH:mm')}"
+                                            th:data-datareg="${#temporals.format(a.dataHoraRegistro, 'dd/MM/yyyy HH:mm')}"
+                                            title="Visualizar detalhes">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+
+                                        <button th:if="${a.comprovante != null}" type="button"
+                                            class="btn btn-outline-secondary" data-role="ver-comprovante"
+                                            th:data-id="${a.comprovante.idComprovante}"
+                                            th:data-nome="${a.comprovante.nomeComprovante}"
+                                            title="Visualizar comprovante anexado">
                                             <i class="fa-solid fa-paperclip"></i>
-                                        </a>
+                                        </button>
+
                                         <a th:if="${a.inSituacao == 'P'}"
                                             th:href="@{/conselheiro/atividades/editar/{id}(id=${a.idAtividade})}"
-                                            class="btn btn-outline-primary" title="Editar">
+                                            class="btn btn-outline-primary" title="Editar atividade">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
+
                                         <button th:if="${a.inSituacao == 'P'}" type="button"
-                                            class="btn btn-outline-danger" data-role="excluir"
-                                            data-url="/conselheiro/atividades/excluir/" th:data-id="${a.idAtividade}"
-                                            th:data-nome="${a.regra.nomeRegra}">
+                                            class="btn btn-outline-danger" data-role="confirmar-acao"
+                                            th:data-url="'/conselheiro/atividades/excluir/' + ${a.idAtividade}"
+                                            data-mensagem="Deseja excluir permanentemente esta atividade?"
+                                            data-desvalidar="false" data-cor="btn-danger" title="Excluir atividade">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
+
+                                        <th:block th:if="${a.inSituacao == 'F' or a.inSituacao == 'C'}">
+                                            <button type="button" class="btn btn-outline-secondary disabled"
+                                                title="Atividade não editável">
+                                                <i class="fa-solid fa-lock"></i>
+                                            </button>
+                                        </th:block>
                                     </div>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(paginaAtividades.content)}">
-                                <td colspan="5" class="text-center py-4 text-muted">Nenhuma atividade encontrada.</td>
+                                <td colspan="6" class="text-center py-4 text-muted">Nenhuma atividade encontrada.</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-            <!-- Paginação -->
-            <div class="card-footer bg-white border-top-0 py-3" th:if="${paginaAtividades.totalPages > 1}">
+
+            <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaAtividades.totalPages > 1}"
+                th:with="start=${paginaAtividades.number > 2 ? paginaAtividades.number - 2 : 0},
+                          end=${paginaAtividades.number + 2 < paginaAtividades.totalPages - 1 ? paginaAtividades.number + 2 : paginaAtividades.totalPages - 1}">
                 <nav>
                     <ul class="pagination justify-content-center mb-0">
                         <li class="page-item" th:classappend="${paginaAtividades.first} ? 'disabled'">
                             <a class="page-link"
-                                th:href="@{/conselheiro/atividades(page=${paginaAtividades.number - 1}, dataInicio=${param.dataInicio}, dataFim=${param.dataFim}, situacao=${param.situacao})}">Anterior</a>
+                                th:href="@{/conselheiro/atividades(page=${paginaAtividades.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, comprovanteFiltro=${comprovanteFiltro}, dataInicio=${dataInicio}, dataFim=${dataFim}, sort=${sort}, dir=${dir})}">Anterior</a>
                         </li>
-                        <li class="page-item" th:each="i : ${#numbers.sequence(0, paginaAtividades.totalPages - 1)}"
+
+                        <li class="page-item" th:if="${start > 0}">
+                            <a class="page-link"
+                                th:href="@{/conselheiro/atividades(page=0, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, comprovanteFiltro=${comprovanteFiltro}, dataInicio=${dataInicio}, dataFim=${dataFim}, sort=${sort}, dir=${dir})}">1</a>
+                        </li>
+                        <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
+
+                        <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
                             th:classappend="${paginaAtividades.number == i} ? 'active'">
                             <a class="page-link"
-                                th:href="@{/conselheiro/atividades(page=${i}, dataInicio=${param.dataInicio}, dataFim=${param.dataFim}, situacao=${param.situacao})}"
-                                th:text="${i+1}"></a>
+                                th:href="@{/conselheiro/atividades(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, comprovanteFiltro=${comprovanteFiltro}, dataInicio=${dataInicio}, dataFim=${dataFim}, sort=${sort}, dir=${dir})}"
+                                th:text="${i + 1}">1</a>
                         </li>
+
+                        <li class="page-item disabled" th:if="${end < paginaAtividades.totalPages - 2}"><a
+                                class="page-link" href="#">...</a></li>
+                        <li class="page-item" th:if="${end < paginaAtividades.totalPages - 1}">
+                            <a class="page-link"
+                                th:href="@{/conselheiro/atividades(page=${paginaAtividades.totalPages - 1}, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, comprovanteFiltro=${comprovanteFiltro}, dataInicio=${dataInicio}, dataFim=${dataFim}, sort=${sort}, dir=${dir})}"
+                                th:text="${paginaAtividades.totalPages}">10</a>
+                        </li>
+
                         <li class="page-item" th:classappend="${paginaAtividades.last} ? 'disabled'">
                             <a class="page-link"
-                                th:href="@{/conselheiro/atividades(page=${paginaAtividades.number + 1}, dataInicio=${param.dataInicio}, dataFim=${param.dataFim}, situacao=${param.situacao})}">Próxima</a>
+                                th:href="@{/conselheiro/atividades(page=${paginaAtividades.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, comprovanteFiltro=${comprovanteFiltro}, dataInicio=${dataInicio}, dataFim=${dataFim}, sort=${sort}, dir=${dir})}">Próxima</a>
                         </li>
                     </ul>
                 </nav>
             </div>
         </div>
+
+        <div class="modal fade" id="modalDetalhes" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title fw-bold"><i class="fa-solid fa-magnifying-glass-chart me-2"></i>Detalhes
+                            da Atividade</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4" id="detalhesConteudo"></div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow">
+                    <div id="modalConfirmacaoHeader" class="modal-header bg-success text-white">
+                        <h5 class="modal-title"><i class="fa-solid fa-circle-question me-2"></i> Confirmar Ação</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p id="textoConfirmacao" class="mb-0">Tem certeza que deseja realizar esta operação?</p>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <a id="linkConfirmacao" href="#" class="btn btn-primary px-4">Confirmar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modalComprovante" tabindex="-1">
+            <div class="modal-dialog modal-xl modal-dialog-centered" style="height: 90vh;">
+                <div class="modal-content h-100 border-0 shadow">
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title"><i class="fa-solid fa-file-lines me-2"></i><span
+                                id="nomeComprovanteTitulo"></span></h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-0 bg-dark d-flex justify-content-center align-items-center"
+                        id="modalComprovanteBody">
+                        <div class="text-center text-white" id="loadingComprovante">
+                            <i class="fa-solid fa-spinner fa-spin fa-3x"></i>
+                            <p class="mt-2">Carregando comprovante...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </body>
 
