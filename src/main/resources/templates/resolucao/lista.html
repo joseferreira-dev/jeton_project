@@ -8,13 +8,13 @@
 <body>
     <div layout:fragment="conteudo">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-gavel me-2"></i> Gestão de Resoluções (Tetos
-                Financeiros)</h2>
-            <a th:href="@{/resolucoes/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Nova
+            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-gavel me-2"></i> Resoluções (Tetos Financeiros)
+            </h2>
+            <a th:href="@{/resolucoes/novo}" class="btn btn-success"><i class="fa-solid fa-plus me-1"></i> Nova
                 Resolução</a>
         </div>
 
-        <form th:action="@{/resolucoes}" method="get" class="mb-4">
+        <form th:action="@{/resolucoes}" method="get" class="mb-4" data-guard-ignore>
             <input type="hidden" name="sort" th:value="${sort}">
             <input type="hidden" name="dir" th:value="${dir}">
 
@@ -24,12 +24,12 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-5">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold small text-muted">Pesquisar (Número, Ano ou Ementa)</label>
                             <input type="text" name="termo" th:value="${termo}" class="form-control"
                                 placeholder="Número, Ano ou Ementa...">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Estado</label>
                             <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
                                 <option value="">Todos</option>
@@ -63,7 +63,7 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 align-middle">
-                        <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
+                        <thead class="table-light">
                             <tr>
                                 <th class="ps-4">Resolução</th>
                                 <th>Período de Vigência</th>
@@ -74,8 +74,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="r : ${paginaResolucoes.content}"
-                                th:classappend="${r.inRevogado == 'S'} ? 'table-light text-muted'">
+                            <tr th:each="r : ${paginaResolucoes.content}">
                                 <td class="ps-4">
                                     <div class="fw-bold text-cremepe"
                                         th:text="${'Resolução ' + r.numero + '/' + r.ano}"></div>
@@ -111,14 +110,14 @@
                                 </td>
                                 <td class="text-center pe-4">
                                     <a th:href="@{'/resolucoes/editar/' + ${r.idResolucao}}"
-                                        class="btn btn-sm btn-outline-primary me-1">
+                                        class="btn btn-sm btn-outline-primary me-1" title="Editar resolução">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
 
                                     <a href="#" class="btn btn-sm btn-outline-danger me-1" data-role="confirmar-acao"
                                         th:data-url="'/resolucoes/excluir/' + ${r.idResolucao}"
                                         data-mensagem="Deseja EXCLUIR permanentemente esta Resolução? Apenas possível se não houver regras vinculadas."
-                                        data-cor="btn-danger">
+                                        data-cor="btn-danger" title="Excluir resolução">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </a>
 
@@ -126,7 +125,7 @@
                                         class="btn btn-sm btn-outline-danger me-1" data-role="confirmar-acao"
                                         th:data-url="'/resolucoes/revogar/' + ${r.idResolucao}"
                                         data-mensagem="Tem certeza que deseja REVOGAR esta Resolução? Isso impedirá que ela seja usada em novos registos."
-                                        data-cor="btn-danger">
+                                        data-cor="btn-danger" title="Revogar resolução">
                                         <i class="fa-solid fa-ban"></i>
                                     </a>
 
@@ -134,7 +133,7 @@
                                         data-role="confirmar-acao"
                                         th:data-url="'/resolucoes/restaurar/' + ${r.idResolucao}"
                                         data-mensagem="Tem certeza que deseja RESTAURAR esta Resolução para o estado Em Vigor?"
-                                        data-cor="btn-success">
+                                        data-cor="btn-success" title="Restaurar resolução (volta a estar em vigor)">
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </a>
                                 </td>

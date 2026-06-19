@@ -18,47 +18,50 @@
                 <i class="fa-solid fa-filter me-2"></i> Filtrar Logs
             </div>
             <div class="card-body p-4">
-                <form th:action="@{/logs}" method="get" class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small text-muted">Tabela</label>
-                        <select name="nomeTabela" class="form-select">
-                            <option value="">-- Todas --</option>
-                            <option th:each="entry : ${opcoesTabelas}" th:value="${entry.key}" th:text="${entry.value}"
-                                th:selected="${nomeTabela != null and nomeTabela.equals(entry.key)}"></option>
-                        </select>
+                <form th:action="@{/logs}" method="get" data-guard-ignore>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Tabela</label>
+                            <select name="nomeTabela" class="form-select">
+                                <option value="">Todas</option>
+                                <option th:each="entry : ${opcoesTabelas}" th:value="${entry.key}"
+                                    th:text="${entry.value}"
+                                    th:selected="${nomeTabela != null and nomeTabela.equals(entry.key)}"></option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">Buscar (usuário ou conteúdo)</label>
+                            <input type="text" name="termo" class="form-control" th:value="${termo}"
+                                placeholder="Digite para buscar...">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">Data Inicial</label>
+                            <input type="date" name="dataInicio" class="form-control" th:value="${dataInicio}">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">Data Final</label>
+                            <input type="date" name="dataFim" class="form-control" th:value="${dataFim}">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">Exibir</label>
+                            <select name="size" class="form-select" onchange="this.form.submit()">
+                                <option value="10" th:selected="${size == 10}">10 registros</option>
+                                <option value="20" th:selected="${size == 20}">20 registros</option>
+                                <option value="50" th:selected="${size == 50}">50 registros</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small text-muted">Buscar (usuário ou conteúdo)</label>
-                        <input type="text" name="termo" class="form-control" th:value="${termo}"
-                            placeholder="Digite para buscar...">
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold small text-muted">Data Inicial</label>
-                        <input type="date" name="dataInicio" class="form-control" th:value="${dataInicio}">
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold small text-muted">Data Final</label>
-                        <input type="date" name="dataFim" class="form-control" th:value="${dataFim}">
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold small text-muted">Exibir</label>
-                        <select name="size" class="form-select" onchange="this.form.submit()">
-                            <option value="10" th:selected="${size == 10}">10 registros</option>
-                            <option value="20" th:selected="${size == 20}">20 registros</option>
-                            <option value="50" th:selected="${size == 50}">50 registros</option>
-                        </select>
-                    </div>
-
-                    <div class="col-12 mt-3 d-flex justify-content-end gap-2">
-                        <a th:href="@{/logs}" class="btn btn-outline-secondary">
-                            <i class="fa-solid fa-eraser me-1"></i> Limpar
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
+                        <a th:href="@{/logs}" class="btn btn-outline-secondary fw-bold px-4">
+                            <i class="fa-solid fa-eraser me-1"></i> Limpar Filtros
                         </a>
-                        <button type="submit" class="btn btn-success">
-                            <i class="fa-solid fa-magnifying-glass me-1"></i> Filtrar
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i> Aplicar Filtro
                         </button>
                     </div>
                 </form>
@@ -119,8 +122,7 @@
                                 </td>
                                 <td><span class="badge bg-secondary" th:text="${log.nomeTabela}">tabela</span></td>
                                 <td>
-                                    <!-- Exibe um resumo do log (primeiros 100 caracteres) -->
-                                    <div style="max-width: 400px; word-break: break-word; white-space: normal;"
+                                    <div style="max-width: 480px; word-break: break-word; white-space: normal;"
                                         th:text="${#strings.abbreviate(log.textoLog, 100)}"></div>
                                 </td>
                                 <td class="text-center pe-4">
@@ -136,10 +138,9 @@
                 </div>
             </div>
 
-            <!-- Paginação -->
             <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaLogs.totalPages > 1}"
                 th:with="start=${paginaLogs.number > 2 ? paginaLogs.number - 2 : 0},
-                           end=${paginaLogs.number + 2 < paginaLogs.totalPages - 1 ? paginaLogs.number + 2 : paginaLogs.totalPages - 1}">
+                          end=${paginaLogs.number + 2 < paginaLogs.totalPages - 1 ? paginaLogs.number + 2 : paginaLogs.totalPages - 1}">
                 <nav>
                     <ul class="pagination justify-content-center mb-0">
                         <li class="page-item" th:classappend="${paginaLogs.first} ? 'disabled'">
@@ -177,7 +178,6 @@
             </div>
         </div>
 
-        <!-- Modal para visualizar o log completo -->
         <div class="modal fade" id="modalLogDetalhes" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
@@ -195,6 +195,7 @@
                 </div>
             </div>
         </div>
+
     </div>
 </body>
 
