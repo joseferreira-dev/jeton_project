@@ -16,21 +16,17 @@
 
         <div class="card shadow-sm border-success mb-4">
             <div class="card-header bg-success text-white fw-bold">
-                <i class="fa-solid fa-filter me-2"></i> Filtrar Histórico de Jetons
+                <i class="fa-solid fa-filter me-2"></i> Filtrar Jetons
             </div>
             <div class="card-body p-4">
                 <form th:action="@{/jeton/historico}" method="get">
                     <div class="row g-3 align-items-end">
                         <div class="col-md-4">
                             <label class="form-label fw-bold small text-muted">Buscar Conselheiro</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i
-                                        class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                                <input type="text" class="form-control" name="termo" th:value="${termo}"
-                                    placeholder="Digite o nome do conselheiro...">
-                            </div>
+                            <input type="text" class="form-control" name="termo" th:value="${termo}"
+                                placeholder="Digite o nome do conselheiro...">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold small text-muted">Gestão</label>
                             <select class="form-select" name="idGestao">
                                 <option value="">Todas as Gestões</option>
@@ -38,7 +34,7 @@
                                     th:selected="${g.idGestao == idGestaoSelecionada}"></option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label fw-bold small text-muted">Mês</label>
                             <select class="form-select" name="mes">
                                 <option value="">Todos</option>
@@ -73,7 +69,7 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th><i class="fa-solid fa-user me-1"></i> Conselheiro</th>
+                                <th>Conselheiro</th>
                                 <th class="text-center">Competência</th>
                                 <th class="text-center">Qtd. Jetons</th>
                                 <th class="text-end">Valor Homologado</th>
