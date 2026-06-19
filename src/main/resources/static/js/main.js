@@ -1,7 +1,3 @@
-/**
- * Ponto de entrada do módulo ES
- */
-
 import { initCsrf } from './csrf.js';
 import { formatDateBr } from './utils.js';
 import { confirmarAcao, prepararExclusao, verDetalhes, verComprovante } from './modals.js';
@@ -19,6 +15,7 @@ import { initValidation, validateForm } from './validation.js';
 import { initNavigationGuard, watchFormChanges, resetNavigationGuard } from './navigation-guard.js';
 import { initMasks, getRawValue } from './masks.js';
 import { initFileUploads } from './file-upload.js';
+import { initAtividadeForm } from './conselheiro-atividade.js';
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -170,6 +167,11 @@ document.addEventListener('DOMContentLoaded', function () {
     initFlashToasts();
     initMasks();
     initFileUploads();
+
+    // Inicializa formulário de atividade do conselheiro (se existir)
+    if (document.getElementById('formAtividade') && document.getElementById('dataAtividade')) {
+        initAtividadeForm();
+    }
 
     // Inicializa lote
     if (document.getElementById('formLote') && document.getElementById('selectGestao')) {

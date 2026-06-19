@@ -10,7 +10,7 @@ export function atualizarConselheiros(idParaSelecionar) {
     if (!selectConselheiro) return;
 
     if (!gestaoId) {
-        selectConselheiro.innerHTML = '<option value="">-- Aguardando Gestão --</option>';
+        selectConselheiro.innerHTML = '<option value="">Aguardando Gestão</option>';
         selectConselheiro.disabled = true;
         return;
     }
@@ -18,7 +18,7 @@ export function atualizarConselheiros(idParaSelecionar) {
     fetch(`${API.CONSELHEIROS_POR_GESTAO}?gestaoId=${gestaoId}`)
         .then(response => response.json())
         .then(data => {
-            selectConselheiro.innerHTML = '<option value="">-- Selecione o Médico --</option>';
+            selectConselheiro.innerHTML = '<option value="">Selecione o Médico</option>';
             if (data && data.length > 0) {
                 data.forEach(c => {
                     const selected = (idParaSelecionar && idParaSelecionar == c.id) ? 'selected' : '';
@@ -26,7 +26,7 @@ export function atualizarConselheiros(idParaSelecionar) {
                 });
                 selectConselheiro.disabled = false;
             } else {
-                selectConselheiro.innerHTML = '<option value="">-- Nenhum médico vinculado a esta gestão --</option>';
+                selectConselheiro.innerHTML = '<option value="">Nenhum médico vinculado a esta gestão</option>';
                 selectConselheiro.disabled = true;
             }
         })
@@ -53,7 +53,7 @@ export function atualizarRegrasPorData(idRegraParaSelecionar) {
             if (nomePortaria) nomePortaria.value = data.nomePortaria || "Nenhuma encontrada";
             if (idPortariaHidden) idPortariaHidden.value = data.idPortaria || "";
 
-            selectRegra.innerHTML = '<option value="">-- Selecione a Regra Enquadrada --</option>';
+            selectRegra.innerHTML = '<option value="">Selecione a Regra Enquadrada</option>';
             if (data.regras && data.regras.length > 0) {
                 window.regrasCache = data.regras;
                 data.regras.forEach(r => {
@@ -137,6 +137,7 @@ export function inicializarFormularioAtividade() {
     const selectGestao = document.getElementById('selectGestao');
     const selectConselheiro = document.getElementById('selectConselheiro');
     const dataAtividade = document.getElementById('dataAtividade');
+    const selectRegra = document.getElementById('selectRegra');
 
     if (!selectGestao) return;
 
@@ -146,14 +147,25 @@ export function inicializarFormularioAtividade() {
     }
 
     if (dataAtividade && dataAtividade.value) {
-        const selectRegra = document.getElementById('selectRegra');
         const idRegraAtual = selectRegra ? selectRegra.value : null;
         atualizarRegrasPorData(idRegraAtual);
     }
 
     if (dataAtividade) {
-        dataAtividade.addEventListener('change', atualizarTurnoVisual);
+        dataAtividade.addEventListener('change', function () {
+            atualizarTurnoVisual();
+            const idRegraAtual = selectRegra ? selectRegra.value : null;
+            atualizarRegrasPorData(idRegraAtual);
+        });
         if (dataAtividade.value) atualizarTurnoVisual();
+    }
+
+    if (selectRegra) {
+        selectRegra.addEventListener('change', exibirGuiaRegra);
+
+        if (selectRegra.value) {
+            setTimeout(exibirGuiaRegra, 100);
+        }
     }
 }
 
@@ -170,7 +182,7 @@ export function resetarFiltrosAtividadeForm() {
     if (idPortariaHidden) idPortariaHidden.value = '';
 
     if (selectRegra) {
-        selectRegra.innerHTML = '<option value="">-- Escolha a documentação acima para desbloquear as regras --</option>';
+        selectRegra.innerHTML = '<option value="">Escolha a documentação acima para desbloquear as regras</option>';
         selectRegra.disabled = true;
     }
     const boxGuia = document.getElementById('boxGuia');
@@ -203,7 +215,7 @@ export function inicializarLoteCriacao() {
     function carregarConselheiros() {
         const gestaoId = selectGestao.value;
         if (!gestaoId) {
-            selectConselheiros.innerHTML = '<option value="">-- Selecione a gestão primeiro --</option>';
+            selectConselheiros.innerHTML = '<option value="">Selecione a gestão primeiro</option>';
             selectConselheiros.disabled = true;
             atualizarListaSelecionados();
             return;
@@ -232,7 +244,7 @@ export function inicializarLoteCriacao() {
     function carregarRegrasPorData() {
         const data = dataAtividade.value;
         if (!data) {
-            selectRegra.innerHTML = '<option value="">-- Selecione a data --</option>';
+            selectRegra.innerHTML = '<option value="">Selecione a data</option>';
             selectRegra.disabled = true;
             document.getElementById('nomeResolucaoVisual').value = '';
             document.getElementById('idResolucaoHidden').value = '';
@@ -251,7 +263,7 @@ export function inicializarLoteCriacao() {
                 document.getElementById('nomePortariaVisual').value = result.nomePortaria || "Nenhuma encontrada";
                 document.getElementById('idPortariaHidden').value = result.idPortaria || "";
 
-                selectRegra.innerHTML = '<option value="">-- Selecione a Regra Enquadrada --</option>';
+                selectRegra.innerHTML = '<option value="">Selecione a Regra Enquadrada</option>';
                 if (result.regras && result.regras.length > 0) {
                     window.regrasCache = result.regras;
                     result.regras.forEach(r => {
@@ -299,7 +311,7 @@ export function inicializarLoteCriacao() {
         document.getElementById('idResolucaoHidden').value = '';
         document.getElementById('nomePortariaVisual').value = '';
         document.getElementById('idPortariaHidden').value = '';
-        selectRegra.innerHTML = '<option value="">-- Escolha a documentação acima para desbloquear as regras --</option>';
+        selectRegra.innerHTML = '<option value="">Escolha a documentação acima para desbloquear as regras</option>';
         selectRegra.disabled = true;
         document.getElementById('boxGuia').style.display = 'none';
     }
@@ -351,7 +363,7 @@ export function inicializarLoteEdicao() {
     function carregarConselheiros() {
         const gestaoId = selectGestao.value;
         if (!gestaoId) {
-            selectConselheiros.innerHTML = '<option value="">-- Selecione a gestão primeiro --</option>';
+            selectConselheiros.innerHTML = '<option value="">Selecione a gestão primeiro</option>';
             selectConselheiros.disabled = true;
             atualizarListaSelecionados();
             return;
@@ -385,7 +397,7 @@ export function inicializarLoteEdicao() {
         document.getElementById('idResolucaoHidden').value = '';
         document.getElementById('nomePortariaVisual').value = '';
         document.getElementById('idPortariaHidden').value = '';
-        selectRegra.innerHTML = '<option value="">-- Escolha a documentação acima para desbloquear as regras --</option>';
+        selectRegra.innerHTML = '<option value="">Escolha a documentação acima para desbloquear as regras</option>';
         selectRegra.disabled = true;
         document.getElementById('boxGuia').style.display = 'none';
     }

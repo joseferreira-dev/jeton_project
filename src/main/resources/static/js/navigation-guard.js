@@ -5,45 +5,38 @@
 let isDirty = false;
 let isSubmitting = false;
 
-/**
- * Marca o formulário como "sujo" (modificado)
- */
 export function markDirty() {
     isDirty = true;
 }
 
-/**
- * Limpa a marcação de "sujo" (formulário salvo ou submetido)
- */
 export function clearDirty() {
     isDirty = false;
 }
 
-/**
- * Verifica se o formulário está sujo
- * @returns {boolean}
- */
 export function isFormDirty() {
     return isDirty;
 }
 
-/**
- * Inicializa o guardião de navegação
- * @param {string} message - Mensagem personalizada (opcional)
- */
+function isIgnored(element) {
+    if (element.hasAttribute('data-guard-ignore')) {
+        return true;
+    }
+    const form = element.closest('form');
+    if (form && form.hasAttribute('data-guard-ignore')) {
+        return true;
+    }
+    return false;
+}
+
 export function initNavigationGuard(message = 'Há alterações não salvas. Tem certeza que deseja sair?') {
-    // ========== Evento de antes de fechar/recarregar a página ==========
     window.addEventListener('beforeunload', function (e) {
         if (isDirty && !isSubmitting) {
-            // Para navegadores modernos, a mensagem personalizada não é mais exibida,
-            // mas ainda é necessário retornar uma string para ativar o alerta.
             e.preventDefault();
             e.returnValue = message;
             return message;
         }
     });
 
-    // ========== Interceptar cliques em links (navegação interna) ==========
     document.addEventListener('click', function (e) {
         const target = e.target.closest('a');
         if (!target) return;
@@ -53,6 +46,7 @@ export function initNavigationGuard(message = 'Há alterações não salvas. Tem
         // - São âncoras internas (#)
         // - Têm atributo download
         // - São links de exclusão/confirmação (data-role)
+        // - Estão dentro de um formulário com data-guard-ignore
         if (target.target === '_blank' ||
             target.getAttribute('href') === '#' ||
             target.hasAttribute('download') ||
@@ -68,19 +62,17 @@ export function initNavigationGuard(message = 'Há alterações não salvas. Tem
         if (isDirty && !isSubmitting) {
             e.preventDefault();
             e.stopPropagation();
-
-            // Exibe um modal de confirmação
             showNavigationConfirm(message, href);
         }
     });
 
-    // ========== Interceptar submissões de formulário ==========
     document.addEventListener('submit', function (e) {
         const form = e.target;
         if (form && form.tagName === 'FORM') {
-            // Marca como submetendo para evitar o alerta
+            if (isIgnored(form)) {
+                return;
+            }
             isSubmitting = true;
-            // Limpa a marcação de sujo após um curto período (o suficiente para o submit)
             setTimeout(() => {
                 isSubmitting = false;
                 clearDirty();
@@ -89,17 +81,10 @@ export function initNavigationGuard(message = 'Há alterações não salvas. Tem
     });
 }
 
-/**
- * Exibe um modal de confirmação personalizado
- * @param {string} message - Mensagem de confirmação
- * @param {string} href - URL para onde redirecionar
- */
 function showNavigationConfirm(message, href) {
-    // Verifica se o modal já existe
     let modalElement = document.getElementById('modalNavegacaoConfirm');
 
     if (!modalElement) {
-        // Cria o modal dinamicamente
         const modalHtml = `
             <div class="modal fade" id="modalNavegacaoConfirm" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
@@ -126,44 +111,31 @@ function showNavigationConfirm(message, href) {
             </div>
         `;
 
-        // Adiciona ao body
         const div = document.createElement('div');
         div.innerHTML = modalHtml;
         document.body.appendChild(div.firstElementChild);
-
         modalElement = document.getElementById('modalNavegacaoConfirm');
     }
 
-    // Atualiza a mensagem
     const msgElement = document.getElementById('modalNavegacaoMensagem');
     if (msgElement) msgElement.textContent = message;
 
-    // Atualiza o link de confirmação
     const confirmBtn = document.getElementById('modalNavegacaoConfirmar');
     if (confirmBtn) {
         confirmBtn.href = href;
-        // Remove listeners antigos (se houver)
         const newConfirmBtn = confirmBtn.cloneNode(true);
         confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
         newConfirmBtn.addEventListener('click', function (e) {
-            // Limpa o dirty antes de navegar
             clearDirty();
-            // Fecha o modal
             const modal = bootstrap.Modal.getInstance(modalElement);
             if (modal) modal.hide();
-            // A navegação já será feita pelo href do link
         });
     }
 
-    // Mostra o modal
     const modal = new bootstrap.Modal(modalElement);
     modal.show();
 }
 
-/**
- * Detecta mudanças em campos de formulário e marca como sujo
- * @param {string|HTMLElement} formSelector - Seletor do formulário ou elemento
- */
 export function watchFormChanges(formSelector = 'form') {
     const forms = typeof formSelector === 'string'
         ? document.querySelectorAll(formSelector)
@@ -172,7 +144,10 @@ export function watchFormChanges(formSelector = 'form') {
     forms.forEach(form => {
         if (!form) return;
 
-        // Remove listeners antigos (evita duplicidade)
+        if (isIgnored(form)) {
+            return;
+        }
+
         form.removeEventListener('input', handleFormChange);
         form.removeEventListener('change', handleFormChange);
         form.removeEventListener('keyup', handleFormChange);
@@ -185,25 +160,33 @@ export function watchFormChanges(formSelector = 'form') {
 
 function handleFormChange(e) {
     const target = e.target;
-    // Ignora campos que não devem disparar o alerta (ex: campos ocultos, botões)
     if (target.type === 'hidden' || target.type === 'submit' || target.type === 'button' ||
         target.tagName === 'BUTTON' || target.tagName === 'FIELDSET') {
         return;
     }
 
-    // Marca como sujo
+    if (isIgnored(target)) {
+        return;
+    }
+
     markDirty();
 }
 
-/**
- * Reseta o estado (útil após salvar com sucesso)
- */
+export function ignoreForm(form) {
+    if (form) {
+        form.setAttribute('data-guard-ignore', 'true');
+        form.removeEventListener('input', handleFormChange);
+        form.removeEventListener('change', handleFormChange);
+        form.removeEventListener('keyup', handleFormChange);
+    }
+}
+
 export function resetNavigationGuard() {
     clearDirty();
     isSubmitting = false;
 }
 
-// Expor globalmente para uso em outros scripts
 window.resetNavigationGuard = resetNavigationGuard;
 window.markDirty = markDirty;
 window.clearDirty = clearDirty;
+window.ignoreForm = ignoreForm;

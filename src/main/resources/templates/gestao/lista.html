@@ -10,17 +10,17 @@
     <div layout:fragment="conteudo">
 
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-calendar-days me-2"></i> Gestões e Mandatos</h2>
-            <a th:href="@{/gestoes/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Nova Gestão</a>
+            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-calendar-days me-2"></i> Gestões</h2>
+            <a th:href="@{/gestoes/novo}" class="btn btn-success"><i class="fa-solid fa-plus me-1"></i> Nova Gestão</a>
         </div>
 
-        <form th:action="@{/gestoes}" method="get" class="mb-4">
+        <form th:action="@{/gestoes}" method="get" class="mb-4" data-guard-ignore>
             <input type="hidden" name="sort" th:value="${sort}">
             <input type="hidden" name="dir" th:value="${dir}">
 
             <div class="card shadow-sm border-success mb-4">
                 <div class="card-header bg-success text-white fw-bold">
-                    <i class="fa-solid fa-filter me-2"></i> Filtrar Gestões e Mandatos
+                    <i class="fa-solid fa-filter me-2"></i> Filtrar Gestões
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
@@ -55,7 +55,7 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 align-middle">
-                        <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
+                        <thead class="table-light">
                             <tr>
                                 <th class="ps-4"><a
                                         th:href="@{/gestoes(page=${paginaGestoes.number}, size=${size}, termo=${termo}, sort='nomeGestao', dir=${sort == 'nomeGestao' and dir == 'asc' ? 'desc' : 'asc'})}"
@@ -80,11 +80,11 @@
                                 <td th:text="${#temporals.format(g.dtFim, 'dd/MM/yyyy')}">31/12/2025</td>
                                 <td class="text-center pe-4">
                                     <a th:href="@{'/gestoes/editar/' + ${g.idGestao}}"
-                                        class="btn btn-sm btn-outline-primary me-1"><i
+                                        class="btn btn-sm btn-outline-primary me-1" title="Editar Gestão"><i
                                             class="fa-solid fa-pen-to-square"></i></a>
                                     <button type="button" class="btn btn-sm btn-outline-danger me-1" data-role="excluir"
                                         data-url="/gestoes/excluir/" th:data-id="${g.idGestao}"
-                                        th:data-nome="${g.nomeGestao}">
+                                        th:data-nome="${g.nomeGestao}" title="Excluir Gestão">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                     <a th:href="@{'/gestao-conselheiros/vincular/' + ${g.idGestao}}"
