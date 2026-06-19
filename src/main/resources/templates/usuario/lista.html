@@ -11,13 +11,13 @@
     <div layout:fragment="conteudo">
 
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-users me-2"></i> Gestão de Usuários</h2>
-            <a th:href="@{/usuarios/novo}" class="btn btn-cremepe">
+            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-users me-2"></i> Usuários</h2>
+            <a th:href="@{/usuarios/novo}" class="btn btn-success">
                 <i class="fa-solid fa-plus me-1"></i> Novo Usuário
             </a>
         </div>
 
-        <form th:action="@{/usuarios}" method="get" class="mb-4">
+        <form th:action="@{/usuarios}" method="get" class="mb-4" data-guard-ignore>
             <input type="hidden" name="sort" th:value="${sort}">
             <input type="hidden" name="dir" th:value="${dir}">
 
@@ -27,12 +27,12 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-5">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold small text-muted">Pesquisar (Nome ou CPF)</label>
                             <input type="text" name="termo" th:value="${termo}" class="form-control"
                                 placeholder="Buscar por Nome ou CPF...">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Status</label>
                             <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
                                 <option value="" th:selected="${situacao == ''}">Todos</option>
@@ -66,7 +66,7 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 align-middle">
-                        <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
+                        <thead class="table-light">
                             <tr>
                                 <th class="ps-4">
                                     <a th:href="@{/usuarios(page=0, size=${paginaUsuarios.size}, termo=${termo}, situacao=${situacao}, sort='pessoa.nome', dir=${sort == 'pessoa.nome' and dir == 'asc' ? 'desc' : 'asc'})}"
@@ -104,12 +104,13 @@
                                 </td>
                                 <td class="text-center pe-4">
                                     <a th:href="@{'/usuarios/editar/' + ${u.idUsuarioPessoa}}"
-                                        class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                        class="btn btn-sm btn-outline-primary me-1" title="Editar usuário">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
                                     <button type="button" class="btn btn-sm btn-outline-danger" data-role="excluir"
                                         data-url="/usuarios/excluir/" th:data-id="${u.idUsuarioPessoa}"
-                                        th:data-nome="${u.pessoa.nome}" th:data-extra="${u.pessoa.cpf}" title="Excluir">
+                                        th:data-nome="${u.pessoa.nome}" th:data-extra="${u.pessoa.cpf}"
+                                        title="Excluir usuário">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                 </td>
@@ -158,7 +159,6 @@
             </div>
         </div>
 
-        <!-- Modal de exclusão ajustado para compatibilidade com a função global prepararExclusao -->
         <div class="modal fade" id="modalExclusao" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content border-0 shadow">

@@ -16,7 +16,6 @@
         <div class="card shadow-sm">
             <div class="card-body p-4">
                 <form th:action="@{/usuarios/perfil/salvar}" th:object="${usuario}" method="post">
-                    <!-- campos ocultos -->
                     <input type="hidden" th:field="*{idUsuarioPessoa}">
                     <input type="hidden" th:field="*{pessoa.idPessoa}">
                     <input type="hidden" th:field="*{inSituacao}">
@@ -27,13 +26,15 @@
                         <div class="col-md-12">
                             <label class="form-label fw-bold">Nome Completo</label>
                             <input type="text" class="form-control" th:field="*{pessoa.nome}"
-                                data-validate="required minlength:3 maxlength:70" required>
+                                data-validate="required minlength:3 maxlength:70" required
+                                title="Altere seu nome completo se necessário">
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label fw-bold">E-mail</label>
                             <input type="email" class="form-control" th:field="*{pessoa.email}"
-                                data-validate="required email" required>
+                                data-validate="required email" required
+                                title="E-mail válido para contato e recuperação de senha">
                         </div>
 
                         <div class="col-md-6">
@@ -45,11 +46,11 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Nova Senha</label>
                             <input type="password" class="form-control" th:field="*{senha}"
-                                placeholder="Deixe em branco para manter a atual" data-validate="minlength:6">
+                                placeholder="Deixe em branco para manter a atual" data-validate="minlength:6"
+                                title="Senha de acesso (mínimo 6 caracteres)">
                             <small class="text-muted">Preencha apenas se desejar alterar a senha.</small>
                         </div>
 
-                        <!-- Exibe o CRM apenas se for conselheiro (somente leitura) -->
                         <div th:if="${usuario.eConselheiro}" class="col-md-6">
                             <label class="form-label fw-bold">CRM-PE</label>
                             <input type="text" class="form-control" th:value="${usuario.crm}" readonly disabled>
@@ -58,7 +59,7 @@
 
                     <div class="mt-5 border-top pt-4 d-flex justify-content-end">
                         <a th:href="@{/index}" class="btn btn-outline-secondary me-2">Cancelar</a>
-                        <button type="submit" class="btn btn-cremepe px-4">Salvar Alterações</button>
+                        <button type="submit" class="btn btn-success px-4">Salvar Alterações</button>
                     </div>
                 </form>
             </div>
