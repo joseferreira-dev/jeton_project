@@ -91,14 +91,14 @@
                                 <td class="text-center fw-bold" th:text="${rc.pontosLimite}">0</td>
                                 <td class="text-center pe-4">
                                     <a th:href="@{'/regras-conjuntas/editar/' + ${rc.idRegraConjunta}}"
-                                        class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                        class="btn btn-sm btn-outline-primary me-1" title="Editar regra">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
 
                                     <a href="#" class="btn btn-sm btn-outline-danger" data-role="confirmar-acao"
                                         th:data-url="'/regras-conjuntas/excluir/' + ${rc.idRegraConjunta}"
                                         data-mensagem="Deseja EXCLUIR esta regra conjunta? Apenas possível se não houver regras vinculadas."
-                                        data-cor="btn-danger">
+                                        data-cor="btn-danger" title="Exluir regra">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </a>
                                 </td>
