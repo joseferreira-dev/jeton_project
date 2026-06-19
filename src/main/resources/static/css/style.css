@@ -192,20 +192,6 @@ body.login-body {
     color: var(--cremepe-green-dark);
 }
 
-.btn-cremepe {
-    background-color: var(--cremepe-green);
-    color: white;
-    font-weight: 500;
-    border: 1px solid var(--cremepe-green);
-}
-
-.btn-cremepe:hover,
-.btn-cremepe:focus {
-    background-color: var(--cremepe-green-dark);
-    color: white;
-    border-color: var(--cremepe-green-dark);
-}
-
 .text-muted {
     color: var(--cremepe-muted-dark) !important;
 }
