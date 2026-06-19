@@ -21,21 +21,21 @@
                     <input type="hidden" th:field="*{idGestao}">
 
                     <div class="row g-3">
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold">Nome da Gestão</label>
                             <input type="text" class="form-control" th:field="*{nomeGestao}"
                                 placeholder="Ex: Gestão 2023-2028" data-validate="required minlength:3 maxlength:70"
                                 required title="Nome da gestão (ex: Gestão 2023-2028)">
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold">Data de Início</label>
                             <input type="date" class="form-control"
                                 th:value="${#temporals.format(gestao.dtInicio, 'yyyy-MM-dd')}" name="dtInicio"
                                 data-validate="required date" required title="Data de início do mandato da gestão">
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold">Data de Fim</label>
                             <input type="date" class="form-control"
                                 th:value="${#temporals.format(gestao.dtFim, 'yyyy-MM-dd')}" name="dtFim"

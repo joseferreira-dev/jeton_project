@@ -59,15 +59,15 @@
                             <tr>
                                 <th class="ps-4"><a
                                         th:href="@{/gestoes(page=${paginaGestoes.number}, size=${size}, termo=${termo}, sort='nomeGestao', dir=${sort == 'nomeGestao' and dir == 'asc' ? 'desc' : 'asc'})}"
-                                        class="text-decoration-none text-dark">Nome da Gestão <i
+                                        class="text-decoration-none text-dark">Nome <i
                                             th:class="${sort == 'nomeGestao'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i></a>
                                 </th>
                                 <th><a th:href="@{/gestoes(page=${paginaGestoes.number}, size=${size}, termo=${termo}, sort='dtInicio', dir=${sort == 'dtInicio' and dir == 'asc' ? 'desc' : 'asc'})}"
-                                        class="text-decoration-none text-dark">Início <i
+                                        class="text-decoration-none text-dark">Data de Início <i
                                             th:class="${sort == 'dtInicio'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i></a>
                                 </th>
                                 <th><a th:href="@{/gestoes(page=${paginaGestoes.number}, size=${size}, termo=${termo}, sort='dtFim', dir=${sort == 'dtFim' and dir == 'asc' ? 'desc' : 'asc'})}"
-                                        class="text-decoration-none text-dark">Fim <i
+                                        class="text-decoration-none text-dark">Data de Fim <i
                                             th:class="${sort == 'dtFim'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i></a>
                                 </th>
                                 <th class="text-center pe-4">Ações</th>
