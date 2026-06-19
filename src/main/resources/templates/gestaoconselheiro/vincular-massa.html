@@ -60,7 +60,6 @@
 
                 <div class="card-body">
                     <div class="row g-4">
-                        <!-- Coluna esquerda: vinculados (já marcados) -->
                         <div class="col-md-6">
                             <div class="card h-100">
                                 <div class="card-header bg-success text-white fw-bold">
@@ -98,7 +97,6 @@
                             </div>
                         </div>
 
-                        <!-- Coluna direita: não vinculados (desmarcados) -->
                         <div class="col-md-6">
                             <div class="card h-100">
                                 <div class="card-header bg-secondary text-white fw-bold">
@@ -134,12 +132,11 @@
                         </div>
                     </div>
 
-                    <!-- Legenda e ajuda -->
                     <div class="mt-4 p-3 bg-light rounded">
                         <div class="d-flex align-items-center gap-4">
                             <span><i class="fa-solid fa-square-check text-success me-1"></i> Vinculado (marcado)</span>
                             <span><i class="fa-regular fa-square me-1"></i> Não vinculado</span>
-                            <span><span class="badge badge-atividade">com atividades</span> – não pode ser
+                            <span><span class="badge badge-atividade">com atividades</span> Não pode ser
                                 desmarcado</span>
                         </div>
                     </div>
@@ -147,9 +144,7 @@
 
                 <div class="card-footer bg-light d-flex justify-content-end py-3">
                     <a th:href="@{/gestoes}" class="btn btn-outline-secondary me-2">Voltar</a>
-                    <button type="submit" class="btn btn-cremepe px-4">
-                        <i class="fa-solid fa-floppy-disk me-1"></i> Salvar Composição
-                    </button>
+                    <button type="submit" class="btn btn-success px-4">Salvar Composição</button>
                 </div>
             </form>
         </div>

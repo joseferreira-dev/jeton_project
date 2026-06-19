@@ -132,7 +132,9 @@ public class GestaoConselheiroController {
 
         Gestao gestao = gestaoService.buscarPorId(idGestao)
                 .orElseThrow(() -> new IllegalArgumentException("Gestão não encontrada"));
+
         List<Conselheiro> todosConselheiros = conselheiroService.listarTodos();
+        todosConselheiros.sort(Comparator.comparing(c -> c.getPessoa().getNome()));
 
         List<Integer> selecionadosIds = gestaoConselheiroService.listarTodos().stream()
                 .filter(v -> v.getId().getIdGestao().equals(idGestao))
@@ -143,7 +145,7 @@ public class GestaoConselheiroController {
 
         model.addAttribute("idsComAtividades", idsComAtividades);
         model.addAttribute("gestao", gestao);
-        model.addAttribute("conselheiros", todosConselheiros);
+        model.addAttribute("conselheiros", todosConselheiros); // já ordenado
         model.addAttribute("selecionadosIds", selecionadosIds);
 
         return "gestaoconselheiro/vincular-massa";
