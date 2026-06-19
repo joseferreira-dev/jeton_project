@@ -3,19 +3,19 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Editar Lote de Atividades - Jeton</title>
+    <title>Editar Atividade em Lote - Jeton</title>
 </head>
 
 <body>
     <div layout:fragment="conteudo">
         <div class="mb-4">
             <h2 class="h4 text-cremepe fw-bold">
-                <i class="fa-solid fa-pen-to-square me-2"></i> Edição em Lote de Atividades
+                <i class="fa-solid fa-pen-to-square me-2"></i> Editar Atividade em Lote
             </h2>
             <div class="alert alert-info">
                 <i class="fa-solid fa-info-circle me-2"></i>
-                Este comprovante é compartilhado por <strong th:text="${quantidade}"></strong> atividades.
-                As alterações realizadas abaixo serão aplicadas a todas elas.
+                Este atividade é compartilhada por <strong th:text="${quantidade}"></strong> conselheiros.
+                As alterações realizadas abaixo serão aplicadas a todos eles.
                 <br>
                 <i class="fa-solid fa-users me-1"></i> Você pode adicionar novos conselheiros (novas atividades serão
                 criadas) ou remover conselheiros existentes (as respectivas atividades serão excluídas).
@@ -148,7 +148,7 @@
                 <div class="mt-5 border-top pt-4 d-flex justify-content-end align-items-center">
                     <div>
                         <a th:href="@{/atividades}" class="btn btn-outline-secondary me-2">Cancelar</a>
-                        <button type="submit" class="btn btn-success px-4">Salvar Atividades</button>
+                        <button type="submit" class="btn btn-success px-4">Salvar Atividade</button>
                     </div>
                 </div>
                 </form>
