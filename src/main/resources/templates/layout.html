@@ -40,7 +40,6 @@
                         </a>
                     </li>
 
-                    <!-- Links diretos para o portal do conselheiro -->
                     <li th:if="${session.usuarioLogado?.inTipoPessoa == 'C'}" class="nav-item">
                         <a class="nav-link" th:href="@{/conselheiro}">
                             <i class="fa-solid fa-chart-line me-1"></i> Dashboard
@@ -65,11 +64,11 @@
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="dropGestao">
                             <li><a class="dropdown-item" th:href="@{/gestoes}"><i
-                                        class="fa-solid fa-calendar-days me-2"></i> Gestões e Mandatos</a></li>
+                                        class="fa-solid fa-calendar-days me-2"></i> Gestões</a></li>
                             <li><a class="dropdown-item" th:href="@{/conselheiros}"><i
-                                        class="fa-solid fa-user-doctor me-2"></i> Médicos Conselheiros</a></li>
+                                        class="fa-solid fa-user-doctor me-2"></i> Conselheiros</a></li>
                             <li><a class="dropdown-item" th:href="@{/gestao-conselheiros}"><i
-                                        class="fa-solid fa-users-viewfinder me-2"></i> Vínculos Rápidos</a></li>
+                                        class="fa-solid fa-users-viewfinder me-2"></i> Vínculos</a></li>
                         </ul>
                     </li>
 
@@ -158,7 +157,7 @@
                             <i class="fa-solid fa-right-from-bracket me-1"></i> Sair
                         </button>
                     </form>
-                    <!-- Botão de bloqueio do sistema -->
+
                     <form th:action="@{/bloqueio/alternar}" method="post" style="display: inline;" id="formBloqueio"
                         th:if="${session.usuarioLogado != null and (session.usuarioLogado.hasPermissao('S') or session.usuarioLogado.hasPermissao('B'))}">
                         <button type="submit" id="btnBloqueio" class="btn btn-sm btn-outline-light"
@@ -210,7 +209,6 @@
         </div>
     </div>
 
-    <!-- Modal de Confirmação de Bloqueio (estilo homologação) -->
     <div class="modal fade" id="modalConfirmacaoBloqueio" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content shadow border-danger">
@@ -236,7 +234,6 @@
         </div>
     </div>
 
-    <!-- Mensagens Flash (ocultas, usadas para converter em toasts) -->
     <div style="display: none;">
         <span id="flashSuccess" th:text="${sucesso}"></span>
         <span id="flashError" th:text="${erro}"></span>
@@ -246,10 +243,8 @@
     <script th:src="@{/webjars/bootstrap/5.3.2/js/bootstrap.bundle.min.js}"></script>
     <script th:src="@{https://cdn.jsdelivr.net/npm/imask@7.4.0/dist/imask.min.js}"></script>
     <script type="module" th:src="@{/js/main.js}"></script>
-    <!-- Inicialização adicional para toasts -->
     <script type="module">
         import { initFlashToasts } from '/js/toast.js';
-        // Executa após o DOM carregar
         document.addEventListener('DOMContentLoaded', initFlashToasts);
     </script>
 </body>

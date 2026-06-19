@@ -10,7 +10,6 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="icon" th:href="@{/favicon.png}" type="image/x-icon">
     <style>
-        /* Ajustes específicos para a página de bloqueio */
         .block-container {
             min-height: 100vh;
             display: flex;
@@ -34,18 +33,6 @@
             font-size: 4rem;
             margin-bottom: 20px;
             color: var(--cremepe-danger, #dc3545);
-        }
-
-        .btn-cremepe {
-            background-color: var(--cremepe-green);
-            color: white;
-            font-weight: 500;
-            border: 1px solid var(--cremepe-green);
-        }
-
-        .btn-cremepe:hover {
-            background-color: var(--cremepe-green-dark);
-            color: white;
         }
     </style>
 </head>
@@ -73,7 +60,7 @@
             </p>
 
             <form th:action="@{/sair}" method="get" class="mt-4">
-                <button type="submit" class="btn btn-cremepe px-4">
+                <button type="submit" class="btn btn-success px-4">
                     <i class="fa-solid fa-right-from-bracket me-1"></i> Sair do Sistema
                 </button>
             </form>
