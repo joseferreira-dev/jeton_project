@@ -9,12 +9,12 @@
 <body>
     <div layout:fragment="conteudo">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-file-signature me-2"></i> Gestão de Portarias</h2>
-            <a th:href="@{/portarias/novo}" class="btn btn-cremepe"><i class="fa-solid fa-plus me-1"></i> Nova
+            <h2 class="h4 text-cremepe fw-bold"><i class="fa-solid fa-file-signature me-2"></i> Portarias</h2>
+            <a th:href="@{/portarias/novo}" class="btn btn-success"><i class="fa-solid fa-plus me-1"></i> Nova
                 Portaria</a>
         </div>
 
-        <form th:action="@{/portarias}" method="get" class="mb-4">
+        <form th:action="@{/portarias}" method="get" class="mb-4" data-guard-ignore>
             <input type="hidden" name="sort" th:value="${sort}">
             <input type="hidden" name="dir" th:value="${dir}">
 
@@ -24,12 +24,12 @@
                 </div>
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-5">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold small text-muted">Pesquisar (Número ou Ano)</label>
                             <input type="text" name="termo" th:value="${termo}" class="form-control"
                                 placeholder="Buscar Número ou Ano...">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Estado</label>
                             <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
                                 <option value="">Todos</option>
@@ -63,7 +63,7 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 align-middle">
-                        <thead class="table-light" style="border-bottom: 2px solid var(--cremepe-gold);">
+                        <thead class="table-light">
                             <tr>
                                 <th class="ps-4">Portaria</th>
                                 <th>Período de Vigência</th>
@@ -73,8 +73,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="p : ${paginaPortarias.content}"
-                                th:classappend="${p.inRevogado == 'S'} ? 'table-light text-muted'">
+                            <tr th:each="p : ${paginaPortarias.content}">
                                 <td class="ps-4 fw-bold text-cremepe" th:text="${'Portaria ' + p.numero + '/' + p.ano}">
                                     Portaria</td>
                                 <td>
@@ -109,21 +108,21 @@
                                 </td>
                                 <td class="text-center pe-4">
                                     <a th:href="@{'/portarias/editar/' + ${p.idPortaria}}"
-                                        class="btn btn-sm btn-outline-primary me-1">
+                                        class="btn btn-sm btn-outline-primary me-1" title="Editar portaria">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
 
                                     <a href="#" class="btn btn-sm btn-outline-danger me-1" data-role="confirmar-acao"
                                         th:data-url="'/portarias/excluir/' + ${p.idPortaria}"
                                         data-mensagem="Deseja EXCLUIR permanentemente esta Portaria? Apenas possível se não houver regras vinculadas."
-                                        data-cor="btn-danger">
+                                        data-cor="btn-danger" title="Excluir portaria">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </a>
 
                                     <a th:if="${p.inRevogado == 'N'}" href="#" class="btn btn-sm btn-outline-danger"
                                         data-role="confirmar-acao" th:data-url="'/portarias/revogar/' + ${p.idPortaria}"
                                         data-mensagem="Tem certeza que deseja REVOGAR esta Portaria? Ela deixará de ser listada para novos cadastros."
-                                        data-cor="btn-danger">
+                                        data-cor="btn-danger" title="Revogar portaria">
                                         <i class="fa-solid fa-ban"></i>
                                     </a>
 
@@ -131,7 +130,7 @@
                                         data-role="confirmar-acao"
                                         th:data-url="'/portarias/restaurar/' + ${p.idPortaria}"
                                         data-mensagem="Tem certeza que deseja RESTAURAR esta Portaria para o estado Em Vigor?"
-                                        data-cor="btn-success">
+                                        data-cor="btn-success" title="Restaurar portaria (volta a estar em vigor)">
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </a>
                                 </td>
@@ -181,7 +180,6 @@
             </div>
         </div>
 
-        <!-- Modal de confirmação (mesmo estilo das atividades conselhais) -->
         <div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content shadow">
