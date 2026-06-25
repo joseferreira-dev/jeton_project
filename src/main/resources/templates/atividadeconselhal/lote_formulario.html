@@ -93,37 +93,8 @@
 
                     <div class="row g-4 mt-2">
                         <div class="col-md-12">
-                            <div class="card bg-light border-dashed">
-                                <div class="card-body">
-                                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-paperclip me-2"></i>Anexar
-                                        Comprovante</h6>
-                                    <div class="row g-3">
-                                        <div class="col-md-8">
-                                            <label class="form-label small fw-bold">Nome do Comprovante</label>
-                                            <input type="text" class="form-control form-control-sm"
-                                                name="nomeComprovanteUsuario"
-                                                placeholder="Ex: Ata de Reunião (18/05/26)"
-                                                title="Dê um nome descritivo ao comprovante para identificação futura">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label small fw-bold">Tipo de Documento</label>
-                                            <select class="form-select form-select-sm" name="idTipoAnexo"
-                                                title="Selecione o tipo de documento anexado (PDF, imagem, etc.)">
-                                                <option value="">Selecione o Tipo</option>
-                                                <option th:each="t : ${listaTiposAnexo}" th:value="${t.idTipo}"
-                                                    th:text="${t.nome}"></option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-12">
-                                            <label class="form-label small fw-bold">Arquivo (PDF ou Imagem)</label>
-                                            <div class="file-upload-container">
-                                                <input type="file" class="form-control form-control-sm" name="file"
-                                                    accept=".pdf,image/*" data-role="file-upload"
-                                                    title="Envie o comprovante em formato PDF ou imagem (JPG, PNG)">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div
+                                th:replace="~{fragments/upload-anexo :: upload(comprovante=${null}, listaTipos=${listaTiposAnexo}, nomeInput='nomeComprovanteUsuario', tipoInput='idTipoAnexo', fileInput='file', exibirArquivoAtual=true)}">
                             </div>
                         </div>
                     </div>

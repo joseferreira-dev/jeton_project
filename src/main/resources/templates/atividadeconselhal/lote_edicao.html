@@ -26,131 +26,93 @@
             <div class="card-body p-4">
                 <form th:action="@{|/atividades/lote/atualizar/${idComprovante}|}" method="post"
                     enctype="multipart/form-data" id="formLote" data-loading="true"
-                    data-loading-message="Criando atividades em lote..."></form>
-                <input type="hidden" name="idComprovante" th:value="${idComprovante}">
+                    data-loading-message="Criando atividades em lote...">
+                    <input type="hidden" name="idComprovante" th:value="${idComprovante}">
 
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Gestão</label>
-                        <select class="form-select" name="idGestao" id="selectGestao" data-role="atualizar-conselheiros"
-                            data-validate="required" required>
-                            <option value="">Selecione a Gestão Primeiro</option>
-                            <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}" th:text="${g.nomeGestao}"
-                                th:selected="${g.idGestao == atividadeReferencia.gestao.idGestao}"></option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold">Data e Horário da Atividade</label>
-                        <input type="datetime-local" class="form-control" name="dataHoraAtividade" id="dataAtividade"
-                            th:value="${#temporals.format(atividadeReferencia.dataHoraAtividade, 'yyyy-MM-dd''T''HH:mm')}"
-                            data-validate="required datetime" required>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold">Turno</label>
-                        <input type="text" class="form-control" id="turnoVisual" value="Automático (via Horário)"
-                            data-role="atualizar-regras" disabled>
-                        <small class="text-muted" style="font-size: 0.70rem;">M (06h00-11h59) | T (12h00-17h59) | N
-                            (18h00-23h59)</small>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Conselheiros (selecione um ou mais)</label>
-                        <select class="form-select" name="idsConselheiros" id="selectConselheiros" multiple size="12"
-                            required data-validate="required">
-                            <option value="">Aguardando Gestão</option>
-                        </select>
-                        <small class="text-muted">Segure Ctrl (ou Cmd) para selecionar vários.</small>
-                    </div>
-
-                    <div class="col-md-6" id="divSelecionadosLote">
-                        <label class="form-label fw-bold">Conselheiros selecionados:</label>
-                        <div id="listaSelecionados" class="border rounded p-2 bg-light"
-                            style="min-height: 266px; max-height: 266px; overflow-y: auto;">
-                            <span class="text-muted">Nenhum selecionado</span>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Gestão</label>
+                            <select class="form-select" name="idGestao" id="selectGestao"
+                                data-role="atualizar-conselheiros" data-validate="required" required>
+                                <option value="">Selecione a Gestão Primeiro</option>
+                                <option th:each="g : ${listaGestoes}" th:value="${g.idGestao}" th:text="${g.nomeGestao}"
+                                    th:selected="${g.idGestao == atividadeReferencia.gestao.idGestao}"></option>
+                            </select>
                         </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Data e Horário da Atividade</label>
+                            <input type="datetime-local" class="form-control" name="dataHoraAtividade"
+                                id="dataAtividade"
+                                th:value="${#temporals.format(atividadeReferencia.dataHoraAtividade, 'yyyy-MM-dd''T''HH:mm')}"
+                                data-validate="required datetime" required>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Turno</label>
+                            <input type="text" class="form-control" id="turnoVisual" value="Automático (via Horário)"
+                                data-role="atualizar-regras" disabled>
+                            <small class="text-muted" style="font-size: 0.70rem;">M (06h00-11h59) | T (12h00-17h59) | N
+                                (18h00-23h59)</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Conselheiros (selecione um ou mais)</label>
+                            <select class="form-select" name="idsConselheiros" id="selectConselheiros" multiple
+                                size="12" required data-validate="required">
+                                <option value="">Aguardando Gestão</option>
+                            </select>
+                            <small class="text-muted">Segure Ctrl (ou Cmd) para selecionar vários.</small>
+                        </div>
+
+                        <div class="col-md-6" id="divSelecionadosLote">
+                            <label class="form-label fw-bold">Conselheiros selecionados:</label>
+                            <div id="listaSelecionados" class="border rounded p-2 bg-light"
+                                style="min-height: 266px; max-height: 266px; overflow-y: auto;">
+                                <span class="text-muted">Nenhum selecionado</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Resolução Aplicada (Identificada por Data)</label>
+                            <input type="text" class="form-control" id="nomeResolucaoVisual" readonly
+                                placeholder="Selecione a data para identificar">
+                            <input type="hidden" name="idResolucao" id="idResolucaoHidden">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Portaria Aplicada (Identificada por Data)</label>
+                            <input type="text" class="form-control" id="nomePortariaVisual" readonly
+                                placeholder="Selecione a data para identificar">
+                            <input type="hidden" name="idPortaria" id="idPortariaHidden">
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Regra Enquadrada (Atividade
+                                Específica)</label>
+                            <select class="form-select" name="idRegra" id="selectRegra" data-role="exibir-guia"
+                                data-validate="required" required>
+                                <option value="">Escolha a documentação acima para desbloquear as regras</option>
+                            </select>
+                        </div>
+
+                        <div th:replace="~{fragments/guia-atividade :: guia}"></div>
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Resolução Aplicada (Identificada por Data)</label>
-                        <input type="text" class="form-control" id="nomeResolucaoVisual" readonly
-                            placeholder="Selecione a data para identificar">
-                        <input type="hidden" name="idResolucao" id="idResolucaoHidden">
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Portaria Aplicada (Identificada por Data)</label>
-                        <input type="text" class="form-control" id="nomePortariaVisual" readonly
-                            placeholder="Selecione a data para identificar">
-                        <input type="hidden" name="idPortaria" id="idPortariaHidden">
-                    </div>
-
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold">Regra Enquadrada (Atividade
-                            Específica)</label>
-                        <select class="form-select" name="idRegra" id="selectRegra" data-role="exibir-guia"
-                            data-validate="required" required>
-                            <option value="">Escolha a documentação acima para desbloquear as regras</option>
-                        </select>
-                    </div>
-
-                    <div th:replace="~{fragments/guia-atividade :: guia}"></div>
-                </div>
-
-                <div class="row g-4 mt-2">
-                    <div class="col-md-12">
-                        <div class="card bg-light border-dashed">
-                            <div class="card-body">
-                                <h6 class="fw-bold mb-3"><i class="fa-solid fa-paperclip me-2"></i>Anexar Comprovante
-                                </h6>
-                                <div class="row g-3">
-                                    <div class="col-md-8">
-                                        <label class="form-label small fw-bold">Nome do Comprovante (Descrição para o
-                                            sistema)</label>
-                                        <input type="text" class="form-control form-control-sm"
-                                            name="nomeComprovanteUsuario"
-                                            th:value="${atividadeReferencia.comprovante != null ? atividadeReferencia.comprovante.nomeComprovante : ''}"
-                                            placeholder="Ex: Certidão de comparecimento - Reunião X">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Tipo de Documento</label>
-                                        <select class="form-select form-select-sm" name="idTipoAnexo">
-                                            <option value="">Selecione o Tipo</option>
-                                            <option th:each="t : ${listaTiposAnexo}" th:value="${t.idTipo}"
-                                                th:text="${t.nome}"
-                                                th:selected="${atividadeReferencia.comprovante != null && atividadeReferencia.comprovante.tipoAnexo != null
-                                                    ? atividadeReferencia.comprovante.tipoAnexo.idTipo == t.idTipo : false}">
-                                            </option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label small fw-bold">Arquivo (PDF ou Imagem)</label>
-                                        <div class="file-upload-container">
-                                            <input type="file" class="form-control form-control-sm" name="file"
-                                                accept=".pdf,image/*" data-role="file-upload">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div th:if="${atividadeReferencia.comprovante != null}" class="mt-3">
-                                    <span class="badge bg-success">
-                                        <i class="fa-solid fa-file-circle-check me-1"></i>
-                                        Arquivo atual: <span
-                                            th:text="${atividadeReferencia.comprovante.nomeArquivo}"></span>
-                                    </span>
-                                    <small class="text-muted ms-2">(Substitua selecionando um novo arquivo)</small>
-                                </div>
+                    <div class="row g-4 mt-2">
+                        <div class="col-md-12">
+                            <div
+                                th:replace="~{fragments/upload-anexo :: upload(comprovante=${atividadeReferencia.comprovante}, listaTipos=${listaTiposAnexo}, nomeInput='nomeComprovanteUsuario', tipoInput='idTipoAnexo', fileInput='file', exibirArquivoAtual=true)}">
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="mt-5 border-top pt-4 d-flex justify-content-end align-items-center">
-                    <div>
-                        <a th:href="@{/atividades}" class="btn btn-outline-secondary me-2">Cancelar</a>
-                        <button type="submit" class="btn btn-success px-4">Salvar Atividade</button>
+                    <div class="mt-5 border-top pt-4 d-flex justify-content-end align-items-center">
+                        <div>
+                            <a th:href="@{/atividades}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-success px-4">Salvar Atividade</button>
+                        </div>
                     </div>
-                </div>
                 </form>
             </div>
         </div>
