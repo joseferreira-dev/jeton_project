@@ -6,6 +6,11 @@ import br.com.cremepe.jeton.dto.JetonDTO;
 import br.com.cremepe.jeton.dto.RelatorioGeralDTO;
 import br.com.cremepe.jeton.service.*;
 import jakarta.servlet.http.HttpSession;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -115,17 +120,25 @@ public class JetonController {
             @RequestParam(value = "mes", required = false) Integer mes,
             @RequestParam(value = "ano", required = false) Integer ano,
             @RequestParam(value = "termo", required = false) String termo,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sort", defaultValue = "ano") String sort,
+            @RequestParam(value = "dir", defaultValue = "desc") String dir,
             Model model, HttpSession session) {
         if (naoAutenticado(session))
             return "redirect:/login";
 
-        List<JetonDTO> historico = jetonService.pesquisarHistorico(idGestao, mes, ano, termo);
-        model.addAttribute("listaJetons", historico);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(dir), sort));
+        Page<JetonDTO> pagina = jetonService.pesquisarHistoricoPaginado(idGestao, mes, ano, termo, pageable);
+        model.addAttribute("paginaJetons", pagina);
         model.addAttribute("listaGestoes", gestaoService.listarTodos());
         model.addAttribute("idGestaoSelecionada", idGestao);
         model.addAttribute("mesSelecionado", mes);
         model.addAttribute("anoSelecionado", ano);
         model.addAttribute("termo", termo);
+        model.addAttribute("size", size);
+        model.addAttribute("sort", sort);
+        model.addAttribute("dir", dir);
         return "jeton/historico";
     }
 

@@ -19,14 +19,17 @@
                 <i class="fa-solid fa-filter me-2"></i> Filtrar Jetons
             </div>
             <div class="card-body p-4">
-                <form th:action="@{/jeton/historico}" method="get">
+                <form th:action="@{/jeton/historico}" method="get" data-guard-ignore>
+                    <input type="hidden" name="sort" th:value="${sort}">
+                    <input type="hidden" name="dir" th:value="${dir}">
+
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Buscar Conselheiro</label>
                             <input type="text" class="form-control" name="termo" th:value="${termo}"
                                 placeholder="Digite o nome do conselheiro...">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Gestão</label>
                             <select class="form-select" name="idGestao">
                                 <option value="">Todas as Gestões</option>
@@ -49,6 +52,14 @@
                             <input type="number" class="form-control" name="ano" th:value="${anoSelecionado}"
                                 placeholder="Ex: 2026">
                         </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">Exibir</label>
+                            <select name="size" class="form-select" onchange="this.form.submit()">
+                                <option value="10" th:selected="${size == 10}">10 registros</option>
+                                <option value="20" th:selected="${size == 20}">20 registros</option>
+                                <option value="50" th:selected="${size == 50}">50 registros</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2 bg-light p-3 rounded">
@@ -69,26 +80,57 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>Conselheiro</th>
-                                <th class="text-center">Competência</th>
-                                <th class="text-center">Qtd. Jetons</th>
-                                <th class="text-end">Valor Homologado</th>
+                                <th>
+                                    <a th:href="@{/jeton/historico(page=0, size=${size}, termo=${termo}, idGestao=${idGestaoSelecionada}, mes=${mesSelecionado}, ano=${anoSelecionado}, sort='nomeConselheiro', dir=${sort == 'nomeConselheiro' and dir == 'asc' ? 'desc' : 'asc'})}"
+                                        class="text-dark text-decoration-none">
+                                        Conselheiro
+                                        <i
+                                            th:class="${sort == 'nomeConselheiro'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
+                                    </a>
+                                </th>
+                                <th class="text-center">
+                                    <a th:href="@{/jeton/historico(page=0, size=${size}, termo=${termo}, idGestao=${idGestaoSelecionada}, mes=${mesSelecionado}, ano=${anoSelecionado}, sort='ano', dir=${sort == 'ano' and dir == 'asc' ? 'desc' : 'asc'})}"
+                                        class="text-dark text-decoration-none">
+                                        Competência
+                                        <i
+                                            th:class="${sort == 'ano'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
+                                    </a>
+                                </th>
+                                <th class="text-center">
+                                    <a th:href="@{/jeton/historico(page=0, size=${size}, termo=${termo}, idGestao=${idGestaoSelecionada}, mes=${mesSelecionado}, ano=${anoSelecionado}, sort='totalJeton', dir=${sort == 'totalJeton' and dir == 'asc' ? 'desc' : 'asc'})}"
+                                        class="text-dark text-decoration-none">
+                                        Qtd. Jetons
+                                        <i
+                                            th:class="${sort == 'totalJeton'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
+                                    </a>
+                                </th>
+                                <th class="text-end">
+                                    <a th:href="@{/jeton/historico(page=0, size=${size}, termo=${termo}, idGestao=${idGestaoSelecionada}, mes=${mesSelecionado}, ano=${anoSelecionado}, sort='valor', dir=${sort == 'valor' and dir == 'asc' ? 'desc' : 'asc'})}"
+                                        class="text-dark text-decoration-none">
+                                        Valor Homologado
+                                        <i
+                                            th:class="${sort == 'valor'} ? (${dir == 'asc'} ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1') : 'fa-solid fa-sort ms-1 text-muted'"></i>
+                                    </a>
+                                </th>
                                 <th class="text-center">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:if="${#lists.isEmpty(listaJetons)}">
-                                <td colspan="5" class="text-center py-4 text-muted">Nenhum registro contábil de folha
-                                    fechada localizado.</td>
+                            <tr th:if="${#lists.isEmpty(paginaJetons.content)}">
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    Nenhum registro contábil de folha fechada localizado.
+                                </td>
                             </tr>
-                            <tr th:each="j : ${listaJetons}">
+                            <tr th:each="j : ${paginaJetons.content}">
                                 <td>
                                     <span class="fw-bold text-dark"
                                         th:text="${j.nomeConselheiro}">Conselheiro</span><br>
                                     <small class="text-muted" th:text="${j.nomeGestao}">Gestão</small>
                                 </td>
-                                <td class="text-center"><span class="badge bg-dark px-2 py-1"
-                                        th:text="${j.mes + '/' + j.ano}">07/2026</span></td>
+                                <td class="text-center">
+                                    <span class="badge bg-dark px-2 py-1"
+                                        th:text="${j.mes + '/' + j.ano}">07/2026</span>
+                                </td>
                                 <td class="text-center fw-bold text-primary" th:text="${j.totalJeton}">0</td>
                                 <td class="text-end fw-bold text-success"
                                     th:text="${'R$ ' + #numbers.formatDecimal(j.valor, 1, 'POINT', 2, 'COMMA')}">R$ 0,00
@@ -105,6 +147,11 @@
                     </table>
                 </div>
             </div>
+            <div th:replace="~{fragments/paginacao :: paginacao(
+                page=${paginaJetons},
+                urlBase='/jeton/historico',
+                params=${ {size: size, termo: termo, idGestao: idGestaoSelecionada, mes: mesSelecionado, ano: anoSelecionado, sort: sort, dir: dir} }
+            )}"></div>
         </div>
 
         <div class="modal fade" id="modalAtividades" tabindex="-1" aria-hidden="true">
