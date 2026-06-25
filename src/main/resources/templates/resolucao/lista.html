@@ -184,24 +184,7 @@
             </div>
         </div>
 
-        <div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content shadow">
-                    <div id="modalConfirmacaoHeader" class="modal-header bg-success text-white">
-                        <h5 class="modal-title"><i class="fa-solid fa-circle-question me-2"></i> Confirmar Ação</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-4">
-                        <p id="textoConfirmacao" class="mb-0">Tem certeza que deseja realizar esta operação?</p>
-                    </div>
-                    <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-outline-secondary"
-                            data-bs-dismiss="modal">Cancelar</button>
-                        <a id="linkConfirmacao" href="#" class="btn btn-primary px-4">Confirmar</a>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div th:replace="~{fragments/modal-confirmacao :: modal}"></div>
 
     </div>
 </body>
