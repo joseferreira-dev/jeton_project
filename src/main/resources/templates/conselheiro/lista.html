@@ -114,42 +114,11 @@
                 </div>
             </div>
 
-            <div class="card-footer bg-white border-top-0 py-3"
-                th:if="${size != 0 and paginaConselheiros.totalPages > 1}"
-                th:with="start=${paginaConselheiros.number > 2 ? paginaConselheiros.number - 2 : 0}, 
-                      end=${paginaConselheiros.number + 2 < paginaConselheiros.totalPages - 1 ? paginaConselheiros.number + 2 : paginaConselheiros.totalPages - 1}">
-                <nav>
-                    <ul class="pagination justify-content-center mb-0">
-                        <li class="page-item" th:classappend="${paginaConselheiros.first} ? 'disabled'"><a
-                                class="page-link"
-                                th:href="@{/conselheiros(page=${paginaConselheiros.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Anterior</a>
-                        </li>
-
-                        <li class="page-item" th:if="${start > 0}"><a class="page-link"
-                                th:href="@{/conselheiros(page=0, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">1</a>
-                        </li>
-                        <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
-
-                        <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
-                            th:classappend="${paginaConselheiros.number == i} ? 'active'">
-                            <a class="page-link"
-                                th:href="@{/conselheiros(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}"
-                                th:text="${i + 1}">1</a>
-                        </li>
-
-                        <li class="page-item disabled" th:if="${end < paginaConselheiros.totalPages - 2}"><a
-                                class="page-link" href="#">...</a></li>
-                        <li class="page-item" th:if="${end < paginaConselheiros.totalPages - 1}"><a class="page-link"
-                                th:href="@{/conselheiros(page=${paginaConselheiros.totalPages - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}"
-                                th:text="${paginaConselheiros.totalPages}">10</a></li>
-
-                        <li class="page-item" th:classappend="${paginaConselheiros.last} ? 'disabled'"><a
-                                class="page-link"
-                                th:href="@{/conselheiros(page=${paginaConselheiros.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Próxima</a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
+            <div th:replace="~{fragments/paginacao :: paginacao(
+                page=${paginaConselheiros}, 
+                urlBase='/conselheiros', 
+                params=${ {size: size, termo: termo, situacao: situacao, sort: sort, dir: dir} }
+            )}"></div>
         </div>
 
         <div th:replace="~{fragments/modal-exclusao :: modal}"></div>

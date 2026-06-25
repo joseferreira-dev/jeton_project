@@ -112,37 +112,11 @@
                 </div>
             </div>
 
-            <div class="card-footer bg-white border-top-0 py-3"
-                th:if="${size != 0 and paginaRegrasConjuntas.totalPages > 1}"
-                th:with="start=${paginaRegrasConjuntas.number > 2 ? paginaRegrasConjuntas.number - 2 : 0}, 
-                      end=${paginaRegrasConjuntas.number + 2 < paginaRegrasConjuntas.totalPages - 1 ? paginaRegrasConjuntas.number + 2 : paginaRegrasConjuntas.totalPages - 1}">
-                <nav>
-                    <ul class="pagination justify-content-center mb-0">
-                        <li class="page-item" th:classappend="${paginaRegrasConjuntas.first} ? 'disabled'"><a
-                                class="page-link"
-                                th:href="@{/regras-conjuntas(page=${paginaRegrasConjuntas.number - 1}, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}">Anterior</a>
-                        </li>
-                        <li class="page-item" th:if="${start > 0}"><a class="page-link"
-                                th:href="@{/regras-conjuntas(page=0, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}">1</a>
-                        </li>
-                        <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
-                        <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
-                            th:classappend="${paginaRegrasConjuntas.number == i} ? 'active'">
-                            <a class="page-link"
-                                th:href="@{/regras-conjuntas(page=${i}, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}"
-                                th:text="${i + 1}">1</a>
-                        </li>
-                        <li class="page-item disabled" th:if="${end < paginaRegrasConjuntas.totalPages - 2}"><a
-                                class="page-link" href="#">...</a></li>
-                        <li class="page-item" th:if="${end < paginaRegrasConjuntas.totalPages - 1}"><a class="page-link"
-                                th:href="@{/regras-conjuntas(page=${paginaRegrasConjuntas.totalPages - 1}, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}"
-                                th:text="${paginaRegrasConjuntas.totalPages}">10</a></li>
-                        <li class="page-item" th:classappend="${paginaRegrasConjuntas.last} ? 'disabled'"><a
-                                class="page-link"
-                                th:href="@{/regras-conjuntas(page=${paginaRegrasConjuntas.number + 1}, size=${size}, termo=${termo}, tipoLimite=${tipoLimite}, sort=${sort}, dir=${dir})}">Próxima</a>
-                    </ul>
-                </nav>
-            </div>
+            <div th:replace="~{fragments/paginacao :: paginacao(
+                page=${paginaRegrasConjuntas}, 
+                urlBase='/regras-conjuntas', 
+                params=${ {size: size, termo: termo, tipoLimite: tipoLimite, sort: sort, dir: dir} }
+            )}"></div>
         </div>
 
         <div th:replace="~{fragments/modal-confirmacao :: modal}"></div>

@@ -31,7 +31,7 @@
                         <div class="col-md-2">
                             <label class="form-label fw-bold small text-muted">Estado</label>
                             <select name="situacao" id="situacao" class="form-select" onchange="this.form.submit()">
-                                <option value="">Todos os Estados</option>
+                                <option value="">Todos</option>
                                 <option value="N" th:selected="${situacao == 'N'}">Vigentes (Ativas)</option>
                                 <option value="S" th:selected="${situacao == 'S'}">Revogadas (Inativas)</option>
                             </select>
@@ -39,7 +39,7 @@
                         <div class="col-md-2">
                             <label class="form-label fw-bold small text-muted">Atividade Judicante</label>
                             <select name="judicante" id="judicante" class="form-select" onchange="this.form.submit()">
-                                <option value="">Todas as Atividades</option>
+                                <option value="">Todas</option>
                                 <option value="S" th:selected="${judicante == 'S'}">Judicantes</option>
                                 <option value="N" th:selected="${judicante == 'N'}">Não Judicantes</option>
                             </select>
@@ -149,34 +149,11 @@
                 </div>
             </div>
 
-            <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaRegras.totalPages > 1}"
-                th:with="start=${paginaRegras.number > 2 ? paginaRegras.number - 2 : 0}, 
-                      end=${paginaRegras.number + 2 < paginaRegras.totalPages - 1 ? paginaRegras.number + 2 : paginaRegras.totalPages - 1}">
-                <nav>
-                    <ul class="pagination justify-content-center mb-0">
-                        <li class="page-item" th:classappend="${paginaRegras.first} ? 'disabled'"><a class="page-link"
-                                th:href="@{/regras(page=${paginaRegras.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}">Anterior</a>
-                        </li>
-                        <li class="page-item" th:if="${start > 0}"><a class="page-link"
-                                th:href="@{/regras(page=0, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}">1</a>
-                        </li>
-                        <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
-                        <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
-                            th:classappend="${paginaRegras.number == i} ? 'active'">
-                            <a class="page-link"
-                                th:href="@{/regras(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}"
-                                th:text="${i + 1}">1</a>
-                        </li>
-                        <li class="page-item disabled" th:if="${end < paginaRegras.totalPages - 2}"><a class="page-link"
-                                href="#">...</a></li>
-                        <li class="page-item" th:if="${end < paginaRegras.totalPages - 1}"><a class="page-link"
-                                th:href="@{/regras(page=${paginaRegras.totalPages - 1}, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}"
-                                th:text="${paginaRegras.totalPages}">10</a></li>
-                        <li class="page-item" th:classappend="${paginaRegras.last} ? 'disabled'"><a class="page-link"
-                                th:href="@{/regras(page=${paginaRegras.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, judicante=${judicante}, sort=${sort}, dir=${dir})}">Próxima</a>
-                    </ul>
-                </nav>
-            </div>
+            <div th:replace="~{fragments/paginacao :: paginacao(
+                page=${paginaRegras}, 
+                urlBase='/regras', 
+                params=${ {size: size, termo: termo, situacao: situacao, judicante: judicante, sort: sort, dir: dir} }
+            )}"></div>
         </div>
 
         <div th:replace="~{fragments/modal-confirmacao :: modal}"></div>

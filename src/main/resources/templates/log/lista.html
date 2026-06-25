@@ -138,44 +138,11 @@
                 </div>
             </div>
 
-            <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaLogs.totalPages > 1}"
-                th:with="start=${paginaLogs.number > 2 ? paginaLogs.number - 2 : 0},
-                          end=${paginaLogs.number + 2 < paginaLogs.totalPages - 1 ? paginaLogs.number + 2 : paginaLogs.totalPages - 1}">
-                <nav>
-                    <ul class="pagination justify-content-center mb-0">
-                        <li class="page-item" th:classappend="${paginaLogs.first} ? 'disabled'">
-                            <a class="page-link"
-                                th:href="@{/logs(page=${paginaLogs.number - 1}, size=${size}, nomeTabela=${nomeTabela}, dataInicio=${dataInicio}, dataFim=${dataFim}, termo=${termo}, sort=${sort}, dir=${dir})}">Anterior</a>
-                        </li>
-
-                        <li class="page-item" th:if="${start > 0}">
-                            <a class="page-link"
-                                th:href="@{/logs(page=0, size=${size}, nomeTabela=${nomeTabela}, dataInicio=${dataInicio}, dataFim=${dataFim}, termo=${termo}, sort=${sort}, dir=${dir})}">1</a>
-                        </li>
-                        <li class="page-item disabled" th:if="${start > 1}"><span class="page-link">...</span></li>
-
-                        <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
-                            th:classappend="${paginaLogs.number == i} ? 'active'">
-                            <a class="page-link"
-                                th:href="@{/logs(page=${i}, size=${size}, nomeTabela=${nomeTabela}, dataInicio=${dataInicio}, dataFim=${dataFim}, termo=${termo}, sort=${sort}, dir=${dir})}"
-                                th:text="${i + 1}">1</a>
-                        </li>
-
-                        <li class="page-item disabled" th:if="${end < paginaLogs.totalPages - 2}"><span
-                                class="page-link">...</span></li>
-                        <li class="page-item" th:if="${end < paginaLogs.totalPages - 1}">
-                            <a class="page-link"
-                                th:href="@{/logs(page=${paginaLogs.totalPages - 1}, size=${size}, nomeTabela=${nomeTabela}, dataInicio=${dataInicio}, dataFim=${dataFim}, termo=${termo}, sort=${sort}, dir=${dir})}"
-                                th:text="${paginaLogs.totalPages}">Última</a>
-                        </li>
-
-                        <li class="page-item" th:classappend="${paginaLogs.last} ? 'disabled'">
-                            <a class="page-link"
-                                th:href="@{/logs(page=${paginaLogs.number + 1}, size=${size}, nomeTabela=${nomeTabela}, dataInicio=${dataInicio}, dataFim=${dataFim}, termo=${termo}, sort=${sort}, dir=${dir})}">Próxima</a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
+            <div th:replace="~{fragments/paginacao :: paginacao(
+                page=${paginaLogs}, 
+                urlBase='/logs', 
+                params=${ {size: size, nomeTabela: nomeTabela, dataInicio: dataInicio, dataFim: dataFim, termo: termo, sort: sort, dir: dir} }
+            )}"></div>
         </div>
 
         <div class="modal fade" id="modalLogDetalhes" tabindex="-1" aria-hidden="true">

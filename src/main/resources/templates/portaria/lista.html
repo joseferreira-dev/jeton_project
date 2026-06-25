@@ -144,40 +144,11 @@
                 </div>
             </div>
 
-            <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaPortarias.totalPages > 1}"
-                th:with="start=${paginaPortarias.number > 2 ? paginaPortarias.number - 2 : 0}, 
-                      end=${paginaPortarias.number + 2 < paginaPortarias.totalPages - 1 ? paginaPortarias.number + 2 : paginaPortarias.totalPages - 1}">
-                <nav>
-                    <ul class="pagination justify-content-center mb-0">
-                        <li class="page-item" th:classappend="${paginaPortarias.first} ? 'disabled'"><a
-                                class="page-link"
-                                th:href="@{/portarias(page=${paginaPortarias.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Anterior</a>
-                        </li>
-
-                        <li class="page-item" th:if="${start > 0}"><a class="page-link"
-                                th:href="@{/portarias(page=0, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">1</a>
-                        </li>
-                        <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
-
-                        <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
-                            th:classappend="${paginaPortarias.number == i} ? 'active'">
-                            <a class="page-link"
-                                th:href="@{/portarias(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}"
-                                th:text="${i + 1}">1</a>
-                        </li>
-
-                        <li class="page-item disabled" th:if="${end < paginaPortarias.totalPages - 2}"><a
-                                class="page-link" href="#">...</a></li>
-                        <li class="page-item" th:if="${end < paginaPortarias.totalPages - 1}"><a class="page-link"
-                                th:href="@{/portarias(page=${paginaPortarias.totalPages - 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}"
-                                th:text="${paginaPortarias.totalPages}">10</a></li>
-
-                        <li class="page-item" th:classappend="${paginaPortarias.last} ? 'disabled'"><a class="page-link"
-                                th:href="@{/portarias(page=${paginaPortarias.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, sort=${sort}, dir=${dir})}">Próxima</a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
+            <div th:replace="~{fragments/paginacao :: paginacao(
+                page=${paginaPortarias}, 
+                urlBase='/portarias', 
+                params=${ {size: size, termo: termo, situacao: situacao, sort: sort, dir: dir} }
+            )}"></div>
         </div>
 
         <div th:replace="~{fragments/modal-confirmacao :: modal}"></div>

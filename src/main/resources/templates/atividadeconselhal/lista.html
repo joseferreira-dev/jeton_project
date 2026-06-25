@@ -52,7 +52,7 @@
                         <div class="col-md-3">
                             <label class="form-label fw-bold small text-muted">Comprovante</label>
                             <select name="comprovanteFiltro" class="form-select" onchange="this.form.submit()">
-                                <option value="">Todos os registos</option>
+                                <option value="">Todos</option>
                                 <option value="S" th:selected="${comprovanteFiltro == 'S'}">Apenas com Comprovante
                                 </option>
                                 <option value="N" th:selected="${comprovanteFiltro == 'N'}">Apenas sem Comprovante
@@ -248,41 +248,11 @@
                     </table>
                 </div>
             </div>
-            <div class="card-footer bg-white border-top-0 py-3" th:if="${size != 0 and paginaAtividades.totalPages > 1}"
-                th:with="start=${paginaAtividades.number > 2 ? paginaAtividades.number - 2 : 0}, 
-                      end=${paginaAtividades.number + 2 < paginaAtividades.totalPages - 1 ? paginaAtividades.number + 2 : paginaAtividades.totalPages - 1}">
-                <nav>
-                    <ul class="pagination justify-content-center mb-0">
-                        <li class="page-item" th:classappend="${paginaAtividades.first} ? 'disabled'"><a
-                                class="page-link"
-                                th:href="@{/atividades(page=${paginaAtividades.number - 1}, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, sort=${sort}, dir=${dir})}">Anterior</a>
-                        </li>
-
-                        <li class="page-item" th:if="${start > 0}"><a class="page-link"
-                                th:href="@{/atividades(page=0, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, sort=${sort}, dir=${dir})}">1</a>
-                        </li>
-                        <li class="page-item disabled" th:if="${start > 1}"><a class="page-link" href="#">...</a></li>
-
-                        <li class="page-item" th:each="i : ${#numbers.sequence(start, end)}"
-                            th:classappend="${paginaAtividades.number == i} ? 'active'">
-                            <a class="page-link"
-                                th:href="@{/atividades(page=${i}, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, sort=${sort}, dir=${dir})}"
-                                th:text="${i + 1}">1</a>
-                        </li>
-
-                        <li class="page-item disabled" th:if="${end < paginaAtividades.totalPages - 2}"><a
-                                class="page-link" href="#">...</a></li>
-                        <li class="page-item" th:if="${end < paginaAtividades.totalPages - 1}"><a class="page-link"
-                                th:href="@{/atividades(page=${paginaAtividades.totalPages - 1}, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, sort=${sort}, dir=${dir})}"
-                                th:text="${paginaAtividades.totalPages}">10</a></li>
-
-                        <li class="page-item" th:classappend="${paginaAtividades.last} ? 'disabled'"><a
-                                class="page-link"
-                                th:href="@{/atividades(page=${paginaAtividades.number + 1}, size=${size}, termo=${termo}, situacao=${situacao}, turno=${turno}, sort=${sort}, dir=${dir})}">Próxima</a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
+            <div th:replace="~{fragments/paginacao :: paginacao(
+                page=${paginaAtividades}, 
+                urlBase='/atividades', 
+                params=${ {size: size, termo: termo, situacao: situacao, turno: turno, sort: sort, dir: dir} }
+            )}"></div>
         </div>
 
         <div th:replace="~{fragments/modal-detalhes :: modal}"></div>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+</head>
+
+<body>
+
+    <!-- ============================================================
+         FRAGMENTO DE PAGINAÇÃO
+         Uso: 
+         <div th:replace="~{fragments/paginacao :: paginacao(page=${pagina}, urlBase='/caminho', params=${parametros})}"></div>
+
+         Parâmetros:
+         - page: objeto Page (Spring Data) contendo number, totalPages, first, last
+         - urlBase: string com o caminho base (ex: '/atividades', '/conselheiros')
+         - params: mapa de parâmetros adicionais a serem mantidos na URL (ex: {termo: ${termo}, situacao: ${situacao}})
+    ============================================================ -->
+    <th:block th:fragment="paginacao(page, urlBase, params)">
+        <!-- Só exibe se houver mais de uma página e o tamanho da página for > 0 -->
+        <div th:if="${page.totalPages > 1 and page.size != 0}" class="card-footer bg-white border-top-0 py-3"
+            th:with="
+                start=${page.number > 2 ? page.number - 2 : 0},
+                end=${page.number + 2 < page.totalPages - 1 ? page.number + 2 : page.totalPages - 1},
+                paramString=${params != null ? #strings.replace(#strings.replace(#strings.replace(#strings.replace(params.toString(), '{', ''), '}', ''), '=', '='), ', ', '&') : ''}">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    <!-- Anterior -->
+                    <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+                        <a class="page-link"
+                            th:href="@{${urlBase}(page=${page.number - 1}, ${paramString})}">Anterior</a>
+                    </li>
+
+                    <!-- Primeira página -->
+                    <li th:if="${start > 0}" class="page-item">
+                        <a class="page-link" th:href="@{${urlBase}(page=0, ${paramString})}">1</a>
+                    </li>
+                    <li th:if="${start > 1}" class="page-item disabled"><span class="page-link">...</span></li>
+
+                    <!-- Páginas intermediárias -->
+                    <li th:each="i : ${#numbers.sequence(start, end)}" class="page-item"
+                        th:classappend="${page.number == i} ? 'active'">
+                        <a class="page-link" th:href="@{${urlBase}(page=${i}, ${paramString})}" th:text="${i + 1}">1</a>
+                    </li>
+
+                    <!-- Última página -->
+                    <li th:if="${end < page.totalPages - 2}" class="page-item disabled"><span
+                            class="page-link">...</span></li>
+                    <li th:if="${end < page.totalPages - 1}" class="page-item">
+                        <a class="page-link" th:href="@{${urlBase}(page=${page.totalPages - 1}, ${paramString})}"
+                            th:text="${page.totalPages}">10</a>
+                    </li>
+
+                    <!-- Próxima -->
+                    <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+                        <a class="page-link"
+                            th:href="@{${urlBase}(page=${page.number + 1}, ${paramString})}">Próxima</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </th:block>
+
+</body>
+
+</html>
