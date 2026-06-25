@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+</head>
+
+<body>
+
+    <!-- ============================================================
+         MODAL DE COMPROVANTE
+         Uso: <div th:replace="~{fragments/modal-comprovante :: modal}"></div>
+         Espera que o JavaScript utilize os IDs:
+         - modalComprovante
+         - nomeComprovanteTitulo
+         - modalComprovanteBody
+    ============================================================ -->
+    <th:block th:fragment="modal">
+        <div class="modal fade" id="modalComprovante" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered" style="height: 90vh;">
+                <div class="modal-content h-100 border-0 shadow">
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title">
+                            <i class="fa-solid fa-file-lines me-2"></i>
+                            <span id="nomeComprovanteTitulo"></span>
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-0 bg-dark d-flex justify-content-center align-items-center"
+                        id="modalComprovanteBody">
+                        <div class="text-center text-white" id="loadingComprovante">
+                            <i class="fa-solid fa-spinner fa-spin fa-3x"></i>
+                            <p class="mt-2">Carregando comprovante...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+</body>
+
+</html>

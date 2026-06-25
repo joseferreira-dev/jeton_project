@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+</head>
+
+<body>
+
+    <!-- ============================================================
+         MODAL DE DETALHES DA ATIVIDADE
+         Uso: <div th:replace="~{fragments/modal-detalhes :: modal}"></div>
+         Espera que o JavaScript utilize os IDs:
+         - modalDetalhes
+         - detalhesConteudo
+    ============================================================ -->
+    <th:block th:fragment="modal">
+        <div class="modal fade" id="modalDetalhes" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title fw-bold">
+                            <i class="fa-solid fa-magnifying-glass-chart me-2"></i>Detalhes da Atividade
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4" id="detalhesConteudo">
+                        <!-- Conteúdo dinâmico injetado pelo JavaScript -->
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+</body>
+
+</html>
