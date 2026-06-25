@@ -31,7 +31,6 @@ public class NivelAcessoService {
 
     @Transactional
     public NivelAcesso criar(NivelAcesso nivel) {
-        nivel.setIdNivel(null);
         NivelAcesso salvo = salvar(nivel, true);
         logJetonService.logNivelAcessoCriado(salvo);
         return salvo;
