@@ -22,9 +22,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/conselheiro")
@@ -273,26 +274,37 @@ public class ConselheiroPortalController {
             @RequestParam(required = false) Integer idGestao,
             @RequestParam(required = false) Integer mes,
             @RequestParam(required = false) Integer ano,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "ano") String sort,
+            @RequestParam(defaultValue = "desc") String dir,
             Model model,
             HttpSession session) {
-
         if (!isConselheiro(session))
             return "redirect:/login";
-
         Integer idConselheiro = getIdConselheiroLogado(session);
 
-        List<JetonDTO> pagamentos = jetonService.pesquisarHistorico(idGestao, mes, ano, null)
-                .stream()
-                .filter(j -> j.idConselheiro().equals(idConselheiro))
-                .collect(Collectors.toList());
+        Map<String, String> sortMapping = new HashMap<>();
+        sortMapping.put("nomeConselheiro", "conselheiro.pessoa.nome");
+        sortMapping.put("nomeGestao", "gestao.nomeGestao");
+        sortMapping.put("totalJeton", "totalJeton");
+        sortMapping.put("valor", "valor");
+        sortMapping.put("mes", "mes");
+        sortMapping.put("ano", "ano");
+        sortMapping.put("situacao", "inSituacao");
+        String sortField = sortMapping.getOrDefault(sort, sort);
+        Sort.Direction direction = Sort.Direction.fromString(dir);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        model.addAttribute("pagamentos", pagamentos);
-
+        Page<JetonDTO> pagina = jetonService.listarPorConselheiroPaginado(idConselheiro, idGestao, mes, ano, pageable);
+        model.addAttribute("paginaPagamentos", pagina);
         model.addAttribute("listaGestoes", gestaoService.listarTodos());
         model.addAttribute("idGestaoSelecionada", idGestao);
         model.addAttribute("mesSelecionado", mes);
         model.addAttribute("anoSelecionado", ano);
-
+        model.addAttribute("size", size);
+        model.addAttribute("sort", sort);
+        model.addAttribute("dir", dir);
         return "conselheiro/pagamentos";
     }
 }

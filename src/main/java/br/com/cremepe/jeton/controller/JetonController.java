@@ -25,7 +25,9 @@ import com.lowagie.text.DocumentException;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Controller
@@ -128,7 +130,18 @@ public class JetonController {
         if (naoAutenticado(session))
             return "redirect:/login";
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(dir), sort));
+        Map<String, String> sortMapping = new HashMap<>();
+        sortMapping.put("nomeConselheiro", "conselheiro.pessoa.nome");
+        sortMapping.put("nomeGestao", "gestao.nomeGestao");
+        sortMapping.put("totalJeton", "totalJeton");
+        sortMapping.put("valor", "valor");
+        sortMapping.put("mes", "mes");
+        sortMapping.put("ano", "ano");
+        sortMapping.put("situacao", "inSituacao");
+        String sortField = sortMapping.getOrDefault(sort, sort);
+        Sort.Direction direction = Sort.Direction.fromString(dir);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+
         Page<JetonDTO> pagina = jetonService.pesquisarHistoricoPaginado(idGestao, mes, ano, termo, pageable);
         model.addAttribute("paginaJetons", pagina);
         model.addAttribute("listaGestoes", gestaoService.listarTodos());

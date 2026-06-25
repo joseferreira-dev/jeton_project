@@ -65,6 +65,14 @@ public class JetonService {
     }
 
     @Transactional(readOnly = true)
+    public Page<JetonDTO> listarPorConselheiroPaginado(Integer idConselheiro, Integer idGestao, Integer mes,
+            Integer ano, Pageable pageable) {
+        Page<Jeton> page = jetonRepository.findByConselheiroIdPessoaAndFilters(idConselheiro, idGestao, mes, ano,
+                pageable);
+        return page.map(jetonMapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
     public PontosRemanescentesDTO obterSaldoPorConselheiro(Integer idPessoa) {
         PontosRemanescentesDTO dto = pontosSaldoRepository.findSaldoByConselheiro(idPessoa)
                 .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado ou sem jetons"));

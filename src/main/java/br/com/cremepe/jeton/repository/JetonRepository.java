@@ -45,4 +45,16 @@ public interface JetonRepository extends JpaRepository<Jeton, Integer> {
             @Param("ano") Integer ano,
             @Param("termo") String termo,
             Pageable pageable);
+
+    @Query("SELECT j FROM Jeton j WHERE j.conselheiro.idPessoa = :idConselheiro " +
+            "AND (:idGestao IS NULL OR j.gestao.idGestao = :idGestao) " +
+            "AND (:mes IS NULL OR j.mes = :mes) " +
+            "AND (:ano IS NULL OR j.ano = :ano) " +
+            "AND j.inSituacao = 'E'")
+    Page<Jeton> findByConselheiroIdPessoaAndFilters(
+            @Param("idConselheiro") Integer idConselheiro,
+            @Param("idGestao") Integer idGestao,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano,
+            Pageable pageable);
 }
