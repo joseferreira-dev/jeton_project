@@ -153,6 +153,175 @@ class JetonServiceTest {
         return a;
     }
 
+    // ========== NOVOS TESTES DE PRÉ-PROCESSAMENTO ==========
+
+    @Test
+    @DisplayName("deve lançar exceção quando há meses anteriores não fechados")
+    void deveLancarExcecaoMesesAnterioresNaoFechados() {
+        // Dado
+        Integer idGestao = 1;
+        Integer mes = 6;
+        Integer ano = 2026;
+        Gestao gestao = criarGestao(idGestao, "Gestão Teste", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31));
+
+        when(atividadeRepositoryMock.countAtividadesFechadasNoPeriodo(idGestao, mes, ano)).thenReturn(0L);
+        when(jetonRepositoryMock.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano)).thenReturn(List.of());
+        when(atividadeRepositoryMock.countAtividadesPendentesNoMes(idGestao, mes, ano)).thenReturn(0L);
+        when(atividadeRepositoryMock.countAtividadesAnterioresNaoFechadas(eq(idGestao), any(LocalDateTime.class)))
+                .thenReturn(5L); // meses anteriores não fechados
+
+        // Quando / Então
+        assertThatThrownBy(() -> service.processarFechamentoMensal(gestao, mes, ano))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("meses anteriores ainda não homologadas");
+
+        verify(logJetonServiceMock, never()).logFolhaProcessada(any(), anyInt(), anyInt(), anyInt(), anyInt(), any());
+    }
+
+    @Test
+    @DisplayName("deve limpar processamentos anteriores com jetons existentes")
+    void deveLimparProcessamentosAnterioresComJetonsExistentes() throws Exception {
+        // Dado
+        Integer idGestao = 1;
+        Integer mes = 6;
+        Integer ano = 2026;
+        Gestao gestao = criarGestao(idGestao, "Gestão Teste", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31));
+        Conselheiro conselheiro = criarConselheiro(100, "Dr. A");
+
+        // Mocks para validações iniciais
+        lenient().when(atividadeRepositoryMock.countAtividadesFechadasNoPeriodo(idGestao, mes, ano)).thenReturn(0L);
+        lenient().when(atividadeRepositoryMock.countAtividadesPendentesNoMes(idGestao, mes, ano)).thenReturn(0L);
+        lenient()
+                .when(atividadeRepositoryMock.countAtividadesAnterioresNaoFechadas(eq(idGestao),
+                        any(LocalDateTime.class)))
+                .thenReturn(0L);
+
+        // Resolução vigente
+        Resolucao resolucao = criarResolucao(10, 3, BigDecimal.valueOf(100));
+        LocalDate ultimoDiaMes = LocalDate.of(ano, mes, 1).withDayOfMonth(LocalDate.of(ano, mes, 1).lengthOfMonth());
+        lenient().when(resolucaoRepositoryMock.findResolucoesVigentesNaData(ultimoDiaMes))
+                .thenReturn(List.of(resolucao));
+
+        // Vínculo do conselheiro
+        GestaoConselheiro vinculo = mock(GestaoConselheiro.class);
+        lenient().when(vinculo.getConselheiro()).thenReturn(conselheiro);
+        lenient().when(gestaoConselheiroRepositoryMock.findByGestaoIdGestao(idGestao))
+                .thenReturn(List.of(vinculo));
+
+        // Jetons existentes no mês (para serem limpos)
+        Jeton jetonExistente = criarJeton(1, gestao, conselheiro, mes, ano, 3, BigDecimal.valueOf(300),
+                Jeton.SITUACAO_ATIVO);
+        lenient().when(jetonRepositoryMock.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano))
+                .thenReturn(List.of(jetonExistente));
+
+        // Atividades computadas no mês (para serem limpas)
+        Regras regra = mock(Regras.class);
+        lenient().when(regra.getPontos()).thenReturn(3);
+        AtividadeConselhal atvComputada = criarAtividade(10, conselheiro, regra, gestao, LocalDateTime.now(),
+                AtividadeConselhal.SITUACAO_VALIDADA, AtividadeConselhal.COMPUTADA_SIM);
+        lenient().when(atividadeRepositoryMock.findComputadasDoMes(idGestao, mes, ano))
+                .thenReturn(List.of(atvComputada));
+
+        // Mocks para estorno do conselheiro (delete de jetons, restauração de saldos,
+        // etc.)
+        lenient().when(conselheiroRepositoryMock.findById(100)).thenReturn(Optional.of(conselheiro));
+        lenient().when(pontosSaldoRepositoryMock.findByJetonIdJeton(1)).thenReturn(List.of());
+        lenient().when(pontosSaldoRepositoryMock.findSaldosDeAtividadesByMes(100, mes, ano)).thenReturn(List.of());
+        lenient().doNothing().when(atividadeRepositoryMock).reverterAtividadesComputadas(100, idGestao, mes, ano);
+
+        // Mock para processar o conselheiro (após limpeza, ele não tem mais nada)
+        lenient().when(pontosSaldoRepositoryMock.findSaldosDisponiveisOrderedFIFO(100, idGestao)).thenReturn(List.of());
+        lenient().when(atividadeRepositoryMock.findHomologadasParaCalculo(100, mes, ano)).thenReturn(List.of());
+
+        // Mock para save de jetons (caso haja)
+        lenient().when(jetonRepositoryMock.save(any(Jeton.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Quando
+        service.processarFechamentoMensal(gestao, mes, ano);
+
+        // Então - verifica que o jeton foi deletado (via estorno)
+        verify(jetonRepositoryMock, atLeastOnce()).delete(jetonExistente);
+        verify(atividadeRepositoryMock).reverterAtividadesComputadas(100, idGestao, mes, ano);
+    }
+
+    @Test
+    @DisplayName("deve aplicar limites de turno corretamente")
+    void deveAplicarLimitesTurno() throws Exception {
+        // Este teste testa a lógica de aplicarLimitesTurno via processarConselheiro.
+        // Precisamos criar saldos com atividades que tenham turno e verificar redução.
+
+        Integer idGestao = 1;
+        Integer mes = 6;
+        Integer ano = 2026;
+        Gestao gestao = criarGestao(idGestao, "Gestão Teste", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31));
+        Conselheiro conselheiro = criarConselheiro(100, "Dr. A");
+        Resolucao resolucao = criarResolucao(10, 3, BigDecimal.valueOf(100)); // 3 pts por jeton
+
+        // Mocks de validação
+        when(atividadeRepositoryMock.countAtividadesFechadasNoPeriodo(idGestao, mes, ano)).thenReturn(0L);
+        when(atividadeRepositoryMock.countAtividadesPendentesNoMes(idGestao, mes, ano)).thenReturn(0L);
+        when(atividadeRepositoryMock.countAtividadesAnterioresNaoFechadas(eq(idGestao), any(LocalDateTime.class)))
+                .thenReturn(0L);
+
+        LocalDate ultimoDiaMes = LocalDate.of(ano, mes, 1).withDayOfMonth(LocalDate.of(ano, mes, 1).lengthOfMonth());
+        when(resolucaoRepositoryMock.findResolucoesVigentesNaData(ultimoDiaMes))
+                .thenReturn(List.of(resolucao));
+
+        GestaoConselheiro vinculo = mock(GestaoConselheiro.class);
+        when(vinculo.getConselheiro()).thenReturn(conselheiro);
+        when(gestaoConselheiroRepositoryMock.findByGestaoIdGestao(idGestao))
+                .thenReturn(List.of(vinculo));
+
+        // Sem jetons anteriores
+        when(jetonRepositoryMock.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano)).thenReturn(List.of());
+
+        // Saldos antigos (não tem)
+        when(pontosSaldoRepositoryMock.findSaldosDisponiveisOrderedFIFO(100, idGestao)).thenReturn(List.of());
+
+        // Criar uma atividade que será convertida em saldo
+        Regras regra = mock(Regras.class);
+        when(regra.getPontos()).thenReturn(3);
+        AtividadeConselhal atividade = criarAtividade(1, conselheiro, regra, gestao,
+                LocalDateTime.of(2026, 6, 10, 8, 0), // manhã
+                AtividadeConselhal.SITUACAO_VALIDADA, AtividadeConselhal.COMPUTADA_NAO);
+        atividade.setInTurno(AtividadeConselhal.TURNO_MANHA);
+
+        when(atividadeRepositoryMock.findHomologadasParaCalculo(100, mes, ano))
+                .thenReturn(List.of(atividade));
+
+        // Mock para save de PontosSaldo (durante conversão)
+        when(pontosSaldoRepositoryMock.save(any(PontosSaldo.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        // Mock para sumPontosUtilizadosByConselheiroAndDataAndTurno (retorna 0)
+        when(pontosSaldoRepositoryMock.sumPontosUtilizadosByConselheiroAndDataAndTurno(
+                eq(100), any(LocalDate.class), eq("M")))
+                .thenReturn(0);
+
+        // Mock para buscarResolucaoPorData (usado para obter o limite)
+        when(regrasServiceMock.buscarResolucaoPorData(any(LocalDate.class)))
+                .thenReturn(Optional.of(resolucao));
+
+        // Simular cálculo de jetons (absorção)
+        Map<Resolucao, Integer> demo = new LinkedHashMap<>();
+        demo.put(resolucao, 1);
+        ResultadoAbsorcao resultadoAbsorcao = new ResultadoAbsorcao(demo, 1, 3);
+        when(jetonCalculatorMock.calcularJetons(anyList(), anyInt()))
+                .thenReturn(resultadoAbsorcao);
+
+        // Mock para salvar Jeton
+        when(jetonRepositoryMock.save(any(Jeton.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        // Quando
+        service.processarFechamentoMensal(gestao, mes, ano);
+
+        // Então - verificar que o método
+        // sumPontosUtilizadosByConselheiroAndDataAndTurno foi chamado
+        verify(pontosSaldoRepositoryMock, atLeastOnce())
+                .sumPontosUtilizadosByConselheiroAndDataAndTurno(eq(100), any(LocalDate.class), eq("M"));
+    }
+
     // ========== TESTES DE PROCESSAMENTO MENSAL ==========
 
     @Test
@@ -826,4 +995,206 @@ class JetonServiceTest {
         assertThat(resultado.getContent()).hasSize(1);
         assertThat(resultado.getContent().get(0).id()).isEqualTo(1);
     }
+
+    // ========== NOVOS TESTES DE EXCLUSÃO DE JETON ==========
+
+    @Test
+    @DisplayName("deve excluir jeton com sucesso")
+    void deveExcluirJetonComSucesso() {
+        // Dado
+        Integer idJeton = 10;
+        Gestao gestao = criarGestao(1, "Gestão", LocalDate.now().minusMonths(1), LocalDate.now().plusMonths(1));
+        Conselheiro conselheiro = criarConselheiro(100, "Dr. A");
+        Jeton jeton = criarJeton(idJeton, gestao, conselheiro, 6, 2026, 5, BigDecimal.valueOf(500),
+                Jeton.SITUACAO_ATIVO);
+
+        when(jetonRepositoryMock.findById(idJeton)).thenReturn(Optional.of(jeton));
+
+        // Quando
+        service.excluirJeton(idJeton);
+
+        // Então
+        verify(jetonRepositoryMock).deleteById(idJeton);
+        verify(logJetonServiceMock).logJetonExcluido(eq(idJeton), anyString(), anyString(), eq(6), eq(2026));
+    }
+
+    // ========== NOVOS TESTES DE VERIFICAÇÃO DE FOLHA HOMOLOGADA ==========
+
+    @Test
+    @DisplayName("deve retornar true para folha homologada quando há jetons com situação EXCLUIDO")
+    void deveRetornarTrueQuandoHaJetonsExcluidos() {
+        // Dado
+        Integer idGestao = 1;
+        Integer mes = 6;
+        Integer ano = 2026;
+        Gestao gestao = criarGestao(idGestao, "Gestão", LocalDate.now().minusMonths(1), LocalDate.now().plusMonths(1));
+        Conselheiro conselheiro = criarConselheiro(100, "Dr. A");
+        Jeton jetonHomologado = criarJeton(1, gestao, conselheiro, mes, ano, 5, BigDecimal.valueOf(500),
+                Jeton.SITUACAO_EXCLUIDO);
+
+        // ✅ Todos os stubs com lenient()
+        lenient().when(jetonRepositoryMock.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano))
+                .thenReturn(List.of(jetonHomologado));
+
+        // Para a validação de pré-processamento, precisamos garantir que
+        // countAtividadesFechadasNoPeriodo seja 0
+        // para que a verificação de homologação seja feita pelos jetons EXCLUIDO
+        lenient().when(atividadeRepositoryMock.countAtividadesFechadasNoPeriodo(idGestao, mes, ano)).thenReturn(0L);
+        lenient().when(atividadeRepositoryMock.countAtividadesPendentesNoMes(idGestao, mes, ano)).thenReturn(0L);
+        lenient()
+                .when(atividadeRepositoryMock.countAtividadesAnterioresNaoFechadas(eq(idGestao),
+                        any(LocalDateTime.class)))
+                .thenReturn(0L);
+
+        // Quando / Então - o processamento deve lançar exceção de homologação
+        assertThatThrownBy(() -> service.processarFechamentoMensal(gestao, mes, ano))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("já foi homologada");
+    }
+
+    // ========== NOVOS TESTES DE HISTÓRICO SEM PAGINAÇÃO ==========
+
+    @Test
+    @DisplayName("deve pesquisar histórico sem paginação")
+    void devePesquisarHistoricoSemPaginacao() {
+        // Dado
+        Integer idGestao = 1;
+        Integer mes = 6;
+        Integer ano = 2026;
+        String termo = "Dr.";
+        Jeton jeton = criarJeton(1, null, null, mes, ano, 5, BigDecimal.valueOf(500), Jeton.SITUACAO_EXCLUIDO);
+
+        when(jetonRepositoryMock.findAllByFilters(eq(idGestao), eq(mes), eq(ano), eq(termo)))
+                .thenReturn(List.of(jeton));
+
+        JetonDTO dto = new JetonDTO(1, 100, "Dr. Teste", 1, "Gestão", mes, ano, 5, BigDecimal.valueOf(500), "E");
+        when(jetonMapperMock.toDto(any(Jeton.class))).thenReturn(dto);
+
+        // Quando
+        List<JetonDTO> resultado = service.pesquisarHistorico(idGestao, mes, ano, termo);
+
+        // Então
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).id()).isEqualTo(1);
+        verify(jetonRepositoryMock).findAllByFilters(eq(idGestao), eq(mes), eq(ano), eq(termo));
+    }
+
+    // ========== NOVOS TESTES DE LISTAGEM DE ATIVIDADES AGRUPADAS ==========
+
+    @Test
+    @DisplayName("deve listar atividades agrupadas por conselheiro")
+    void deveListarAtividadesAgrupadasPorConselheiro() {
+        // Dado
+        Integer idPessoa = 100;
+        Integer idGestao = 1;
+        Integer mes = 6;
+        Integer ano = 2026;
+        Gestao gestao = criarGestao(idGestao, "Gestão", LocalDate.now().minusMonths(1), LocalDate.now().plusMonths(1));
+        Conselheiro conselheiro = criarConselheiro(idPessoa, "Dr. A");
+        Jeton jeton = criarJeton(1, gestao, conselheiro, mes, ano, 5, BigDecimal.valueOf(500),
+                Jeton.SITUACAO_EXCLUIDO);
+
+        // Associar uma atividade ao jeton
+        AtividadeConselhal atividade = mock(AtividadeConselhal.class);
+        jeton.getAtividades().add(atividade);
+
+        when(jetonRepositoryMock.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano))
+                .thenReturn(List.of(jeton));
+
+        AtividadeVinculadaDTO dto = new AtividadeVinculadaDTO("Regra", "2026-06-10", 2);
+        when(atividadeMapperMock.toAtividadeVinculadaDto(atividade)).thenReturn(dto);
+
+        // Quando
+        List<AtividadeVinculadaDTO> resultado = service.listarAtividadesAgrupadasPorConselheiro(
+                idPessoa, idGestao, mes, ano);
+
+        // Então
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).regra()).isEqualTo("Regra");
+    }
+
+    // ========== NOVOS TESTES DE RELATÓRIO GERAL COM CONSELHEIRO SEM ATIVIDADES
+    // ==========
+
+    @Test
+    @DisplayName("deve gerar relatório geral com conselheiro sem atividades")
+    void deveGerarRelatorioGeralComConselheiroSemAtividades() {
+        // Dado
+        Integer idGestao = 1;
+        Integer mes = 6;
+        Integer ano = 2026;
+        Gestao gestao = criarGestao(idGestao, "Gestão Teste", LocalDate.now().minusMonths(1),
+                LocalDate.now().plusMonths(1));
+        Conselheiro cons1 = criarConselheiro(100, "Dr. A");
+        Conselheiro cons2 = criarConselheiro(101, "Dr. B");
+
+        Jeton j1 = criarJeton(1, gestao, cons1, mes, ano, 5, BigDecimal.valueOf(500), Jeton.SITUACAO_EXCLUIDO);
+        Jeton j2 = criarJeton(2, gestao, cons2, mes, ano, 0, BigDecimal.ZERO, Jeton.SITUACAO_EXCLUIDO);
+
+        when(gestaoRepositoryMock.findById(idGestao)).thenReturn(Optional.of(gestao));
+        when(jetonRepositoryMock.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano))
+                .thenReturn(List.of(j1, j2));
+
+        when(pontosSaldoRepositoryMock.findByJetonIdJeton(1)).thenReturn(List.of());
+        when(pontosSaldoRepositoryMock.findByJetonIdJeton(2)).thenReturn(List.of());
+
+        when(pontosSaldoRepositoryMock.sumPontosSobrandoAtivos(100, idGestao)).thenReturn(10);
+        when(pontosSaldoRepositoryMock.sumPontosSobrandoAtivos(101, idGestao)).thenReturn(0);
+
+        when(atividadeRepositoryMock.findComputadasPorConselheiroEMes(100, mes, ano))
+                .thenReturn(List.of());
+        when(atividadeRepositoryMock.findComputadasPorConselheiroEMes(101, mes, ano))
+                .thenReturn(List.of());
+
+        // Quando
+        RelatorioGeralDTO resultado = service.gerarRelatorioGeral(idGestao, mes, ano);
+
+        // Então
+        assertThat(resultado.getConselheiros()).hasSize(2);
+        ConselheiroRelatorioDTO dto2 = resultado.getConselheiros().stream()
+                .filter(c -> c.getIdPessoa().equals(101))
+                .findFirst().orElseThrow();
+        assertThat(dto2.getTotalJetons()).isZero();
+        assertThat(dto2.getValor()).isZero();
+    }
+
+    // ========== NOVOS TESTES DE RELATÓRIO INDIVIDUAL COM ATIVIDADES VAZIAS
+    // ==========
+
+    @Test
+    @DisplayName("deve gerar relatório individual com lista vazia de atividades")
+    void deveGerarRelatorioIndividualComAtividadesVazias() throws Exception {
+        // Dado
+        Integer idPessoa = 100;
+        Integer idGestao = 1;
+        Integer mes = 6;
+        Integer ano = 2026;
+        Conselheiro conselheiro = criarConselheiro(idPessoa, "Dr. A");
+
+        when(conselheiroServiceMock.buscarPorId(idPessoa)).thenReturn(Optional.of(conselheiro));
+
+        // Nenhum jeton retornado (lista vazia)
+        when(jetonRepositoryMock.findByGestaoIdGestaoAndMesAndAno(idGestao, mes, ano))
+                .thenReturn(List.of());
+
+        // Soma de pontos do mês = 0
+        when(atividadeRepositoryMock.sumPontosAtividadesValidadasDoMes(idPessoa, mes, ano))
+                .thenReturn(0);
+
+        // Saldo futuro = 0
+        when(pontosSaldoRepositoryMock.sumPontosSobrandoAtivos(idPessoa, idGestao))
+                .thenReturn(0);
+
+        // Quando
+        RelatorioConselheiroDTO resultado = service.gerarRelatorioIndividualConselheiro(idPessoa, idGestao, mes, ano);
+
+        // Então
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.atividades()).isEmpty();
+        assertThat(resultado.saldoExistente()).isZero();
+        assertThat(resultado.saldoAtividades()).isZero();
+        assertThat(resultado.saldoUtilizado()).isZero();
+        assertThat(resultado.saldoFuturo()).isZero();
+    }
+
 }

@@ -122,7 +122,7 @@ public class FileStorageService {
         Session session = null;
         ChannelSftp channelSftp = null;
         try {
-            JSch jsch = new JSch();
+            JSch jsch = criarJSch();
             session = jsch.getSession(ftpUser, ftpHost, ftpPort);
             session.setPassword(ftpPass);
             session.setConfig("StrictHostKeyChecking", "no");
@@ -173,5 +173,9 @@ public class FileStorageService {
                 log.debug("Erro ao desconectar sessão (ignorado)");
             }
         }
+    }
+
+    protected JSch criarJSch() {
+        return new JSch();
     }
 }

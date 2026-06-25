@@ -229,6 +229,116 @@ class AtividadeConselhalServiceTest {
         verify(atividadeRepositoryMock, never()).save(any());
     }
 
+    @Test
+    @DisplayName("deve lançar exceção ao criar atividade com gestão inexistente")
+    void deveLancarExcecaoCriarAtividadeGestaoInexistente() {
+        // Dado
+        AtividadeConselhal atividade = new AtividadeConselhal();
+        atividade.setGestao(new Gestao());
+        atividade.getGestao().setIdGestao(999);
+        atividade.setDataHoraAtividade(LocalDateTime.now());
+
+        doNothing().when(atividadeValidatorMock).validarDataHoraObrigatoria(any());
+        when(atividadeValidatorMock.validarGestaoExistente(999))
+                .thenThrow(new RuntimeException("Gestão não encontrada"));
+
+        // Quando / Então
+        assertThatThrownBy(() -> service.criar(atividade, null, null, null))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Gestão não encontrada");
+
+        verify(atividadeRepositoryMock, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("deve lançar exceção ao criar atividade com conselheiro não vinculado à gestão")
+    void deveLancarExcecaoCriarAtividadeConselheiroNaoVinculado() {
+        // Dado
+        Integer idGestao = 1;
+        Integer idConselheiro = 10;
+        Gestao gestao = criarGestao(idGestao, LocalDate.now(), LocalDate.now().plusMonths(1));
+        Conselheiro conselheiro = criarConselheiro(idConselheiro);
+        AtividadeConselhal atividade = new AtividadeConselhal();
+        atividade.setGestao(gestao);
+        atividade.setConselheiro(conselheiro);
+        atividade.setDataHoraAtividade(LocalDateTime.now());
+
+        doNothing().when(atividadeValidatorMock).validarDataHoraObrigatoria(any());
+        when(atividadeValidatorMock.validarGestaoExistente(idGestao)).thenReturn(gestao);
+        doThrow(new RuntimeException("Médico não vinculado à gestão"))
+                .when(atividadeValidatorMock).validarVinculoConselheiroGestao(idConselheiro, idGestao);
+
+        // Quando / Então
+        assertThatThrownBy(() -> service.criar(atividade, null, null, null))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Médico não vinculado à gestão");
+
+        verify(atividadeRepositoryMock, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("deve lançar exceção ao criar atividade com data fora do mandato")
+    void deveLancarExcecaoCriarAtividadeDataForaDoMandato() {
+        // Dado
+        Integer idGestao = 1;
+        Integer idConselheiro = 10;
+        LocalDateTime dataHora = LocalDateTime.now().plusMonths(6);
+        Gestao gestao = criarGestao(idGestao, LocalDate.now().minusMonths(1), LocalDate.now().plusMonths(1));
+        Conselheiro conselheiro = criarConselheiro(idConselheiro);
+        AtividadeConselhal atividade = new AtividadeConselhal();
+        atividade.setGestao(gestao);
+        atividade.setConselheiro(conselheiro);
+        atividade.setDataHoraAtividade(dataHora);
+
+        doNothing().when(atividadeValidatorMock).validarDataHoraObrigatoria(any());
+        when(atividadeValidatorMock.validarGestaoExistente(idGestao)).thenReturn(gestao);
+        doNothing().when(atividadeValidatorMock).validarVinculoConselheiroGestao(idConselheiro, idGestao);
+        doThrow(new RuntimeException("Data fora do mandato"))
+                .when(atividadeValidatorMock).validarDataDentroDoMandato(dataHora.toLocalDate(), idGestao);
+
+        // Quando / Então
+        assertThatThrownBy(() -> service.criar(atividade, null, null, null))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Data fora do mandato");
+
+        verify(atividadeRepositoryMock, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("deve ignorar arquivo vazio ao criar atividade")
+    void deveIgnorarArquivoVazioAoCriarAtividade() throws Exception {
+        // Dado
+        Integer idGestao = 1;
+        Integer idConselheiro = 10;
+        MultipartFile fileMock = mock(MultipartFile.class);
+        when(fileMock.isEmpty()).thenReturn(true); // arquivo vazio
+
+        Gestao gestao = criarGestao(idGestao, LocalDate.now().minusMonths(1), LocalDate.now().plusMonths(1));
+        Conselheiro conselheiro = criarConselheiro(idConselheiro);
+        Regras regra = criarRegra(5);
+        AtividadeConselhal atividade = new AtividadeConselhal();
+        atividade.setGestao(gestao);
+        atividade.setConselheiro(conselheiro);
+        atividade.setRegra(regra);
+        atividade.setDataHoraAtividade(LocalDateTime.now());
+        atividade.setQtdAtividade(1);
+
+        doNothing().when(atividadeValidatorMock).validarDataHoraObrigatoria(any());
+        when(atividadeValidatorMock.validarGestaoExistente(idGestao)).thenReturn(gestao);
+        doNothing().when(atividadeValidatorMock).validarVinculoConselheiroGestao(idConselheiro, idGestao);
+        doNothing().when(atividadeValidatorMock).validarDataDentroDoMandato(any(), eq(idGestao));
+
+        when(atividadeRepositoryMock.save(any(AtividadeConselhal.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        // Quando
+        AtividadeConselhal salva = service.criar(atividade, fileMock, null, null);
+
+        // Então
+        assertThat(salva.getComprovante()).isNull();
+        verify(comprovanteServiceMock, never()).criar(any(), any(), any());
+    }
+
     // ========== TESTES DE ATUALIZAÇÃO ==========
 
     @Test
@@ -357,6 +467,102 @@ class AtividadeConselhalServiceTest {
         verify(atividadeRepositoryMock, never()).save(any());
     }
 
+    @Test
+    @DisplayName("deve atualizar nome do comprovante sem substituir o arquivo")
+    void deveAtualizarNomeComprovanteSemSubstituirArquivo() {
+        // Dado
+        Integer idAtividade = 50;
+        Integer idComprovanteAntigo = 300;
+        String novoNome = "Novo nome do comprovante";
+
+        Gestao gestao = criarGestao(1, LocalDate.now().minusMonths(1), LocalDate.now().plusMonths(1));
+        Conselheiro conselheiro = criarConselheiro(10);
+        Regras regra = criarRegra(5);
+        Comprovante comprovanteAntigo = criarComprovante(idComprovanteAntigo);
+        comprovanteAntigo.setNomeComprovante("Nome antigo");
+
+        AtividadeConselhal existente = criarAtividade(idAtividade, gestao, conselheiro, regra, comprovanteAntigo,
+                AtividadeConselhal.SITUACAO_PENDENTE);
+
+        AtividadeConselhal nova = new AtividadeConselhal();
+        nova.setIdAtividade(idAtividade);
+        nova.setGestao(gestao);
+        nova.setConselheiro(conselheiro);
+        nova.setRegra(regra);
+        nova.setDataHoraAtividade(LocalDateTime.now().plusDays(1));
+        nova.setQtdAtividade(1);
+        nova.setInSituacao(AtividadeConselhal.SITUACAO_PENDENTE);
+
+        when(atividadeRepositoryMock.findById(idAtividade)).thenReturn(Optional.of(existente));
+        doNothing().when(atividadeValidatorMock).validarAtividadeNaoFechada(existente);
+        doNothing().when(atividadeValidatorMock).validarDataHoraObrigatoria(any());
+        when(atividadeValidatorMock.validarGestaoExistente(1)).thenReturn(gestao);
+        doNothing().when(atividadeValidatorMock).validarVinculoConselheiroGestao(10, 1);
+        doNothing().when(atividadeValidatorMock).validarDataDentroDoMandato(any(), eq(1));
+
+        when(comprovanteRepositoryMock.findById(idComprovanteAntigo))
+                .thenReturn(Optional.of(comprovanteAntigo));
+        when(atividadeRepositoryMock.save(any(AtividadeConselhal.class)))
+                .thenReturn(nova);
+
+        // Quando
+        service.atualizar(nova, null, null, novoNome, idComprovanteAntigo);
+
+        // Então
+        verify(comprovanteRepositoryMock).save(comprovanteAntigo);
+        assertThat(comprovanteAntigo.getNomeComprovante()).isEqualTo(novoNome);
+    }
+
+    @Test
+    @DisplayName("não deve excluir comprovante antigo se houver outras atividades vinculadas")
+    void naoDeveExcluirComprovanteAntigoSeHaOutrasAtividades() {
+        // Dado
+        Integer idAtividade = 50;
+        Integer idComprovanteAntigo = 300;
+        MultipartFile fileMock = mock(MultipartFile.class);
+        lenient().when(fileMock.isEmpty()).thenReturn(false);
+
+        Gestao gestao = criarGestao(1, LocalDate.now().minusMonths(1), LocalDate.now().plusMonths(1));
+        Conselheiro conselheiro = criarConselheiro(10);
+        Regras regra = criarRegra(5);
+        Comprovante comprovanteAntigo = criarComprovante(idComprovanteAntigo);
+
+        AtividadeConselhal existente = criarAtividade(idAtividade, gestao, conselheiro, regra, comprovanteAntigo,
+                AtividadeConselhal.SITUACAO_PENDENTE);
+
+        Comprovante novoComprovante = criarComprovante(400);
+
+        AtividadeConselhal nova = new AtividadeConselhal();
+        nova.setIdAtividade(idAtividade);
+        nova.setGestao(gestao);
+        nova.setConselheiro(conselheiro);
+        nova.setRegra(regra);
+        nova.setDataHoraAtividade(LocalDateTime.now().plusDays(1));
+        nova.setQtdAtividade(1);
+
+        lenient().when(atividadeRepositoryMock.findById(idAtividade)).thenReturn(Optional.of(existente));
+        lenient().doNothing().when(atividadeValidatorMock).validarAtividadeNaoFechada(existente);
+        lenient().doNothing().when(atividadeValidatorMock).validarDataHoraObrigatoria(any());
+        lenient().when(atividadeValidatorMock.validarGestaoExistente(1)).thenReturn(gestao);
+        lenient().doNothing().when(atividadeValidatorMock).validarVinculoConselheiroGestao(10, 1);
+        lenient().doNothing().when(atividadeValidatorMock).validarDataDentroDoMandato(any(), eq(1));
+
+        lenient().when(comprovanteServiceMock.criar(fileMock, 2, "Novo Comprovante")).thenReturn(novoComprovante);
+        lenient().when(atividadeRepositoryMock.save(any(AtividadeConselhal.class))).thenReturn(nova);
+        lenient().when(atividadeRepositoryMock.countByComprovanteIdComprovante(idComprovanteAntigo)).thenReturn(2L); // outras
+                                                                                                                     // atividades
+
+        lenient().doNothing().when(atividadeRepositoryMock).desvincularComprovante(idAtividade);
+        lenient().when(comprovanteRepositoryMock.findById(idComprovanteAntigo))
+                .thenReturn(Optional.of(comprovanteAntigo));
+
+        // Quando
+        service.atualizar(nova, fileMock, 2, "Novo Comprovante", idComprovanteAntigo);
+
+        // Então
+        verify(comprovanteServiceMock, never()).excluir(idComprovanteAntigo);
+    }
+
     // ========== TESTES DE VALIDAÇÃO ==========
 
     @Test
@@ -435,6 +641,25 @@ class AtividadeConselhalServiceTest {
         verify(atividadeRepositoryMock, never()).save(any());
     }
 
+    @Test
+    @DisplayName("deve lançar exceção ao desvalidar atividade já fechada")
+    void deveLancarExcecaoDesvalidarAtividadeFechada() {
+        // Dado
+        Integer id = 10;
+        AtividadeConselhal atividade = criarAtividade(id, null, null, null, null,
+                AtividadeConselhal.SITUACAO_FECHADA);
+        when(atividadeRepositoryMock.findById(id)).thenReturn(Optional.of(atividade));
+        doThrow(new RuntimeException("Atividade já fechada"))
+                .when(atividadeValidatorMock).validarAtividadeNaoFechada(atividade);
+
+        // Quando / Então
+        assertThatThrownBy(() -> service.desvalidar(id))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Atividade já fechada");
+
+        verify(atividadeRepositoryMock, never()).save(any());
+    }
+
     // ========== TESTES DE EXCLUSÃO ==========
 
     @Test
@@ -493,6 +718,51 @@ class AtividadeConselhalServiceTest {
         verify(atividadeRepositoryMock, never()).deleteById(anyInt());
     }
 
+    @Test
+    @DisplayName("deve lançar exceção ao excluir atividade com vínculo financeiro (jetons)")
+    void deveLancarExcecaoExcluirAtividadeComJetons() {
+        // Dado
+        Integer idAtividade = 80;
+        AtividadeConselhal atividade = criarAtividade(idAtividade, null, null, null, null,
+                AtividadeConselhal.SITUACAO_PENDENTE);
+
+        when(atividadeRepositoryMock.findById(idAtividade)).thenReturn(Optional.of(atividade));
+        doNothing().when(atividadeValidatorMock).validarExclusaoPermitida(atividade);
+        doThrow(new org.springframework.dao.DataIntegrityViolationException("FK violation"))
+                .when(atividadeRepositoryMock).deleteById(idAtividade);
+
+        // Quando / Então
+        assertThatThrownBy(() -> service.excluir(idAtividade))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining(
+                        "Não é possível remover esta atividade pois ela já possui vínculos com o histórico financeiro");
+
+        verify(comprovanteServiceMock, never()).excluir(anyInt());
+    }
+
+    @Test
+    @DisplayName("deve registrar falha ao excluir comprovante durante exclusão da atividade")
+    void deveRegistrarFalhaAoExcluirComprovante() {
+        // Dado
+        Integer idAtividade = 81;
+        Integer idComprovante = 500;
+        Comprovante comprovante = criarComprovante(idComprovante);
+        AtividadeConselhal atividade = criarAtividade(idAtividade, null, null, null, comprovante,
+                AtividadeConselhal.SITUACAO_PENDENTE);
+
+        when(atividadeRepositoryMock.findById(idAtividade)).thenReturn(Optional.of(atividade));
+        doNothing().when(atividadeValidatorMock).validarExclusaoPermitida(atividade);
+        when(atividadeRepositoryMock.countByComprovanteIdComprovante(idComprovante)).thenReturn(0L);
+        doThrow(new RuntimeException("Erro FTP")).when(comprovanteServiceMock).excluir(idComprovante);
+
+        // Quando (não deve lançar exceção)
+        service.excluir(idAtividade);
+
+        // Então
+        verify(comprovanteServiceMock).excluir(idComprovante);
+        // Apenas verifica que o método não propagou a exceção (log foi registrado)
+    }
+
     // ========== TESTES DE CONSULTA ==========
 
     @Test
@@ -519,6 +789,146 @@ class AtividadeConselhalServiceTest {
         LocalDate dataInicio = LocalDate.now().minusDays(10);
         LocalDate dataFim = LocalDate.now();
         int page = 0, size = 10;
+        String sortField = "dataHoraAtividade";
+        String sortDir = "desc";
+
+        Page<AtividadeConselhal> paginaEsperada = new PageImpl<>(List.of());
+        when(atividadeRepositoryMock.findAllByFilters(anyString(), anyString(), anyString(), anyString(),
+                any(), any(), any(Pageable.class))).thenReturn(paginaEsperada);
+
+        // Quando
+        Page<AtividadeConselhal> resultado = service.listarComPaginacaoEPesquisa(
+                termo, situacao, turno, comprovanteFiltro, dataInicio, dataFim, page, size, sortField, sortDir);
+
+        // Então
+        assertThat(resultado).isNotNull();
+        verify(atividadeRepositoryMock).findAllByFilters(eq(termo), eq(situacao), eq(turno), eq(comprovanteFiltro),
+                eq(dataInicio), eq(dataFim), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("deve listar todas as atividades")
+    void deveListarTodasAtividades() {
+        // Dado
+        List<AtividadeConselhal> lista = List.of(
+                criarAtividade(1, null, null, null, null, "P"),
+                criarAtividade(2, null, null, null, null, "C"));
+        when(atividadeRepositoryMock.findAll()).thenReturn(lista);
+
+        // Quando
+        List<AtividadeConselhal> resultado = service.listarTodas();
+
+        // Então
+        assertThat(resultado).hasSize(2);
+        verify(atividadeRepositoryMock).findAll();
+    }
+
+    @Test
+    @DisplayName("deve buscar atividade por ID inexistente retornando Optional vazio")
+    void deveBuscarAtividadePorIdInexistente() {
+        // Dado
+        Integer id = 999;
+        when(atividadeRepositoryMock.findById(id)).thenReturn(Optional.empty());
+
+        // Quando
+        Optional<AtividadeConselhal> resultado = service.buscarPorId(id);
+
+        // Então
+        assertThat(resultado).isEmpty();
+    }
+
+    @Test
+    @DisplayName("deve contar atividades por comprovante")
+    void deveContarAtividadesPorComprovante() {
+        // Dado
+        Integer idComprovante = 100;
+        long expected = 3L;
+        when(atividadeRepositoryMock.countByComprovanteIdComprovante(idComprovante)).thenReturn(expected);
+
+        // Quando
+        long resultado = service.contarAtividadesPorComprovante(idComprovante);
+
+        // Então
+        assertThat(resultado).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("deve somar pontos de atividades validadas não computadas")
+    void deveSomarPontosValidadasNaoComputadas() {
+        // Dado
+        Integer idPessoa = 10;
+        Integer somaEsperada = 15;
+        when(atividadeRepositoryMock.sumPontosAtividadesValidadasNaoComputadas(idPessoa))
+                .thenReturn(somaEsperada);
+
+        // Quando
+        int resultado = service.sumPontosValidadasNaoComputadas(idPessoa);
+
+        // Então
+        assertThat(resultado).isEqualTo(somaEsperada);
+    }
+
+    @Test
+    @DisplayName("deve retornar 0 ao somar pontos quando o repositório retorna null")
+    void deveRetornarZeroAoSomarPontosQuandoRepositoryRetornaNull() {
+        // Dado
+        Integer idPessoa = 10;
+        when(atividadeRepositoryMock.sumPontosAtividadesValidadasNaoComputadas(idPessoa))
+                .thenReturn(null);
+
+        // Quando
+        int resultado = service.sumPontosValidadasNaoComputadas(idPessoa);
+
+        // Então
+        assertThat(resultado).isZero();
+    }
+
+    @Test
+    @DisplayName("deve contar atividades pendentes por conselheiro")
+    void deveContarPendentesPorConselheiro() {
+        // Dado
+        Integer idPessoa = 10;
+        long expected = 2L;
+        when(atividadeRepositoryMock.countByConselheiroIdPessoaAndInSituacao(idPessoa, "P"))
+                .thenReturn(expected);
+
+        // Quando
+        long resultado = service.countPendentesPorConselheiro(idPessoa);
+
+        // Então
+        assertThat(resultado).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("deve contar total de atividades por conselheiro")
+    void deveContarTotalPorConselheiro() {
+        // Dado
+        Integer idPessoa = 10;
+        long expected = 5L;
+        when(atividadeRepositoryMock.countByConselheiroIdPessoa(idPessoa))
+                .thenReturn(expected);
+
+        // Quando
+        long resultado = service.countTotalPorConselheiro(idPessoa);
+
+        // Então
+        assertThat(resultado).isEqualTo(expected);
+    }
+
+    // ========== TESTES DE PAGINAÇÃO ==========
+
+    @Test
+    @DisplayName("deve listar atividades paginadas com size = 0 (sem paginação)")
+    void deveListarAtividadesPaginadasComSizeZero() {
+        // Dado
+        String termo = "teste";
+        String situacao = "P";
+        String turno = "M";
+        String comprovanteFiltro = "S";
+        LocalDate dataInicio = LocalDate.now().minusDays(10);
+        LocalDate dataFim = LocalDate.now();
+        int page = 0;
+        int size = 0; // sem paginação
         String sortField = "dataHoraAtividade";
         String sortDir = "desc";
 
