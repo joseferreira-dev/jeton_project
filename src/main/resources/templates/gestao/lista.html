@@ -132,30 +132,7 @@
             </div>
         </div>
 
-        <div class="modal fade" id="modalExclusao" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0 shadow">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title"><i class="fa-solid fa-circle-exclamation me-2"></i>Confirmar Exclusão
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-4">
-                        <p>Deseja excluir permanentemente a Gestão abaixo?</p>
-                        <div class="card bg-light border-start border-danger border-4">
-                            <div class="card-body py-2">
-                                <div><strong>Gestão:</strong> <span id="excluirNome"></span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <a id="btnConfirmarExclusao" href="#" class="btn btn-danger px-4"><i
-                                class="fa-solid fa-trash-can me-1"></i> Excluir</a>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div th:replace="~{fragments/modal-exclusao :: modal}"></div>
 
     </div>
 </body>
