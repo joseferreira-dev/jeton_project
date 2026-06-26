@@ -17,6 +17,15 @@ public class NormativaValidator {
         this.resolucaoRepository = resolucaoRepository;
     }
 
+    private void validarOrdemDatasVigencia(LocalDate inicio, LocalDate fim) {
+        if (inicio == null) {
+            throw new RuntimeException("A data de início da vigência é obrigatória.");
+        }
+        if (fim != null && fim.isBefore(inicio)) {
+            throw new RuntimeException("A data de fim da vigência deve ser posterior à data de início.");
+        }
+    }
+
     public void validarUnicidadePortaria(Integer numero, Integer ano, Integer idAtual) {
         if (numero == null || ano == null) {
             throw new RuntimeException("Número e ano são obrigatórios para a portaria.");
@@ -43,6 +52,7 @@ public class NormativaValidator {
 
     public void validarPortaria(Integer numero, Integer ano, LocalDate inicio, LocalDate fim, Integer idAtual) {
         validarUnicidadePortaria(numero, ano, idAtual);
+        validarOrdemDatasVigencia(inicio, fim);
         validarSobreposicaoPortaria(inicio, fim, idAtual);
     }
 
@@ -72,6 +82,7 @@ public class NormativaValidator {
 
     public void validarResolucao(Integer numero, Integer ano, LocalDate inicio, LocalDate fim, Integer idAtual) {
         validarUnicidadeResolucao(numero, ano, idAtual);
+        validarOrdemDatasVigencia(inicio, fim);
         validarSobreposicaoResolucao(inicio, fim, idAtual);
     }
 }
