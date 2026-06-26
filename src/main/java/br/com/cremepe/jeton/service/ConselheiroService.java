@@ -94,6 +94,12 @@ public class ConselheiroService {
         pessoaValidator.validarCpf(cpfLimpo); // valida dígitos
         pessoaValidator.validarCpfUnico(cpfLimpo, isNovo ? null : conselheiro.getIdPessoa());
 
+        // Valida e-mail único
+        String email = pessoa.getEmail();
+        if (email != null && !email.trim().isEmpty()) {
+            pessoaValidator.validarEmailUnico(email.trim(), isNovo ? null : conselheiro.getIdPessoa());
+        }
+
         // Define tipo de pessoa
         pessoa.setInTipoPessoa(Pessoa.TIPO_CONSELHEIRO);
 

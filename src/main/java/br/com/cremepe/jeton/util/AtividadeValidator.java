@@ -2,6 +2,7 @@ package br.com.cremepe.jeton.util;
 
 import br.com.cremepe.jeton.domain.AtividadeConselhal;
 import br.com.cremepe.jeton.domain.Gestao;
+import br.com.cremepe.jeton.domain.GestaoConselheiro;
 import br.com.cremepe.jeton.repository.GestaoConselheiroRepository;
 import br.com.cremepe.jeton.repository.GestaoRepository;
 import org.springframework.stereotype.Component;
@@ -9,6 +10,8 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class AtividadeValidator {
@@ -35,9 +38,14 @@ public class AtividadeValidator {
     }
 
     public void validarVinculoConselheiroGestao(Integer idConselheiro, Integer idGestao) {
-        boolean vinculado = gestaoConselheiroRepository.existsByGestaoAndConselheiro(idGestao, idConselheiro);
-        if (!vinculado) {
-            throw new RuntimeException("O médico selecionado não possui vínculo ativo com a Gestão informada.");
+        List<GestaoConselheiro> vinculos = gestaoConselheiroRepository
+                .findByIdIdGestaoAndInSituacao(idGestao, GestaoConselheiro.SITUACAO_ATIVO)
+                .stream()
+                .filter(vc -> vc.getConselheiro().getIdPessoa().equals(idConselheiro))
+                .collect(Collectors.toList());
+
+        if (vinculos.isEmpty()) {
+            throw new RuntimeException("O médico selecionado não possui vínculo ATIVO com a Gestão informada.");
         }
     }
 

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/conselheiro")
@@ -167,22 +168,26 @@ public class ConselheiroPortalController {
             return "redirect:/login";
 
         Integer idConselheiro = getIdConselheiroLogado(session);
-        Optional<Gestao> gestaoOpt = getGestaoAtivaDoConselheiro(idConselheiro);
+        List<Gestao> gestoesAtivas = getGestoesAtivasDoConselheiro(idConselheiro);
 
-        if (gestaoOpt.isEmpty()) {
-            ra.addFlashAttribute("erro", "Você não possui uma gestão ativa. Não é possível criar novas atividades.");
+        if (gestoesAtivas.isEmpty()) {
+            ra.addFlashAttribute("erro",
+                    "Você não possui nenhuma gestão ativa. Não é possível criar novas atividades.");
             return "redirect:/conselheiro/dashboard";
         }
 
-        Gestao gestao = gestaoOpt.get();
         AtividadeConselhal atividade = new AtividadeConselhal();
         Conselheiro conselheiro = conselheiroService.buscarPorId(idConselheiro)
                 .orElseThrow(() -> new RuntimeException("Conselheiro não encontrado"));
         atividade.setConselheiro(conselheiro);
-        atividade.setGestao(gestao);
         atividade.setDataHoraRegistro(LocalDateTime.now());
 
+        if (gestoesAtivas.size() == 1) {
+            atividade.setGestao(gestoesAtivas.get(0));
+        }
+
         model.addAttribute("atividade", atividade);
+        model.addAttribute("listaGestoesAtivas", gestoesAtivas);
         model.addAttribute("listaTiposAnexo", tipoAnexoService.listarTodos());
         return "conselheiro/atividade_form";
     }
@@ -205,7 +210,14 @@ public class ConselheiroPortalController {
             return "redirect:/conselheiro/atividades";
         }
 
+        List<Gestao> gestoesAtivas = getGestoesAtivasDoConselheiro(idConselheiro);
+        if (gestoesAtivas.isEmpty()) {
+            ra.addFlashAttribute("erro", "Você não possui gestão ativa. Não é possível editar.");
+            return "redirect:/conselheiro/atividades";
+        }
+
         model.addAttribute("atividade", atividade);
+        model.addAttribute("listaGestoesAtivas", gestoesAtivas);
         model.addAttribute("listaTiposAnexo", tipoAnexoService.listarTodos());
         return "conselheiro/atividade_form";
     }
@@ -216,15 +228,26 @@ public class ConselheiroPortalController {
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "idTipoAnexo", required = false) Integer idTipoAnexo,
             @RequestParam(value = "nomeComprovanteUsuario", required = false) String nomeComprovanteUsuario,
+            @RequestParam("idGestao") Integer idGestao,
             HttpSession session,
             RedirectAttributes ra) {
         if (!isConselheiro(session))
             return "redirect:/login";
 
-        if (atividade.getConselheiro() == null
-                || !atividade.getConselheiro().getIdPessoa().equals(getIdConselheiroLogado(session))) {
+        Integer idConselheiro = getIdConselheiroLogado(session);
+        if (atividade.getConselheiro() == null || !atividade.getConselheiro().getIdPessoa().equals(idConselheiro)) {
             throw new RuntimeException("Conselheiro inválido para esta atividade.");
         }
+
+        List<Gestao> gestoesAtivas = getGestoesAtivasDoConselheiro(idConselheiro);
+        boolean gestaoValida = gestoesAtivas.stream().anyMatch(g -> g.getIdGestao().equals(idGestao));
+        if (!gestaoValida) {
+            ra.addFlashAttribute("erro", "A gestão selecionada não está ativa para você.");
+            return "redirect:/conselheiro/atividades/nova";
+        }
+
+        Gestao gestao = gestaoService.buscarGestaoOuFalhar(idGestao);
+        atividade.setGestao(gestao);
 
         LocalDateTime dataHora = DataUtils.parseDataHora(dataAtividadePura,
                 "A data e horário da atividade são obrigatórios.");
@@ -307,4 +330,12 @@ public class ConselheiroPortalController {
         model.addAttribute("dir", dir);
         return "conselheiro/pagamentos";
     }
+
+    private List<Gestao> getGestoesAtivasDoConselheiro(Integer idConselheiro) {
+        return gestaoConselheiroService.listarPorConselheiroAtivos(idConselheiro)
+                .stream()
+                .map(GestaoConselheiro::getGestao)
+                .collect(Collectors.toList());
+    }
+
 }

@@ -23,14 +23,26 @@
                     <input type="hidden" th:field="*{idAtividade}">
                     <input type="hidden" th:field="*{dataHoraRegistro}">
                     <input type="hidden" th:field="*{inSituacao}">
-                    <input type="hidden" th:field="*{gestao.idGestao}">
                     <input type="hidden" th:field="*{conselheiro.idPessoa}">
 
                     <input type="hidden" id="currentRegraId"
                         th:value="${atividade.regra != null ? atividade.regra.idRegra : ''}">
 
                     <div class="row g-4">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Gestão Ativa *</label>
+                            <select class="form-select" id="selectGestao" name="idGestao" required
+                                data-validate="required"
+                                title="Selecione a gestão para a qual deseja lançar a atividade">
+                                <option th:if="${#lists.size(listaGestoesAtivas) > 1}" value="">Selecione uma gestão
+                                </option>
+                                <option th:each="g : ${listaGestoesAtivas}" th:value="${g.idGestao}"
+                                    th:text="${g.nomeGestao}" th:selected="${g.idGestao == atividade.gestao.idGestao}">
+                                </option>
+                            </select>
+                            <small class="text-muted">Apenas gestões com vínculo ativo são exibidas.</small>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Data e Horário da Atividade *</label>
                             <input type="datetime-local" class="form-control" name="dataAtividadePura"
                                 id="dataAtividade"
@@ -38,12 +50,12 @@
                                 data-validate="required datetime" required
                                 title="Data e horário em que a atividade foi realizada">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Turno</label>
                             <input type="text" class="form-control bg-light" id="turnoVisual" value="Automático"
                                 disabled>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <label class="form-label fw-bold">Regra Enquadrada *</label>
                             <select class="form-select" th:field="*{regra.idRegra}" id="selectRegra"
                                 data-validate="required" required
