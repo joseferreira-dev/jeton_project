@@ -1,6 +1,8 @@
 package br.com.cremepe.jeton.controller;
 
+import br.com.cremepe.jeton.domain.Portaria;
 import br.com.cremepe.jeton.domain.Regras;
+import br.com.cremepe.jeton.domain.Resolucao;
 import br.com.cremepe.jeton.service.PortariaService;
 import br.com.cremepe.jeton.service.RegrasService;
 import br.com.cremepe.jeton.service.ResolucaoService;
@@ -63,7 +65,7 @@ public class RegrasController {
         if (naoAutenticado(session))
             return "redirect:/login";
         model.addAttribute("regra", new Regras());
-        carregarApoioFormulario(model);
+        carregarApoioFormulario(model, null, true);
         return "regras/formulario";
     }
 
@@ -74,17 +76,17 @@ public class RegrasController {
         Regras regra = regrasService.buscarPorId(id)
                 .orElseThrow(() -> new IllegalArgumentException("Regra não encontrada"));
         model.addAttribute("regra", regra);
-        carregarApoioFormulario(model);
+        carregarApoioFormulario(model, regra, false);
         return "regras/formulario";
     }
 
-    private void carregarApoioFormulario(Model model) {
-        model.addAttribute("listaPortarias", portariaService.listarTodos().stream()
-                .filter(p -> p.isEmVigor())
-                .collect(Collectors.toList()));
-        model.addAttribute("listaResolucoes", resolucaoService.listarTodos().stream()
-                .filter(r -> r.isEmVigor())
-                .collect(Collectors.toList()));
+    private void carregarApoioFormulario(Model model, Regras regraAtual, Boolean isNova) {
+        List<Portaria> portarias = portariaService.listarTodos().stream()
+                .collect(Collectors.toList());
+        List<Resolucao> resolucoes = resolucaoService.listarTodos().stream()
+                .collect(Collectors.toList());
+        model.addAttribute("listaPortarias", portarias);
+        model.addAttribute("listaResolucoes", resolucoes);
     }
 
     @GetMapping("/regras-por-resolucao")

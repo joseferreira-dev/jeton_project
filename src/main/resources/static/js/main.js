@@ -292,24 +292,18 @@ function inicializarFiltroRegrasConjuntas() {
         return;
     }
 
-    // 1. Ordenar opções do select de resoluções por valor (ID) decrescente
+    // Ordenar opções do select de resoluções por ID decrescente
     const placeholder = selectResolucao.querySelector('option[value=""]');
     const options = Array.from(selectResolucao.options).filter(opt => opt.value !== '');
     options.sort((a, b) => parseInt(b.value) - parseInt(a.value));
-
-    // Limpa e reinsere as opções ordenadas
     selectResolucao.innerHTML = '';
-    if (placeholder) {
-        selectResolucao.appendChild(placeholder);
-    }
+    if (placeholder) selectResolucao.appendChild(placeholder);
     options.forEach(opt => selectResolucao.appendChild(opt));
 
-    // 2. Se nenhuma opção estiver selecionada, seleciona a primeira (mais recente)
+    // Selecionar a primeira opção (mais recente) se nenhuma estiver selecionada
     if (!selectResolucao.value) {
         const firstOption = selectResolucao.querySelector('option:not([disabled])');
-        if (firstOption && firstOption.value) {
-            firstOption.selected = true;
-        }
+        if (firstOption && firstOption.value) firstOption.selected = true;
     }
 
     function parseIdsString(str) {
@@ -318,9 +312,10 @@ function inicializarFiltroRegrasConjuntas() {
     }
 
     function carregarRegras(resolucaoId, idsParaSelecionar) {
-        const url = resolucaoId
-            ? `${API.REGRAS_POR_RESOLUCAO}/${resolucaoId}`
-            : API.REGRAS_POR_RESOLUCAO;
+        // Se houver IDs para selecionar, busca TODAS as regras (para garantir que as selecionadas estejam disponíveis)
+        const url = (idsParaSelecionar && idsParaSelecionar.length > 0)
+            ? '/api/regras'  // endpoint que retorna todas as regras
+            : (resolucaoId ? `/api/regras/resolucao/${resolucaoId}` : '/api/regras');
 
         selectRegras.innerHTML = '<option value="" disabled>Carregando regras...</option>';
         selectRegras.disabled = true;
@@ -341,6 +336,7 @@ function inicializarFiltroRegrasConjuntas() {
                     return;
                 }
 
+                // Popula o select com todas as regras (sem filtro adicional)
                 data.forEach(regra => {
                     const option = document.createElement('option');
                     option.value = regra.id;
@@ -349,6 +345,7 @@ function inicializarFiltroRegrasConjuntas() {
                     selectRegras.appendChild(option);
                 });
 
+                // Aplica pré‑seleção se houver IDs
                 if (idsParaSelecionar && idsParaSelecionar.length > 0) {
                     Array.from(selectRegras.options).forEach(opt => {
                         if (idsParaSelecionar.includes(parseInt(opt.value))) {
@@ -369,14 +366,18 @@ function inicializarFiltroRegrasConjuntas() {
             });
     }
 
-    // 3. Evento de mudança da resolução
+    // Evento de mudança da resolução (apenas para novos registros, não para edição)
     selectResolucao.addEventListener('change', function () {
         const resolucaoId = this.value ? parseInt(this.value) : null;
-        const selectedIds = Array.from(selectRegras.selectedOptions).map(opt => parseInt(opt.value));
-        carregarRegras(resolucaoId, selectedIds);
+        const idsIniciais = parseIdsString(hiddenIds ? hiddenIds.value : '');
+        if (idsIniciais.length > 0) {
+            carregarRegras(null, idsIniciais);
+        } else {
+            carregarRegras(resolucaoId, []);
+        }
     });
 
-    // 4. Carregamento inicial com a resolução já selecionada
+    // Carregamento inicial
     let idsIniciais = [];
     if (hiddenIds && hiddenIds.value) {
         idsIniciais = parseIdsString(hiddenIds.value);
