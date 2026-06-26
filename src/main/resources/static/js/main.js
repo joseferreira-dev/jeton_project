@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const btn = e.target.closest('[data-role="bloquear"]');
         if (btn) {
             e.preventDefault();
-            const result = confirmarBloqueio();
+            confirmarBloqueio(btn);
         }
     });
 
