@@ -1,0 +1,140 @@
+.error-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 20px;
+}
+
+.error-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    max-width: 550px;
+    width: 100%;
+    text-align: center;
+    padding: 50px 40px;
+}
+
+.error-icon {
+    font-size: 5rem;
+    margin-bottom: 20px;
+}
+
+.error-icon i {
+    padding: 25px;
+    border-radius: 50%;
+}
+
+.error-card h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 10px;
+}
+
+.error-card .subtitle {
+    font-size: 1.1rem;
+    color: #6c757d;
+    margin-bottom: 25px;
+}
+
+.error-card .details {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: left;
+    margin-bottom: 30px;
+}
+
+.error-card .details p {
+    margin-bottom: 8px;
+    color: #495057;
+}
+
+.error-card .details i {
+    color: var(--cremepe-green, #009965);
+    width: 24px;
+    text-align: center;
+}
+
+.btn-home {
+    background-color: var(--cremepe-green, #009965);
+    color: white;
+    padding: 12px 40px;
+    font-weight: 600;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    border: none;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-home:hover {
+    background-color: var(--cremepe-green-dark, #007a51);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 153, 101, 0.3);
+    color: white;
+    text-decoration: none;
+}
+
+.error-card .footer-links {
+    margin-top: 25px;
+    font-size: 0.9rem;
+}
+
+.error-card .footer-links a {
+    color: var(--cremepe-green, #009965);
+    text-decoration: none;
+}
+
+.error-card .footer-links a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 576px) {
+    .error-card {
+        padding: 30px 20px;
+    }
+
+    .error-icon {
+        font-size: 3.5rem;
+    }
+
+    .error-card h1 {
+        font-size: 1.8rem;
+    }
+}
+
+.error-icon-danger {
+    color: #dc3545;
+}
+
+.error-icon-danger i {
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.error-icon-warning {
+    color: #f59e0b;
+}
+
+.error-icon-warning i {
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.error-icon-muted {
+    color: #6c757d;
+}
+
+.error-icon-muted i {
+    background: rgba(108, 117, 125, 0.1);
+}
+
+.error-icon-info {
+    color: #0d6efd;
+}
+
+.error-icon-info i {
+    background: rgba(13, 110, 253, 0.1);
+}

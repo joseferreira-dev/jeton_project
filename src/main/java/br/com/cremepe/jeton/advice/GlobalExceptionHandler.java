@@ -108,7 +108,7 @@ public class GlobalExceptionHandler {
                     request.getRequestURI());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(erro);
         } else {
-            return "erro/404";
+            return "error/404";
         }
     }
 

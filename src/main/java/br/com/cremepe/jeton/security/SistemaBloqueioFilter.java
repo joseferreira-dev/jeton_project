@@ -19,7 +19,7 @@ public class SistemaBloqueioFilter extends OncePerRequestFilter {
 
     private static final List<String> ROTAS_PERMITIDAS_DURANTE_BLOQUEIO = List.of(
             "/login", "/autenticar", "/sair", "/bloqueio", "/bloqueio/status",
-            "/css/", "/js/", "/images/", "/favicon");
+            "/css/", "/js/", "/images/", "/favicon", "/webjars/");
 
     private final ParametrosService parametrosService;
 

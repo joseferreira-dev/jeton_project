@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página não encontrada - Jeton</title>
+    <link th:href="@{/webjars/bootstrap/5.3.2/css/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/webjars/font-awesome/6.4.2/css/all.min.css}" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/error.css}">
+    <link rel="icon" th:href="@{/favicon.png}" type="image/x-icon">
+</head>
+
+<body>
+    <div class="error-container">
+        <div class="error-card">
+            <div class="text-center mb-4">
+                <img th:src="@{/images/logo.png}" alt="Logo Cremepe" style="max-height:50px; margin-bottom:10px;">
+                <h5 class="text-cremepe fw-bold" style="font-size:0.9rem; letter-spacing:1px;">SISTEMA JETON</h5>
+            </div>
+
+            <div class="error-icon error-icon-warning">
+                <i class="fa-regular fa-circle-question"></i>
+            </div>
+
+            <h1>404 <span class="text-warning">·</span> Página não encontrada</h1>
+            <p class="subtitle">O conteúdo que você tentou acessar não existe ou foi movido.</p>
+
+            <div class="details">
+                <p><i class="fa-regular fa-circle-check me-2"></i> Verifique se o endereço digitado está correto.</p>
+                <p><i class="fa-regular fa-circle-check me-2"></i> O link pode ter expirado ou sido desativado.</p>
+                <p><i class="fa-regular fa-circle-check me-2"></i> Se você digitou manualmente a URL, confira a
+                    ortografia.</p>
+            </div>
+
+            <a th:href="@{/index}" class="btn-home">
+                <i class="fa-solid fa-arrow-left me-2"></i> Voltar ao início
+            </a>
+
+            <div class="footer-links">
+                <p class="text-muted small">
+                    Precisa de ajuda? <a th:href="@{/index}">Entre em contato com o suporte</a>
+                </p>
+                <p class="text-muted small mb-0">
+                    <i class="fa-regular fa-clock me-1"></i>
+                    <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span>
+                </p>
+            </div>
+        </div>
+    </div>
+    <script th:src="@{/webjars/bootstrap/5.3.2/js/bootstrap.bundle.min.js}"></script>
+</body>
+
+</html>
