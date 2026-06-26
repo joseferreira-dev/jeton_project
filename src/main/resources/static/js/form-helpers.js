@@ -408,22 +408,14 @@ export function inicializarLoteEdicao() {
     selectConselheiros.addEventListener('change', atualizarListaSelecionados);
 
     dataAtividade.addEventListener('change', function () {
-        if (typeof window.atualizarRegrasPorData === 'function') {
-            window.atualizarRegrasPorData(idRegraAtual);
-        }
-        if (typeof window.atualizarTurnoVisual === 'function') {
-            window.atualizarTurnoVisual();
-        }
+        atualizarRegrasPorData(idRegraAtual);
+        atualizarTurnoVisual();
     });
 
     if (selectGestao.value) carregarConselheiros();
     if (dataAtividade.value) {
-        if (typeof window.atualizarRegrasPorData === 'function') {
-            window.atualizarRegrasPorData(idRegraAtual);
-        }
-        if (typeof window.atualizarTurnoVisual === 'function') {
-            window.atualizarTurnoVisual();
-        }
+        atualizarRegrasPorData(idRegraAtual);
+        atualizarTurnoVisual();
     }
 
     window._resetarLote = resetarFiltros;
