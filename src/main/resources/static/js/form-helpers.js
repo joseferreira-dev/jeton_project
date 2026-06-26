@@ -126,10 +126,12 @@ export function toggleCrm() {
     if (checkbox.checked) {
         divCrm.style.display = 'block';
         inputCrm.required = true;
+        inputCrm.dataset.validate = "crm required";
     } else {
         divCrm.style.display = 'none';
         inputCrm.required = false;
         inputCrm.value = '';
+        inputCrm.dataset.validate = "crm";
     }
 }
 

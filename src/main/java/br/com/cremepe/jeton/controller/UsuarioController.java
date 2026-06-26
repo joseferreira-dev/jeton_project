@@ -130,7 +130,7 @@ public class UsuarioController extends BaseController {
         }
 
         log.info("Usuário salvo e permissões atualizadas: ID={}", id);
-        ra.addFlashAttribute("sucesso", "Utilizador e permissões atualizados com sucesso!");
+        ra.addFlashAttribute("sucesso", "Usuário e permissões atualizados com sucesso!");
         return "redirect:/usuarios";
     }
 
@@ -138,7 +138,7 @@ public class UsuarioController extends BaseController {
     @PreAuthorize("hasAuthority('U') or hasAuthority('S')")
     public String excluir(@PathVariable("id") Integer id, HttpSession session, RedirectAttributes ra) {
         usuarioService.excluir(id);
-        ra.addFlashAttribute("sucesso", "Utilizador removido com sucesso!");
+        ra.addFlashAttribute("sucesso", "Usuário removido com sucesso!");
         return "redirect:/usuarios";
     }
 
