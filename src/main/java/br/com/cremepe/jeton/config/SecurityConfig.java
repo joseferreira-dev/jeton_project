@@ -45,7 +45,9 @@ public class SecurityConfig {
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.png", "/favicon.ico",
                                 "/webjars/**")
                         .permitAll()
-                        .requestMatchers("/login", "/autenticar", "/sair", "/bloqueio", "/bloqueio/status").permitAll()
+                        .requestMatchers("/login", "/autenticar", "/sair", "/bloqueio", "/bloqueio/status",
+                                "/recuperar-senha")
+                        .permitAll()
                         .requestMatchers("/conselheiro/**").hasRole("CONSELHEIRO")
                         .requestMatchers("/usuarios/perfil", "/usuarios/perfil/salvar").authenticated()
                         .requestMatchers("/", "/index", "/conselheiro/**").authenticated()

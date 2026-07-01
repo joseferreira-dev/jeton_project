@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 
@@ -229,5 +230,41 @@ public class UsuarioService {
         p.setInTipoPessoa(original.getPessoa().getInTipoPessoa());
         copia.setPessoa(p);
         return copia;
+    }
+
+    @Transactional
+    public String gerarSenhaProvisoria(String cpfOuEmail) {
+        Usuario usuario = buscarPorCpfOuEmail(cpfOuEmail)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        if (!usuario.isAtivo()) {
+            throw new RuntimeException("Usuário inativo. Contate o administrador.");
+        }
+
+        String senhaProvisoria = gerarSenhaAleatoria();
+        usuario.setSenha(passwordEncoder.encode(senhaProvisoria));
+        usuarioRepository.save(usuario);
+
+        return senhaProvisoria;
+    }
+
+    private String gerarSenhaAleatoria() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder sb = new StringBuilder();
+        SecureRandom random = new SecureRandom();
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
+
+    public Optional<Usuario> buscarPorCpfOuEmail(String cpfOuEmail) {
+        String cpfLimpo = cpfOuEmail.replaceAll("\\D", "");
+        Optional<Usuario> porCpf = usuarioRepository.findByPessoaCpf(cpfLimpo);
+        if (porCpf.isPresent())
+            return porCpf;
+
+        Optional<Pessoa> porEmail = pessoaRepository.findByEmail(cpfOuEmail.trim());
+        return porEmail.flatMap(p -> usuarioRepository.findById(p.getIdPessoa()));
     }
 }
